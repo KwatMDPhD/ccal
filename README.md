@@ -1,8 +1,7 @@
-# ccba
+# CCBA
 Computational Cancer Biology Analysis
 
 # Naming conventions
-
 ### Please follow the guidelines below to make an organized package:
 #### Comment with a full sentence.
 #### Name accurately and precisely.
