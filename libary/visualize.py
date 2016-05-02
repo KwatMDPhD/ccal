@@ -2,13 +2,17 @@
 Cancer Computational Biology Analysis Visualization Library v0.1
 
 Authors:
-1) Pablo Tamayo
+Pablo Tamayo
 pablo.tamayo.r@gmail.com
 Genomics and Computational Biology, UCSD Moore's Cancer Center
 
-2) Huwate (Kwat) Yeerna (Medetgul-Ernar)
+Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
 Genomics and Computational Biology, UCSD Moore's Cancer Center
+
+James Jensen
+Email
+Affiliation
 """
 from matplotlib import pylab
 import matplotlib.pyplot as plt
