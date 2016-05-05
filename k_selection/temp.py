@@ -5,6 +5,28 @@ import os
 import random
 
 
+def slice_list(a_list, n):
+    """
+    Given <a_list> and <n>, return a list containing <n> lists, with the items of <a_list> evenly distributed.
+    :param a_list:
+    :param n:
+    :return:
+    """
+    input_size = len(a_list)
+    slice_size = int(input_size / n)
+    remain = input_size % n
+    result = []
+    iterator = iter(a_list)
+    for i in range(n):
+        result.append([])
+        for j in range(slice_size):
+            result[i].append(next(iterator))
+        if remain:
+            result[i].append(next(iterator))
+            remain -= 1
+    return result
+
+
 def add_value(df, val_in, val_out):
     for i, (n, s) in enumerate(df.iterrows()):
         for j, c in enumerate(s.index):
