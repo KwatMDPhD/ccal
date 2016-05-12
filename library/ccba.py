@@ -17,8 +17,8 @@ Affiliation
 import os
 import numpy as np
 import pandas as pd
-from libary.support import *
-from libary.visualize import *
+from library.support import *
+from library.visualize import *
 
 
 
