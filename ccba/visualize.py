@@ -14,19 +14,46 @@ James Jensen
 Email
 Affiliation
 """
-from matplotlib import pylab
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
-def plot_heatmap(matrix):
-    """
-    Make a heat map of <matrix>.
-    """
-    plt.imshow(matrix, interpolation='nearest', cmap=plt.cm.ocean)
-    plt.colorbar()
-    plt.show()
+## Global parameters
+WHITE = '#FFFFFF'
+SILVER = '#C0C0C0'
+GRAY = '#808080'
+BLACK = '#000000'
+RED = '#FF0000'
+MAROON = '#800000'
+YELLOW = '#FFFF00'
+OLIVE = '#808000'
+LIME = '#00FF00'
+GREEN = '#008000'
+AQUA = '#00FFFF'
+TEAL = '#008080'
+BLUE = '#0000FF'
+NAVY = '#000080'
+FUCHSIA = '#FF00FF'
+PURPLE = '#800080'
+
+CMAP = mpl.cm.ocean
+
+FONT1 = {'family': 'serif',
+         'color':  BLACK,
+         'weight': 'bold',
+         'size': 36}
+FONT2 = {'family': 'serif',
+         'color':  BLACK,
+         'weight': 'bold',
+         'size': 24}
+FONT3 = {'family': 'serif',
+         'color':  BLACK,
+         'weight': 'normal',
+         'size': 16}
 
 
+## Functions
 def plot_graph(graph, filename=None):
 
     # Initialze figure
