@@ -1,6 +1,6 @@
 import imp
 import pip
-modules = ['numpy', 'pandas', 'matplotlib', 'seaborn']
+modules = ['rpy2', 'numpy', 'pandas', 'matplotlib', 'seaborn']
 for module in modules:
     try:
         imp.find_module(module)

@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 from library.support import *
 from library.visualize import *
+from library.information import *
 
 
 
@@ -28,3 +29,12 @@ TESTING = False
 PATH_CCBA = '/Users/Kwat/binf/ccba/'
 # Path to testing data directory
 PATH_TEST_DATA = os.path.join(PATH_CCBA, 'data', 'test')
+
+
+def make_heatmap_panel(reference, dataframe, annotation_columns, title=None):
+    """
+    """
+    if 'IC' in annotation_columns:
+        dataframe.ix[:, 'IC'] = pd.Series([compute_information_coefficient(np.array(row[1]), reference) for row in dataframe.iterrows()], index=dataframe.index)
+    dataframe.sort(['IC'], inplace=True)
+    plot_heatmap_panel(reference, dataframe, annotation_columns, title=title)

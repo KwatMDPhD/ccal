@@ -85,17 +85,10 @@ def plot_graph(graph, filename=None):
     #del fig
 
 
-def plot_heatmap_panel(referece, dataframe, annotation_dataframe, figure_size=(30, 30), title=None, font1=FONT1, font2=FONT2, font3=FONT3):
+def plot_heatmap_panel(referece, dataframe, annotation_columns, figure_size=(30, 30), title=None, font1=FONT1, font2=FONT2, font3=FONT3):
     """
-    Plot a heatmap panels (horizontal).
-    """
-    # TODO: use reference as colorbar
-    # TODO: raise exception
-    assert dataframe.shape[0] == annotation_dataframe.shape[0]
-    
-    ref_min = dataframe.values.min()
-    ref_max = dataframe.values.max()
-    
+    Plot horizonzal heatmap panels.
+    """    
     ## Visualization parameters
     # TODO: Set size automatically
     figure_height = dataframe.shape[0] + 1
@@ -110,6 +103,9 @@ def plot_heatmap_panel(referece, dataframe, annotation_dataframe, figure_size=(3
 
     ## Initialize axes
     # Reference
+    # TODO: use reference as colorbar
+    ref_min = dataframe.values.min()
+    ref_max = dataframe.values.max()
     ax_ref = plt.subplot2grid((figure_height, figure_width), (0, heatmap_left), rowspan=heatmap_height, colspan=heatmap_width)
     if title:
         ax_ref.set_title(title, fontdict=font1)
@@ -120,15 +116,14 @@ def plot_heatmap_panel(referece, dataframe, annotation_dataframe, figure_size=(3
     # Reference annotation
     ax_ref_ann = plt.subplot2grid((figure_height, figure_width), (0, heatmap_left + heatmap_width), rowspan=heatmap_height, colspan=1)
     ax_ref_ann.set_axis_off()
-    a1, a2, a3 = annotation_dataframe.columns
-    ann = '{}\t\t{}\t\t{}'.format(a1, a2, a3).expandtabs()
+    ann = '\t\t'.join(annotation_columns).expandtabs()
     ax_ref_ann.text(0, 0.5, ann, fontdict=font2)
-
+    
     # Features
     for i in range(dataframe.shape[0]):
         # Make row axes
         ax = plt.subplot2grid((figure_height, figure_width), (i + 1, heatmap_left), rowspan=heatmap_height, colspan=heatmap_width)
-        sns.heatmap(dataframe.ix[i:i + 1], ax=ax,
+        sns.heatmap(dataframe.ix[i:i + 1, :-len(annotation_columns)], ax=ax,
                     vmin=ref_min, vmax=ref_max, robust=True,
                     center=None, mask=None,
                     square=False, cmap=CMAP, linewidth=0, linecolor=WHITE,
@@ -139,11 +134,11 @@ def plot_heatmap_panel(referece, dataframe, annotation_dataframe, figure_size=(3
         plt.setp(ax.get_yticklabels(), **font3, rotation=0)
 
     # Feature annotations
-    for i in range(annotation_dataframe.shape[0]):
-        a1, a2, a3 = annotation_dataframe.ix[i]
+    for i in range(dataframe.shape[0]):
         ax = plt.subplot2grid((figure_height, figure_width), (i + 1, heatmap_left + heatmap_width), rowspan=heatmap_height, colspan=1)
         ax.set_axis_off()
-        ann = '{:.2e}\t\t{:.2e}\t\t{:.2e}'.format(a1, a2, a3).expandtabs()
+        
+        ann = '\t\t'.join(['{:.2e}'.format(n) for n in dataframe.ix[i, annotation_columns]]).expandtabs()
         ax.text(0, 0.5, ann, fontdict=font3)
 
     # Clean up the layout
