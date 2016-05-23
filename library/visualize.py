@@ -37,7 +37,7 @@ NAVY = '#000080'
 FUCHSIA = '#FF00FF'
 PURPLE = '#800080'
 
-CMAP = mpl.cm.ocean
+CMAP = mpl.cm.seismic
 
 FONT1 = {'family': 'serif',
          'color':  BLACK,
