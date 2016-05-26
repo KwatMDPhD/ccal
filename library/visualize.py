@@ -37,6 +37,7 @@ NAVY = '#000080'
 FUCHSIA = '#FF00FF'
 PURPLE = '#800080'
 
+# TODO: create custom color panel
 CMAP = mpl.cm.seismic
 
 FONT1 = {'family': 'serif',

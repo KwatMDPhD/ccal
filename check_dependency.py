@@ -1,5 +1,6 @@
 import imp
 import pip
+#TODO: check python version
 modules = ['rpy2', 'numpy', 'pandas', 'matplotlib', 'seaborn']
 for module in modules:
     try:
