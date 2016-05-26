@@ -14,13 +14,28 @@ James Jensen
 Email
 Affiliation
 """
+
+
+## Check dependencies and install missing ones
+import pip
+packages_installed = pip.get_installed_distributions()
+package_names_installed = [pkg.key for pkg in packages_installed]
+package_names_needed = ['rpy2', 'numpy', 'pandas', 'matplotlib', 'seaborn']
+for pkg in package_names_needed:
+    if pkg not in package_names_installed:
+        print('{} not found! Installing ......'.format(pkg))
+        pip.main(['install', pkg])
+print('Using the following packages:')
+for pkg in packages_installed:
+    if pkg.key in package_names_needed:
+        print('{} v{}'.format(pkg.key, pkg.version))
+
 import os
 import numpy as np
 import pandas as pd
 from library.support import *
 from library.visualize import *
 from library.information import *
-
 
 
 ## Define Global variable

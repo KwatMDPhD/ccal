@@ -1,3 +1,21 @@
+"""
+Cancer Computational Biology Analysis Information Library v0.1
+
+Authors:
+Pablo Tamayo
+pablo.tamayo.r@gmail.com
+Genomics and Computational Biology, UCSD Moore's Cancer Center
+
+Huwate (Kwat) Yeerna (Medetgul-Ernar)
+kwat.medetgul.ernar@gmail.com
+Genomics and Computational Biology, UCSD Moore's Cancer Center
+
+James Jensen
+Email
+Affiliation
+"""
+
+
 import numpy as np
 from scipy.stats import pearsonr
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
