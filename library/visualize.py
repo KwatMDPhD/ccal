@@ -146,3 +146,48 @@ def plot_heatmap_panel(dataframe, reference, annotation, figure_size=(30, 30), t
 
     # Clean up the layout
     fig.tight_layout()
+
+
+def make_colorbar():
+    """
+    Make colorbar examples.
+    """
+    fig = plt.figure(figsize=(8, 3))
+    ax1 = fig.add_axes([0.05, 0.80, 0.9, 0.15])
+    ax2 = fig.add_axes([0.05, 0.475, 0.9, 0.15])
+
+    # Set the colormap and norm to correspond to the data for which
+    # the colorbar will be used.
+    cmap = CMAP
+    norm = mpl.colors.Normalize(vmin=5, vmax=10)
+
+    # ColorbarBase derives from ScalarMappable and puts a colorbar
+    # in a specified axes, so it has everything needed for a
+    # standalone colorbar.  There are many more kwargs, but the
+    # following gives a basic continuous colorbar with ticks
+    # and labels.
+    cb1 = mpl.colorbar.ColorbarBase(ax1,
+                                    cmap=cmap,
+                                    norm=norm,
+                                    orientation='horizontal')
+    cb1.set_label('Unit')
+
+    # The length of the bounds array must be one greater than the length of the color list.
+    cmap = mpl.colors.ListedColormap([RED, PURPLE, GREEN])
+    # The bounds must be monotonically increasing.
+    bounds = [1, 2, 6, 8]
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+    # Eextended ends to show the 'over' and 'under' value colors.
+    cmap.set_over(SILVER)
+    cmap.set_under(SILVER)
+    cb2 = mpl.colorbar.ColorbarBase(ax2,
+                                    cmap=cmap,
+                                    norm=norm,
+                                    boundaries=[bounds[0] - 3] + bounds + [bounds[-1] + 3],
+                                    extend='both',
+                                    extendfrac='auto',
+                                    ticks=bounds,
+                                    spacing='proportional',
+                                    orientation='horizontal')
+    cb2.set_label('Unit')

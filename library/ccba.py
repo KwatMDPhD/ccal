@@ -64,14 +64,21 @@ def make_heatmap_panel(dataframe, reference, metric=['IC'], sort_column=['IC'], 
     # Plot
     plot_heatmap_panel(dataframe, reference, metric, title=title)
 
+    
 
-def nmf(X, n_components, initialization='random', iteration=200, seed=SEED, randomize_coordinate_order=False, regulatizer=0, v=False):
+### NMF ###
+def select_k():
+"""
+Select k for NMF.
+"""
+
+def nmf(X, k, initialization='random', iteration=200, seed=SEED, randomize_coordinate_order=False, regulatizer=0, v=False):
     """
     Nonenegative matrix mactorize <X> and return W, H, and their reconstruction error.
     
     :param initialization: {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
     """
-    model = NMF(n_components=n_components,
+    model = NMF(n_components=k,
                 init=initialization,
                 max_iter=iteration,
                 random_state=seed,
@@ -81,3 +88,20 @@ def nmf(X, n_components, initialization='random', iteration=200, seed=SEED, rand
         
     # return W, H, and reconstruction error
     return model.fit_transform(X), model.components_, model.reconstruction_err_
+
+
+
+### Onco GPS ###
+def oncogps_define_state():
+    """
+    Compute the OncoGPS states by consensus clustering.
+    """
+    
+def oncogps_map():
+    """
+    Map OncoGPS.
+    """
+    
+def oncogps_populate_map():
+    """
+    """

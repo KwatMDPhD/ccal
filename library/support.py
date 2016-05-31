@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 
 
+
+### File ###
 def read_gct(filename, fill_na=0):
     """
     Read <filename> (.gct) and convert it into a matrix.
@@ -62,3 +64,9 @@ def write_gct(matrix, filename, description=None):
     with open(filename, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(*matrix.shape))
         matrix.to_csv(f, sep='\t')
+        
+### Data Structure ### 
+def filter_feature_and_sample():
+    """
+    Filter a subset of features and samples.
+    """
