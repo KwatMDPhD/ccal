@@ -88,7 +88,7 @@ def plot_graph(graph, filename=None):
     #del fig
 
 
-def plot_heatmap_panel(referece, dataframe, annotation_columns, figure_size=(30, 30), title=None, font1=FONT1, font2=FONT2, font3=FONT3):
+def plot_heatmap_panel(dataframe, reference, annotation, figure_size=(30, 30), title=None, font1=FONT1, font2=FONT2, font3=FONT3):
     """
     Plot horizonzal heatmap panels.
     """    
@@ -119,14 +119,14 @@ def plot_heatmap_panel(referece, dataframe, annotation_columns, figure_size=(30,
     # Reference annotation
     ax_ref_ann = plt.subplot2grid((figure_height, figure_width), (0, heatmap_left + heatmap_width), rowspan=heatmap_height, colspan=1)
     ax_ref_ann.set_axis_off()
-    ann = '\t\t'.join(annotation_columns).expandtabs()
+    ann = '\t\t'.join(annotation).expandtabs()
     ax_ref_ann.text(0, 0.5, ann, fontdict=font2)
     
     # Features
     for i in range(dataframe.shape[0]):
         # Make row axes
         ax = plt.subplot2grid((figure_height, figure_width), (i + 1, heatmap_left), rowspan=heatmap_height, colspan=heatmap_width)
-        sns.heatmap(dataframe.ix[i:i + 1, :-len(annotation_columns)], ax=ax,
+        sns.heatmap(dataframe.ix[i:i + 1, :-len(annotation)], ax=ax,
                     vmin=ref_min, vmax=ref_max, robust=True,
                     center=None, mask=None,
                     square=False, cmap=CMAP, linewidth=0, linecolor=WHITE,
@@ -136,12 +136,12 @@ def plot_heatmap_panel(referece, dataframe, annotation_columns, figure_size=(30,
         plt.setp(ax.get_xticklabels(), **font3, rotation=0)
         plt.setp(ax.get_yticklabels(), **font3, rotation=0)
 
-    # Feature annotations
+    # Feature annotation
     for i in range(dataframe.shape[0]):
         ax = plt.subplot2grid((figure_height, figure_width), (i + 1, heatmap_left + heatmap_width), rowspan=heatmap_height, colspan=1)
         ax.set_axis_off()
         
-        ann = '\t\t'.join(['{:.2e}'.format(n) for n in dataframe.ix[i, annotation_columns]]).expandtabs()
+        ann = '\t\t'.join(['{:.2e}'.format(n) for n in dataframe.ix[i, annotation]]).expandtabs()
         ax.text(0, 0.5, ann, fontdict=font3)
 
     # Clean up the layout
