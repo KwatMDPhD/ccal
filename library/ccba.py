@@ -68,9 +68,9 @@ def make_heatmap_panel(dataframe, reference, metric=['IC'], sort_column=['IC'], 
 
 ### NMF ###
 def select_k():
-"""
-Select k for NMF.
-"""
+    """
+    Select k for NMF.
+    """
 
 def nmf(X, k, initialization='random', iteration=200, seed=SEED, randomize_coordinate_order=False, regulatizer=0, v=False):
     """
