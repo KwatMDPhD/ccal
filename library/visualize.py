@@ -9,19 +9,21 @@ Genomics and Computational Biology, UCSD Moore's Cancer Center
 Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
 Genomics and Computational Biology, UCSD Moore's Cancer Center
-
-James Jensen
-Email
-Affiliation
 """
 
-
+import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
-## Global parameters
+# ======================================================================================================================
+# Parameters
+# ======================================================================================================================
+# Colors
+# TODO: set up categorical color map
+CMAP_CONTINUOUS = mpl.cm.bwr
+CMAP_BINARY = mpl.cm.Greys
+# CMAP_CATEGORICAL =
 WHITE = '#FFFFFF'
 SILVER = '#C0C0C0'
 GRAY = '#808080'
@@ -39,43 +41,49 @@ NAVY = '#000080'
 FUCHSIA = '#FF00FF'
 PURPLE = '#800080'
 
-# TODO: create custom color panel
-CMAP = mpl.cm.seismic
-
+# Fonts
 FONT1 = {'family': 'serif',
-         'color':  BLACK,
+         'color': BLACK,
          'weight': 'bold',
          'size': 36}
 FONT2 = {'family': 'serif',
-         'color':  BLACK,
+         'color': BLACK,
          'weight': 'bold',
          'size': 24}
 FONT3 = {'family': 'serif',
-         'color':  BLACK,
+         'color': BLACK,
          'weight': 'normal',
          'size': 16}
 
 
-## Functions
+# ======================================================================================================================
+# Functions
+# ======================================================================================================================
+# TODO: finalize
 def plot_graph(graph, filename=None):
+    """
 
+    :param graph:
+    :param filename:
+    :return:
+    """
     # Initialze figure
     plt.figure(num=None, figsize=(20, 20), dpi=80)
     plt.axis('off')
     fig = plt.figure(1)
 
     # Get position
-    pos = nx.spring_layout(graph)
+    positions = nx.spring_layout(graph)
     # Draw
-    nx.draw_networkx_nodes(graph, pos)
-    nx.draw_networkx_edges(graph, pos)
-    nx.draw_networkx_labels(graph, pos)
-    nx.draw_networkx_edge_labels(graph, pos)
+    nx.draw_networkx_nodes(graph, positions)
+    nx.draw_networkx_edges(graph, positions)
+    nx.draw_networkx_labels(graph, positions)
+    nx.draw_networkx_edge_labels(graph, positions)
 
     # Configure figure
     cut = 1.00
-    xmax = cut * max(x for x, y in pos.values())
-    ymax = cut * max(y for x, y in pos.values())
+    xmax = cut * max(x for x, y in positions.values())
+    ymax = cut * max(y for x, y in positions.values())
     plt.xlim(0, xmax)
     plt.ylim(0, ymax)
 
@@ -83,16 +91,18 @@ def plot_graph(graph, filename=None):
     if filename:
         plt.savefig(filename, bbox_inches='tight')
 
-    # TODO: exit properly
-    #pylab.close()
-    #del fig
+        # TODO: exit properly
+        # pylab.close()
+        # del fig
 
 
-def plot_heatmap_panel(dataframe, reference, annotation, figure_size=(30, 30), title=None, font1=FONT1, font2=FONT2, font3=FONT3):
+# TODO: use reference to make colorbar
+def plot_heatmap_panel(dataframe, reference, annotation, figure_size=(30, 30), title=None, font1=FONT1, font2=FONT2,
+                       font3=FONT3):
     """
     Plot horizonzal heatmap panels.
-    """    
-    ## Visualization parameters
+    """
+    # Visualization parameters
     # TODO: Set size automatically
     figure_height = dataframe.shape[0] + 1
     figure_width = 7
@@ -100,47 +110,51 @@ def plot_heatmap_panel(dataframe, reference, annotation, figure_size=(30, 30), t
     heatmap_height = 1
     heatmap_width = 6
 
-    ## Initialize figure
+    # Initialize figure
     fig = plt.figure(figsize=figure_size)
-    #fig.suptitle(title, fontdict=font1)
+    # TODO: consider removing
+    # fig.suptitle(title, fontdict=font1)
 
-    ## Initialize axes
-    # Reference
+    # Initialize reference axe
     # TODO: use reference as colorbar
     ref_min = dataframe.values.min()
     ref_max = dataframe.values.max()
-    ax_ref = plt.subplot2grid((figure_height, figure_width), (0, heatmap_left), rowspan=heatmap_height, colspan=heatmap_width)
+    ax_ref = plt.subplot2grid((figure_height, figure_width), (0, heatmap_left), rowspan=heatmap_height,
+                              colspan=heatmap_width)
     if title:
         ax_ref.set_title(title, fontdict=font1)
     norm_ref = mpl.colors.Normalize(vmin=ref_min, vmax=ref_max)
-    cbar_ref = mpl.colorbar.ColorbarBase(ax_ref, cmap=CMAP, norm=norm_ref, orientation='horizontal', ticks=[ref_min, ref_max], ticklocation='top')
+    mpl.colorbar.ColorbarBase(ax_ref, cmap=CMAP_CONTINUOUS, norm=norm_ref,
+                              orientation='horizontal', ticks=[ref_min, ref_max], ticklocation='top')
     plt.setp(ax_ref.get_xticklabels(), **font2)
 
-    # Reference annotation
-    ax_ref_ann = plt.subplot2grid((figure_height, figure_width), (0, heatmap_left + heatmap_width), rowspan=heatmap_height, colspan=1)
+    # Add reference annotations
+    ax_ref_ann = plt.subplot2grid((figure_height, figure_width), (0, heatmap_left + heatmap_width),
+                                  rowspan=heatmap_height, colspan=1)
     ax_ref_ann.set_axis_off()
     ann = '\t\t'.join(annotation).expandtabs()
     ax_ref_ann.text(0, 0.5, ann, fontdict=font2)
-    
-    # Features
+
+    # Initialie feature axe
     for i in range(dataframe.shape[0]):
-        # Make row axes
-        ax = plt.subplot2grid((figure_height, figure_width), (i + 1, heatmap_left), rowspan=heatmap_height, colspan=heatmap_width)
+        # Make row axe
+        ax = plt.subplot2grid((figure_height, figure_width), (i + 1, heatmap_left), rowspan=heatmap_height,
+                              colspan=heatmap_width)
         sns.heatmap(dataframe.ix[i:i + 1, :-len(annotation)], ax=ax,
                     vmin=ref_min, vmax=ref_max, robust=True,
                     center=None, mask=None,
-                    square=False, cmap=CMAP, linewidth=0, linecolor=WHITE,
+                    square=False, cmap=CMAP_CONTINUOUS, linewidth=0, linecolor=WHITE,
                     annot=False, fmt=None, annot_kws={},
                     xticklabels=False, yticklabels=True,
                     cbar=False)
         plt.setp(ax.get_xticklabels(), **font3, rotation=0)
         plt.setp(ax.get_yticklabels(), **font3, rotation=0)
 
-    # Feature annotation
+    # Add feature annotations
     for i in range(dataframe.shape[0]):
-        ax = plt.subplot2grid((figure_height, figure_width), (i + 1, heatmap_left + heatmap_width), rowspan=heatmap_height, colspan=1)
+        ax = plt.subplot2grid((figure_height, figure_width), (i + 1, heatmap_left + heatmap_width),
+                              rowspan=heatmap_height, colspan=1)
         ax.set_axis_off()
-        
         ann = '\t\t'.join(['{:.2e}'.format(n) for n in dataframe.ix[i, annotation]]).expandtabs()
         ax.text(0, 0.5, ann, fontdict=font3)
 
@@ -156,16 +170,13 @@ def make_colorbar():
     ax1 = fig.add_axes([0.05, 0.80, 0.9, 0.15])
     ax2 = fig.add_axes([0.05, 0.475, 0.9, 0.15])
 
-    # Set the colormap and norm to correspond to the data for which
-    # the colorbar will be used.
-    cmap = CMAP
+    # Set the colormap and norm to correspond to the data for which the colorbar will be used.
+    cmap = CMAP_CONTINUOUS
     norm = mpl.colors.Normalize(vmin=5, vmax=10)
 
-    # ColorbarBase derives from ScalarMappable and puts a colorbar
-    # in a specified axes, so it has everything needed for a
-    # standalone colorbar.  There are many more kwargs, but the
-    # following gives a basic continuous colorbar with ticks
-    # and labels.
+    # ColorbarBase derives from ScalarMappable and puts a colorbar in a specified axes,
+    # so it has everything needed for a standalone colorbar.
+    # There are many more kwargs, but the following gives a basic continuous colorbar with ticks and labels.
     cb1 = mpl.colorbar.ColorbarBase(ax1,
                                     cmap=cmap,
                                     norm=norm,
