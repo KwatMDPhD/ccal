@@ -14,11 +14,15 @@ Genomics and Computational Biology, UCSD Moore's Cancer Center
 import os
 from scipy.spatial import distance
 from sklearn.decomposition import NMF
+from scipy.cluster.hierarchy import linkage, cophenet
+from scipy.spatial.distance import pdist
 from library.support import *
 from library.visualize import *
 from library.information import *
 
-# Define global variable
+# ======================================================================================================================
+# Global variables
+# ======================================================================================================================
 # Path to CCBA dicrectory (repository)
 PATH_CCBA = '/Users/Kwat/binf/ccba/'
 # Path to testing data directory
@@ -27,6 +31,9 @@ SEED = 20121020
 TESTING = False
 
 
+# ======================================================================================================================
+# Information functions
+# ======================================================================================================================
 def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, title=None, verbose=False):
     """
     Compute score[i] = <dataframe>[i] vs. <reference> and append score as a column to <dataframe>.
@@ -34,11 +41,11 @@ def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, titl
     :param
     """
     if not columns_to_sort:
-        columns_to_sort = ['IC']
+        columns_to_sort = ['I']
 
     # Compute score[i] = <dataframe>[i] vs. <reference> and append score as a column to <dataframe>
-    if 'IC' in metrics:
-        dataframe.ix[:, 'IC'] = pd.Series(
+    if 'I' in metrics:
+        dataframe.ix[:, 'I'] = pd.Series(
             [information_coefficient(np.array(row[1]), reference) for row in dataframe.iterrows()],
             index=dataframe.index)
 
@@ -52,7 +59,7 @@ def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, titl
 
 
 # ======================================================================================================================
-# NMF
+# NMF functions
 # ======================================================================================================================
 def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, randomize_coordinate_order=False,
         regulatizer=0, verbose=False):
@@ -70,7 +77,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     nmf_results = {}  # dict(key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:
         if verbose:
-            print('Perfomring NMF with k {}'.format(k))
+            print('Perfomring NMF with k {} ...'.format(k))
         model = NMF(n_components=k,
                     init=initialization,
                     max_iter=max_iteration,
@@ -80,69 +87,102 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
 
         # Compute W, H, and reconstruction error
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
-        nmf_results[k] = {'w': w, 'h': h, 'err': err}
+        nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
     return nmf_results
 
 
-def score_k(matrix, ks, method=2, verbose=False):
+# TODO: set the default nassignemnt
+def nmf_and_score_k(matrix, ks, method='cophenetic_correlation', nassignment=100, verbose=False):
     """
-    Select k for NMF.
+    Perform NMF with multiple k and score each computation.
+    :param matrix:
+    :param ks:
+    :param method: {'intra_and_inter_ratio', 'cophenetic_correlation'}.
+    :param nassignment: number of assignments used to make <assigment_matrix> when using <cophenetic_correlation>.
+    :param verbose:
+    :return:
     """
-    nmf_results = nmf(matrix, ks)
-    scores = {}
+    nrow, ncol = matrix.shape
+    nmf_results = scores = {}
 
-    if method == 2:
-        # Intra vs. inter clustering distances
+    if method == 'intra_and_inter_ratio':
+        nmf_results = nmf(matrix, ks)
         for k, nmf_result in nmf_results.items():
             if verbose:
-                print('Computing clustering score for k={} ...'.format(k))
+                print('Computing clustering score for k={} using method {} ...'.format(k, method))
 
+            assignments = {}  # dictionary(key: assignemnt index; value: samples)
             # Cluster of a sample is the index with the highest value
-            cluster_assignments = np.argmax(nmf_result['H'], axis=0)
-
-            # Cluster
-            clusters = {}  # dictionary(key: cluster index; value: samples)
-            for cluster_samples in zip(cluster_assignments, matrix):
-                if cluster_samples[0] not in clusters:
-                    clusters[cluster_samples[0]] = set()
-                    clusters[cluster_samples[0]].add(cluster_samples[1])
+            for assigned_sample in zip(np.argmax(nmf_result['H'], axis=0), matrix):
+                if assigned_sample[0] not in assignments:
+                    assignments[assigned_sample[0]] = set()
+                    assignments[assigned_sample[0]].add(assigned_sample[1])
                 else:
-                    clusters[cluster_samples[0]].add(cluster_samples[1])
+                    assignments[assigned_sample[0]].add(assigned_sample[1])
 
-            # Compute score
-            samples_scores_for_this_k = np.zeros(nmf_result['H'].shape[1])
-            i = 0
-            for c, samples in clusters.items():
+            # Compute intra vs. inter clustering distances
+            assignment_scores_per_k = np.zeros(nmf_result['H'].shape[1])
+            for sidx, a, samples in enumerate(assignments.items()):
                 for s in samples:
-                    # Compute the distance to all samples from the same cluster
-                    intra_cluster_distance = []
+                    # Compute the distance to samples with the same assignment
+                    intra_distance = []
                     for other_s in samples:
                         if other_s == s:
                             continue
                         else:
-                            intra_cluster_distance.append(
-                                distance.euclidean(matrix.ix[:, s], matrix.ix[:, other_s]))
-                    # Compute the distance to all samples from the other cluster
-                    inter_cluster_distance = []
-                    for other_c in clusters.keys():
-                        if other_c == c:
+                            intra_distance.append(distance.euclidean(matrix.ix[:, s], matrix.ix[:, other_s]))
+                    # Compute the distance to samples with different assignment
+                    inter_distance = []
+                    for other_a in assignments.keys():
+                        if other_a == a:
                             continue
                         else:
-                            for other_s in clusters[other_c]:
-                                inter_cluster_distance.append(
-                                    distance.euclidean((matrix.ix[:, s]), matrix.ix[:, other_s]))
-                    score = np.mean(intra_cluster_distance) / np.mean(inter_cluster_distance)
+                            for other_s in assignments[other_a]:
+                                inter_distance.append(distance.euclidean((matrix.ix[:, s]), matrix.ix[:, other_s]))
+                    # Compute assignment score
+                    score = np.mean(intra_distance) / np.mean(inter_distance)
                     if not np.isnan(score):
-                        # Add this sample's score
-                        samples_scores_for_this_k[i] = score
-                    i += 1
+                        assignment_scores_per_k[sidx] = score
 
-            scores[k] = {'mean': samples_scores_for_this_k.mean(), 'std': samples_scores_for_this_k.std()}
+            scores[k] = {'mean': assignment_scores_per_k.mean(), 'std': assignment_scores_per_k.std()}
+
+    elif method == 'cophenetic_correlation':
+        for k in ks:
+            if verbose:
+                print('Computing clustering score for k={} using method {} ...'.format(k, method))
+
+            # Make assignment matrix (nassignment, ncol assingments from H)
+            assignment_matrix = np.empty((nassignment, ncol))
+            for i in range(nassignment):
+                nmf_result = nmf(matrix, [k])[k]
+                # Save the 1st NMF result for each k
+                if i == 0:
+                    nmf_results[k] = nmf_result
+                # Assignment a col with the highest index value
+                assignment_matrix[i, :] = np.argmax(nmf_result['H'], axis=0)
+
+            # Make assignment distance matrix (ncol, ncol)
+            assignment_distance_matrix = np.zeros((ncol, ncol))
+            for i in range(ncol):
+                for j in range(ncol)[i:]:
+                    for a in range(nassignment):
+                        if assignment_matrix[a, i] == assignment_matrix[a, j]:
+                            assignment_distance_matrix[i, j] += 1
+
+            # Normalize assignment distance matrix by the nassignment
+            normalized_assignment_distance_matrix = assignment_distance_matrix / nassignment
+
+            if verbose:
+                print('Computing the cophenetic correlation coefficient ...')
+            # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and the normalized assignment distances
+            scores[k] = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
+                                 pdist(normalized_assignment_distance_matrix))[0]
+
     return nmf_results, scores
 
 
 # ======================================================================================================================
-# Onco GPS
+# Onco GPS functions
 # ======================================================================================================================
 def oncogps_define_state(verbose=False):
     """
