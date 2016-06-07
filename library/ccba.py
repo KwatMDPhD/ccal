@@ -92,7 +92,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
 
 
 # TODO: set the default nassignemnt
-def nmf_and_score_k(matrix, ks, method='cophenetic_correlation', nassignment=100, verbose=False):
+def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, verbose=False):
     """
     Perform NMF with multiple k and score each computation.
     :param matrix:
