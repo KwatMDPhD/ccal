@@ -97,15 +97,15 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
     Perform NMF with multiple k and score each computation.
     :param matrix:
     :param ks:
-    :param method: {'intra_and_inter_ratio', 'cophenetic_correlation'}.
+    :param method: {'intra_inter_ratio', 'cophenetic_correlation'}.
     :param nassignment: number of assignments used to make <assigment_matrix> when using <cophenetic_correlation>.
     :param verbose:
     :return:
     """
     nrow, ncol = matrix.shape
-    nmf_results = scores = {}
+    scores = {}
 
-    if method == 'intra_and_inter_ratio':
+    if method == 'intra_inter_ratio':
         nmf_results = nmf(matrix, ks)
         for k, nmf_result in nmf_results.items():
             if verbose:
@@ -122,7 +122,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
 
             # Compute intra vs. inter clustering distances
             assignment_scores_per_k = np.zeros(nmf_result['H'].shape[1])
-            for sidx, a, samples in enumerate(assignments.items()):
+            for sidx, (a, samples) in enumerate(assignments.items()):
                 for s in samples:
                     # Compute the distance to samples with the same assignment
                     intra_distance = []
@@ -144,9 +144,12 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
                     if not np.isnan(score):
                         assignment_scores_per_k[sidx] = score
 
-            scores[k] = {'mean': assignment_scores_per_k.mean(), 'std': assignment_scores_per_k.std()}
+            scores[k] = assignment_scores_per_k.mean()
+            if verbose:
+                print('Score for k={}: {}'.format(k, assignment_scores_per_k.mean()))
 
     elif method == 'cophenetic_correlation':
+        nmf_results = {}
         for k in ks:
             if verbose:
                 print('Computing clustering score for k={} using method {} ...'.format(k, method))
@@ -175,8 +178,11 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
             if verbose:
                 print('Computing the cophenetic correlation coefficient ...')
             # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and the normalized assignment distances
-            scores[k] = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
+            score = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
                                  pdist(normalized_assignment_distance_matrix))[0]
+            scores[k] = score
+            if verbose:
+                print('Score for k={}: {}'.format(k, score))
 
     return nmf_results, scores
 
