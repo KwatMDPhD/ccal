@@ -162,6 +162,42 @@ def plot_heatmap_panel(dataframe, reference, annotation, figure_size=(30, 30), t
     fig.tight_layout()
 
 
+def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
+    """
+    """
+    # Plot W and H
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, dpi=dpi)
+
+    sns.heatmap(nmf_results[k]['W'], cmap='bwr', yticklabels=False, ax=ax1)
+    ax1.set(xlabel='Component', ylabel='Gene')
+    ax1.set_title('W matrix generated using k={}'.format(k))
+
+    sns.heatmap(nmf_results[k]['H'], cmap='bwr', xticklabels=False, ax=ax2)
+    ax2.set(xlabel='Sample', ylabel='Component')
+    ax2.set_title('H matrix generated using k={}'.format(k))
+
+    if output_filename:
+        plt.savefig(output_filename + '.png')
+
+    # Plot reconstruction error
+    plt.figure(figsize=figsize, dpi=dpi)
+    ax = sns.pointplot(x=list(nmf_results.keys()), y=[v['ERROR'] for v in nmf_results.values()])
+    ax.set(xlabel='k', ylabel='Reconstruction Error')
+    ax.set_title('k vs. Reconstruction Error')
+
+
+def plot_nmf_scores(scores, figsize=(25, 10), title=None, output_filename=None):
+    """
+    """
+    plt.figure(figsize=figsize)
+    ax = sns.pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
+    ax.set(xlabel='k', ylabel='Score')
+    ax.set_title('k vs. Score')
+
+    if output_filename:
+        plt.savefig(output_filename + '.png')
+
+
 def make_colorbar():
     """
     Make colorbar examples.
