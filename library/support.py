@@ -19,7 +19,7 @@ import pandas as pd
 # ======================================================================================================================
 def read_gct(filename, fill_na=0, verbose=False):
     """
-    Read <filename> (.gct) and convert it into a DataFrame.
+    Read `filename` (.gct) and convert it into a DataFrame.
     """
     dataframe = pd.read_csv(filename, skiprows=2, sep='\t')
     if fill_na != None:
@@ -39,24 +39,31 @@ def read_gct(filename, fill_na=0, verbose=False):
     return dataframe, description
 
 
-def write_gct(dataframe, filename, description=None, verbose=False):
+def write_gct(dataframe, filename, description=None, index_column=None, verbose=False):
     """
-    Write a <dataframe> to <filename> (.gct).
+    Write a `dataframe` to `filename` as .gct.
     """
+    
     # Set output filename
     if not filename.endswith('.gct'):
         filename += '.gct'
-
+        
+    # Set index (Name)
+    if index_column:
+        dataframe.set_index(index_column, inplace=True)
     dataframe.index.name = 'Name'
-
+    
+    n_rows, n_cols = dataframe.shape[0], dataframe.shape[1]
+    
+    # Set Description
     if description:
-        assert len(description) == dataframe.size[1]
+        assert len(description) == n_rows
     else:
         description = dataframe.index
     dataframe.insert(0, 'Description', description)
 
     with open(filename, 'w') as f:
-        f.writelines('#1.2\n{}\t{}\n'.format(*dataframe.shape))
+        f.writelines('#1.2\n{}\t{}\n'.format(n_rows, n_cols))
         dataframe.to_csv(f, sep='\t')
 
 
