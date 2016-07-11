@@ -19,7 +19,7 @@ import numpy as np
 from scipy.stats import pearsonr
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
 
-# TODO: understand this block well
+# TODO
 # For bcv():
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
@@ -27,7 +27,7 @@ from rpy2.robjects.numpy2ri import numpy2ri
 ro.conversion.py2ri = numpy2ri
 from rpy2.robjects.packages import importr
 
-mass = importr("MASS")
+mass = importr('MASS')
 
 
 def rbcv(x):
@@ -43,7 +43,7 @@ def rbcv(x):
 # TODO: understand the math
 def mutual_information(x, y, var_type='cc', n_grid=25, bandwidth_scaling=None):
     """
-    Compute mutual information between `x` and `y`.
+    Compute mutual information between `x` and `y`:
     Difference in bandwidth convention means bcv() delta must be divided by 4.
     :param x: array-like, (n_samples,)
     :param y: array-like, (n_samples,)

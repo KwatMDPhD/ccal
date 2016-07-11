@@ -63,55 +63,21 @@ FONT3 = {'family': 'serif',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-# TODO: finalize
-def plot_graph(graph, filename=None):
-    """
-    Plot networkx `graph`.
-    :param graph: networkx graph,
-    :param filename: str, file path to save the plot
-    :return:
-    """
-    # Initialze figure
-    plt.figure(num=None, figsize=(20, 20), dpi=80)
-    plt.axis('off')
-
-    # Get position
-    positions = nx.spring_layout(graph)
-
-    # Draw
-    nx.draw_networkx_nodes(graph, positions)
-    nx.draw_networkx_edges(graph, positions)
-    nx.draw_networkx_labels(graph, positions)
-    nx.draw_networkx_edge_labels(graph, positions)
-
-    # Configure figure
-    cut = 1.00
-    xmax = cut * max(x for x, y in positions.values())
-    ymax = cut * max(y for x, y in positions.values())
-    plt.xlim(0, xmax)
-    plt.ylim(0, ymax)
-
-    plt.show()
-
-    if filename:
-        plt.savefig(filename, bbox_inches='tight')
-
-
 # TODO: use reference to make colorbar
 def plot_heatmap_panel(dataframe, reference, annotation,
                        figure_size=(30, 30), title=None,
                        font1=FONT1, font2=FONT2, font3=FONT3):
     """
     Plot horizonzal heatmap panels.
-    :param dataframe: pandas DataFrame,
-    :param reference: array-like,
-    :param annotation:
-    :param figure_size:
-    :param title:
-    :param font1:
-    :param font2:
-    :param font3:
-    :return:
+    :param dataframe: pandas DataFrame (n_samples, n_features),
+    :param reference: array-like (1, n_features),
+    :param annotation: array_like (n_samples, ),
+    :param figure_size: tuple (width, height),
+    :param title: str, figure title
+    :param font1: dict,
+    :param font2: dict,
+    :param font3: dict,
+    :return: None
     """
     # Visualization parameters
     # TODO: Set size automatically
@@ -176,14 +142,13 @@ def plot_heatmap_panel(dataframe, reference, annotation,
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
     """
     Plot NMF results from ccba.library.ccba.nmf.
-    :param nmf_results: dict, NMF result per k (key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error)).
-    :param k: int, NMF's k
-    :param figsize: tuple, (width, height)
+    :param nmf_results: dict, NMF result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and reconstruction error))
+    :param k: int, k for NMF
+    :param figsize: tuple (width, height),
     :param dpi: int, DPI
-    :param output_filename: str, file path to save the plot
-    :return:
+    :param output_filename: str, file path to save the figure
+    :return: None
     """
-
     # Plot W and H
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, dpi=dpi)
 
@@ -208,13 +173,12 @@ def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=No
 def plot_nmf_scores(scores, figsize=(25, 10), title=None, output_filename=None):
     """
     Plot NMF score
-    :param scores:Dictionaries of NMF score per k (key:k; value:score)
-    :param figsize: tuple, (width, height)
+    :param scores: dict, NMF score per k (key: k; value: score)
+    :param figsize: tuple (width, height),
     :param title: str, figure title
-    :param output_filename: str, file path to save the plot
-    :return:
+    :param output_filename: str, file path to save the figure
+    :return: None
     """
-
     plt.figure(figsize=figsize)
     ax = sns.pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
     ax.set(xlabel='k', ylabel='Score')
@@ -222,6 +186,40 @@ def plot_nmf_scores(scores, figsize=(25, 10), title=None, output_filename=None):
 
     if output_filename:
         plt.savefig(output_filename + '.png')
+
+
+# TODO: finalize
+def plot_graph(graph, filename=None):
+    """
+    Plot networkx `graph`.
+    :param graph: networkx graph,
+    :param filename: str, file path to save the figure
+    :return: None
+    """
+    # Initialze figure
+    plt.figure(num=None, figsize=(20, 20), dpi=80)
+    plt.axis('off')
+
+    # Get position
+    positions = nx.spring_layout(graph)
+
+    # Draw
+    nx.draw_networkx_nodes(graph, positions)
+    nx.draw_networkx_edges(graph, positions)
+    nx.draw_networkx_labels(graph, positions)
+    nx.draw_networkx_edge_labels(graph, positions)
+
+    # Configure figure
+    cut = 1.00
+    xmax = cut * max(x for x, y in positions.values())
+    ymax = cut * max(y for x, y in positions.values())
+    plt.xlim(0, xmax)
+    plt.ylim(0, ymax)
+
+    plt.show()
+
+    if filename:
+        plt.savefig(filename, bbox_inches='tight')
 
 
 def make_colorbar():

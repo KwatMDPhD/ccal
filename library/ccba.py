@@ -14,7 +14,6 @@ Computational Cancer Biology, UCSD Cancer Center
 
 Description:
 """
-
 import os
 
 import numpy as np
@@ -44,8 +43,8 @@ TESTING = False
 def compute_against_reference(dataframe, reference, metric, columns_to_sort=None):
     """
     Compute score[i] = `dataframe`[i] vs. `reference` and append score as a column to `dataframe`.
-    :param dataframe: pandas DataFrame,
-    :param reference: array-like,
+    :param dataframe: pandas DataFrame (n_samples, n_features),
+    :param reference: array-like (1, n_features),
     :param metric: str, {'information'}
     :param columns_to_sort: str, column name
     :return: None, modify `dataframe` inplace
@@ -72,13 +71,13 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
         regulatizer=0):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
-    :param matrix:
-    :param ks:
-    :param initialization: {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
-    :param max_iteration:
-    :param seed:
-    :param randomize_coordinate_order:
-    :param regulatizer:
+    :param matrix: numpy array (n_samples, n_features), the matrix to be factorized by NMF
+    :param ks: array-like, list of ks to be used in the factorization
+    :param initialization: str, {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
+    :param max_iteration: int, number of NMF iterations
+    :param seed: int, random seed
+    :param randomize_coordinate_order: bool,
+    :param regulatizer: int, NMF's alpha
     :return: dict, NMF result per k (key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     """
     nmf_results = {}  # dict (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
@@ -98,17 +97,14 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     return nmf_results
 
 
-# TODO: set the default nassignemnt
-def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, verbose=False):
+def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100):
     """
     Perform NMF with multiple k and score each computation.
-    :param matrix:
-    :param ks:
-    :param method: {'intra_inter_ratio', 'cophenetic_correlation'}.
-    :param nassignment: number of assignments used to make <assigment_matrix> when using <cophenetic_correlation>.
-    :param verbose:
-    :return: Dictionaries of NMF result per k (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
-                and score per k (key:k; value:score)
+    :param matrix: numpy array (n_samples, n_features), the matrix to be factorized by NMF
+    :param ks: array-like, list of ks to be used in the factorization
+    :param method: str, {'intra_inter_ratio', 'cophenetic_correlation'}
+    :param nassignment: int, number of assignments used to make `assigment_matrix` when using 'cophenetic_correlation'
+    :return: dict, NMF result per k (key: k; value: dict (key: w, h, err; value: w matrix, h matrix, and reconstruction error)) and score per k (key:k; value:score)
     """
     nrow, ncol = matrix.shape
     scores = {}

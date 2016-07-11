@@ -41,10 +41,10 @@ def read_gct(filename, fill_na=None):
     Read .gct `filename` and convert it into a pandas DataFrame.
     :param filename: str, path to a .gct
     :param fill_na: value to replace NaN in the dataframe generated from a `filename`
-    :return: pandas DataFrame
+    :return: pandas DataFrame, (n_samples, 2 + n_features)
     """
     dataframe = pd.read_csv(filename, skiprows=2, sep='\t')
-    if fill_na != None:
+    if fill_na:
         dataframe.fillna(fill_na, inplace=True)
     column1, column2 = dataframe.columns[:2]
     assert column1 == 'Name', 'Column 1 != "Name"'
@@ -59,9 +59,9 @@ def read_gct(filename, fill_na=None):
 def write_gct(dataframe, filename, description=None, index_column=None):
     """
     Write a `dataframe` to a `filename` as a .gct.
-    :param dataframe: pandas DataFrame,
+    :param dataframe: pandas DataFrame (n_samples, n_features),
     :param filename: str, path
-    :param description: array-like, description column for a .gct
+    :param description: array-like (n_samples), description column for the .gct
     :param index_column: str, column to be used as the .gct index
     """
     # Set output filename
@@ -77,11 +77,11 @@ def write_gct(dataframe, filename, description=None, index_column=None):
 
     # Set Description
     if description:
-        assert len(description) == n_rows
+        assert len(description) == n_rows, 'Description\' length doesn\'t match the dataframe\'s'
     else:
         description = dataframe.index
     dataframe.insert(0, 'Description', description)
 
     with open(filename, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(n_rows, n_cols))
-        dataframe.to_csv(f, sep='\t'
+        dataframe.to_csv(f, sep='\t')
