@@ -24,9 +24,9 @@ import seaborn as sns
 # Parameters
 # ======================================================================================================================
 # Colors
-# TODO: set up categorical color map
 CMAP_CONTINUOUS = mpl.cm.bwr
 CMAP_BINARY = mpl.cm.Greys
+# TODO: set up categorical color map
 # CMAP_CATEGORICAL =
 WHITE = '#FFFFFF'
 SILVER = '#C0C0C0'
@@ -66,18 +66,18 @@ FONT3 = {'family': 'serif',
 # TODO: finalize
 def plot_graph(graph, filename=None):
     """
-
-    :param graph:
-    :param filename:
+    Plot networkx `graph`.
+    :param graph: networkx graph,
+    :param filename: str, file path to save the plot
     :return:
     """
     # Initialze figure
     plt.figure(num=None, figsize=(20, 20), dpi=80)
     plt.axis('off')
-    fig = plt.figure(1)
 
     # Get position
     positions = nx.spring_layout(graph)
+
     # Draw
     nx.draw_networkx_nodes(graph, positions)
     nx.draw_networkx_edges(graph, positions)
@@ -92,19 +92,26 @@ def plot_graph(graph, filename=None):
     plt.ylim(0, ymax)
 
     plt.show()
+
     if filename:
         plt.savefig(filename, bbox_inches='tight')
 
-        # TODO: exit properly
-        # pylab.close()
-        # del fig
-
 
 # TODO: use reference to make colorbar
-def plot_heatmap_panel(dataframe, reference, annotation, figure_size=(30, 30), title=None, font1=FONT1, font2=FONT2,
-                       font3=FONT3):
+def plot_heatmap_panel(dataframe, reference, annotation,
+                       figure_size=(30, 30), title=None,
+                       font1=FONT1, font2=FONT2, font3=FONT3):
     """
     Plot horizonzal heatmap panels.
+    :param dataframe: pandas DataFrame,
+    :param reference: array-like,
+    :param annotation:
+    :param figure_size:
+    :param title:
+    :param font1:
+    :param font2:
+    :param font3:
+    :return:
     """
     # Visualization parameters
     # TODO: Set size automatically
@@ -168,7 +175,15 @@ def plot_heatmap_panel(dataframe, reference, annotation, figure_size=(30, 30), t
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
     """
+    Plot NMF results from ccba.library.ccba.nmf.
+    :param nmf_results: dict, NMF result per k (key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error)).
+    :param k: int, NMF's k
+    :param figsize: tuple, (width, height)
+    :param dpi: int, DPI
+    :param output_filename: str, file path to save the plot
+    :return:
     """
+
     # Plot W and H
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, dpi=dpi)
 
@@ -192,7 +207,14 @@ def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=No
 
 def plot_nmf_scores(scores, figsize=(25, 10), title=None, output_filename=None):
     """
+    Plot NMF score
+    :param scores:Dictionaries of NMF score per k (key:k; value:score)
+    :param figsize: tuple, (width, height)
+    :param title: str, figure title
+    :param output_filename: str, file path to save the plot
+    :return:
     """
+
     plt.figure(figsize=figsize)
     ax = sns.pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
     ax.set(xlabel='k', ylabel='Score')

@@ -24,8 +24,8 @@ from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, cophenet
 from sklearn.decomposition import NMF
 
-import visualize
-import information
+from support import verbose_print
+from information import information_coefficient
 
 # ======================================================================================================================
 # Global variables
@@ -44,40 +44,35 @@ TESTING = False
 # ======================================================================================================================
 # Information functions
 # ======================================================================================================================
-def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, title=None, verbose=False):
+def compute_against_reference(dataframe, reference, metric, columns_to_sort=None):
     """
     Compute score[i] = `dataframe`[i] vs. `reference` and append score as a column to `dataframe`.
-    :param dataframe:
-    :param reference:
-    :param metrics:
-    :param columns_to_sort:
-    :param title:
-    :param verbose:
-    :return: modify `dataframe` inplace.
+    :param dataframe: pandas DataFrame,
+    :param reference: array-like,
+    :param metric: str, {'information'}
+    :param columns_to_sort: str, column name
+    :return: None, modify `dataframe` inplace
     """
     if not columns_to_sort:
         columns_to_sort = ['information']
 
     # Compute score[i] = <dataframe>[i] vs. <reference> and append score as a column to <dataframe>
-    if 'information' in metrics:
+    if 'information' in metric:
         dataframe.ix[:, 'information'] = pd.Series(
-            [information.information_coefficient(np.array(row[1]), reference) for row in dataframe.iterrows()],
+            [information_coefficient(np.array(row[1]), reference) for row in dataframe.iterrows()],
             index=dataframe.index)
+    else:
+        raise ValueError('Unknown metric {}'.format(metric))
 
     # Sort
     dataframe.sort(columns_to_sort, inplace=True)
-
-    # Plot
-    if verbose:
-        print('Plotting')
-        visualize.plot_heatmap_panel(dataframe, reference, metrics, title=title)
 
 
 # ======================================================================================================================
 # NMF functions
 # ======================================================================================================================
 def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, randomize_coordinate_order=False,
-        regulatizer=0, verbose=False):
+        regulatizer=0):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix:
@@ -87,13 +82,11 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     :param seed:
     :param randomize_coordinate_order:
     :param regulatizer:
-    :param verbose:
-    :return: Dictionary of NMF result per k (key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error)).
+    :return: dict, NMF result per k (key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     """
     nmf_results = {}  # dict (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:
-        if verbose:
-            print('Perfomring NMF with k {} ...'.format(k))
+        verbose_print('Perfomring NMF with k {} ...'.format(k))
         model = NMF(n_components=k,
                     init=initialization,
                     max_iter=max_iteration,
@@ -104,6 +97,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
         # Compute W, H, and reconstruction error
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
+
     return nmf_results
 
 
@@ -117,7 +111,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
     :param nassignment: number of assignments used to make <assigment_matrix> when using <cophenetic_correlation>.
     :param verbose:
     :return: Dictionaries of NMF result per k (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
-                and score per k (key:k; value:score).
+                and score per k (key:k; value:score)
     """
     nrow, ncol = matrix.shape
     scores = {}
@@ -125,11 +119,10 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
     if method == 'intra_inter_ratio':
         nmf_results = nmf(matrix, ks)
         for k, nmf_result in nmf_results.items():
-            if verbose:
-                print('Computing clustering score for k={} using method {} ...'.format(k, method))
+            verbose_print('Computing clustering score for k={} using method {} ...'.format(k, method))
 
-            assignments = {}  # dictionary (key: assignemnt index; value: samples)
-            # Cluster of a sample is the index with the highest value
+            assignments = {}  # dict (key: assignemnt index; value: samples)
+            # Cluster of a sample is the index with the highest value in corresponding H column
             for assigned_sample in zip(np.argmax(nmf_result['H'], axis=0), matrix):
                 if assigned_sample[0] not in assignments:
                     assignments[assigned_sample[0]] = set()
@@ -162,14 +155,12 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
                         assignment_scores_per_k[sidx] = score
 
             scores[k] = assignment_scores_per_k.mean()
-            if verbose:
-                print('Score for k={}: {}'.format(k, assignment_scores_per_k.mean()))
+            verbose_print('Score for k={}: {}'.format(k, assignment_scores_per_k.mean()))
 
     elif method == 'cophenetic_correlation':
         nmf_results = {}
         for k in ks:
-            if verbose:
-                print('Computing clustering score for k={} using method {} ...'.format(k, method))
+            verbose_print('Computing clustering score for k={} using method {} ...'.format(k, method))
 
             # Make assignment matrix (nassignment, ncol assingments from H)
             assignment_matrix = np.empty((nassignment, ncol))
@@ -192,15 +183,13 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
             # Normalize assignment distance matrix by the nassignment
             normalized_assignment_distance_matrix = assignment_distance_matrix / nassignment
 
-            if verbose:
-                print('Computing the cophenetic correlation coefficient ...')
+            verbose_print('Computing the cophenetic correlation coefficient ...')
 
             # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and the normalized assignment distances
             score = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
                              pdist(normalized_assignment_distance_matrix))[0]
             scores[k] = score
-            if verbose:
-                print('Score for k={}: {}'.format(k, score))
+            verbose_print('Score for k={}: {}'.format(k, score))
     else:
         raise ValueError('Unknown method {}.'.format(method))
 
@@ -210,19 +199,22 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
 # ======================================================================================================================
 # Onco GPS functions
 # ======================================================================================================================
-def oncogps_define_state(verbose=False):
+def oncogps_define_state():
     """
     Compute the OncoGPS states by consensus clustering.
+    :return:
     """
 
 
-def oncogps_map(verbose=False):
+def oncogps_map():
     """
-    Map OncoGPS.
+    Plot and map OncoGPS.
+    :return:
     """
 
 
-def oncogps_populate_map(verbose=False):
+def oncogps_populate_map():
     """
     Populate samples on a Onco GPS map with features.
+    :return:
     """
