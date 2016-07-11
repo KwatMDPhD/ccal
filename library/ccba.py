@@ -20,9 +20,9 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
-from sklearn.decomposition import NMF
-from scipy.cluster.hierarchy import linkage, cophenet
 from scipy.spatial.distance import pdist
+from scipy.cluster.hierarchy import linkage, cophenet
+from sklearn.decomposition import NMF
 
 import visualize
 import information
@@ -47,15 +47,20 @@ TESTING = False
 def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, title=None, verbose=False):
     """
     Compute score[i] = <dataframe>[i] vs. <reference> and append score as a column to <dataframe>.
-
-    :param
+    :param dataframe:
+    :param reference:
+    :param metrics:
+    :param columns_to_sort:
+    :param title:
+    :param verbose:
+    :return:
     """
     if not columns_to_sort:
-        columns_to_sort = ['I']
+        columns_to_sort = ['information']
 
     # Compute score[i] = <dataframe>[i] vs. <reference> and append score as a column to <dataframe>
-    if 'I' in metrics:
-        dataframe.ix[:, 'I'] = pd.Series(
+    if 'information' in metrics:
+        dataframe.ix[:, 'information'] = pd.Series(
             [information.information_coefficient(np.array(row[1]), reference) for row in dataframe.iterrows()],
             index=dataframe.index)
 
@@ -83,6 +88,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     :param randomize_coordinate_order:
     :param regulatizer:
     :param verbose:
+    :return:
     """
     nmf_results = {}  # dict(key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:
@@ -193,6 +199,8 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
             scores[k] = score
             if verbose:
                 print('Score for k={}: {}'.format(k, score))
+    else:
+        raise ValueError('Unknown method {}.'.format(method))
 
     return nmf_results, scores
 
@@ -214,4 +222,5 @@ def oncogps_map(verbose=False):
 
 def oncogps_populate_map(verbose=False):
     """
+    Populate samples on a Onco GPS map with features.
     """
