@@ -14,16 +14,33 @@ Computational Cancer Biology, UCSD Cancer Center
 
 Description:
 """
-
+import datetime
 import pandas as pd
+
+VERBOSE = True
+
+
+# ======================================================================================================================
+# Utilities
+# ======================================================================================================================
+def verbose_print(string):
+    """
+    Print `string`.
+    :param string: str, message to be printed
+    :return:
+    """
+    if VERBOSE:
+        print('{} {}'.format(datetime.datetime.now().time(), string))
 
 
 # ======================================================================================================================
 # File operations
 # ======================================================================================================================
-def read_gct(filename, fill_na=0, verbose=False):
+def read_gct(filename, fill_na=None):
     """
     Read `filename` (.gct) and convert it into a DataFrame.
+    :param filename:
+    :param fill_na:
     """
     dataframe = pd.read_csv(filename, skiprows=2, sep='\t')
     if fill_na != None:
@@ -43,22 +60,26 @@ def read_gct(filename, fill_na=0, verbose=False):
     return dataframe, description
 
 
-def write_gct(dataframe, filename, description=None, index_column=None, verbose=False):
+def write_gct(dataframe, filename, description=None, index_column=None):
     """
     Write a `dataframe` to `filename` as .gct.
+    :param dataframe:
+    :param filename:
+    :param description:
+    :param index_column:
     """
-    
+
     # Set output filename
     if not filename.endswith('.gct'):
         filename += '.gct'
-        
+
     # Set index (Name)
     if index_column:
         dataframe.set_index(index_column, inplace=True)
     dataframe.index.name = 'Name'
-    
+
     n_rows, n_cols = dataframe.shape[0], dataframe.shape[1]
-    
+
     # Set Description
     if description:
         assert len(description) == n_rows
@@ -69,12 +90,3 @@ def write_gct(dataframe, filename, description=None, index_column=None, verbose=
     with open(filename, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(n_rows, n_cols))
         dataframe.to_csv(f, sep='\t')
-
-
-# ======================================================================================================================
-# Data structure operations
-# ======================================================================================================================
-def filter_features_and_samples(dataframe, features, samples, verbose=False):
-    """
-    Filter a subset of features and samples.
-    """

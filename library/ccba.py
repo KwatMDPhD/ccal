@@ -46,14 +46,14 @@ TESTING = False
 # ======================================================================================================================
 def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, title=None, verbose=False):
     """
-    Compute score[i] = <dataframe>[i] vs. <reference> and append score as a column to <dataframe>.
+    Compute score[i] = `dataframe`[i] vs. `reference` and append score as a column to `dataframe`.
     :param dataframe:
     :param reference:
     :param metrics:
     :param columns_to_sort:
     :param title:
     :param verbose:
-    :return:
+    :return: modify `dataframe` inplace.
     """
     if not columns_to_sort:
         columns_to_sort = ['information']
@@ -79,7 +79,7 @@ def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, titl
 def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, randomize_coordinate_order=False,
         regulatizer=0, verbose=False):
     """
-    Nonenegative matrix mactorize <matrix> with k from <ks>.
+    Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix:
     :param ks:
     :param initialization: {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
@@ -88,9 +88,9 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     :param randomize_coordinate_order:
     :param regulatizer:
     :param verbose:
-    :return:
+    :return: Dictionary of NMF result per k (key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error)).
     """
-    nmf_results = {}  # dict(key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error))
+    nmf_results = {}  # dict (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:
         if verbose:
             print('Perfomring NMF with k {} ...'.format(k))
@@ -116,7 +116,8 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
     :param method: {'intra_inter_ratio', 'cophenetic_correlation'}.
     :param nassignment: number of assignments used to make <assigment_matrix> when using <cophenetic_correlation>.
     :param verbose:
-    :return:
+    :return: Dictionaries of NMF result per k (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
+                and score per k (key:k; value:score).
     """
     nrow, ncol = matrix.shape
     scores = {}
@@ -127,7 +128,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
             if verbose:
                 print('Computing clustering score for k={} using method {} ...'.format(k, method))
 
-            assignments = {}  # dictionary(key: assignemnt index; value: samples)
+            assignments = {}  # dictionary (key: assignemnt index; value: samples)
             # Cluster of a sample is the index with the highest value
             for assigned_sample in zip(np.argmax(nmf_result['H'], axis=0), matrix):
                 if assigned_sample[0] not in assignments:
@@ -193,6 +194,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
 
             if verbose:
                 print('Computing the cophenetic correlation coefficient ...')
+
             # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and the normalized assignment distances
             score = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
                              pdist(normalized_assignment_distance_matrix))[0]

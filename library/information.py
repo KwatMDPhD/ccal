@@ -32,6 +32,7 @@ mass = importr("MASS")
 
 def rbcv(x):
     """
+    TODO
     :param x: array-like, (n_samples,)
     :return: float, bandwidth
     """
@@ -42,13 +43,13 @@ def rbcv(x):
 # TODO: understand the math
 def mutual_information(x, y, var_type='cc', n_grid=25, bandwidth_scaling=None):
     """
-    Compute mutual information between <x> and <y>.
-    Difference in bandwidth convention means bcv() delta must be divided by 4
+    Compute mutual information between `x` and `y`.
+    Difference in bandwidth convention means bcv() delta must be divided by 4.
 
     :param x: array-like, (n_samples,)
     :param y: array-like, (n_samples,)
     :param n_grid: int, number of grid points at which to evaluate kernel density
-    :param var_type: two-character string of 'c' (continuous) or 'd' (discrete)
+    :param var_type: character string, 'c' (continuous) or 'd' (discrete)
     :param bandwidth_scaling: float
     :return: float, mutual information
     """
@@ -90,10 +91,11 @@ def mutual_information(x, y, var_type='cc', n_grid=25, bandwidth_scaling=None):
 
 def information_coefficient(x, y, var_type='cc', n_grid=25):
     """
+    Compute information coefficient between `x` and `y`.
     :param x: array-like, (n_samples,)
     :param y: array-like, (n_samples,)
     :param n_grid: int, number of grid points at which to evaluate kernel density
-    :param var_type: two-character string of 'c' (continuous) or 'd' (discrete)
+    :param var_type: character string, 'c' (continuous) or 'd' (discrete)
     :return: float, information coefficient
     """
     rho, p = pearsonr(x, y)
