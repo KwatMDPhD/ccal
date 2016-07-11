@@ -16,22 +16,28 @@ Description:
 """
 
 import os
+
+import numpy as np
+import pandas as pd
 from scipy.spatial import distance
 from sklearn.decomposition import NMF
 from scipy.cluster.hierarchy import linkage, cophenet
 from scipy.spatial.distance import pdist
-from library.support import *
-from library.visualize import *
-from library.information import *
+
+import visualize
+import information
 
 # ======================================================================================================================
 # Global variables
 # ======================================================================================================================
 # Path to CCBA dicrectory (repository)
-PATH_CCBA = '/Users/Kwat/binf/ccba/'
+PATH_CCBA = os.path.join(os.environ['HOME'], 'binf', 'ccba')
+
 # Path to testing data directory
 PATH_TEST_DATA = os.path.join(PATH_CCBA, 'data', 'test')
+
 SEED = 20121020
+
 TESTING = False
 
 
@@ -50,7 +56,7 @@ def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, titl
     # Compute score[i] = <dataframe>[i] vs. <reference> and append score as a column to <dataframe>
     if 'I' in metrics:
         dataframe.ix[:, 'I'] = pd.Series(
-            [information_coefficient(np.array(row[1]), reference) for row in dataframe.iterrows()],
+            [information.information_coefficient(np.array(row[1]), reference) for row in dataframe.iterrows()],
             index=dataframe.index)
 
     # Sort
@@ -59,7 +65,7 @@ def make_heatmap_panel(dataframe, reference, metrics, columns_to_sort=None, titl
     # Plot
     if verbose:
         print('Plotting')
-        plot_heatmap_panel(dataframe, reference, metrics, title=title)
+        visualize.plot_heatmap_panel(dataframe, reference, metrics, title=title)
 
 
 # ======================================================================================================================
