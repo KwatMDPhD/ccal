@@ -45,7 +45,6 @@ def mutual_information(x, y, var_type='cc', n_grid=25, bandwidth_scaling=None):
     """
     Compute mutual information between `x` and `y`.
     Difference in bandwidth convention means bcv() delta must be divided by 4.
-
     :param x: array-like, (n_samples,)
     :param y: array-like, (n_samples,)
     :param n_grid: int, number of grid points at which to evaluate kernel density

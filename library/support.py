@@ -25,9 +25,9 @@ VERBOSE = True
 # ======================================================================================================================
 def verbose_print(string):
     """
-    Print `string`.
+    Print `string` with the current time.
     :param string: str, message to be printed
-    :return:
+    :return: None
     """
     if VERBOSE:
         print('{} {}'.format(datetime.datetime.now().time(), string))
@@ -38,9 +38,10 @@ def verbose_print(string):
 # ======================================================================================================================
 def read_gct(filename, fill_na=None):
     """
-    Read `filename` (.gct) and convert it into a DataFrame.
-    :param filename:
-    :param fill_na:
+    Read .gct `filename` and convert it into a pandas DataFrame.
+    :param filename: str, path to a .gct
+    :param fill_na: value to replace NaN in the dataframe generated from a `filename`
+    :return: pandas DataFrame
     """
     dataframe = pd.read_csv(filename, skiprows=2, sep='\t')
     if fill_na != None:
@@ -49,26 +50,20 @@ def read_gct(filename, fill_na=None):
     assert column1 == 'Name', 'Column 1 != "Name"'
     assert column2 == 'Description', 'Column 2 != "Description"'
 
-    #
     dataframe.set_index('Name', inplace=True)
     dataframe.index.name = None
 
-    #
-    description = dataframe['Description']
-    dataframe.drop('Description', axis=1, inplace=True)
-
-    return dataframe, description
+    return dataframe
 
 
 def write_gct(dataframe, filename, description=None, index_column=None):
     """
-    Write a `dataframe` to `filename` as .gct.
-    :param dataframe:
-    :param filename:
-    :param description:
-    :param index_column:
+    Write a `dataframe` to a `filename` as a .gct.
+    :param dataframe: pandas DataFrame,
+    :param filename: str, path
+    :param description: array-like, description column for a .gct
+    :param index_column: str, column to be used as the .gct index
     """
-
     # Set output filename
     if not filename.endswith('.gct'):
         filename += '.gct'
@@ -89,4 +84,4 @@ def write_gct(dataframe, filename, description=None, index_column=None):
 
     with open(filename, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(n_rows, n_cols))
-        dataframe.to_csv(f, sep='\t')
+        dataframe.to_csv(f, sep='\t'

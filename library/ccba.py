@@ -30,11 +30,8 @@ from information import information_coefficient
 # ======================================================================================================================
 # Global variables
 # ======================================================================================================================
-# Path to CCBA dicrectory (repository)
-PATH_CCBA = os.path.join(os.environ['HOME'], 'binf', 'ccba')
-
 # Path to testing data directory
-PATH_TEST_DATA = os.path.join(PATH_CCBA, 'data', 'test')
+PATH_TEST_DATA = os.path.join('data', 'test')
 
 SEED = 20121020
 
