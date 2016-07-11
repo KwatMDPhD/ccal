@@ -1,14 +1,18 @@
 """
-Cancer Computational Biology Analysis Visualization Library v0.1
+Computational Cancer Biology Analysis Library v0.1
+
 
 Authors:
 Pablo Tamayo
 pablo.tamayo.r@gmail.com
-Genomics and Computational Biology, UCSD Moore's Cancer Center
+Computational Cancer Biology, UCSD Cancer Center
 
 Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
-Genomics and Computational Biology, UCSD Moore's Cancer Center
+Computational Cancer Biology, UCSD Cancer Center
+
+
+Description:
 """
 
 import networkx as nx

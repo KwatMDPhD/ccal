@@ -1,5 +1,19 @@
 """
-Check dependencies and install missing ones
+Computational Cancer Biology Analysis Library v0.1
+
+
+Authors:
+Pablo Tamayo
+pablo.tamayo.r@gmail.com
+Computational Cancer Biology, UCSD Cancer Center
+
+Huwate (Kwat) Yeerna (Medetgul-Ernar)
+kwat.medetgul.ernar@gmail.com
+Computational Cancer Biology, UCSD Cancer Center
+
+
+Description:
+Check dependencies and install missing ones.
 """
 import pip
 

@@ -1,14 +1,18 @@
 """
-Cancer Computational Biology Analysis Library v0.1
+Computational Cancer Biology Analysis Library v0.1
+
 
 Authors:
 Pablo Tamayo
 pablo.tamayo.r@gmail.com
-Genomics and Computational Biology, UCSD Moore's Cancer Center
+Computational Cancer Biology, UCSD Cancer Center
 
 Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
-Genomics and Computational Biology, UCSD Moore's Cancer Center
+Computational Cancer Biology, UCSD Cancer Center
+
+
+Description:
 """
 
 import os
@@ -179,7 +183,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100, 
                 print('Computing the cophenetic correlation coefficient ...')
             # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and the normalized assignment distances
             score = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
-                                 pdist(normalized_assignment_distance_matrix))[0]
+                             pdist(normalized_assignment_distance_matrix))[0]
             scores[k] = score
             if verbose:
                 print('Score for k={}: {}'.format(k, score))
