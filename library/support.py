@@ -15,6 +15,8 @@ Computational Cancer Biology, UCSD Cancer Center
 Description:
 """
 import datetime
+
+import numpy as np
 import pandas as pd
 
 VERBOSE = True
@@ -85,3 +87,37 @@ def write_gct(dataframe, filename, description=None, index_column=None):
     with open(filename, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(n_rows, n_cols))
         dataframe.to_csv(f, sep='\t')
+
+
+# ======================================================================================================================
+# Simulate
+# ======================================================================================================================
+def simulate_x_y(n, rho, threshold=3):
+    """
+    Generate 2 normal random vectors with correlation `rho` of length `n`.
+    :param n: int, size of the output arrays
+    :param rho: rho, correlation
+    :param threshold: float, max absolute value in the data
+    :return: 2 array-like, 2 normal random vectors with correlation `rho` of length `n`
+    """
+    means = [0, 1]
+    stds = [0.5, 0.5]
+    covs = [[stds[0] ** 2, stds[0] * stds[1] * rho], [stds[0] * stds[1] * rho, stds[1] ** 2]]
+
+    m = np.random.multivariate_normal(means, covs, n).T
+    x = (m[0] - np.mean(m[0])) / np.std(m[0])
+    y = (m[1] - np.mean(m[1])) / np.std(m[1])
+
+    if threshold:
+        x = (x - np.min(x)) / (np.max(x) - np.min(x))
+        y = (y - np.min(y)) / (np.max(y) - np.min(y))
+        for i in range(n):
+            if x[i] > threshold:
+                x[i] = threshold
+            elif x[i] < -threshold:
+                x[i] = -threshold
+            if y[i] > threshold:
+                y[i] = threshold
+            elif y[i] < -threshold:
+                y[i] = -threshold
+    return x, y
