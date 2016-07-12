@@ -25,6 +25,7 @@ from scipy.cluster.hierarchy import linkage, cophenet
 from sklearn.decomposition import NMF
 
 from .support import verbose_print
+from .visualize import plot_nmf_result
 from .information import information_coefficient
 
 # ======================================================================================================================
@@ -69,7 +70,7 @@ def compute_against_reference(dataframe, reference, metric, columns_to_sort=None
 # NMF functions
 # ======================================================================================================================
 def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, randomize_coordinate_order=False,
-        regulatizer=0):
+        regulatizer=0, plot=False):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix: numpy array (n_samples, n_features), the matrix to be factorized by NMF
@@ -94,6 +95,11 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
         # Compute W, H, and reconstruction error
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
+        verbose_print('\tDone.')
+
+        if plot:
+            verbose_print('\tPlotting ...')
+            plot_nmf_result(nmf_results, k)
 
     return nmf_results
 

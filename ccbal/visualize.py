@@ -163,12 +163,6 @@ def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=No
     if output_filename:
         plt.savefig(output_filename + '.png')
 
-    # Plot reconstruction error
-    plt.figure(figsize=figsize, dpi=dpi)
-    ax = sns.pointplot(x=list(nmf_results.keys()), y=[v['ERROR'] for v in nmf_results.values()])
-    ax.set(xlabel='k', ylabel='Reconstruction Error')
-    ax.set_title('k vs. Reconstruction Error')
-
 
 def plot_nmf_scores(scores, figsize=(25, 10), title=None, output_filename=None):
     """

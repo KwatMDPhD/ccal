@@ -16,9 +16,11 @@ Description:
 TODO
 """
 import datetime
+import time
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 VERBOSE = True
 
@@ -35,6 +37,36 @@ def verbose_print(string):
     global VERBOSE
     if VERBOSE:
         print('<{}> {}'.format(datetime.datetime.now().time(), string))
+
+
+def runtime(function, n_range, plot=True):
+    """
+    For i in n_range, get runtimes of function(x, y) where x and y are random vectors of size (i + 1) * 10.
+    :param function: function,
+    :param n_range: int,
+    :param plot:
+    :return:
+    """
+    ns = []
+    runtimes = []
+    for i in n_range:
+        n = (i + 1) * 10
+        verbose_print('Getting runtime with n={}'.format(n))
+        x = np.random.rand(n)
+        y = np.random.rand(n)
+        t0 = time.time()
+
+        function(x, y)
+
+        runtime = time.time() - t0
+        ns.append(n)
+        runtimes.append(runtime)
+
+    if plot:
+        verbose_print('\tPlotting ...')
+        sns.pointplot(x=ns, y=runtimes)
+
+    return ns, runtimes
 
 
 # ======================================================================================================================

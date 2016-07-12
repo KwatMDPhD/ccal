@@ -19,6 +19,11 @@ import pip
 
 from .support import verbose_print
 
+print('=' * 79)
+print('=' * 16, 'Computational Cancer Biology Analysis Library', '=' * 16)
+print('=' * 79)
+print()
+
 verbose_print('Checking dependencies ...')
 packages_installed = [pkg.key for pkg in pip.get_installed_distributions()]
 packages_needed = ['rpy2', 'numpy', 'pandas', 'scipy', 'scikit-learn', 'matplotlib', 'seaborn']
