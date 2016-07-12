@@ -17,7 +17,7 @@ Check dependencies and install missing ones.
 """
 import pip
 
-from support import verbose_print
+from .support import verbose_print
 
 verbose_print('Checking dependencies ...')
 

@@ -30,7 +30,7 @@ def verbose_print(string):
     :return: None
     """
     if VERBOSE:
-        print('{} {}'.format(datetime.datetime.now().time(), string))
+        print('<{}> {}'.format(datetime.datetime.now().time(), string))
 
 
 # ======================================================================================================================

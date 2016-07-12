@@ -82,7 +82,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     """
     nmf_results = {}  # dict (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:
-        verbose_print('Perfomring NMF with k {} ...'.format(k))
+        verbose_print('Perfomring NMF with k={} ...'.format(k))
         model = NMF(n_components=k,
                     init=initialization,
                     max_iter=max_iteration,
@@ -97,7 +97,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     return nmf_results
 
 
-def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100):
+def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
     """
     Perform NMF with multiple k and score each computation.
     :param matrix: numpy array (n_samples, n_features), the matrix to be factorized by NMF
@@ -158,6 +158,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=100):
             # Make assignment matrix (nassignment, ncol assingments from H)
             assignment_matrix = np.empty((nassignment, ncol))
             for i in range(nassignment):
+                verbose_print('Running NMF #{} (total number of assignments={}) ...'.format(i, nassignment))
                 nmf_result = nmf(matrix, [k])[k]
                 # Save the 1st NMF result for each k
                 if i == 0:

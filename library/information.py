@@ -18,15 +18,15 @@ import numpy as np
 from scipy.stats import pearsonr
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
 
-# TODO
-# For bcv():
-import rpy2.robjects as ro
-from rpy2.robjects.numpy2ri import numpy2ri
-
-ro.conversion.py2ri = numpy2ri
-from rpy2.robjects.packages import importr
-
-mass = importr('MASS')
+# # TODO
+# # For bcv():
+# import rpy2.robjects as ro
+# from rpy2.robjects.numpy2ri import numpy2ri
+#
+# ro.conversion.py2ri = numpy2ri
+# from rpy2.robjects.packages import importr
+#
+# mass = importr('MASS')
 
 
 def rbcv(x):
