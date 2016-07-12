@@ -13,6 +13,7 @@ Computational Cancer Biology, UCSD Cancer Center
 
 
 Description:
+TODO
 """
 import datetime
 
@@ -31,6 +32,7 @@ def verbose_print(string):
     :param string: str, message to be printed
     :return: None
     """
+    global VERBOSE
     if VERBOSE:
         print('<{}> {}'.format(datetime.datetime.now().time(), string))
 
