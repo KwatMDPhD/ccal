@@ -23,8 +23,8 @@ from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, cophenet
 from sklearn.decomposition import NMF
 
-from support import verbose_print
-from information import information_coefficient
+from .support import verbose_print
+from .information import information_coefficient
 
 # ======================================================================================================================
 # Global variables
