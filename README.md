@@ -1,2 +1,1 @@
-# CCBA
-Computational Cancer Biology Analysis
+Computational Cancer Analysis
