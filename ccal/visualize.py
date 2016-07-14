@@ -237,7 +237,7 @@ def plot_heatmap_panel_v2(ref, features, scores, ref_type, fig_size=(9, 16), tit
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
     """
-    Plot NMF results from ccba.library.ccba.nmf.
+    Plot NMF results from cca.library.cca.nmf.
     :param nmf_results: dict, NMF result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and reconstruction error))
     :param k: int, k for NMF
     :param figsize: tuple (width, height),
