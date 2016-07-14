@@ -140,96 +140,96 @@ def plot_heatmap_panel(dataframe, reference, annotation,
     fig.tight_layout()
 
 
-def plot_heatmap_panel_v2(df, ref, df_row_annot, title, ref_type, sort_ref=True):
-    # Preprocess ref
+def plot_heatmap_panel_v2(ref, features, scores, ref_type, fig_size=(9, 16), title=None):
+    ref_ncol, ref_nrow = ref.shape
+    features_ncol, features_nrow = features.shape
+    scores_ncol, scores_nrow = ref.shape
+    if ref_ncol != features_ncol:
+        raise ValueError('Numbers of columns of ref and featuers mismatch.')
+    if features_nrow != scores_nrow:
+        raise ValueError('Numbers of rows of features and scores mismatch.')
+
+    # Sort ref and features
+    ref = ref.T.sort_values('Reference', ascending=False).T
+    features = features.reindex_axis(ref.columns, axis=1)
+
+    # Initialize figure
+    fig = plt.figure(figsize=fig_size)
+
+    # Set heatmap parameters for ref
     if ref_type == 'binary':
         ref_cmap = CMAP_BINARY
         ref_min, ref_max = 0, 1
     elif ref_type == 'categorical':
         ref_cmap = CMAP_CATEGORICAL
         ref_min, ref_max = 0, np.unique(ref.values).size
-        assert np.unique(categories).size == np.unique(ref.values).size
     elif ref_type == 'continuous':
         ref_cmap = CMAP_CONTINUOUS
-        ref = (ref - np.mean(ref)) / np.std(ref)
         ref_min, ref_max = -2.5, 2.5
+        # Normalize continuous values
+        ref = (ref - np.mean(ref)) / np.std(ref)
     else:
-        raise ValueError('Unknown ref_type {}'.format(ref_type))
+        raise ValueError('Unknown ref_type {}.'.format(ref_type))
 
-    # Preprocess df
-    if np.unique(df).size == 2:
-        df_cmap = CMAP_BINARY
-        df_min, df_max = 0, 1
+    # Set heapmap parameters for features and normalize features
+    if np.unique(features).size == 2:
+        features_cmap = CMAP_BINARY
+        features_min, features_max = 0, 1
         # TODO:
-        df += 0.25
+        features += 0.1
     else:
-        df_cmap = CMAP_CONTINUOUS
-        df_min, df_max = -2.5, 2.5
-        # TODO: make a normalization function
-        for i, (idx, s) in enumerate(df.iterrows()):
+        features_cmap = CMAP_CONTINUOUS
+        features_min, features_max = -2.5, 2.5
+        # Normalize continuous values
+        for i, (idx, s) in enumerate(features.iterrows()):
             mean = s.mean()
             std = s.std()
             for j, v in enumerate(s):
-                df.iloc[i, j] = (v - mean) / std
-
-    # Set figure size
-    ncol, nrow = df.shape
-    if nrow <= 25:
-        fig_height = nrow // 1.5
-    else:
-        fig_height = nrow // 2.5
-    if ncol <= 25:
-        fig_width = 5
-    else:
-        fig_width = 7
-    figure_size = (fig_width, fig_height)
-
-    # if sort_ref:
-    #     t_order = list(reversed(np.argsort(ref.values[0, :], kind='quicksort')))
-    #     ref = ref.reindex_axis(ref.columns[t_order], axis=1)
-    #     df2 = df.reindex_axis(df.columns[t_order], axis=1)
-    #
-    #     # Computer locations for class labels (for binary or categorical)
-    #     if (ref_type == 'binary' or ref_type == 'categ') and class_labels != None:
-    #         boundaries = np.zeros(len(np.unique(ref.iloc[0, :])))
-    #         locs_labels = np.zeros(len(np.unique(ref.iloc[0, :])))
-    #         k = 0
-    #         for i in range(1, ncol):
-    #             if ref.iloc[0, i] != ref.iloc[0, i - 1]:
-    #                 boundaries[k] = i
-    #                 k += 1
-    #         boundaries[len(boundaries) - 1] = ncol
-    #         locs_labels[0] = boundaries[0] / 2
-    #         for k in range(1, len(locs_labels)):
-    #             locs_labels[k] = boundaries[k] - (boundaries[k] - boundaries[k - 1]) / 2.0
-
-    # Initialize figure
-    fig = plt.figure(figsize=figure_size)
+                features.iloc[i, j] = (v - mean) / std
 
     # Plot ref
-    ax1 = plt.subplot2grid((nrow + 1, 1), (0, 0))
+    ax1 = plt.subplot2grid((features_nrow, 1), (0, 0))
     sns.heatmap(ref, vmin=ref_min, vmax=ref_max, robust=True, center=None, mask=None,
                 square=False, cmap=ref_cmap, linewidth=0.0, linecolor='b',
                 annot=False, fmt=None, annot_kws={}, xticklabels=False,
-                yticklabels=['  '], cbar=False)
-    ax1.text(-0.1, 0.2, ref.index[0], fontsize=13, horizontalalignment='right', fontweight='bold')
-    ax1.text(ncol / 2, 1.6, title, fontsize=16, horizontalalignment='center', fontweight='bold')
+                yticklabels=[], cbar=False)
+    if title:
+        ax1.text(features_ncol / 2, 1.5, title, fontsize=16, horizontalalignment='center', fontweight='bold')
+    ax1.text(-0.1, 0.33, ref.index[0], fontsize=13, horizontalalignment='right', fontweight='bold')
+    ax1.text(features_ncol + 0.1, 0.33, scores.columns[0], fontsize=13, horizontalalignment='left', fontweight='bold')
+    if ref_type in ('binary', 'categorical'):
+        # Get boundaries
+        boundaries = [0]
+        prev_v = ref.iloc[0, 0]
+        for i, v in enumerate(ref.iloc[0, 1:]):
+            if prev_v != v:
+                boundaries.append(i + 1)
+            prev_v = v
+        boundaries.append(features_ncol)
+        verbose_print('boundaries: {}'.format(boundaries))
 
-    if (ref_type == 'binary' or ref_type == 'categ') and class_labels != None:
-        for k in range(len(locs_labels)):
-            ax1.text(locs_labels[k], 0.25, class_labels[k], fontsize=13, horizontalalignment='center',
-                     fontweight='bold')
+        # Get label horizontal positions
+        label_horizontal_positions = []
+        prev_b = 0
+        for b in boundaries[1:]:
+            label_horizontal_positions.append(b - (b - prev_b) / 2)
+            prev_b = b
+        verbose_print('label_horizontal_positions: {}'.format(label_horizontal_positions))
+        unique_ref_labels = np.unique(ref.values)[::-1]
+        for i, pos in enumerate(label_horizontal_positions):
+            ax1.text(pos, 1.1, unique_ref_labels[i],
+                     fontsize=13, horizontalalignment='center', fontweight='bold')
 
     # Plot dataframe
-    ax2 = plt.subplot2grid((nrow + 1, 1), (0, 1), rowspan=nrow)
-    sns.heatmap(df2, vmin=df_min, vmax=df_max, robust=True, center=None, mask=None,
-                square=False, cmap=df_cmap, linewidth=0.0, linecolor='b',
+    ax2 = plt.subplot2grid((features_nrow, 1), (0, 1), rowspan=features_nrow)
+    sns.heatmap(features, vmin=features_min, vmax=features_max, robust=True, center=None, mask=None,
+                square=False, cmap=features_cmap, linewidth=0.0, linecolor='b',
                 annot=False, fmt=None, annot_kws={}, xticklabels=False,
-                yticklabels=[' ' for i in range(nrow)])
-    for i in range(nrow):
-        ax2.text(-0.1, nrow - i - 1 + 0.3, df.index[i], fontsize=13, horizontalalignment='right', fontweight='bold')
-        ax2.text(ncol + 0.1, nrow - i - 1 + 0.3, df_row_annot[i], fontsize=13, fontweight='bold')
-    ax2.text(ncol + 1, nrow + 0.3, df_row_annot.name, fontsize=13, fontweight='bold')
+                yticklabels=[], cbar=False)
+
+    for i, idx in enumerate(features.index):
+        ax2.text(-0.1, features_nrow - i - 0.7, idx, fontsize=13, horizontalalignment='right', fontweight='bold')
+        ax2.text(features_ncol + 0.1, features_nrow - i - 0.7, scores.iloc[i, 0], fontsize=13, fontweight='bold')
 
     fig.tight_layout()
     plt.show(fig)
