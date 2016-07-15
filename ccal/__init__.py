@@ -20,7 +20,7 @@ import pip
 from .support import verbose_print
 
 print('=' * 79)
-print('=' * 19, 'Computational Cancer Analysis Library', '=' * 19)
+print('=' * 20, 'Computational Cancer Analysis Library', '=' * 20)
 print('=' * 79)
 print()
 
