@@ -34,7 +34,7 @@ for pkg in packages_needed:
 verbose_print('Using the following packages:')
 for pkg in pip.get_installed_distributions():
     if pkg.key in packages_needed:
-        verbose_print('\t{} v{}'.format(pkg.key, pkg.version))
+        verbose_print('\t{} (v{})'.format(pkg.key, pkg.version))
 
 from . import support
 from . import visualize
