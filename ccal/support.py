@@ -72,7 +72,7 @@ def runtime(function, n_range, plot=True):
 # ======================================================================================================================
 # File operations
 # ======================================================================================================================
-def read_gct(filename, fill_na=None):
+def read_gct(filename, fill_na=None, drop_description=True):
     """
     Read .gct `filename` and convert it into a pandas DataFrame.
     :param filename: str, path to a .gct
@@ -83,10 +83,12 @@ def read_gct(filename, fill_na=None):
     if fill_na:
         dataframe.fillna(fill_na, inplace=True)
     column1, column2 = dataframe.columns[:2]
-    assert column1 == 'Name', 'Column 1 != "Name"'
-    assert column2 == 'Description', 'Column 2 != "Description"'
+    assert column1 == 'Name', 'Column 1 != \'Name\''
+    assert column2 == 'Description', 'Column 2 != \'Description\''
 
     dataframe.set_index('Name', inplace=True)
+    if drop_description:
+        dataframe.drop('Description', axis=1, inplace=True)
     dataframe.index.name = None
 
     return dataframe

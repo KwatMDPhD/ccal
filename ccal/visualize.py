@@ -73,7 +73,7 @@ FONT12 = {'family': 'arial',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=None, filename=None):
+def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=None, figure_filename=None):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, n_elements), must have index and columns
@@ -81,7 +81,7 @@ def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=Non
     :param scores:  pandas DataFrame (n_features, 1), must have the same index and columns
     :param ref_type: str, {continuous, categorical, binary}
     :param title: str, figure title
-    :param filename: str, file path to save the figure
+    :param figure_filename: str, file path to save the figure
     :return: None
     """
     # Check data dimensions
@@ -93,8 +93,6 @@ def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=Non
     if features_nrow != scores_nrow:
         raise ValueError(
             'Numbers of rows of features ({}) and scores ({}) mismatch.'.format(features_nrow, scores_nrow))
-
-
 
     # Initialize figure
     if features_ncol > 30 or features_nrow > 50:
@@ -193,10 +191,10 @@ def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=Non
     # fig.tight_layout()
     plt.show(fig)
 
-    if filename:
-        filename += '.pdf'
-        verbose_print('Saving the figure as {} ...'.format(filename))
-        fig.savefig(filename)
+    if figure_filename:
+        figure_filename += '.pdf'
+        fig.savefig(figure_filename)
+        verbose_print('Saved the figure as {}.'.format(figure_filename))
 
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):

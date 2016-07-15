@@ -42,28 +42,55 @@ TESTING = False
 # ======================================================================================================================
 # Information functions
 # ======================================================================================================================
-def rank_features(features, ref, metric, ref_type='continuous', title=None, filename=None):
+def rank_features(features, ref, metric, ref_type='continuous', relationship='direct', title=None, sort_ref=True,
+                  n_features_to_plot=50, result_filename=None, figure_filename=None):
     """
     Compute scores[i] = `feature`[i] vs. `ref` and plot as heatmap.
     :param features: pandas DataFrame (n_features, n_elements), must have index and columns
     :param ref: pandas DataFrame (1, n_elements), must have the index and the same columns
     :param metric: str, {information}
+    :param relationship: str, {direct, inverse}
     :param ref_type: str, {continuous, categorical, binary}
     :param title: str, figure title
-    :param filename: str, file path to save the figure
+    :param sort_ref: bool, sort `ref` or not
+    :param n_features_to_plot: int, number of features to plot
+    :param result_filename: str, file path (.txt) to save the result
+    :param figure_filename: str, file path to save the figure
     :return: None
     """
-    verbose_print('Computing feature vs. reference using {}...'.format(metric))
+    if relationship not in ('direct', 'inverse'):
+        raise ValueError('Unknown relationship {}.'.format(relationship))
+    verbose_print('Computing feature vs. reference ({} relationship) using {}...'.format(relationship, metric))
+
+    # Use only the intersection
+    col_intersection = set(features.columns) & set(ref.columns)
+    verbose_print(
+        'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
+            len(col_intersection),
+            features.shape[1],
+            ref.shape[1]))
+    features = features.ix[:, col_intersection]
+    ref = ref.ix[:, col_intersection]
+
     # Sort ref and features
-    ref = ref.T.sort_values(ref.index[0], ascending=False).T
+    if sort_ref:
+        ref = ref.T.sort_values(ref.index[0], ascending=(relationship == 'inverse')).T
     features = features.reindex_axis(ref.columns, axis=1)
+
+    # Compute scores, join score to features, and rank
     features = features.join(compute_against_reference(features, ref, metric))
     features.sort_values(features.columns[-1], ascending=False, inplace=True)
 
-    verbose_print('Plotting feature vs. reference ranking ...'.format(metric))
-    plot_feature_ranking(pd.DataFrame(features.ix[:, features.columns[:-1]]), ref,
-                         pd.DataFrame(features.ix[:, features.columns[-1]]),
-                         ref_type=ref_type, title=title, filename=filename)
+    # Plot features panel
+    verbose_print('Plotting feature vs. reference ranking (top {}) ...'.format(n_features_to_plot))
+    plot_feature_ranking(pd.DataFrame(features.ix[:n_features_to_plot, features.columns[:-1]]), ref,
+                         pd.DataFrame(features.ix[:n_features_to_plot, features.columns[-1]]),
+                         ref_type=ref_type, title=title, figure_filename=figure_filename)
+
+    if not result_filename.endswith('.txt'):
+        result_filename += '.txt'
+    features.to_csv(result_filename, sep='\t')
+    verbose_print('Saved the ranking as {}.'.format(result_filename))
 
 
 def compute_against_reference(features, ref, metric):
@@ -91,7 +118,7 @@ def compute_against_reference(features, ref, metric):
 # NMF functions
 # ======================================================================================================================
 def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, randomize_coordinate_order=False,
-        regulatizer=0, plot=False):
+        regularizer=0, plot=False):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix: numpy array (n_samples, n_features), the matrix to be factorized by NMF
@@ -100,17 +127,18 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     :param max_iteration: int, number of NMF iterations
     :param seed: int, random seed
     :param randomize_coordinate_order: bool,
-    :param regulatizer: int, NMF's alpha
+    :param regularizer: int, NMF's alpha
+    :param plot: bool, whether to plot the NMF results
     :return: dict, NMF result per k (key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     """
     nmf_results = {}  # dict (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:
-        verbose_print('Perfomring NMF with k={} ...'.format(k))
+        verbose_print('Performing NMF with k={} ...'.format(k))
         model = NMF(n_components=k,
                     init=initialization,
                     max_iter=max_iteration,
                     random_state=seed,
-                    alpha=regulatizer,
+                    alpha=regularizer,
                     shuffle=randomize_coordinate_order)
 
         # Compute W, H, and reconstruction error
