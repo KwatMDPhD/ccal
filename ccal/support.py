@@ -15,6 +15,7 @@ Computational Cancer Biology, UCSD Cancer Center
 Description:
 TODO
 """
+import os
 import datetime
 import time
 
@@ -72,6 +73,27 @@ def runtime(function, n_range, plot=True):
 # ======================================================================================================================
 # File operations
 # ======================================================================================================================
+def establish_path(path):
+    """
+    Make 'path' if it doesn't already exist.
+    :param path:
+    :return: None
+    """
+    if not (os.path.isdir(path) or os.path.isfile(path) or os.path.islink(path)):
+        verbose_print('Path {} doesn\'t exist, creating it ...'.format(path))
+        path_dirs = []
+        p, q = os.path.split(path)
+        while q != '':
+            path_dirs.append(q)
+            p, q = os.path.split(p)
+        path_dirs.append(p)
+        partial_path = ''
+        for path_element in path_dirs[::-1]:
+            partial_path = os.path.join(partial_path, path_element)
+            if not (os.path.isdir(partial_path) or os.path.isfile(partial_path) or os.path.islink(partial_path)):
+                os.mkdir(partial_path)
+
+
 def read_gct(filename, fill_na=None, drop_description=True):
     """
     Read .gct `filename` and convert it into a pandas DataFrame.

@@ -15,6 +15,8 @@ Computational Cancer Biology, UCSD Cancer Center
 Description:
 TODO
 """
+import os
+
 import numpy as np
 import networkx as nx
 import matplotlib as mpl
@@ -73,26 +75,17 @@ FONT12 = {'family': 'arial',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=None, figure_filename=None):
+def plot_features_and_reference(features, ref, scores, ref_type='continuous', output_directory=None):
     """
     Plot a heatmap panel.
-    :param features: pandas DataFrame (n_features, n_elements), must have index and columns
-    :param ref: pandas DataFrame (1, n_elements), must have the index and the same columns
+    :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
+    :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
     :param scores:  pandas DataFrame (n_features, 1), must have the same index and columns
     :param ref_type: str, {continuous, categorical, binary}
-    :param title: str, figure title
-    :param figure_filename: str, file path to save the figure
+    :param output_directory: str, directory path to save the figure
     :return: None
     """
-    # Check data dimensions
     features_nrow, features_ncol = features.shape
-    ref_nrow, ref_ncol = ref.shape
-    scores_nrow, scores_ncol = scores.shape
-    if features_ncol != ref_ncol:
-        raise ValueError('Numbers of columns of features ({}) and ref ({}) mismatch.'.format(features_ncol, ref_ncol))
-    if features_nrow != scores_nrow:
-        raise ValueError(
-            'Numbers of rows of features ({}) and scores ({}) mismatch.'.format(features_nrow, scores_nrow))
 
     # Initialize figure
     if features_ncol > 30 or features_nrow > 50:
@@ -135,10 +128,9 @@ def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=Non
 
     # Plot ref
     ref_ax = plt.subplot2grid((features_nrow, 1), (0, 0))
-    if title:
-        ref_ax.text(features_ncol / 2, 3, title, horizontalalignment='center', verticalalignment='bottom',
-                    **FONT20_BOLD)
-    sns.heatmap(ref, vmin=ref_min, vmax=ref_max, robust=True, center=None, mask=None,
+    ref_ax.text(features_ncol / 2, 3, ref.name, horizontalalignment='center', verticalalignment='bottom',
+                **FONT20_BOLD)
+    sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True, center=None, mask=None,
                 square=False, cmap=ref_cmap, linewidth=0, linecolor=BLACK,
                 annot=False, fmt=None, annot_kws={}, xticklabels=False,
                 yticklabels=False, cbar=False)
@@ -188,13 +180,11 @@ def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=Non
         features_ax.text(features_ncol + text_margin, features_nrow - i - 0.5, '{:.3e}'.format(scores.iloc[i, 0]),
                          horizontalalignment='left', verticalalignment='center', **FONT12)
 
-    # fig.tight_layout()
+    fig.tight_layout()
     plt.show(fig)
 
-    if figure_filename:
-        figure_filename += '.pdf'
-        fig.savefig(figure_filename)
-        verbose_print('Saved the figure as {}.'.format(figure_filename))
+    if output_directory:
+        fig.savefig(os.path.join(output_directory, '{}.pdf'.format(ref.name)))
 
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):

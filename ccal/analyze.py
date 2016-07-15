@@ -24,8 +24,8 @@ from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, cophenet
 from sklearn.decomposition import NMF
 
-from .support import verbose_print
-from .visualize import plot_nmf_result, plot_feature_ranking
+from .support import verbose_print, establish_path
+from .visualize import plot_nmf_result, plot_features_and_reference
 from .information import information_coefficient
 
 # ======================================================================================================================
@@ -42,73 +42,68 @@ TESTING = False
 # ======================================================================================================================
 # Information functions
 # ======================================================================================================================
-def rank_features(features, ref, metric, ref_type='continuous', relationship='direct', title=None, sort_ref=True,
-                  n_features_to_plot=50, result_filename=None, figure_filename=None):
+def rank_features_against_references(features, refs, metric, ref_type='continuous', relationship='direct',
+                                     sort_ref=True, n_features_to_plot=50, output_directory=None):
     """
-    Compute scores[i] = `feature`[i] vs. `ref` and plot as heatmap.
-    :param features: pandas DataFrame (n_features, n_elements), must have index and columns
-    :param ref: pandas DataFrame (1, n_elements), must have the index and the same columns
+    Compute features vs. each ref in `refs`.
+    :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
+    :param refs: pandas DataFrame (n_features, m_elements), must have indices and columns, which must match 'features`'s
     :param metric: str, {information}
     :param relationship: str, {direct, inverse}
     :param ref_type: str, {continuous, categorical, binary}
-    :param title: str, figure title
-    :param sort_ref: bool, sort `ref` or not
-    :param n_features_to_plot: int, number of features to plot
-    :param result_filename: str, file path (.txt) to save the result
-    :param figure_filename: str, file path to save the figure
+    :param sort_ref: bool, sort each ref or not
+    :param n_features_to_plot: int, number of top features to plot
+    :param output_directory: str, directory path to save the result (.txt) and figure (.TODO)
     :return: None
     """
-    if relationship not in ('direct', 'inverse'):
-        raise ValueError('Unknown relationship {}.'.format(relationship))
-    verbose_print('Computing feature vs. reference ({} relationship) using {}...'.format(relationship, metric))
+    if output_directory:
+        establish_path(os.path.abspath(output_directory))
 
-    # Use only the intersection
-    col_intersection = set(features.columns) & set(ref.columns)
-    verbose_print(
-        'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
-            len(col_intersection),
-            features.shape[1],
-            ref.shape[1]))
-    features = features.ix[:, col_intersection]
-    ref = ref.ix[:, col_intersection]
+    for i, (idx, ref) in enumerate(refs.iterrows()):
+        verbose_print('features vs. {} ({}/{}) ...'.format(idx, i + 1, refs.shape[0]))
 
-    # Sort ref and features
-    if sort_ref:
-        ref = ref.T.sort_values(ref.index[0], ascending=(relationship == 'inverse')).T
-    features = features.reindex_axis(ref.columns, axis=1)
+        # Use only the intersecting columns
+        col_intersection = set(features.columns) & set(ref.index)
+        verbose_print(
+            'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
+                len(col_intersection), features.shape[1], ref.size))
+        features = features.ix[:, col_intersection]
+        ref = ref.ix[col_intersection]
 
-    # Compute scores, join score to features, and rank
-    features = features.join(compute_against_reference(features, ref, metric))
-    features.sort_values(features.columns[-1], ascending=False, inplace=True)
+        # Sort ref and features
+        # TODO: check the relationship logic
+        if sort_ref:
+            ref = ref.sort_values(ascending=(relationship == 'inverse'))
+        features = features.reindex_axis(ref.index, axis=1)
 
-    # Plot features panel
-    verbose_print('Plotting feature vs. reference ranking (top {}) ...'.format(n_features_to_plot))
-    plot_feature_ranking(pd.DataFrame(features.ix[:n_features_to_plot, features.columns[:-1]]), ref,
-                         pd.DataFrame(features.ix[:n_features_to_plot, features.columns[-1]]),
-                         ref_type=ref_type, title=title, figure_filename=figure_filename)
+        # Compute scores, join them in features, and rank features based on scores
+        scores = compute_against_reference(features, ref, metric)
+        features = features.join(scores)
+        # TODO: decide what metric to sort by
+        features.sort_values(features.columns[-1], ascending=False, inplace=True)
 
-    if not result_filename.endswith('.txt'):
-        result_filename += '.txt'
-    features.to_csv(result_filename, sep='\t')
-    verbose_print('Saved the ranking as {}.'.format(result_filename))
+        # Plot features panel
+        verbose_print('Plotting top {} features vs. ref ...'.format(n_features_to_plot))
+        plot_features_and_reference(pd.DataFrame(features.ix[:n_features_to_plot, features.columns[:-1]]),
+                                    ref,
+                                    pd.DataFrame(features.ix[:n_features_to_plot, features.columns[-1]]),
+                                    ref_type=ref_type, output_directory=output_directory)
+        if output_directory:
+            features.to_csv(os.path.join(output_directory, '{}.txt'.format(ref.name)), sep='\t')
 
 
 def compute_against_reference(features, ref, metric):
     """
-    Compute scores[i] = `feature`[i] vs. `ref`.
-    :param features: pandas DataFrame (n_features, n_elements), must have index and columns
-    :param ref: pandas DataFrame (1, n_elements), must have the index and the same columns
+    Compute scores[i] = `features`[i] vs. `ref` with computation using `metric`.
+    :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
+    :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
     :param metric: str, {information}
     :return: pandas DataFrame (n_features, 1),
     """
-    # Check data dimensions
-    features_nrow, features_ncol = features.shape
-    ref_nrow, ref_ncol = ref.shape
-    if ref_ncol != features_ncol:
-        raise ValueError('Numbers of columns of features ({}) and ref ({}) mismatch.'.format(features_ncol, ref_ncol))
-    # Compute score[i] = <features>[i] vs. <ref> and append score as a column to <features>
+    # Compute score[i] = <features>[i] vs. <ref>
     if 'information' in metric:
-        return pd.DataFrame([information_coefficient(row[1], ref.iloc[0, :]) for row in features.iterrows()],
+        # TODO: return Series
+        return pd.DataFrame([information_coefficient(ref, row[1]) for row in features.iterrows()],
                             index=features.index, columns=['information'])
     else:
         raise ValueError('Unknown metric {}.'.format(metric))
