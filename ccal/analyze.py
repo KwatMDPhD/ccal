@@ -43,7 +43,8 @@ TESTING = False
 # Information functions
 # ======================================================================================================================
 def rank_features_against_references(features, refs, metric, ref_type='continuous', relationship='direct',
-                                     sort_ref=True, n_features_to_plot=50, output_directory=None):
+                                     sort_ref=True, n_features_to_plot=0.95, max_feature_name_size=20,
+                                     output_directory=None):
     """
     Compute features vs. each ref in `refs`.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
@@ -52,7 +53,8 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
     :param relationship: str, {direct, inverse}
     :param ref_type: str, {continuous, categorical, binary}
     :param sort_ref: bool, sort each ref or not
-    :param n_features_to_plot: int, number of top features to plot
+    :param n_features_to_plot: int or float, number threshold if >= 1 and quantile threshold if < 1
+    :param max_feature_name_size: int, the maximum length of a feature name label
     :param output_directory: str, directory path to save the result (.txt) and figure (.TODO)
     :return: None
     """
@@ -84,10 +86,26 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
 
         # Plot features panel
         verbose_print('Plotting top {} features vs. ref ...'.format(n_features_to_plot))
-        plot_features_and_reference(pd.DataFrame(features.ix[:n_features_to_plot, features.columns[:-1]]),
+        if ref_type is 'continuous':
+            verbose_print('Normalizing continuous features and ref ...')
+            ref = (ref - ref.mean()) / ref.std()
+            for i, (idx, s) in enumerate(features.iterrows()):
+                mean = s.mean()
+                std = s.std()
+                for j, v in enumerate(s):
+                    features.iloc[i, j] = (v - mean) / std
+
+        if n_features_to_plot < 1:
+            indices_to_plot = features.iloc[:, -1] >= features.iloc[:, -1].quantile(n_features_to_plot)
+            indices_to_plot |= features.iloc[:, -1] <= features.iloc[:, -1].quantile(1 - n_features_to_plot)
+        elif n_features_to_plot >= 1:
+            indices_to_plot = features.index[:n_features_to_plot].tolist() + features.index[
+                                                                             -n_features_to_plot:].tolist()
+        plot_features_and_reference(pd.DataFrame(features.ix[indices_to_plot, features.columns[:-1]]),
                                     ref,
-                                    pd.DataFrame(features.ix[:n_features_to_plot, features.columns[-1]]),
-                                    ref_type=ref_type, output_directory=output_directory)
+                                    pd.DataFrame(features.ix[indices_to_plot, features.columns[-1]]),
+                                    ref_type=ref_type, max_feature_name_size=max_feature_name_size,
+                                    output_directory=output_directory)
         if output_directory:
             features.to_csv(os.path.join(output_directory, '{}.txt'.format(ref.name)), sep='\t')
 

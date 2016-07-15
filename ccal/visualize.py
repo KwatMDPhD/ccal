@@ -74,25 +74,35 @@ FONT12 = {'family': 'arial',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_features_and_reference(features, ref, scores, ref_type='continuous', output_directory=None):
+def plot_features_and_reference(features, ref, scores, ref_type='continuous', max_feature_name_size=20,
+                                output_directory=None):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
     :param scores:  pandas DataFrame (n_features, 1), must have the same index and columns
     :param ref_type: str, {continuous, categorical, binary}
+    :param max_feature_name_size: int, the maximum length of a feature name label
     :param output_directory: str, directory path to save the figure
     :return: None
     """
     features_nrow, features_ncol = features.shape
 
-    # Initialize figure
-    if features_ncol > 30 or features_nrow > 50:
-        fig_width, fig_height = 9, 16
+    # Set figure size and initialize figure
+    if features_ncol < 10:
+        fig_width = 5
+    elif features_ncol < 50:
+        fig_width = 7
     else:
-        fig_width, fig_height = 5, 10
+        fig_width = 9
+    if features_nrow < 10:
+        fig_height = 5
+    elif features_nrow < 50:
+        fig_height = 7
+    else:
+        fig_height = 9
     fig = plt.figure(figsize=(fig_width, fig_height), dpi=900)
-    text_margin = 0.2
+    text_margin = 0.3
 
     # Set heatmap parameters for ref
     if ref_type == 'binary':
@@ -104,8 +114,6 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ou
     elif ref_type == 'continuous':
         ref_cmap = CMAP_CONTINUOUS
         ref_min, ref_max = -2.5, 2.5
-        # Normalize continuous values
-        ref = (ref - np.mean(ref.ix[0, :])) / np.std(ref.ix[0, :])
     else:
         raise ValueError('Unknown ref_type {}.'.format(ref_type))
 
@@ -118,16 +126,10 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ou
     else:
         features_cmap = CMAP_CONTINUOUS
         features_min, features_max = -2.5, 2.5
-        # Normalize continuous values
-        for i, (idx, s) in enumerate(features.iterrows()):
-            mean = s.mean()
-            std = s.std()
-            for j, v in enumerate(s):
-                features.iloc[i, j] = (v - mean) / std
 
     # Plot ref
     ref_ax = plt.subplot2grid((features_nrow, 1), (0, 0))
-    ref_ax.text(features_ncol / 2, 3, ref.name, horizontalalignment='center', verticalalignment='bottom',
+    ref_ax.text(features_ncol / 2, 4 * text_margin, ref.name, horizontalalignment='center', verticalalignment='bottom',
                 **FONT20_BOLD)
     sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True, center=None, mask=None,
                 square=False, cmap=ref_cmap, linewidth=0, linecolor=BLACK,
@@ -140,8 +142,9 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ou
     ref_ax.text(features_ncol + text_margin, 0.5, scores.columns[0],
                 horizontalalignment='left', verticalalignment='center',
                 **FONT12_BOLD)
-    if ref_type in ('binary', 'categorical'):
 
+    # Add binary or categorical ref labels
+    if ref_type in ('binary', 'categorical'):
         # Get boundaries
         boundaries = [0]
         prev_v = ref.iloc[0]
@@ -150,7 +153,6 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ou
                 boundaries.append(i + 1)
             prev_v = v
         boundaries.append(features_ncol)
-
         # Get label horizontal positions
         label_horizontal_positions = []
         prev_b = 0
@@ -159,8 +161,7 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ou
             prev_b = b
         # TODO: get_unique_in_order
         unique_ref_labels = np.unique(ref.values)[::-1]
-
-        # Add categories
+        # Add labels
         for i, pos in enumerate(label_horizontal_positions):
             ref_ax.text(pos, 1, unique_ref_labels[i], horizontalalignment='center', verticalalignment='bottom',
                         **FONT16_BOLD)
@@ -173,7 +174,8 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ou
                 yticklabels=False, cbar=False)
 
     for i, idx in enumerate(features.index):
-        features_ax.text(-text_margin, features_nrow - i - 0.5, idx, horizontalalignment='right',
+        features_ax.text(-text_margin, features_nrow - i - 0.5, idx[:max_feature_name_size],
+                         horizontalalignment='right',
                          verticalalignment='center', **FONT12)
         features_ax.text(features_ncol + text_margin, features_nrow - i - 0.5, '{:.3e}'.format(scores.iloc[i, 0]),
                          horizontalalignment='left', verticalalignment='center', **FONT12)
