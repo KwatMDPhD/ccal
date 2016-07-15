@@ -1,29 +1,28 @@
 """
-Computational Cancer Biology Analysis Library v0.1
+Computational Cancer Analysis Library v0.1
 
 
 Authors:
 Pablo Tamayo
 pablo.tamayo.r@gmail.com
-Computational Cancer Biology, UCSD Cancer Center
+Computational Cancer Analysis, UCSD Cancer Center
 
 Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
-Computational Cancer Biology, UCSD Cancer Center
+Computational Cancer Analysis, UCSD Cancer Center
 
 
 Description:
-TODO
+Plotting module for CCAL.
 """
 import os
 
+import pandas as pd
 import numpy as np
 import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-from .support import verbose_print
 
 # ======================================================================================================================
 # Parameters
@@ -145,13 +144,12 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ou
 
         # Get boundaries
         boundaries = [0]
-        prev_v = ref.iloc[0, 0]
-        for i, v in enumerate(ref.iloc[0, 1:]):
+        prev_v = ref.iloc[0]
+        for i, v in enumerate(ref.iloc[1:]):
             if prev_v != v:
                 boundaries.append(i + 1)
             prev_v = v
         boundaries.append(features_ncol)
-        verbose_print('boundaries: {}'.format(boundaries))
 
         # Get label horizontal positions
         label_horizontal_positions = []
@@ -159,7 +157,7 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ou
         for b in boundaries[1:]:
             label_horizontal_positions.append(b - (b - prev_b) / 2)
             prev_b = b
-        verbose_print('label_horizontal_positions: {}'.format(label_horizontal_positions))
+        # TODO: get_unique_in_order
         unique_ref_labels = np.unique(ref.values)[::-1]
 
         # Add categories

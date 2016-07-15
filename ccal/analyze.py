@@ -1,19 +1,19 @@
 """
-Computational Cancer Biology Analysis Library v0.1
+Computational Cancer Analysis Library v0.1
 
 
 Authors:
 Pablo Tamayo
 pablo.tamayo.r@gmail.com
-Computational Cancer Biology, UCSD Cancer Center
+Computational Cancer Analysis, UCSD Cancer Center
 
 Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
-Computational Cancer Biology, UCSD Cancer Center
+Computational Cancer Analysis, UCSD Cancer Center
 
 
 Description:
-TODO
+Main analysis module for CCAL.
 """
 import os
 
