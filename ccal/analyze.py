@@ -25,7 +25,7 @@ from scipy.cluster.hierarchy import linkage, cophenet
 from sklearn.decomposition import NMF
 
 from .support import verbose_print
-from .visualize import plot_nmf_result
+from .visualize import plot_nmf_result, plot_feature_ranking
 from .information import information_coefficient
 
 # ======================================================================================================================
@@ -42,28 +42,49 @@ TESTING = False
 # ======================================================================================================================
 # Information functions
 # ======================================================================================================================
-def compute_against_reference(dataframe, reference, metric, columns_to_sort=None):
+def rank_features(features, ref, metric, ref_type='continuous', title=None, filename=None):
     """
-    Compute score[i] = `dataframe`[i] vs. `reference` and append score as a column to `dataframe`.
-    :param dataframe: pandas DataFrame (n_samples, n_features),
-    :param reference: array-like (1, n_features),
-    :param metric: str, {'information'}
-    :param columns_to_sort: str, column name
-    :return: None, modify `dataframe` inplace
+    Compute scores[i] = `feature`[i] vs. `ref` and plot as heatmap.
+    :param features: pandas DataFrame (n_features, n_elements), must have index and columns
+    :param ref: pandas DataFrame (1, n_elements), must have the index and the same columns
+    :param metric: str, {information}
+    :param ref_type: str, {continuous, categorical, binary}
+    :param title: str, figure title
+    :param filename: str, file path to save the figure
+    :return: None
     """
-    if not columns_to_sort:
-        columns_to_sort = ['information']
+    verbose_print('Computing feature vs. reference using {}...'.format(metric))
+    # Sort ref and features
+    ref = ref.T.sort_values(ref.index[0], ascending=False).T
+    features = features.reindex_axis(ref.columns, axis=1)
+    features = features.join(compute_against_reference(features, ref, metric))
+    features.sort_values(features.columns[-1], ascending=False, inplace=True)
 
-    # Compute score[i] = <dataframe>[i] vs. <reference> and append score as a column to <dataframe>
+    verbose_print('Plotting feature vs. reference ranking ...'.format(metric))
+    plot_feature_ranking(pd.DataFrame(features.ix[:, features.columns[:-1]]), ref,
+                         pd.DataFrame(features.ix[:, features.columns[-1]]),
+                         ref_type=ref_type, title=title, filename=filename)
+
+
+def compute_against_reference(features, ref, metric):
+    """
+    Compute scores[i] = `feature`[i] vs. `ref`.
+    :param features: pandas DataFrame (n_features, n_elements), must have index and columns
+    :param ref: pandas DataFrame (1, n_elements), must have the index and the same columns
+    :param metric: str, {information}
+    :return: pandas DataFrame (n_features, 1),
+    """
+    # Check data dimensions
+    features_nrow, features_ncol = features.shape
+    ref_nrow, ref_ncol = ref.shape
+    if ref_ncol != features_ncol:
+        raise ValueError('Numbers of columns of features ({}) and ref ({}) mismatch.'.format(features_ncol, ref_ncol))
+    # Compute score[i] = <features>[i] vs. <ref> and append score as a column to <features>
     if 'information' in metric:
-        dataframe.ix[:, 'information'] = pd.Series(
-            [information_coefficient(np.array(row[1]), reference) for row in dataframe.iterrows()],
-            index=dataframe.index)
+        return pd.DataFrame([information_coefficient(row[1], ref.iloc[0, :]) for row in features.iterrows()],
+                            index=features.index, columns=['information'])
     else:
-        raise ValueError('Unknown metric {}'.format(metric))
-
-    # Sort
-    dataframe.sort(columns_to_sort, inplace=True)
+        raise ValueError('Unknown metric {}.'.format(metric))
 
 
 # ======================================================================================================================

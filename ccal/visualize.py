@@ -16,7 +16,6 @@ Description:
 TODO
 """
 import numpy as np
-import pandas as pd
 import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -74,29 +73,28 @@ FONT12 = {'family': 'arial',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_heatmap_panel(ref, features, scores, ref_type, title=None, filename=None):
+def plot_feature_ranking(features, ref, scores, ref_type='continuous', title=None, filename=None):
     """
     Plot a heatmap panel.
-    :param ref: pandas DataFrame (1, n_elements),
-    :param features: pandas DataFrame (n_features, n_elements),
-    :param scores:  pandas DataFrame (n_features, 1),
+    :param features: pandas DataFrame (n_features, n_elements), must have index and columns
+    :param ref: pandas DataFrame (1, n_elements), must have the index and the same columns
+    :param scores:  pandas DataFrame (n_features, 1), must have the same index and columns
+    :param ref_type: str, {continuous, categorical, binary}
     :param title: str, figure title
     :param filename: str, file path to save the figure
     :return: None
     """
     # Check data dimensions
-    ref_nrow, ref_ncol = ref.shape
     features_nrow, features_ncol = features.shape
+    ref_nrow, ref_ncol = ref.shape
     scores_nrow, scores_ncol = scores.shape
-    if ref_ncol != features_ncol:
-        raise ValueError('Numbers of columns of ref ({}) and featuers ({}) mismatch.'.format(ref_ncol, features_ncol))
+    if features_ncol != ref_ncol:
+        raise ValueError('Numbers of columns of features ({}) and ref ({}) mismatch.'.format(features_ncol, ref_ncol))
     if features_nrow != scores_nrow:
         raise ValueError(
             'Numbers of rows of features ({}) and scores ({}) mismatch.'.format(features_nrow, scores_nrow))
 
-    # Sort ref and features
-    ref = ref.T.sort_values(ref.index[0], ascending=False).T
-    features = features.reindex_axis(ref.columns, axis=1)
+
 
     # Initialize figure
     if features_ncol > 30 or features_nrow > 50:
@@ -146,7 +144,7 @@ def plot_heatmap_panel(ref, features, scores, ref_type, title=None, filename=Non
                 square=False, cmap=ref_cmap, linewidth=0, linecolor=BLACK,
                 annot=False, fmt=None, annot_kws={}, xticklabels=False,
                 yticklabels=False, cbar=False)
-    # Plot ref texts
+    # Add ref texts
     ref_ax.text(-text_margin, 0.5, ref.index[0],
                 horizontalalignment='right', verticalalignment='center',
                 **FONT12_BOLD)
@@ -154,6 +152,7 @@ def plot_heatmap_panel(ref, features, scores, ref_type, title=None, filename=Non
                 horizontalalignment='left', verticalalignment='center',
                 **FONT12_BOLD)
     if ref_type in ('binary', 'categorical'):
+
         # Get boundaries
         boundaries = [0]
         prev_v = ref.iloc[0, 0]
@@ -172,7 +171,8 @@ def plot_heatmap_panel(ref, features, scores, ref_type, title=None, filename=Non
             prev_b = b
         verbose_print('label_horizontal_positions: {}'.format(label_horizontal_positions))
         unique_ref_labels = np.unique(ref.values)[::-1]
-        # Plot categories
+
+        # Add categories
         for i, pos in enumerate(label_horizontal_positions):
             ref_ax.text(pos, 1, unique_ref_labels[i], horizontalalignment='center', verticalalignment='bottom',
                         **FONT16_BOLD)
@@ -224,22 +224,23 @@ def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=No
         plt.savefig(output_filename + '.png')
 
 
-def plot_nmf_scores(scores, figsize=(25, 10), title=None, output_filename=None):
+def plot_nmf_scores(scores, figsize=(25, 10), title=None, filename=None):
     """
     Plot NMF score
     :param scores: dict, NMF score per k (key: k; value: score)
     :param figsize: tuple (width, height),
     :param title: str, figure title
-    :param output_filename: str, file path to save the figure
+    :param filename: str, file path to save the output figure
     :return: None
     """
     plt.figure(figsize=figsize)
     ax = sns.pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
     ax.set(xlabel='k', ylabel='Score')
-    ax.set_title('k vs. Score')
+    if title:
+        ax.set_title(title)
 
-    if output_filename:
-        plt.savefig(output_filename + '.png')
+    if filename:
+        plt.savefig(filename + '.png')
 
 
 # TODO: finalize
