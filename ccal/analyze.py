@@ -111,6 +111,7 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
             features.to_csv(result_filepath, sep='\t')
             verbose_print('Saved the result as {}.'.format(result_filepath))
 
+
 def compute_against_reference(features, ref, metric):
     """
     Compute scores[i] = `features`[i] vs. `ref` with computation using `metric`.
