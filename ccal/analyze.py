@@ -26,7 +26,7 @@ from sklearn.decomposition import NMF
 
 from .support import verbose_print, establish_path
 from .visualize import plot_nmf_result, plot_features_and_reference
-from .information import information_coefficient
+from .information import information_coefficient, cmi_diff, cmi_ratio
 
 # ======================================================================================================================
 # Global variables
@@ -121,10 +121,18 @@ def compute_against_reference(features, ref, metric):
     :return: pandas DataFrame (n_features, 1),
     """
     # Compute score[i] = <features>[i] vs. <ref>
-    if 'information' in metric:
+    if metric is 'information':
         # TODO: return Series
-        return pd.DataFrame([information_coefficient(ref, row[1]) for row in features.iterrows()],
-                            index=features.index, columns=['information'])
+        return pd.Series([information_coefficient(ref, row[1]) for row in features.iterrows()],
+                         index=features.index, name=['information'])
+    elif metric is 'information_cmi_diff':
+        # TODO: return Series
+        return pd.Series([cmi_diff(ref, row[1]) for row in features.iterrows()],
+                         index=features.index, name=['information_cmi_diff'])
+    elif metric is 'information_cmi_ratio':
+        # TODO: return Series
+        return pd.Series([cmi_ratio(ref, row[1]) for row in features.iterrows()],
+                         index=features.index, name=['information_cmi_ratio'])
     else:
         raise ValueError('Unknown metric {}.'.format(metric))
 
