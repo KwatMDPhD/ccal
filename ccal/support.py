@@ -52,20 +52,22 @@ def runtime(function, n_range, plot=True):
     runtimes = []
     for i in n_range:
         n = (i + 1) * 10
-        verbose_print('Getting runtime with n={}'.format(n))
+        verbose_print('Getting runtime with vectors (x, y) with size {} ...'.format(n))
         x = np.random.rand(n)
         y = np.random.rand(n)
         t0 = time.time()
 
         function(x, y)
 
-        runtime = time.time() - t0
+        t = time.time() - t0
         ns.append(n)
-        runtimes.append(runtime)
+        runtimes.append(t)
 
     if plot:
-        verbose_print('\tPlotting ...')
+        verbose_print('Plotting size vs. time ...')
         sns.pointplot(x=ns, y=runtimes)
+        sns.plt.xlabel('Vector Size')
+        sns.plt.ylabel('Time')
 
     return ns, runtimes
 

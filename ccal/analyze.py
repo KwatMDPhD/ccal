@@ -40,7 +40,7 @@ TESTING = False
 
 
 # ======================================================================================================================
-# Information functions
+# Feature selection
 # ======================================================================================================================
 def rank_features_against_references(features, refs, metric, ref_type='continuous', relationship='direct',
                                      sort_ref=True, n_features_to_plot=0.95, max_feature_name_size=20,
@@ -63,7 +63,7 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
         establish_path(output_directory)
 
     for i, (idx, ref) in enumerate(refs.iterrows()):
-        verbose_print('features vs. {} ({}/{}) ...'.format(idx, i + 1, refs.shape[0]))
+        verbose_print('Computing features vs. {} ({}/{}) using {} metric ...'.format(idx, i + 1, refs.shape[0], metric))
 
         # Use only the intersecting columns
         col_intersection = set(features.columns) & set(ref.index)
@@ -123,23 +123,20 @@ def compute_against_reference(features, ref, metric):
     """
     # Compute score[i] = <features>[i] vs. <ref>
     if metric is 'information':
-        # TODO: return Series
-        return pd.Series([information_coefficient(ref, row[1]) for row in features.iterrows()],
-                         index=features.index, name=['information'])
+        return pd.DataFrame([information_coefficient(ref, row[1]) for row in features.iterrows()],
+                         index=features.index, columns=['information'])
     elif metric is 'information_cmi_diff':
-        # TODO: return Series
-        return pd.Series([cmi_diff(ref, row[1]) for row in features.iterrows()],
-                         index=features.index, name=['information_cmi_diff'])
+        return pd.DataFrame([cmi_diff(ref, row[1]) for row in features.iterrows()],
+                         index=features.index, columns=['information_cmi_diff'])
     elif metric is 'information_cmi_ratio':
-        # TODO: return Series
-        return pd.Series([cmi_ratio(ref, row[1]) for row in features.iterrows()],
-                         index=features.index, name=['information_cmi_ratio'])
+        return pd.DataFrame([cmi_ratio(ref, row[1]) for row in features.iterrows()],
+                         index=features.index, columns=['information_cmi_ratio'])
     else:
         raise ValueError('Unknown metric {}.'.format(metric))
 
 
 # ======================================================================================================================
-# NMF functions
+# NMF
 # ======================================================================================================================
 def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, randomize_coordinate_order=False,
         regularizer=0, plot=False):
@@ -168,10 +165,9 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
         # Compute W, H, and reconstruction error
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
-        verbose_print('\tDone.')
 
         if plot:
-            verbose_print('\tPlotting ...')
+            verbose_print('\tPlotting W and H matrices ...')
             plot_nmf_result(nmf_results, k)
 
     return nmf_results
