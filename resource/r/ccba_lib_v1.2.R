@@ -87,21 +87,21 @@
       }
    }
 
-#-------------------------------------------------------------------------------------------------
-   CCBA_read_GCT_file.v1 <- function(filename = "NULL") 
-   #    
-   # Reads a gene expression dataset in GCT format and converts it into an R data frame
-   # Pablo Tamayo Dec 30, 2015
-   #
-   {
-      ds <- read.delim(filename, header=T, sep="\t", skip=2, row.names=1, blank.lines.skip=T,
-                       comment.char="", as.is=T, na.strings = "")
-      descs <- ds[,1]
-      ds <- ds[-1]
-      row.names <- row.names(ds)
-      names <- names(ds)
-      return(list(ds = ds, row.names = row.names, descs = descs, names = names))
-   }
+##-------------------------------------------------------------------------------------------------
+#   CCBA_read_GCT_file.v1 <- function(filename = "NULL")
+#   #
+#   # Reads a gene expression dataset in GCT format and converts it into an R data frame
+#   # Pablo Tamayo Dec 30, 2015
+#   #
+#   {
+#      ds <- read.delim(filename, header=T, sep="\t", skip=2, row.names=1, blank.lines.skip=T,
+#                       comment.char="", as.is=T, na.strings = "")
+#      descs <- ds[,1]
+#      ds <- ds[-1]
+#      row.names <- row.names(ds)
+#      names <- names(ds)
+#      return(list(ds = ds, row.names = row.names, descs = descs, names = names))
+#   }
 
 #------------------------------------------------------------------------------------------------
    CCBA_ReadClsFile <- function(file = "NULL") 
@@ -2320,50 +2320,50 @@
         write.table(log.table, file=log.table.file, quote=F, col.names = T, row.names = F, append = F, sep="\t")
   }
 
-#-------------------------------------------------------------------------------------------------       
-   CCBA_write.gct.v1 <- function(
-   #
-   # Write data frame to a GCT file
-   # P. Tamayo Jan 17, 2016
-   #
-       gct.data.frame,
-       descs = "",
-       filename) 
-   {
-    f <- file(filename, "w")
-    cat("#1.2", "\n", file = f, append = TRUE, sep = "")
-    cat(dim(gct.data.frame)[1], "\t", dim(gct.data.frame)[2], "\n", file = f, append = TRUE, sep = "")
-    cat("Name", "\t", file = f, append = TRUE, sep = "")
-    cat("Description", file = f, append = TRUE, sep = "")
-
-    colnames <- colnames(gct.data.frame)
-    cat("\t", colnames[1], file = f, append = TRUE, sep = "")
-
-    if (length(colnames) > 1) {
-       for (j in 2:length(colnames)) {
-           cat("\t", colnames[j], file = f, append = TRUE, sep = "")
-       }
-     }
-    cat("\n", file = f, append = TRUE, sep = "\t")
-
-    oldWarn <- options(warn = -1)
-    m <- matrix(nrow = dim(gct.data.frame)[1], ncol = dim(gct.data.frame)[2] +  2)
-    m[, 1] <- row.names(gct.data.frame)
-    if (length(descs) > 1) {
-        m[, 2] <- descs
-    } else {
-        m[, 2] <- row.names(gct.data.frame)
-    }
-    index <- 3
-    for (i in 1:dim(gct.data.frame)[2]) {
-        m[, index] <- gct.data.frame[, i]
-        index <- index + 1
-    }
-    write.table(m, file = f, append = TRUE, quote = FALSE, sep = "\t", eol = "\n", col.names = FALSE, row.names = FALSE)
-    close(f)
-    options(warn = 0)
-
-}
+##-------------------------------------------------------------------------------------------------
+#   CCBA_write.gct.v1 <- function(
+#   #
+#   # Write data frame to a GCT file
+#   # P. Tamayo Jan 17, 2016
+#   #
+#       gct.data.frame,
+#       descs = "",
+#       filename)
+#   {
+#    f <- file(filename, "w")
+#    cat("#1.2", "\n", file = f, append = TRUE, sep = "")
+#    cat(dim(gct.data.frame)[1], "\t", dim(gct.data.frame)[2], "\n", file = f, append = TRUE, sep = "")
+#    cat("Name", "\t", file = f, append = TRUE, sep = "")
+#    cat("Description", file = f, append = TRUE, sep = "")
+#
+#    colnames <- colnames(gct.data.frame)
+#    cat("\t", colnames[1], file = f, append = TRUE, sep = "")
+#
+#    if (length(colnames) > 1) {
+#       for (j in 2:length(colnames)) {
+#           cat("\t", colnames[j], file = f, append = TRUE, sep = "")
+#       }
+#     }
+#    cat("\n", file = f, append = TRUE, sep = "\t")
+#
+#    oldWarn <- options(warn = -1)
+#    m <- matrix(nrow = dim(gct.data.frame)[1], ncol = dim(gct.data.frame)[2] +  2)
+#    m[, 1] <- row.names(gct.data.frame)
+#    if (length(descs) > 1) {
+#        m[, 2] <- descs
+#    } else {
+#        m[, 2] <- row.names(gct.data.frame)
+#    }
+#    index <- 3
+#    for (i in 1:dim(gct.data.frame)[2]) {
+#        m[, index] <- gct.data.frame[, i]
+#        index <- index + 1
+#    }
+#    write.table(m, file = f, append = TRUE, quote = FALSE, sep = "\t", eol = "\n", col.names = FALSE, row.names = FALSE)
+#    close(f)
+#    options(warn = 0)
+#
+#}
 
 #-------------------------------------------------------------------------------------------------       
 qvalue <- function(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, robust=FALSE, 

@@ -59,7 +59,8 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
     :return: None
     """
     if output_directory:
-        establish_path(os.path.abspath(output_directory))
+        output_directory = os.path.abspath(output_directory)
+        establish_path(output_directory)
 
     for i, (idx, ref) in enumerate(refs.iterrows()):
         verbose_print('features vs. {} ({}/{}) ...'.format(idx, i + 1, refs.shape[0]))
