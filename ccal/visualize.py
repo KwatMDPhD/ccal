@@ -24,6 +24,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from .support import verbose_print
+
 # ======================================================================================================================
 # Parameters
 # ======================================================================================================================
@@ -184,7 +186,10 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ma
     plt.show(fig)
 
     if output_directory:
-        fig.savefig(os.path.join(output_directory, '{}.pdf'.format(ref.name)))
+        figure_filepath = os.path.join(output_directory, '{}.pdf'.format(ref.name))
+        fig.savefig(figure_filepath)
+        verbose_print('Saved the figure as {}.'.format(figure_filepath))
+
 
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):

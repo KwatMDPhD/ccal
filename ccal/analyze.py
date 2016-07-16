@@ -107,8 +107,9 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
                                     ref_type=ref_type, max_feature_name_size=max_feature_name_size,
                                     output_directory=output_directory)
         if output_directory:
-            features.to_csv(os.path.join(output_directory, '{}.txt'.format(ref.name)), sep='\t')
-
+            result_filepath = os.path.join(output_directory, '{}.txt'.format(ref.name))
+            features.to_csv(result_filepath, sep='\t')
+            verbose_print('Saved the result as {}.'.format(result_filepath))
 
 def compute_against_reference(features, ref, metric):
     """
