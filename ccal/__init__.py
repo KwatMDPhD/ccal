@@ -11,6 +11,10 @@ Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
 Computational Cancer Analysis, UCSD Cancer Center
 
+James Jensen
+jdjensen@eng.ucsd.edu
+Laboratory of Jill Mesirov
+
 
 Description:
 Check dependencies and install missing ones.
