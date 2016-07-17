@@ -53,8 +53,8 @@ def runtime(function, n_range, plot=True):
     for i in n_range:
         n = (i + 1) * 10
         verbose_print('Getting runtime with vectors (x, y) with size {} ...'.format(n))
-        x = np.random.rand(n)
-        y = np.random.rand(n)
+        x = np.random.random_sample(n)
+        y = np.random.random_sample(n)
         t0 = time.time()
 
         function(x, y)
@@ -152,6 +152,31 @@ def write_gct(dataframe, filename, description=None, index_column=None):
 # ======================================================================================================================
 # Simulate
 # ======================================================================================================================
+def make_random_features_and_refs(nrow, ncol, ncategory=None):
+    """
+    Make simulation features and refs dataframes.
+    :param nrow: int,
+    :param ncol: int,
+    :param ncategory: None or int, if None, use continuous reference; if int, use  categorical
+    :return: pandas DataFrame, features (`nrow`, `ncol`) and refs (`nrow`, `ncol`)
+    """
+    shape = (nrow, ncol)
+    indices = ['Feature {}'.format(i) for i in range(nrow)]
+    columns = ['Element {}'.format(i) for i in range(ncol)]
+    features = pd.DataFrame(np.random.random_sample(shape),
+                            index=indices,
+                            columns=columns)
+    if ncategory:
+        refs = pd.DataFrame(np.random.random_integers(0, ncategory, shape),
+                            index=indices,
+                            columns=columns)
+    else:
+        refs = pd.DataFrame(np.random.random_sample(shape),
+                            index=indices,
+                            columns=columns)
+    return features, refs
+
+
 def simulate_x_y(n, rho, threshold=3):
     """
     Generate 2 normal random vectors with correlation `rho` of length `n`.
