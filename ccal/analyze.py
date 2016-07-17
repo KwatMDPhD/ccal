@@ -136,12 +136,12 @@ def compute_against_reference(features, ref, metric):
         raise ValueError('Unknown metric {}.'.format(metric))
 
 
-def rank_features_against_features(features1, features2, distance=False, result_filename=None, figure_filename=None):
+def compare_features_against_features(features1, features2, is_distance=False, result_filename=None, figure_filename=None):
     """
     Make association or distance matrix of the rows of `feature1` and `feature2`.
     :param features1: pandas DataFrame,
     :param features2: pandas DataFrame,
-    :param distance: bool, True for distance and False for association
+    :param is_distance: bool, True for distance and False for association
     :param result_filename: str, filepath to save the result
     :param figure_filename: str, filepath to save the figure
     :return:
@@ -152,8 +152,8 @@ def rank_features_against_features(features1, features2, distance=False, result_
         verbose_print('Features 1 {} ({}/{}) vs. features 2 ...'.format(i1, i + 1, features1_nrow))
         for i2, r2 in features2.iterrows():
             association_matrix.ix[i1, i2] = information_coefficient(r1, r2)
-    if distance:
-        verbose_print('Converting association to distance (distance = 1 - association) ...')
+    if is_distance:
+        verbose_print('Converting association to is_distance (is_distance = 1 - association) ...')
         association_matrix = 1 - association_matrix
     if result_filename:
         establish_path(result_filename)
