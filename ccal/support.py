@@ -101,6 +101,7 @@ def read_gct(filename, fill_na=None, drop_description=True):
     Read .gct `filename` and convert it into a pandas DataFrame.
     :param filename: str, path to a .gct
     :param fill_na: value to replace NaN in the dataframe generated from a `filename`
+    :param drop_description: bool, drop the .gct's Description column (#2) or not
     :return: pandas DataFrame, (n_samples, 2 + n_features)
     """
     dataframe = pd.read_csv(filename, skiprows=2, sep='\t')
