@@ -23,9 +23,11 @@ from scipy.spatial import distance
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, cophenet
 from sklearn.decomposition import NMF
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from .support import verbose_print, establish_path
-from .visualize import plot_nmf_result, plot_features_and_reference
+from .visualize import CMAP_CONTINUOUS, plot_nmf_result, plot_features_and_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 
 # ======================================================================================================================
@@ -59,7 +61,6 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
     :return: None
     """
     if output_directory:
-        output_directory = os.path.abspath(output_directory)
         establish_path(output_directory)
 
     for i, (idx, ref) in enumerate(refs.iterrows()):
@@ -124,15 +125,49 @@ def compute_against_reference(features, ref, metric):
     # Compute score[i] = <features>[i] vs. <ref>
     if metric is 'information':
         return pd.DataFrame([information_coefficient(ref, row[1]) for row in features.iterrows()],
-                         index=features.index, columns=['information'])
+                            index=features.index, columns=['information'])
     elif metric is 'information_cmi_diff':
         return pd.DataFrame([cmi_diff(ref, row[1]) for row in features.iterrows()],
-                         index=features.index, columns=['information_cmi_diff'])
+                            index=features.index, columns=['information_cmi_diff'])
     elif metric is 'information_cmi_ratio':
         return pd.DataFrame([cmi_ratio(ref, row[1]) for row in features.iterrows()],
-                         index=features.index, columns=['information_cmi_ratio'])
+                            index=features.index, columns=['information_cmi_ratio'])
     else:
         raise ValueError('Unknown metric {}.'.format(metric))
+
+
+def rank_features_against_features(features1, features2, distance=False, result_filename=None, figure_filename=None):
+    """
+    Make association or distance matrix of the rows of `feature1` and `feature2`.
+    :param features1: pandas DataFrame,
+    :param features2: pandas DataFrame,
+    :param distance: bool, True for distance and False for association
+    :param result_filename: str, filepath to save the result
+    :param figure_filename: str, filepath to save the figure
+    :return:
+    """
+    association_matrix = pd.DataFrame(index=features1.index, columns=features2.index, dtype=float)
+    features1_nrow = features1.shape[0]
+    for i, (i1, r1) in enumerate(features1.iterrows()):
+        verbose_print('Features 1 {} ({}/{}) vs. features 2 ...'.format(i1, i + 1, features1_nrow))
+        for i2, r2 in features2.iterrows():
+            association_matrix.ix[i1, i2] = information_coefficient(r1, r2)
+    if distance:
+        verbose_print('Converting association to distance (distance = 1 - association) ...')
+        association_matrix = 1 - association_matrix
+    if result_filename:
+        establish_path(result_filename)
+        association_matrix.to_csv(result_filename, sep='\t')
+        verbose_print('Saved the resulting matrix as {}.'.format(result_filename))
+
+    verbose_print('Plotting the resulting matrix ...')
+    ax = sns.clustermap(association_matrix, cmap=CMAP_CONTINUOUS)
+    plt.setp(ax.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
+    plt.setp(ax.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+    if figure_filename:
+        establish_path(figure_filename)
+        association_matrix.to_csv(figure_filename, sep='\t')
+        verbose_print('Saved the resulting figure as {}.'.format(figure_filename))
 
 
 # ======================================================================================================================

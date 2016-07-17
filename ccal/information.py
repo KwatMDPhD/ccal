@@ -159,9 +159,9 @@ def cmi_diff(x, y):
 
     for i in range(n - 1):
         if cdf_x[i] != 0:
-            ce_x = ce_x - (x_sorted[i + 1] - x_sorted[i]) * cdf_x[i] * math.log(cdf_x[i])
+            ce_x -= (x_sorted[i + 1] - x_sorted[i]) * cdf_x[i] * math.log(cdf_x[i])
         if cdf_y[i] != 0:
-            ce_y = ce_y - (y_sorted[i + 1] - y_sorted[i]) * cdf_y[i] * math.log(cdf_y[i])
+            ce_y -= (y_sorted[i + 1] - y_sorted[i]) * cdf_y[i] * math.log(cdf_y[i])
 
     ce_xy = 0
     for i in range(n):
@@ -195,15 +195,15 @@ def cmi_ratio(x, y):
     lattice_area = np.zeros((n, n), dtype="float_")  # Array of tile areas
     lattice_count = np.zeros((n, n), dtype="uint8")  # Array of tile data counts
 
-    x_order = np.argsort(x, kind='quicksort')
+    x_order = np.argsort(x)
     x_sorted = x[x_order]
-    y_order = np.argsort(y, kind='quicksort')
+    y_order = np.argsort(y)
     y_sorted = y[y_order]
 
     ind = np.arange(0, n, 1)
-    ind_x_order = np.argsort(x_order, kind='quicksort')
+    ind_x_order = np.argsort(x_order)
     ind_x = ind[ind_x_order]
-    ind_y_order = np.argsort(y_order, kind='quicksort')
+    ind_y_order = np.argsort(y_order)
     ind_y = ind[ind_y_order]
 
     for i in range(n):
@@ -227,6 +227,6 @@ def cmi_ratio(x, y):
     for i in range(n):
         for j in range(n):
             if cdf_x[i] != 0 and cdf_y[j] != 0 and cdf_xy[i, j] != 0:
-                cmi = cmi - lattice_area[i, j] * cdf_xy[i, j] * math.log(cdf_xy[i, j]) / (cdf_x[i] * cdf_y[j])
+                cmi -= lattice_area[i, j] * cdf_xy[i, j] * math.log(cdf_xy[i, j]) / (cdf_x[i] * cdf_y[j])
 
     return cmi / (np.max(x) * np.max(y))
