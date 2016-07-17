@@ -117,7 +117,8 @@ def mutual_information(x, y, z=None, n_grid=25, var_types=None, bandwidth_scalin
         return cmi
 
 
-def information_coefficient(x, y, z=None, n_grid=25, var_types=None, n_permutations=0, adaptive=True, alpha=0.05, perm_alpha=0.05):
+def information_coefficient(x, y, z=None, n_grid=25, var_types=None, n_permutations=0, adaptive=True, alpha=0.05,
+                            perm_alpha=0.05):
     """
     :param x: array-like, (n_samples,)
     :param y: array-like, (n_samples,)
@@ -140,10 +141,10 @@ def information_coefficient(x, y, z=None, n_grid=25, var_types=None, n_permutati
         bandwidth_scaling = (1 + (-0.75) * rho2)
         ic_sign = np.sign(rho)
         mi = mutual_information(x, y, z=z, n_grid=n_grid,
-                                        var_types=var_types, bandwidth_scaling=bandwidth_scaling)
+                                var_types=var_types, bandwidth_scaling=bandwidth_scaling)
         ic = ic_sign * np.sqrt(1 - np.exp(- 2 * mi))
     except Exception as e:
-        print e.message
+        print(e.message)
         ic = 0
     if n_permutations > 0:
         n_more_extreme = 0
@@ -157,8 +158,8 @@ def information_coefficient(x, y, z=None, n_grid=25, var_types=None, n_permutati
             pm_rho, p = pearsonr(pm_x, y)
             pm_rho2 = abs(pm_rho)
             pm_bandwidth_scaling = (1 + (-0.75) * pm_rho2)
-            pm_mi = compute_mutual_information(pm_x, y, z, n_grid=n_grid,
-                                               var_types=var_types, bandwidth_scaling=pm_bandwidth_scaling)
+            pm_mi = mutual_information(pm_x, y, z, n_grid=n_grid,
+                                       var_types=var_types, bandwidth_scaling=pm_bandwidth_scaling)
             pm_ic_sign = np.sign(pm_rho)
             pm_ic = pm_ic_sign * np.sqrt(1 - np.exp(- 2 * pm_mi))
             # print pm_ic
@@ -177,7 +178,7 @@ def information_coefficient(x, y, z=None, n_grid=25, var_types=None, n_permutati
                 le_binom_p = binom_test(n_more_extreme, i + 1, alpha, alternative='less')
                 if le_binom_p * 2 < perm_alpha:
                     break
-        #print i + 1, 'trials'
+        # print i + 1, 'trials'
         p_value = n_more_extreme / float(trials)
         return ic, p_value
     return ic
