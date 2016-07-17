@@ -24,6 +24,7 @@ import math
 import numpy as np
 from scipy.stats import pearsonr
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
+from scipy.stats import binom_test
 
 # TODO
 # For bcv():
@@ -135,17 +136,14 @@ def information_coefficient(x, y, z=None, n_grid=25, var_types=None, n_permutati
     more precisely, while values obviously greater or less than alpha will be estimated less precisely.
     """
 
-    try:
-        rho, p = pearsonr(x, y)
-        rho2 = abs(rho)
-        bandwidth_scaling = (1 + (-0.75) * rho2)
-        ic_sign = np.sign(rho)
-        mi = mutual_information(x, y, z=z, n_grid=n_grid,
-                                var_types=var_types, bandwidth_scaling=bandwidth_scaling)
-        ic = ic_sign * np.sqrt(1 - np.exp(- 2 * mi))
-    except Exception as e:
-        print(e.message)
-        ic = 0
+    rho, p = pearsonr(x, y)
+    rho2 = abs(rho)
+    bandwidth_scaling = (1 + (-0.75) * rho2)
+    ic_sign = np.sign(rho)
+    mi = mutual_information(x, y, z=z, n_grid=n_grid,
+                            var_types=var_types, bandwidth_scaling=bandwidth_scaling)
+    ic = ic_sign * np.sqrt(1 - np.exp(- 2 * mi))
+
     if n_permutations > 0:
         n_more_extreme = 0
         trials = 0
