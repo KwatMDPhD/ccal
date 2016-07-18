@@ -48,17 +48,19 @@ TESTING = False
 # ======================================================================================================================
 # Feature selection
 # ======================================================================================================================
-def rank_features_against_references(features, refs, metric, ref_type='continuous', feat_type='continuous', direction='pos',
-                                     sort_ref=True, n_features=0.95, rowname_size=25, out_file=None, title=''):
+def rank_features_against_references(features, refs, metric, ref_type='continuous', feat_type='continuous', sort_ref=True,
+                                     ref_direction='pos', feat_direction = 'pos', n_features=0.95, rowname_size=25,
+                                     out_file=None, title=''):
     """
     Compute features vs. each ref in `refs`.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param refs: pandas DataFrame (n_features, m_elements), must have indices and columns, which must match 'features`'s
     :param metric: str, {information}
-    :param direction: str, {pos, neg}
     :param ref_type: str, {continuous, categorical, binary}
     :param feat_type: str, {continuous, categorical, binary}
     :param sort_ref: bool, sort each ref or not
+    :param ref_direction: str, {pos, neg}
+    :param feat_direction: str, {pos, neg}    
     :param n_features: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param rowname_size: int, the maximum length of a feature name label
     :param out_file: str,file path to save the result (.txt) and figure (.TODO)
@@ -69,32 +71,28 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
         establish_path(out_file)
 
     for i, (idx, ref) in enumerate(refs.iterrows()):
-        # verbose_print('Computing features vs. {} ({}/{}) using {} metric ...'.format(idx, i + 1, refs.shape[0], metric))
+        verbose_print('Computing features vs. {} ({}/{}) using {} metric ...'.format(idx, i + 1, refs.shape[0], metric))
 
         # Use only the intersecting columns
         col_intersection = set(features.columns) & set(ref.index)
-        # verbose_print(
-        #    'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
-        #        len(col_intersection), features.shape[1], ref.size))
+        verbose_print(
+            'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
+            len(col_intersection), features.shape[1], ref.size))
         features = features.ix[:, col_intersection]
         ref = ref.ix[col_intersection]
-
-        ref = ref.apply(pd.to_numeric, errors='coerce')
-
-        # print(ref)
         
         # Sort ref and features
         if sort_ref:
-            ref = ref.sort_values(ascending = False)
+            ref = ref.sort_values(ascending = (ref_direction == 'neg'))
             features = features.reindex_axis(ref.index, axis=1)
 
         # Compute scores, join them in features, and rank features based on scores
         scores = compute_against_reference(features, ref, metric)
 
         # Normalize 
-        # verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
+        verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
         if ref_type is 'continuous':
-            # verbose_print('Normalizing continuous features and ref ...')
+            verbose_print('Normalizing continuous features and ref ...')
             ref = (ref - ref.mean()) / ref.std()
             for i, (idx, s) in enumerate(features.iterrows()):
                 mean = s.mean()
@@ -105,7 +103,7 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
         features = features.join(scores)
         # TODO: decide what metric to sort by
                     
-        features.sort_values(features.columns[-1], ascending = (direction == 'neg'), inplace=True)
+        features.sort_values(features.columns[-1], ascending = (feat_direction == 'neg'), inplace=True)
 
         # Plot features panel
                     

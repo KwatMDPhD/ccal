@@ -70,11 +70,6 @@ FONT12_BOLD = {'family': 'arial',
                'color': BLACK,
                'weight': 'bold',
                }
-FONT12_BOLD_ORANGE = {'family': 'arial',
-               'size': 12,
-               'color': BLUE,
-               'weight': 'bold',
-               }
 FONT12 = {'family': 'arial',
           'size': 12,
           'color': BLACK,
@@ -101,7 +96,7 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
     
     features_nrow, features_ncol = features.shape
     
-    # Set figure size and initialize figure
+    # Set figure size: rescale according to number of rows/colums except for too small or too large sizes
     if features_ncol < 10:
         fig_width = 10/6
     elif features_ncol > 35:
@@ -115,19 +110,21 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
         fig_height = features_nrow/3
         
     fig = plt.figure(figsize=(fig_width, fig_height), dpi=900)
-    text_margin = 0.4
 
     # Set heatmap parameters for ref
     if ref_type == 'binary':
-        ref_cmap = CMAP_CATEGORICAL
+        ref_cmap = CMAP_BINARY
         ref_min, ref_max = 0, 1
+        text_margin = 1
     elif ref_type == 'categorical':
         ref_cmap = CMAP_CATEGORICAL
         ref_min, ref_max = 0, np.unique(ref.values).size
+        text_margin = 1
     elif ref_type == 'continuous':
         ref_cmap = CMAP_CONTINUOUS
         ref_min, ref_max = -2.5, 2.5
         ref = (ref - ref.mean()) / ref.std()
+        text_margin = 0.4
     else:
         raise ValueError('Unknown ref_type {}.'.format(ref_type))
 
@@ -135,7 +132,7 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
 
     if feat_type == 'binary':
         feat_cmap = CMAP_BINARY
-        feat_min, feat_max = 0, 1
+        feat_min, feat_max = -0.025, 1
     elif feat_type == 'categorical':
         feat_cmap = CMAP_CATEGORICAL
         feat_min, feat_max = 0, np.unique(feat.values).size
@@ -149,15 +146,6 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
                 features.iloc[i, j] = (v - mean) / std
     else:
         raise ValueError('Unknown feat_type {}.'.format(feat_type))
-    
-    #if np.unique(features).size == 2:
-    #    features_cmap = CMAP_BINARY
-    #    features_min, features_max = 0, 1
-    #    # TODO:
-    #    features += 0.1
-    #else:
-    #    features_cmap = CMAP_CONTINUOUS
-    #    features_min, features_max = -2.5, 2.5
 
     # Plot ref
     ref_ax = plt.subplot2grid((features_nrow, 1), (0, 0))
@@ -192,7 +180,7 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
         unique_ref_labels = np.unique(ref.values)[::-1]
         # Add labels
         for i, pos in enumerate(label_horizontal_positions):
-            ref_ax.text(pos, 0.05, unique_ref_labels[i], horizontalalignment='center', verticalalignment='bottom',
+            ref_ax.text(pos, 1, unique_ref_labels[i], horizontalalignment='center', verticalalignment='bottom',
                         **FONT12_BOLD)
 
     # Plot features
@@ -213,7 +201,7 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
     if out_file:
         figure_filepath = os.path.join(out_file)
         fig.savefig(figure_filepath)
-        # verbose_print('Saved the figure as {}.'.format(figure_filepath))
+        verbose_print('Saved the figure as {}.'.format(figure_filepath))
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
     """
