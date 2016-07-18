@@ -48,52 +48,53 @@ TESTING = False
 # ======================================================================================================================
 # Feature selection
 # ======================================================================================================================
-def rank_features_against_references(features, refs, metric, ref_type='continuous', relationship='direct',
-                                     sort_ref=True, n_features_to_plot=0.95, max_feature_name_size=20,
-                                     output_directory=None):
+def rank_features_against_references(features, refs, metric, ref_type='continuous', feat_type='continuous', direction='pos',
+                                     sort_ref=True, n_features=0.95, rowname_size=25, out_file=None, title=''):
     """
     Compute features vs. each ref in `refs`.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param refs: pandas DataFrame (n_features, m_elements), must have indices and columns, which must match 'features`'s
     :param metric: str, {information}
-    :param relationship: str, {direct, inverse}
+    :param direction: str, {pos, neg}
     :param ref_type: str, {continuous, categorical, binary}
+    :param feat_type: str, {continuous, categorical, binary}
     :param sort_ref: bool, sort each ref or not
-    :param n_features_to_plot: int or float, number threshold if >= 1 and quantile threshold if < 1
-    :param max_feature_name_size: int, the maximum length of a feature name label
-    :param output_directory: str, directory path to save the result (.txt) and figure (.TODO)
+    :param n_features: int or float, number threshold if >= 1 and quantile threshold if < 1
+    :param rowname_size: int, the maximum length of a feature name label
+    :param out_file: str,file path to save the result (.txt) and figure (.TODO)
+    :param title: string for the title of heatmap
     :return: None
     """
-    if output_directory:
-        establish_path(output_directory)
+    if out_file:
+        establish_path(out_file)
 
     for i, (idx, ref) in enumerate(refs.iterrows()):
-        verbose_print('Computing features vs. {} ({}/{}) using {} metric ...'.format(idx, i + 1, refs.shape[0], metric))
+        # verbose_print('Computing features vs. {} ({}/{}) using {} metric ...'.format(idx, i + 1, refs.shape[0], metric))
 
         # Use only the intersecting columns
         col_intersection = set(features.columns) & set(ref.index)
-        verbose_print(
-            'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
-                len(col_intersection), features.shape[1], ref.size))
+        # verbose_print(
+        #    'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
+        #        len(col_intersection), features.shape[1], ref.size))
         features = features.ix[:, col_intersection]
         ref = ref.ix[col_intersection]
 
+        ref = ref.apply(pd.to_numeric, errors='coerce')
+
+        # print(ref)
+        
         # Sort ref and features
-        # TODO: check the relationship logic
         if sort_ref:
-            ref = ref.sort_values(ascending=(relationship == 'inverse'))
-        features = features.reindex_axis(ref.index, axis=1)
+            ref = ref.sort_values(ascending = False)
+            features = features.reindex_axis(ref.index, axis=1)
 
         # Compute scores, join them in features, and rank features based on scores
         scores = compute_against_reference(features, ref, metric)
-        features = features.join(scores)
-        # TODO: decide what metric to sort by
-        features.sort_values(features.columns[-1], ascending=False, inplace=True)
 
-        # Plot features panel
-        verbose_print('Plotting top {} features vs. ref ...'.format(n_features_to_plot))
+        # Normalize 
+        # verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
         if ref_type is 'continuous':
-            verbose_print('Normalizing continuous features and ref ...')
+            # verbose_print('Normalizing continuous features and ref ...')
             ref = (ref - ref.mean()) / ref.std()
             for i, (idx, s) in enumerate(features.iterrows()):
                 mean = s.mean()
@@ -101,22 +102,24 @@ def rank_features_against_references(features, refs, metric, ref_type='continuou
                 for j, v in enumerate(s):
                     features.iloc[i, j] = (v - mean) / std
 
-        if n_features_to_plot < 1:
+        features = features.join(scores)
+        # TODO: decide what metric to sort by
+                    
+        features.sort_values(features.columns[-1], ascending = (direction == 'neg'), inplace=True)
+
+        # Plot features panel
+                    
+        if n_features < 1:
             indices_to_plot = features.iloc[:, -1] >= features.iloc[:, -1].quantile(n_features_to_plot)
             indices_to_plot |= features.iloc[:, -1] <= features.iloc[:, -1].quantile(1 - n_features_to_plot)
-        elif n_features_to_plot >= 1:
-            indices_to_plot = features.index[:n_features_to_plot].tolist() + features.index[
-                                                                             -n_features_to_plot:].tolist()
+        elif n_features >= 1:
+            indices_to_plot = features.index[:n_features].tolist() + features.index[
+                                                                             -n_features:].tolist()
+        
         plot_features_and_reference(pd.DataFrame(features.ix[indices_to_plot, features.columns[:-1]]),
-                                    ref,
-                                    pd.DataFrame(features.ix[indices_to_plot, features.columns[-1]]),
-                                    ref_type=ref_type, max_feature_name_size=max_feature_name_size,
-                                    output_directory=output_directory)
-        if output_directory:
-            result_filepath = os.path.join(output_directory, '{}.txt'.format(ref.name))
-            features.to_csv(result_filepath, sep='\t')
-            verbose_print('Saved the result as {}.'.format(result_filepath))
-
+                                    ref, pd.DataFrame(features.ix[indices_to_plot, features.columns[-1]]),
+                                    ref_type=ref_type, feat_type=feat_type, rowname_size=rowname_size,
+                                    out_file=out_file, title=title)
 
 def compute_against_reference(features, ref, metric):
     """
@@ -127,9 +130,9 @@ def compute_against_reference(features, ref, metric):
     :return: pandas DataFrame (n_features, 1),
     """
     # Compute score[i] = <features>[i] vs. <ref>
-    if metric is 'information':
+    if metric is 'information_coeff':
         return pd.DataFrame([information_coefficient(ref, row[1]) for row in features.iterrows()],
-                            index=features.index, columns=['information'])
+                            index=features.index, columns=['Information Coeff'])
     elif metric is 'information_cmi_diff':
         return pd.DataFrame([cmi_diff(ref, row[1]) for row in features.iterrows()],
                             index=features.index, columns=['information_cmi_diff'])

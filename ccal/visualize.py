@@ -52,7 +52,7 @@ FUCHSIA = '#FF00FF'
 PURPLE = '#800080'
 CMAP_CONTINUOUS = mpl.cm.bwr
 CMAP_BINARY = sns.light_palette('black', n_colors=128, as_cmap=True)
-CMAP_CATEGORICAL = mpl.cm.Set2
+CMAP_CATEGORICAL = mpl.cm.Paired
 
 # Fonts
 FONT20_BOLD = {'family': 'arial',
@@ -70,6 +70,11 @@ FONT12_BOLD = {'family': 'arial',
                'color': BLACK,
                'weight': 'bold',
                }
+FONT12_BOLD_ORANGE = {'family': 'arial',
+               'size': 12,
+               'color': BLUE,
+               'weight': 'bold',
+               }
 FONT12 = {'family': 'arial',
           'size': 12,
           'color': BLACK,
@@ -80,39 +85,41 @@ FONT12 = {'family': 'arial',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_features_and_reference(features, ref, scores, ref_type='continuous', max_feature_name_size=20,
-                                output_directory=None):
+def plot_features_and_reference(features, ref, scores, ref_type='continuous', feat_type='continuous',rowname_size=20,
+                                out_file=None, title=''):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
     :param scores:  pandas DataFrame (n_features, 1), must have the same index and columns
     :param ref_type: str, {continuous, categorical, binary}
-    :param max_feature_name_size: int, the maximum length of a feature name label
-    :param output_directory: str, directory path to save the figure
+    :param feat_type: str, {continuous, categorical, binary}    
+    :param rowname_size: int, the maximum length of a feature name label
+    :param out_file: str, file path to save the figure
     :return: None
     """
+    
     features_nrow, features_ncol = features.shape
-
+    
     # Set figure size and initialize figure
     if features_ncol < 10:
-        fig_width = 5
-    elif features_ncol < 50:
-        fig_width = 7
+        fig_width = 10/6
+    elif features_ncol > 35:
+        fig_width = 35/6
     else:
-        fig_width = 9
-    if features_nrow < 10:
-        fig_height = 5
-    elif features_nrow < 50:
-        fig_height = 7
+        fig_width = features_ncol/6
+        
+    if features_nrow < 3:
+        fig_height = 4/3
     else:
-        fig_height = 9
+        fig_height = features_nrow/3
+        
     fig = plt.figure(figsize=(fig_width, fig_height), dpi=900)
-    text_margin = 0.3
+    text_margin = 0.4
 
     # Set heatmap parameters for ref
     if ref_type == 'binary':
-        ref_cmap = CMAP_BINARY
+        ref_cmap = CMAP_CATEGORICAL
         ref_min, ref_max = 0, 1
     elif ref_type == 'categorical':
         ref_cmap = CMAP_CATEGORICAL
@@ -120,33 +127,49 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ma
     elif ref_type == 'continuous':
         ref_cmap = CMAP_CONTINUOUS
         ref_min, ref_max = -2.5, 2.5
+        ref = (ref - ref.mean()) / ref.std()
     else:
         raise ValueError('Unknown ref_type {}.'.format(ref_type))
 
     # Set heatmap parameters for features and normalize features
-    if np.unique(features).size == 2:
-        features_cmap = CMAP_BINARY
-        features_min, features_max = 0, 1
-        # TODO:
-        features += 0.1
+
+    if feat_type == 'binary':
+        feat_cmap = CMAP_BINARY
+        feat_min, feat_max = 0, 1
+    elif feat_type == 'categorical':
+        feat_cmap = CMAP_CATEGORICAL
+        feat_min, feat_max = 0, np.unique(feat.values).size
+    elif feat_type == 'continuous':
+        feat_cmap = CMAP_CONTINUOUS
+        feat_min, feat_max = -2.5, 2.5
+        for i, (idx, s) in enumerate(features.iterrows()):
+            mean = s.mean()
+            std = s.std()
+            for j, v in enumerate(s):
+                features.iloc[i, j] = (v - mean) / std
     else:
-        features_cmap = CMAP_CONTINUOUS
-        features_min, features_max = -2.5, 2.5
+        raise ValueError('Unknown feat_type {}.'.format(feat_type))
+    
+    #if np.unique(features).size == 2:
+    #    features_cmap = CMAP_BINARY
+    #    features_min, features_max = 0, 1
+    #    # TODO:
+    #    features += 0.1
+    #else:
+    #    features_cmap = CMAP_CONTINUOUS
+    #    features_min, features_max = -2.5, 2.5
 
     # Plot ref
     ref_ax = plt.subplot2grid((features_nrow, 1), (0, 0))
-    ref_ax.text(features_ncol / 2, 4 * text_margin, ref.name, horizontalalignment='center', verticalalignment='bottom',
-                **FONT20_BOLD)
+    ref_ax.text(features_ncol / 2, 4 * text_margin, title, horizontalalignment='center', verticalalignment='bottom',
+                **FONT16_BOLD)
     sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True, center=None, mask=None,
-                square=False, cmap=ref_cmap, linewidth=0, linecolor=BLACK,
-                annot=False, fmt=None, annot_kws={}, xticklabels=False,
-                yticklabels=False, cbar=False)
+                square=False, cmap=ref_cmap, linewidth=0, linecolor=BLACK, annot=False, fmt=None,
+                annot_kws={}, xticklabels=False, yticklabels=False, cbar=False)
     # Add ref texts
-    ref_ax.text(-text_margin, 0.5, ref.index[0],
-                horizontalalignment='right', verticalalignment='center',
+    ref_ax.text(-text_margin, 0.5, ref.name, horizontalalignment='right', verticalalignment='center',
                 **FONT12_BOLD)
-    ref_ax.text(features_ncol + text_margin, 0.5, scores.columns[0],
-                horizontalalignment='left', verticalalignment='center',
+    ref_ax.text(features_ncol + text_margin, 0.5, scores.columns[0], horizontalalignment='left', verticalalignment='center',
                 **FONT12_BOLD)
 
     # Add binary or categorical ref labels
@@ -169,32 +192,28 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', ma
         unique_ref_labels = np.unique(ref.values)[::-1]
         # Add labels
         for i, pos in enumerate(label_horizontal_positions):
-            ref_ax.text(pos, 1, unique_ref_labels[i], horizontalalignment='center', verticalalignment='bottom',
-                        **FONT16_BOLD)
+            ref_ax.text(pos, 0.05, unique_ref_labels[i], horizontalalignment='center', verticalalignment='bottom',
+                        **FONT12_BOLD)
 
     # Plot features
     features_ax = plt.subplot2grid((features_nrow, 1), (0, 1), rowspan=features_nrow)
-    sns.heatmap(features, vmin=features_min, vmax=features_max, robust=True, center=None, mask=None,
-                square=False, cmap=features_cmap, linewidth=0, linecolor=BLACK,
-                annot=False, fmt=None, annot_kws={}, xticklabels=False,
-                yticklabels=False, cbar=False)
+    sns.heatmap(features, vmin=feat_min, vmax=feat_max, robust=True, center=None, mask=None,
+                square=False, cmap=feat_cmap, linewidth=0, linecolor=BLACK, annot=False, fmt=None, annot_kws={},
+                xticklabels=False, yticklabels=False, cbar=False)
 
     for i, idx in enumerate(features.index):
-        features_ax.text(-text_margin, features_nrow - i - 0.5, idx[:max_feature_name_size],
-                         horizontalalignment='right',
-                         verticalalignment='center', **FONT12)
+        features_ax.text(-text_margin, features_nrow - i - 0.5, idx[:rowname_size],
+                         horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
         features_ax.text(features_ncol + text_margin, features_nrow - i - 0.5, '{:.3e}'.format(scores.iloc[i, 0]),
-                         horizontalalignment='left', verticalalignment='center', **FONT12)
+                         horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     fig.tight_layout()
     plt.show(fig)
 
-    if output_directory:
-        figure_filepath = os.path.join(output_directory, '{}.pdf'.format(ref.name))
+    if out_file:
+        figure_filepath = os.path.join(out_file)
         fig.savefig(figure_filepath)
-        verbose_print('Saved the figure as {}.'.format(figure_filepath))
-
-
+        # verbose_print('Saved the figure as {}.'.format(figure_filepath))
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
     """
