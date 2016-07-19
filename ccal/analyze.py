@@ -124,7 +124,7 @@ def compute_against_reference(features, ref, metric='information_coef'):
     # Compute score[i] = <features>[i] vs. <ref>
     if metric is 'information_coef':
         return pd.DataFrame([information_coefficient(ref, row[1]) for row in features.iterrows()],
-                            index=features.index, columns=['Information Coef'])
+                            index=features.index, columns=['IC'])
     elif metric is 'information_cmi_diff':
         return pd.DataFrame([cmi_diff(ref, row[1]) for row in features.iterrows()],
                             index=features.index, columns=['information_cmi_diff'])
