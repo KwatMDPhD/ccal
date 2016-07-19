@@ -169,13 +169,18 @@ def make_random_features(nrow, ncol, ncategory=None):
     indices = ['Feature {}'.format(i) for i in range(nrow)]
     columns = ['Element {}'.format(i) for i in range(ncol)]
     if ncategory:
-        return pd.DataFrame(np.random.random_integers(0, ncategory, shape),
-                            index=indices,
-                            columns=columns)
+        features = pd.DataFrame(np.random.random_integers(0, ncategory, shape),
+                                index=indices,
+                                columns=columns)
     else:
-        return pd.DataFrame(np.random.random_sample(shape),
-                            index=indices,
-                            columns=columns)
+        features = pd.DataFrame(np.random.random_sample(shape),
+                                index=indices,
+                                columns=columns)
+    if nrow == 1:
+        # Return series
+        return features.iloc[0, :]
+    else:
+        return features
 
 
 def simulate_x_y(n, rho, threshold=3):

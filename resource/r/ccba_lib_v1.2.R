@@ -1597,7 +1597,7 @@
       boots.null <- matrix(0, nrow=2*n.markers, ncol=n.boot)
       for (k in 1:n.boot) {
          locs <- sample(seq(1, N), b.size, replace=T)
-         m3.sample <- m3[c(seq(1, n.markers, 1), seq(p, p - n.markers + 1, -1)), locs]
+         m3.sample <- m3[c(seq(1, n., 1), seq(p, p - n.markers + 1, -1)), locs]
          target2.sample <- target2[locs]
          for (i in 1:(2*n.markers)) {
             feature.sample <- as.numeric(m3.sample[i,])
@@ -1605,7 +1605,7 @@
                                              cond.feature = cond.feature, type=assoc.metric.type, knn=knn, n.grid=n.grid)
           }
        }
-       
+
        for (i in 1:n.markers) metric.CI[i, ] <- quantile(boots.null[i,], probs = c(0.05, 0.5, 0.95), na.rm = T)
        j <- n.markers + 1
        for (i in seq(p, p - n.markers + 1, -1)) {
@@ -1615,7 +1615,7 @@
     } else {
       metric.CI <- matrix(0, nrow=p, ncol=3)
     }
-  
+
    # Make histogram and QQplot
 
    if (produce.aux.histograms == T) {
@@ -1630,7 +1630,7 @@
    # Compute p-values and FDR
 
    print("computing p-vals and FDRs...")
-   
+
    p.val1 <- p.val2 <- FDR1 <- FDR1.lower <- FDR2 <- FDR2.lower <- FDR3 <- FDR3.lower <- FWER.p.val <- Bonfe.p.val <- rep(0, p)
    p.val1.tag <- p.val2.tag <- p.val3.tag <- FDR1.tag <- FDR2.tag <- FDR3.tag <- FWER.p.val.tag <- Bonfe.p.val.tag <- rep(0, p)
 
@@ -1647,8 +1647,8 @@
      print("computing FDRs using p.adjust...")
      FDR1 <- p.adjust(p.val2, method = "fdr", n = length(p.val2))
      FDR1.lower <- p.adjust(1 - p.val2, method = "fdr", n = length(p.val2))
-     print("computing FDRs using q.values...")     
-     FDR2 <- FDR1    # qvalue crashes sometimes: use FDR1 
+     print("computing FDRs using q.values...")
+     FDR2 <- FDR1    # qvalue crashes sometimes: use FDR1
      FDR2.lower <- FDR1.lower
    }
 
@@ -1657,19 +1657,19 @@
       FDR3.lower[i] <- (sum(metric.rand <= metric[i])/(p*n.perm))/(sum(metric <= metric[i])/p)
     }
    for (i in 1:p) {
-     FDR3[i] <- min(FDR3[i:p]) 
+     FDR3[i] <- min(FDR3[i:p])
      FDR3.lower[i] <- min(FDR3[1:i])
    }
 
    lower.side <- rep(0, p)
    for (i in 1:p) {
-      if (assoc.metric.type == "AUC.ROC") {       
+      if (assoc.metric.type == "AUC.ROC") {
         if (metric[i] < 0.5) lower.side[i] <- 1
       } else { # RNMI, NMI, DIFF.MEDIANS, DIFF.MEANS, S2N, T.TEST
         if (metric[i] < 0) lower.side[i] <- 1
       }
     }
-   
+
    for (i in 1:p) {
       if (lower.side[i] == 1) {
          p.val1[i] <- 1 - p.val1[i]
@@ -1702,7 +1702,7 @@
    # Make histograms of p-values and FDRs
 
    if (produce.aux.histograms == T) {
-     
+
       nf <- layout(matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9), 3, 3, byrow=T), c(1, 1, 1), c(1, 1, 1), FALSE)
       h <- hist(p.val1, breaks=40, col="darkblue", main="p-val1", xlab="p-value", ylab = "P(p-val1)")
       h <- hist(p.val2, breaks=40, col="darkblue", main="p-val2", xlab="p-value", ylab = "P(p-va2l)")
@@ -1714,7 +1714,7 @@
     }
 
    metric.CI <- signif(metric.CI, 4)
-   metric.CI[metric.CI == 0] <- "-"                      
+   metric.CI[metric.CI == 0] <- "-"
    if (display.cor.coeff.heatmap == T) {
       report1 <- cbind(seq(1, p), feature.names2, signif(metric, 3), metric.CI,
                     paste(p.val1.tag, signif(p.val1, 3), sep=""),
@@ -1739,7 +1739,7 @@
        colnames(report1) <- c("Rank", "Feature", assoc.metric.type, "5% CI", "50% CI", "95% CI", "p-val1 (local)", "p-val2 (global)", "FDR1",
                           "FDR2", "FDR3", "FWER p-val", "Bonfe p-val")
      }
-     
+
    print(noquote(report1[1:n.markers,]))
    print(noquote(report1[seq(p, p - n.markers + 1, -1),]))
 
@@ -1763,18 +1763,18 @@
    max.cont.color <- 512
    mycol <- c(mycol,
               missing.value.color,                  # Missing feature color
-              binary.0_value.color,                 # Binary feature's 0's color 
-              binary.1_value.color)                 # Binary feature's 1's color 
+              binary.0_value.color,                 # Binary feature's 0's color
+              binary.1_value.color)                 # Binary feature's 1's color
 
-      
+
       nf <- layout(matrix(c(1, 2), 2, 1, byrow=T), 1, c(1, 11), FALSE)
 
       m.V <- m3[c(1:n.markers, seq(p - n.markers + 1, p)),]
       target.V <- target
 
        # sort columns inside classes if target is not continuous
-      
-      if (sort.columns.inside.classes == T & length(table(target.V)) < ncol(m.V)*0.5)  {  
+
+      if (sort.columns.inside.classes == T & length(table(target.V)) < ncol(m.V)*0.5)  {
          num.phen <- length(unique(target.V))
          for (k in unique(target.V)) {
             V3 <- m.V[, target.V == k]
@@ -1783,10 +1783,10 @@
 
             V3.noNAs <- V3
             V3.noNAs[is.na(V3.noNAs)] <- 0
-            dist.matrix <- dist(t(V3.noNAs))  
+            dist.matrix <- dist(t(V3.noNAs))
             s <- smacofSym(dist.matrix, ndim=1)
             ind <- order(s$conf, decreasing=T)
-            
+
             V3 <- V3[, ind]
             cl <- cl[ind]
             c.names <- c.names[ind]
@@ -1803,30 +1803,30 @@
             V3 <- m.V[marker.ind == k,]
             row.names.V3 <- row.names(m.V)[marker.ind == k]
             metric.sorted.V <- metric.sorted[marker.ind == k]
-            cor.val.sorted.V <-cor.val.sorted[marker.ind == k]            
+            cor.val.sorted.V <-cor.val.sorted[marker.ind == k]
             p.val1.sorted.V <- p.val1.sorted[marker.ind == k]
             p.val2.sorted.V <- p.val2.sorted[marker.ind == k]
             FDR1.sorted.V <- FDR1.sorted[marker.ind == k]
 
             V3.noNAs <- V3
             V3.noNAs[is.na(V3.noNAs)] <- 0
-            
-            dist.matrix <- dist(V3.noNAs)  
+
+            dist.matrix <- dist(V3.noNAs)
             s <- smacofSym(dist.matrix, ndim=1)
             ind <- order(s$conf, decreasing=T)
 
             V3 <- V3[ind,]
             row.names.V3 <- row.names.V3[ind]
             metric.sorted.V <- metric.sorted.V[ind]
-            cor.val.sorted.V <- cor.val.sorted.V[ind]            
+            cor.val.sorted.V <- cor.val.sorted.V[ind]
             p.val1.sorted.V <- p.val1.sorted.V[ind]
             p.val2.sorted.V <- p.val2.sorted.V[ind]
             FDR1.sorted.V <-   FDR1.sorted.V[ind]
 
             m.V[marker.ind == k,] <- V3
-            row.names(m.V)[marker.ind == k] <- row.names.V3            
+            row.names(m.V)[marker.ind == k] <- row.names.V3
             metric.sorted[marker.ind == k] <- metric.sorted.V
-            cor.val.sorted[marker.ind == k] <- cor.val.sorted.V            
+            cor.val.sorted[marker.ind == k] <- cor.val.sorted.V
             p.val1.sorted[marker.ind == k] <- p.val1.sorted.V
             p.val2.sorted[marker.ind == k] <- p.val2.sorted.V
             FDR1.sorted[marker.ind == k] <-   FDR1.sorted.V
@@ -1834,37 +1834,37 @@
          if (metric.sorted[1] < 0 ) {
             m.V <- apply(m.V, MARGIN=2, FUN=rev)
             metric.sorted <- rev(metric.sorted )
-            cor.val.sorted <- rev(cor.val.sorted )            
+            cor.val.sorted <- rev(cor.val.sorted )
             p.val1.sorted <- rev(p.val1.sorted)
             p.val2.sorted <- rev(p.val2.sorted)
             FDR1.sorted <- rev(FDR1.sorted)
-         }            
+         }
    } else if (cluster.top.markers == "both.classes") {
 
       V3.noNAs <- m.V
       V3.noNAs[is.na(V3.noNAs)] <- 0
-      dist.matrix <- dist(V3.noNAs) 
+      dist.matrix <- dist(V3.noNAs)
       s <- smacofSym(dist.matrix, ndim=1)
       ind <- order(s$conf, decreasing=T)
 
       m.V <- m.V[ind,]
       metric.sorted <- metric.sorted[ind]
-      cor.val.sorted <- cor.val.sorted[ind]      
+      cor.val.sorted <- cor.val.sorted[ind]
       p.val1.sorted <- p.val1.sorted[ind]
       p.val2.sorted <- p.val2.sorted[ind]
       FDR1.sorted <- FDR1.sorted[ind]
       if (metric.sorted[1] < 0 ) {
          m.V <- apply(m.V, MARGIN=2, FUN=rev)
          metric.sorted <- rev(metric.sorted )
-         cor.val.sorted <- rev(cor.val.sorted )         
+         cor.val.sorted <- rev(cor.val.sorted )
          p.val1.sorted <- rev(p.val1.sorted)
          p.val2.sorted <- rev(p.val2.sorted)
          FDR1.sorted <- rev(FDR1.sorted)
-      }            
+      }
    }
       cutoff <- 2.5
-      x <- as.numeric(target.V)         
-      x <- (x - mean(x))/sd(x)         
+      x <- as.numeric(target.V)
+      x <- (x - mean(x))/sd(x)
       ind1 <- which(x > cutoff)
       ind2 <- which(x < -cutoff)
       x[ind1] <- cutoff
@@ -1888,14 +1888,14 @@
            points(seq(1, length(V1.vec)), V1.vec, type="l", col=1)
            points(rep(0, 11), seq(0, 1, 0.1), type="l", col=1)
            points(seq(1, length(V1.vec)), rep(0, length(V1.vec)), type="l", col=1)
-           
+
            axis(2, at=0.5, labels=paste(target.name, "  "), adj= 0.5, tick=FALSE,
                  las = 1, cex=1, cex.axis=0.65*character.scaling, font.axis=1, line=-1)
            ref <- -0.25
        } else {
            stop(paste("ERROR: unknown target style", target.style))
        }
-      
+
       if (assoc.metric.type == "DIFF.MEANS") { # use local p-vals: p.val1
           if (display.cor.coeff.heatmap == T) {
             axis(4, at=1:1, labels=paste(assoc.metric.type, "p-val (loc)", "FDR", "cor"), adj= 0.5, tick=FALSE,
@@ -1909,7 +1909,7 @@
              axis(4, at=1:1, labels=paste(assoc.metric.type, "p-val (glob)", "FDR", "cor"), adj= 0.5, tick=FALSE,
                  las = 1, cex=1, cex.axis=0.65*character.scaling, font.axis=1, line=-1)
           } else {
-            axis(4, at=ref, labels=paste(assoc.metric.type, "p-val (glob)", "FDR"), adj= 0.5, tick=FALSE,              
+            axis(4, at=ref, labels=paste(assoc.metric.type, "p-val (glob)", "FDR"), adj= 0.5, tick=FALSE,
                  las = 1, cex=1, cex.axis=0.65*character.scaling, font.axis=1, line=-1)
           }
       }
@@ -1917,12 +1917,12 @@
 
    cutoff <- 2.5
    for (i in 1:nrow(V)) {
-      x <- V[i,]                
+      x <- V[i,]
       locs.non.na <- !is.na(x)
       x.nonzero <- x[locs.non.na]
-      x.nonzero2 <- (x.nonzero - mean(x.nonzero))/sd(x.nonzero)         
+      x.nonzero2 <- (x.nonzero - mean(x.nonzero))/sd(x.nonzero)
       x.nonzero2[x.nonzero2 > cutoff] <- cutoff
-      x.nonzero2[x.nonzero2 < - cutoff] <- - cutoff      
+      x.nonzero2[x.nonzero2 < - cutoff] <- - cutoff
       s <- strsplit(row.names(V)[i], "_")[[1]]
       suffix <- s[length(s)]
 
@@ -1934,7 +1934,7 @@
          V[i, locs.non.na] <- ceiling(max.cont.color * (V[i,locs.non.na] + cutoff)/(2*cutoff))
          V[i, locs.non.na] <- ifelse (V[i, locs.non.na] > max.cont.color, max.cont.color, V[i, locs.non.na])
        }
-      V[i, is.na(x)] <- max.cont.color + 1  # missing feature color 
+      V[i, is.na(x)] <- max.cont.color + 1  # missing feature color
     }
 
       V <- apply(V, MARGIN=2, FUN=rev)
@@ -1961,16 +1961,16 @@
            las = 3, cex=1, cex.axis=0.3*character.scaling, font.axis=1, line=-1)
 
       # save top marker dataset
-      
+
 
        ds <- rbind(target.V, m.V)
        row.names(ds) <- c(target.name, row.names(m.V))
        CCBA_write.gct.v1(gct.data.frame = ds, descs = row.names(ds), filename = results.file.gct)
-      
+
     }
 
     # Make MDS top features projection
-   
+
   if (produce.mds.plots == T && n.markers > 3) {
 
    nf <- layout(matrix(1, 1, byrow=T), 1, 1, FALSE)
@@ -1978,7 +1978,7 @@
    total.points <- n.markers
    V2 <- m3[1:total.points,]
    V2[is.na(V2)] <- 0
-   
+
    row.names(V2) <- row.names(m3)[1:total.points]
    metric.matrix <- matrix(0, nrow=nrow(V2), ncol=nrow(V2))
    row.names(metric.matrix)  <- row.names(V2)
@@ -1996,7 +1996,7 @@
    metric.matrix2 <- 1 - ((1/(1+exp(-alpha*metric.matrix))))
    for (i in 1:nrow(metric.matrix2)) metric.matrix2[i, i] <- 0
 
-   smacof.map <- smacofSphere(metric.matrix2, ndim = 2, weightmat = NULL, 
+   smacof.map <- smacofSphere(metric.matrix2, ndim = 2, weightmat = NULL,
                           ties = "primary", verbose = FALSE, modulus = 1, itmax = 1000, eps = 1e-6)
    x0 <- smacof.map$conf[-1,1]
    y0 <- smacof.map$conf[-1,2]
@@ -2041,7 +2041,7 @@
    print(cbind(colnames(metric.matrix2), x,y))
 
    }
-      
+
    dev.off()
 
    time2 <- proc.time()
@@ -2067,12 +2067,12 @@
      if (length(locs) <= 1) return(0)
      feature <- feature[locs]
      target <- target[locs]
-     
-      if (type=="IC") { # Information Coefficient (Kernel method) 
+
+      if (type=="IC") { # Information Coefficient (Kernel method)
         return(CCBA_IC.v1(target, feature, n.grid=n.grid))
       } else if (type=="ICR") { # Information Coefficient (Kernel method) of "Ranked" profiles
         target2 <- rank(target)
-        feature2 <- rank(feature)           
+        feature2 <- rank(feature)
         return(CCBA_IC.v1(target2, feature2, n.grid=n.grid))
       } else if (type=="DIFF.MEANS") {
          x <- split(feature, target)
@@ -2119,9 +2119,9 @@
          s1 <- ifelse(s1 < 0.1*abs(m1), 0.1*abs(m1), s1)
          s2 <- ifelse(s2 < 0.1*abs(m2), 0.1*abs(m2), s2)
          return((m1 - m2)/(s1 + s2 + 0.1))
-      } else if (type=="CORR") {           
+      } else if (type=="CORR") {
          return(cor(target, feature))
-      } else if (type=="SPEAR") {           
+      } else if (type=="SPEAR") {
          return(cor(target, feature, method = "spearman"))
       } else {
          stop(paste("Unknow assoc. metric name:", type))
@@ -2131,12 +2131,12 @@
 #-------------------------------------------------------------------------------------------------
    CCBA_rec_area <- function(
    #
-   # Compute area under the Regression Error Curve (REC) 
-   # This is the counterpart of the ROC for continuous target values (regression) 
+   # Compute area under the Regression Error Curve (REC)
+   # This is the counterpart of the ROC for continuous target values (regression)
    # see e.g. Bi, J.; Bennett, K.P. (2003). "Regression error characteristic curves".
    # Twentieth International Conference on Machine Learning (ICML-2003). Washington, DC.
    # P. Tamayo Jan 17, 2016
-       
+
 		obs,
 		pred,
 		metric = "absolute.deviation",       # Either "squared.error" or "absolute.deviation"
@@ -2148,7 +2148,7 @@
 	n.obs = length(obs)
 	n.pred = length(pred)
 	if( n.obs != n.pred ){ stop( "The number of observations does not equal the number of predictions." ) }
-	
+
 	if( metric == "squared.error" ){
 		difference = (obs-pred)^2
 		accuracy = unlist(lapply(error.windows, FUN=squared.error, difference, n.obs))
@@ -2161,7 +2161,7 @@
 	rectangle.heights = c(0, accuracy[1:(n.errors-1)])
 	rectangles = rectangle.heights*intervals
 	A = sum( rectangles + triangles)
-	
+
 	# Calculate p-value using Cramer-Von-Mises Criterion
 	T2 = .25*(sum((accuracy-error.windows)^2))  # accuracy-error.windows = integral difference between null model and REC
 	p.value = cvmts.pval(T2, n.errors, n.errors)
@@ -2177,38 +2177,38 @@
       input_dataset,                             # Input dataset (GCT) containing the target profile
       target,
       target.dir                  = "positive",
-      directory,                                 # Directory where to produce results                                          
+      directory,                                 # Directory where to produce results
       identifier                  = "run1",      # string or prefix to identify this analysis
       feature.type.files,                        # List of feature typers and correponding file e.g.
                                                  # list("ACHILLES"     = "~/CGP2013/Distiller/Achilles_v2.4.1.rnai.Gs.gct",
-                                                 #  "MUT_CNA"      = "~/CGP2013/Distiller/RNAseqMUTs_CNA_20130729.gct",  
+                                                 #  "MUT_CNA"      = "~/CGP2013/Distiller/RNAseqMUTs_CNA_20130729.gct",
                                                  #  "EXP_PATHWAYS" = "~/CGP2013/Distiller/CCLE_MSigDB_plus_oncogenic.PATHWAYS.v2.gct",
                                                  #  "EXP_GENES"    = "~/CGP2013/CCLE/rnaseq.v3.gct",
                                                  #  "RPPA"         = "~/CGP2013/Distiller/RPPA.dat.gct")
-       feature.dir,                              # Direction of features matching for the feature.type.files e.g. c(0, 1, 1, 1, 1),     
+       feature.dir,                              # Direction of features matching for the feature.type.files e.g. c(0, 1, 1, 1, 1),
        n.markers                   = 25,         # Number of top hits shown in the heatmaps
        metric                      = "IC",
        n.boot                      = 100,
-       n.perm                      = 10,                                         
+       n.perm                      = 10,
        locs.table.file             = NULL,
        log.table.file,
        missing.value.color         = "wheat",     # Missing feature color
-       target.style                = "color.bar",          # "color.bar" or "bar.graph"       
+       target.style                = "color.bar",          # "color.bar" or "bar.graph"
        min.thres                   = 10,
        character.scaling           = 0.65,
        phen.table                  = NULL,
        produce.mds.plots           = T,
        phenotypes                  = NULL)        # list(list("ALL"))
-     
+
    {
       version <- identifier
       target.file <- input_dataset
       dataset.1 <- CCBA_read_GCT_file.v1(filename = target.file)
-      
+
       H <- data.matrix(dataset.1$ds)
       feature.types <- names(feature.type.files)
       n.f.types <- length(feature.types)
-      
+
       if (!is.null(phen.table)) {
          samples.table <- read.delim(phen.table, header=T, row.names=1, sep="\t", skip=0)
          table.names <- row.names(samples.table)
@@ -2219,16 +2219,16 @@
          dir.create(target.dir.name, showWarnings=FALSE)
 
          target.dir <- as.numeric(ifelse(target.dir == "positive", 1, 0) )
-      
+
          for (f in 1:n.f.types) {   # loop over feature types
             n.markers.feature <- n.markers
-             
+
             dir <- ifelse(xor(target.dir, feature.dir[[f]]), "negative", "positive")
-           
+
             print(paste("Reading target file:", target.file))
             dataset.1 <- CCBA_read_GCT_file.v1(filename = target.file)
             sample.names.1 <- dataset.1$names
-            
+
             print(paste("Reading features file:", feature.type.files[[f]]))
             dataset.2 <- CCBA_read_GCT_file.v1(filename = feature.type.files[[f]])
             ds2 <- data.matrix(dataset.2$ds)
@@ -2240,10 +2240,10 @@
                phen.set <- 1
                phen.selected <- NULL
                results.file.pdf <- paste(directory, target, "/", target, "_vs_", feature.types[[f]], "_", version, ".pdf", sep="")
-               results.file.txt <- paste(directory, target, "/", target, "_vs_", feature.types[[f]], "_", version, ".txt", sep="")               
+               results.file.txt <- paste(directory, target, "/", target, "_vs_", feature.types[[f]], "_", version, ".txt", sep="")
             } else {
               results.file.pdf <- paste(directory, target, "/", "_", target, "_vs_", feature.types[[f]], "_", version, ".pdf", sep="")
-              results.file.txt <- paste(directory, target, "/", "_", target, "_vs_", feature.types[[f]], "_", version, ".txt", sep="")               
+              results.file.txt <- paste(directory, target, "/", "_", target, "_vs_", feature.types[[f]], "_", version, ".txt", sep="")
               if (length(phenotypes) == 1) {
                   phen.set <- unlist(phenotypes[[1]])
                   phen.selected <- "1"
@@ -2269,48 +2269,48 @@
                }
 
                log.table <- rbind(log.table, doc.string)
-               
+
                # Only run analysis if there are at least min.thres samples
-         
+
                if (length(overlap) < min.thres) next
-             
+
                CCBA_IC_selection.v1(
                   ds1 =                            target.file,
                   target.name =                    target,
                   ds2 =                            feature.type.files[[f]],
-                  n.markers =                      n.markers.feature,             
-                  n.perm =                         n.perm,           
-                  permutation.test.type =          "standard",  
+                  n.markers =                      n.markers.feature,
+                  n.perm =                         n.perm,
+                  permutation.test.type =          "standard",
                   n.boot =                         n.boot,
-                  seed =                           2345971, 
+                  seed =                           2345971,
                   assoc.metric.type =              metric,
                   direction =                      dir,
-                  sort.target =                    TRUE,           
+                  sort.target =                    TRUE,
                   results.file.pdf =               results.file.pdf,
                   results.file.txt =               results.file.txt,
                   sort.columns.inside.classes =    F,
                   locs.table.file =                locs.table.file,
                   consolidate.identical.features = "identical",
-                  cons.features.hamming.thres =    0,   
-                  save.matched.dataset =           F,  
+                  cons.features.hamming.thres =    0,
+                  save.matched.dataset =           F,
                   produce.aux.histograms =         F,
                   produce.heat.map =               T,
                   produce.mds.plots =              produce.mds.plots,
                   character.scaling =              character.scaling,
                   mds.plot.type =                  "smacof",
                   n.grid =                         25,
-                  target.style = target.style,          # "color.bar" or "bar.graph"                   
-                  missing.value.color  =           missing.value.color,     # Missing feature color                   
+                  target.style = target.style,          # "color.bar" or "bar.graph"
+                  missing.value.color  =           missing.value.color,     # Missing feature color
                   phen.table =                     phen.table,
                   phen.column =                    phen,
                   phen.selected =                  phen.selected)
-            
+
               } # loop over phenotypes
-  
+
           } # loop over feature types
 
        # Save log records
-      
+
        if (phen.set == 1) {
           header <- c("Run:", "Samples:", "target:", "Direction:", "Feature.type:", "Version:", "target.file:", "Feature.type.file:")
         } else {
@@ -2365,8 +2365,8 @@
 #
 #}
 
-#-------------------------------------------------------------------------------------------------       
-qvalue <- function(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, robust=FALSE, 
+#-------------------------------------------------------------------------------------------------
+qvalue <- function(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, robust=FALSE,
   gui=FALSE, smooth.df = 3, smooth.log.pi0 = FALSE) {
 #Input
 #=============================================================================

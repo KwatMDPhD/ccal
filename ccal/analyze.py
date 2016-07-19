@@ -54,7 +54,7 @@ def rank_features_against_reference(features, ref, metric='information_coef',
     """
     Compute features vs. `ref`.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
-    :param ref: pandas Series (1, m_elements), must have name and columns, which must match 'features`'s
+    :param ref: pandas Series (m_elements), must have name and columns, which must match 'features`'s
     :param metric: str, {information_coef}
     :param features_type: str, {continuous, categorical, binary}
     :param ref_type: str, {continuous, categorical, binary}
@@ -113,7 +113,7 @@ def rank_features_against_reference(features, ref, metric='information_coef',
                                 filename_prefix=output_prefix, figure_type=figure_type)
 
 
-def compute_against_reference(features, ref, metric):
+def compute_against_reference(features, ref, metric='information_coef'):
     """
     Compute scores[i] = `features`[i] vs. `ref` with computation using `metric`.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
