@@ -42,82 +42,76 @@ PATH_TEST_DATA = os.path.join('data', 'test')
 
 SEED = 20121020
 
-TESTING = False
-
 
 # ======================================================================================================================
 # Feature selection
 # ======================================================================================================================
-def rank_features_against_references(features, refs, metric, ref_type='continuous', feat_type='continuous', sort_ref=True,
-                                     ref_direction='pos', feat_direction = 'pos', n_features=0.95, rowname_size=25,
-                                     out_file=None, title=''):
+def rank_features_against_reference(features, ref, metric='information_coef',
+                                    features_type='continuous', ref_type='continuous',
+                                    features_ascending=False, ref_ascending=False, ref_sort=True,
+                                    title=None, n_features=0.95, rowname_size=25,
+                                    output_prefix=None, figure_type='.png'):
     """
-    Compute features vs. each ref in `refs`.
+    Compute features vs. `ref`.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
-    :param refs: pandas DataFrame (n_features, m_elements), must have indices and columns, which must match 'features`'s
-    :param metric: str, {information}
+    :param ref: pandas Series (1, m_elements), must have name and columns, which must match 'features`'s
+    :param metric: str, {information_coef}
+    :param features_type: str, {continuous, categorical, binary}
     :param ref_type: str, {continuous, categorical, binary}
-    :param feat_type: str, {continuous, categorical, binary}
-    :param sort_ref: bool, sort each ref or not
-    :param ref_direction: str, {pos, neg}
-    :param feat_direction: str, {pos, neg}    
+    :param features_ascending: bool, True if features score increase from top to bottom, False otherwise
+    :param ref_ascending: bool, True if ref values increase from left to right, False otherwise
+    :param ref_sort: bool, sort each ref or not
+    :param title: string for the title of heatmap
     :param n_features: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param rowname_size: int, the maximum length of a feature name label
-    :param out_file: str,file path to save the result (.txt) and figure (.TODO)
-    :param title: string for the title of heatmap
+    :param output_prefix: str, file path prefix to save the result (.txt) and figure (`figure_type`)
+    :param figure_type: str, file type to save the output figure
     :return: None
     """
-    if out_file:
-        establish_path(out_file)
+    verbose_print('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
 
-    for i, (idx, ref) in enumerate(refs.iterrows()):
-        verbose_print('Computing features vs. {} ({}/{}) using {} metric ...'.format(idx, i + 1, refs.shape[0], metric))
+    # Establish output file path
+    if output_prefix:
+        output_prefix = os.path.abspath(output_prefix)
+        establish_path(output_prefix)
 
-        # Use only the intersecting columns
-        col_intersection = set(features.columns) & set(ref.index)
-        verbose_print(
-            'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
+    # Use only the intersecting columns
+    col_intersection = set(features.columns) & set(ref.index)
+    verbose_print(
+        'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
             len(col_intersection), features.shape[1], ref.size))
-        features = features.ix[:, col_intersection]
-        ref = ref.ix[col_intersection]
-        
-        # Sort ref and features
-        if sort_ref:
-            ref = ref.sort_values(ascending = (ref_direction == 'neg'))
-            features = features.reindex_axis(ref.index, axis=1)
+    features = features.ix[:, col_intersection]
+    ref = ref.ix[col_intersection]
 
-        # Compute scores, join them in features, and rank features based on scores
-        scores = compute_against_reference(features, ref, metric)
+    # Sort ref and use its sorted indices to sort features indices
+    if ref_sort:
+        ref = ref.sort_values(ascending=ref_ascending)
+        features = features.reindex_axis(ref.index, axis=1)
 
-        # Normalize 
-        verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
-        if ref_type is 'continuous':
-            verbose_print('Normalizing continuous features and ref ...')
-            ref = (ref - ref.mean()) / ref.std()
-            for i, (idx, s) in enumerate(features.iterrows()):
-                mean = s.mean()
-                std = s.std()
-                for j, v in enumerate(s):
-                    features.iloc[i, j] = (v - mean) / std
+    # Compute scores, join them in features, and rank features based on scores
+    scores = compute_against_reference(features, ref, metric)
+    features = features.join(scores)
+    features.sort_values(features.columns[-1], ascending=features_ascending, inplace=True)
 
-        features = features.join(scores)
-        # TODO: decide what metric to sort by
-                    
-        features.sort_values(features.columns[-1], ascending = (feat_direction == 'neg'), inplace=True)
+    if output_prefix:
+        filename = output_prefix + '.txt'
+        features.to_csv(filename, sep='\t')
+        verbose_print('Saved the result as {}.'.format(filename))
 
-        # Plot features panel
-                    
-        if n_features < 1:
-            indices_to_plot = features.iloc[:, -1] >= features.iloc[:, -1].quantile(n_features_to_plot)
-            indices_to_plot |= features.iloc[:, -1] <= features.iloc[:, -1].quantile(1 - n_features_to_plot)
-        elif n_features >= 1:
-            indices_to_plot = features.index[:n_features].tolist() + features.index[
-                                                                             -n_features:].tolist()
-        
-        plot_features_and_reference(pd.DataFrame(features.ix[indices_to_plot, features.columns[:-1]]),
-                                    ref, pd.DataFrame(features.ix[indices_to_plot, features.columns[-1]]),
-                                    ref_type=ref_type, feat_type=feat_type, rowname_size=rowname_size,
-                                    out_file=out_file, title=title)
+    # Plot features panel
+    verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
+    if n_features < 1:
+        indices_to_plot = features.iloc[:, -1] >= features.iloc[:, -1].quantile(n_features)
+        indices_to_plot |= features.iloc[:, -1] <= features.iloc[:, -1].quantile(1 - n_features)
+    else:
+        indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
+    plot_features_and_reference(pd.DataFrame(features.ix[indices_to_plot, features.columns[:-1]]),
+                                ref,
+                                pd.DataFrame(features.ix[indices_to_plot, features.columns[-1]]),
+                                features_type=features_type, ref_type=ref_type,
+                                title=title, rowname_size=rowname_size,
+                                filename_prefix=output_prefix, figure_type=figure_type)
+
 
 def compute_against_reference(features, ref, metric):
     """
@@ -128,9 +122,9 @@ def compute_against_reference(features, ref, metric):
     :return: pandas DataFrame (n_features, 1),
     """
     # Compute score[i] = <features>[i] vs. <ref>
-    if metric is 'information_coeff':
+    if metric is 'information_coef':
         return pd.DataFrame([information_coefficient(ref, row[1]) for row in features.iterrows()],
-                            index=features.index, columns=['Information Coeff'])
+                            index=features.index, columns=['Information Coef'])
     elif metric is 'information_cmi_diff':
         return pd.DataFrame([cmi_diff(ref, row[1]) for row in features.iterrows()],
                             index=features.index, columns=['information_cmi_diff'])
@@ -141,7 +135,8 @@ def compute_against_reference(features, ref, metric):
         raise ValueError('Unknown metric {}.'.format(metric))
 
 
-def compare_features_against_features(features1, features2, is_distance=False, result_filename=None, figure_filename=None):
+def compare_features_against_features(features1, features2, is_distance=False, result_filename=None,
+                                      figure_filename=None):
     """
     Make association or distance matrix of the rows of `feature1` and `feature2`.
     :param features1: pandas DataFrame,
@@ -190,7 +185,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     :param randomize_coordinate_order: bool,
     :param regularizer: int, NMF's alpha
     :param plot: bool, whether to plot the NMF results
-    :return: dict, NMF result per k (key:k; value:dict(key:w, h, err; value:w matrix, h matrix, and reconstruction error))
+    :return: dict, NMF result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
     """
     nmf_results = {}  # dict (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:

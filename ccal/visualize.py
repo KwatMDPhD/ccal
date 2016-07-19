@@ -19,8 +19,6 @@ Laboratory of Jill Mesirov
 Description:
 Plotting module for CCAL.
 """
-import os
-
 import pandas as pd
 import numpy as np
 import networkx as nx
@@ -34,6 +32,7 @@ from .support import verbose_print
 # Parameters
 # ======================================================================================================================
 # Colors
+# TODO: pick 24 colors
 WHITE = '#FFFFFF'
 SILVER = '#C0C0C0'
 GRAY = '#808080'
@@ -50,119 +49,121 @@ BLUE = '#0000FF'
 NAVY = '#000080'
 FUCHSIA = '#FF00FF'
 PURPLE = '#800080'
+
 CMAP_CONTINUOUS = mpl.cm.bwr
-CMAP_BINARY = sns.light_palette('black', n_colors=128, as_cmap=True)
 CMAP_CATEGORICAL = mpl.cm.Paired
+CMAP_BINARY = sns.light_palette('black', n_colors=128, as_cmap=True)
 
 # Fonts
-FONT20_BOLD = {'family': 'arial',
-               'size': 20,
-               'color': BLACK,
-               'weight': 'bold',
-               }
-FONT16_BOLD = {'family': 'arial',
-               'size': 16,
-               'color': BLACK,
-               'weight': 'bold',
-               }
-FONT12_BOLD = {'family': 'arial',
-               'size': 12,
-               'color': BLACK,
-               'weight': 'bold',
-               }
 FONT12 = {'family': 'arial',
           'size': 12,
           'color': BLACK,
-          'weight': 'normal',
-          }
+          'weight': 'normal'}
+FONT12_BOLD = {'family': 'arial',
+               'size': 12,
+               'color': BLACK,
+               'weight': 'bold'}
+FONT16_BOLD = {'family': 'arial',
+               'size': 16,
+               'color': BLACK,
+               'weight': 'bold'}
+FONT20_BOLD = {'family': 'arial',
+               'size': 20,
+               'color': BLACK,
+               'weight': 'bold'}
 
 
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_features_and_reference(features, ref, scores, ref_type='continuous', feat_type='continuous',rowname_size=20,
-                                out_file=None, title=''):
+def plot_features_and_reference(features, ref, scores, features_type='continuous', ref_type='continuous',
+                                title=None, rowname_size=25, filename_prefix=None, figure_type='.png'):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
     :param scores:  pandas DataFrame (n_features, 1), must have the same index and columns
+    :param features_type: str, {continuous, categorical, binary}
     :param ref_type: str, {continuous, categorical, binary}
-    :param feat_type: str, {continuous, categorical, binary}    
+    :param title: str, figure title
     :param rowname_size: int, the maximum length of a feature name label
-    :param out_file: str, file path to save the figure
+    :param filename_prefix: str, file path prefix to save the figure
+    :param figure_type: str, file type to save the figure
     :return: None
     """
-    
     features_nrow, features_ncol = features.shape
-    
-    # Set figure size: rescale according to number of rows/colums except for too small or too large sizes
+
+    # Set figure size
     if features_ncol < 10:
-        fig_width = 10/6
-    elif features_ncol > 35:
-        fig_width = 35/6
+        fig_width = 10 / 6
+    elif features_ncol < 35:
+        fig_width = features_ncol / 6
     else:
-        fig_width = features_ncol/6
-        
+        fig_width = 35 / 6
+
     if features_nrow < 3:
-        fig_height = 4/3
+        fig_height = 4 / 3
     else:
-        fig_height = features_nrow/3
-        
+        fig_height = features_nrow / 3
+
     fig = plt.figure(figsize=(fig_width, fig_height), dpi=900)
 
     # Set heatmap parameters for ref
-    if ref_type == 'binary':
-        ref_cmap = CMAP_BINARY
-        ref_min, ref_max = 0, 1
-        text_margin = 1
-    elif ref_type == 'categorical':
+    if ref_type is 'continuous':
+        ref_cmap = CMAP_CONTINUOUS
+        ref_min, ref_max = -2.5, 2.5
+        text_margin = 0.4
+    elif ref_type is 'categorical':
         ref_cmap = CMAP_CATEGORICAL
         ref_min, ref_max = 0, np.unique(ref.values).size
         text_margin = 1
-    elif ref_type == 'continuous':
-        ref_cmap = CMAP_CONTINUOUS
-        ref_min, ref_max = -2.5, 2.5
-        ref = (ref - ref.mean()) / ref.std()
-        text_margin = 0.4
+    elif ref_type is 'binary':
+        ref_cmap = CMAP_BINARY
+        ref_min, ref_max = 0, 1
+        text_margin = 1
     else:
         raise ValueError('Unknown ref_type {}.'.format(ref_type))
 
-    # Set heatmap parameters for features and normalize features
+    # Set heatmap parameters for features
+    if features_type is 'continuous':
+        features_cmap = CMAP_CONTINUOUS
+        features_min, features_max = -2.5, 2.5
+    elif features_type is 'categorical':
+        features_cmap = CMAP_CATEGORICAL
+        features_min, features_max = 0, np.unique(features.values).size
+    elif features_type is 'binary':
+        features_cmap = CMAP_BINARY
+        features_min, features_max = -0.025, 1
+    else:
+        raise ValueError('Unknown features_type {}.'.format(features_type))
 
-    if feat_type == 'binary':
-        feat_cmap = CMAP_BINARY
-        feat_min, feat_max = -0.025, 1
-    elif feat_type == 'categorical':
-        feat_cmap = CMAP_CATEGORICAL
-        feat_min, feat_max = 0, np.unique(feat.values).size
-    elif feat_type == 'continuous':
-        feat_cmap = CMAP_CONTINUOUS
-        feat_min, feat_max = -2.5, 2.5
+    # Normalize
+    if features_type is 'continuous':
+        verbose_print('Normalizing continuous features ...')
         for i, (idx, s) in enumerate(features.iterrows()):
             mean = s.mean()
             std = s.std()
             for j, v in enumerate(s):
                 features.iloc[i, j] = (v - mean) / std
-    else:
-        raise ValueError('Unknown feat_type {}.'.format(feat_type))
+    if ref_type is 'continuous':
+        verbose_print('Normalizing continuous ref ...')
+        ref = (ref - ref.mean()) / ref.std()
 
     # Plot ref
     ref_ax = plt.subplot2grid((features_nrow, 1), (0, 0))
-    ref_ax.text(features_ncol / 2, 4 * text_margin, title, horizontalalignment='center', verticalalignment='bottom',
-                **FONT16_BOLD)
-    sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True, center=None, mask=None,
-                square=False, cmap=ref_cmap, linewidth=0, linecolor=BLACK, annot=False, fmt=None,
-                annot_kws={}, xticklabels=False, yticklabels=False, cbar=False)
+    ref_ax.text(features_ncol / 2, 4 * text_margin, title,
+                horizontalalignment='center', verticalalignment='bottom', **FONT16_BOLD)
+    sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True,
+                cmap=ref_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
     # Add ref texts
-    ref_ax.text(-text_margin, 0.5, ref.name, horizontalalignment='right', verticalalignment='center',
-                **FONT12_BOLD)
-    ref_ax.text(features_ncol + text_margin, 0.5, scores.columns[0], horizontalalignment='left', verticalalignment='center',
-                **FONT12_BOLD)
+    ref_ax.text(-text_margin, 0.5, ref.name,
+                horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
+    ref_ax.text(features_ncol + text_margin, 0.5, scores.columns[0],
+                horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Add binary or categorical ref labels
     if ref_type in ('binary', 'categorical'):
-        # Get boundaries
+        # Find boundaries
         boundaries = [0]
         prev_v = ref.iloc[0]
         for i, v in enumerate(ref.iloc[1:]):
@@ -170,7 +171,7 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
                 boundaries.append(i + 1)
             prev_v = v
         boundaries.append(features_ncol)
-        # Get label horizontal positions
+        # Calculate label's horizontal positions
         label_horizontal_positions = []
         prev_b = 0
         for b in boundaries[1:]:
@@ -180,14 +181,14 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
         unique_ref_labels = np.unique(ref.values)[::-1]
         # Add labels
         for i, pos in enumerate(label_horizontal_positions):
-            ref_ax.text(pos, 1, unique_ref_labels[i], horizontalalignment='center', verticalalignment='bottom',
-                        **FONT12_BOLD)
+            # TODO: verticalalignment should be default so remove this
+            ref_ax.text(pos, 1, unique_ref_labels[i],
+                        horizontalalignment='center', verticalalignment='bottom', **FONT12_BOLD)
 
     # Plot features
     features_ax = plt.subplot2grid((features_nrow, 1), (0, 1), rowspan=features_nrow)
-    sns.heatmap(features, vmin=feat_min, vmax=feat_max, robust=True, center=None, mask=None,
-                square=False, cmap=feat_cmap, linewidth=0, linecolor=BLACK, annot=False, fmt=None, annot_kws={},
-                xticklabels=False, yticklabels=False, cbar=False)
+    sns.heatmap(features, vmin=features_min, vmax=features_max, robust=True,
+                cmap=features_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
 
     for i, idx in enumerate(features.index):
         features_ax.text(-text_margin, features_nrow - i - 0.5, idx[:rowname_size],
@@ -198,10 +199,11 @@ def plot_features_and_reference(features, ref, scores, ref_type='continuous', fe
     fig.tight_layout()
     plt.show(fig)
 
-    if out_file:
-        figure_filepath = os.path.join(out_file)
-        fig.savefig(figure_filepath)
-        verbose_print('Saved the figure as {}.'.format(figure_filepath))
+    if filename_prefix:
+        filename = filename_prefix + figure_type
+        fig.savefig(filename)
+        verbose_print('Saved the figure as {}.'.format(filename))
+
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
     """

@@ -85,7 +85,6 @@ def establish_path(path):
     :param path:
     :return: None
     """
-    path = os.path.abspath(path)
     if not (os.path.isdir(path) or os.path.isfile(path) or os.path.islink(path)):
         verbose_print('Path {} doesn\'t exist, creating it ...'.format(path))
         path_dirs = []
