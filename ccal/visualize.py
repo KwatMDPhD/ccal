@@ -107,20 +107,18 @@ def plot_features_and_reference(features, ref, scores, features_type='continuous
         fig_height = features_nrow / 3
 
     fig = plt.figure(figsize=(fig_width, fig_height), dpi=900)
+    text_margin = 1
 
     # Set heatmap parameters for ref
     if ref_type is 'continuous':
         ref_cmap = CMAP_CONTINUOUS
         ref_min, ref_max = -2.5, 2.5
-        text_margin = 0.4
     elif ref_type is 'categorical':
         ref_cmap = CMAP_CATEGORICAL
         ref_min, ref_max = 0, np.unique(ref.values).size
-        text_margin = 1
     elif ref_type is 'binary':
         ref_cmap = CMAP_BINARY
         ref_min, ref_max = 0, 1
-        text_margin = 1
     else:
         raise ValueError('Unknown ref_type {}.'.format(ref_type))
 
