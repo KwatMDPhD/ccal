@@ -158,8 +158,9 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
 
     # Plot ref
     ref_ax = plt.subplot2grid((features_nrow, 1), (0, 0))
-    ref_ax.text(features_ncol / 2, 4 * text_margin, title,
-                horizontalalignment='center', verticalalignment='bottom', **FONT16_BOLD)
+    if title:
+        ref_ax.text(features_ncol / 2, 4 * text_margin, title,
+                    horizontalalignment='center', verticalalignment='bottom', **FONT16_BOLD)
     sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True,
                 cmap=ref_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
     # Add ref texts
