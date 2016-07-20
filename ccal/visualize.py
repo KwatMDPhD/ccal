@@ -57,6 +57,7 @@ PINK = 'FFB3DE'
 HOT_PINK = 'FF69B4 '
 RED_VIOLET = 'C71585'
 
+# Color maps
 CMAP_CONTINUOUS = mpl.cm.bwr
 CMAP_CATEGORICAL = mpl.cm.Paired
 CMAP_BINARY = sns.light_palette('black', n_colors=128, as_cmap=True)
@@ -166,7 +167,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
                 horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
     for j, a in enumerate(annotations.columns):
         ref_ax.text(features_ncol + text_margin * (4 * j + text_margin), 0.5, a,
-                         horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
+                    horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Add binary or categorical ref labels
     if ref_type in ('binary', 'categorical'):
@@ -188,9 +189,8 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
         unique_ref_labels = np.unique(ref.values)[::-1]
         # Add labels
         for i, pos in enumerate(label_horizontal_positions):
-            # TODO: verticalalignment should be default so remove this
             ref_ax.text(pos, 1, unique_ref_labels[i],
-                        horizontalalignment='center', verticalalignment='bottom', **FONT12_BOLD)
+                        horizontalalignment='center', **FONT12_BOLD)
 
     # Plot features
     features_ax = plt.subplot2grid((features_nrow, 1), (0, 1), rowspan=features_nrow)

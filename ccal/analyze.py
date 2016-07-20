@@ -41,8 +41,6 @@ from .information import information_coefficient, cmi_diff, cmi_ratio
 # Global variables
 # ======================================================================================================================
 # Path to testing data directory
-PATH_TEST_DATA = os.path.join('data', 'test')
-
 SEED = 20121020
 
 
@@ -52,20 +50,22 @@ SEED = 20121020
 def rank_features_against_reference(features, ref,
                                     features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
-                                    metric='ic', nsampling=3, confidence=0.95, nperm=3,
-                                    title=None,
-                                    n_features=0.95, rowname_size=25,
+                                    metric='information_coef', nsampling=3, confidence=0.95, nperm=3,
+                                    title=None, n_features=0.95, rowname_size=25,
                                     output_prefix=None, figure_type='.png'):
     """
     Compute features vs. `ref`.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param ref: pandas Series (m_elements), must have name and columns, which must match 'features`'s
-    :param metric: str, {information_coef}
     :param features_type: str, {continuous, categorical, binary}
     :param ref_type: str, {continuous, categorical, binary}
     :param features_ascending: bool, True if features score increase from top to bottom, False otherwise
     :param ref_ascending: bool, True if ref values increase from left to right, False otherwise
     :param ref_sort: bool, sort each ref or not
+    :param metric: str, {information_coef}
+    :param nsampling: int, number of sampling for confidence interval bootstrapping
+    :param confidence: float, confidence interval
+    :param nperm: int, number of permutations for permutation test
     :param title: string for the title of heatmap
     :param n_features: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param rowname_size: int, the maximum length of a feature name label
@@ -83,6 +83,10 @@ def rank_features_against_reference(features, ref,
     # Use only the intersecting columns
     # TODO: preserve order
     col_intersection = set(features.columns) & set(ref.index)
+    if not col_intersection:
+        raise ValueError(
+            'No intersecting columns from features and ref, which have {} and {} columns respectively'.format(
+                features.shape[1], ref.size))
     verbose_print(
         'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
             len(col_intersection), features.shape[1], ref.size))
@@ -94,49 +98,49 @@ def rank_features_against_reference(features, ref,
         ref = ref.sort_values(ascending=ref_ascending)
         features = features.reindex_axis(ref.index, axis=1)
 
-    # Compute scores, join them in features, and rank features based on scores
-    scores = compute_against_reference(features, ref, metric=metric, nsampling=nsampling, confidence=confidence,
-                                       nperm=nperm)
+    # Compute scores, sorted by information coefficient
+    scores = compute_against_reference(features, ref, metric=metric,
+                                       nsampling=nsampling, confidence=confidence, nperm=nperm)
+    features = features.reindex(scores.index).sort_values('information_coef', ascending=features_ascending)
 
-    # TODO: sort by features_ascending
-    features = features.reindex(scores.index)
-
-    # Make annotation
-    annotations = pd.DataFrame()
-    annotations['IC'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'ic']]
-    annotations['P'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'Global P-Value']]
-    annotations['CI'] = scores.ix[:, '{} CI'.format(confidence)].tolist()
-
-    #     if output_prefix:
-    #         filename = output_prefix + '.txt'
-    #         features.to_csv(filename, sep='\t')
-    #         verbose_print('Saved the result as {}.'.format(filename))
+    if output_prefix:
+        filename = output_prefix + '.txt'
+        # TODO: add scores
+        features.to_csv(filename, sep='\t')
+        verbose_print('Saved the result as {}.'.format(filename))
 
     # Plot features panel
     verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
+    # Make annotation
+    annotations = pd.DataFrame()
+    annotations['IC'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'information_coef']]
+    annotations['P'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'Global P-Value']]
+    annotations['CI'] = scores.ix[:, '{} CI'.format(confidence)].tolist()
+
     if n_features < 1:
         indices_to_plot = features.iloc[:, -1] >= features.iloc[:, -1].quantile(n_features)
         indices_to_plot |= features.iloc[:, -1] <= features.iloc[:, -1].quantile(1 - n_features)
     else:
         indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
-    # TODO: limit the # plotted
-
-    plot_features_and_reference(features, ref, annotations,
+    plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                 features_type=features_type, ref_type=ref_type,
                                 title=title, rowname_size=rowname_size,
                                 filename_prefix=output_prefix, figure_type=figure_type)
 
 
-def compute_against_reference(features, ref, metric='ic', nsampling=3, confidence=0.95, nperm=3):
+def compute_against_reference(features, ref, metric='information_coef', nsampling=3, confidence=0.95, nperm=3):
     """
-    Compute scores[i] = `features`[i] vs. `ref` with computation using `metric`.
+    Compute scores[i] = `features`[i] vs. `ref` with computation using `metric` and get CI, p-val, and FDR (BH).
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
-    :param metric: str, {information}
-    :return: pandas DataFrame (n_features, 1),
+    :param metric: str, {information_coef}
+    :param nsampling: int, number of sampling for confidence interval bootstrapping
+    :param confidence: float, confidence interval
+    :param nperm: int, number of permutations for permutation test
+    :return: pandas DataFrame (n_features, n_scores),
     """
     # Compute score[i] = <features>[i] vs. <ref>
-    if metric is 'ic':
+    if metric is 'information_coef':
         function = information_coefficient
     elif metric is 'information_cmi_diff':
         function = cmi_diff
@@ -150,8 +154,7 @@ def compute_against_reference(features, ref, metric='ic', nsampling=3, confidenc
                           index=features.index, columns=[metric])
 
     print('Bootstrapping to get {} confidence interval ...'.format(confidence))
-    confidence_intervals = pd.DataFrame(index=features.index,
-                                        columns=['{} CI'.format(confidence)])
+    confidence_intervals = pd.DataFrame(index=features.index, columns=['{} CI'.format(confidence)])
     # Random sample elements
     nsample = math.ceil(0.632 * features.shape[0])
     sampled_scores = np.empty((features.shape[0], nsampling))
@@ -188,7 +191,6 @@ def compute_against_reference(features, ref, metric='ic', nsampling=3, confidenc
         if not local_pval:
             local_pval = float(1 / nperm)
         permutation_pvals_and_fdrs.ix[idx, 'Local P-Value'] = local_pval
-
         # Global P-Value
         global_pval = float(sum(all_permutation_scores > float(f)) / (nperm * features.shape[0]))
         if not global_pval:
@@ -197,25 +199,26 @@ def compute_against_reference(features, ref, metric='ic', nsampling=3, confidenc
     # Compute permutation FDR
     permutation_pvals_and_fdrs.ix[:, 'FDR (BH)'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-Value'],
                                                                  method='fdr_bh')[1]
-    return pd.concat([scores, confidence_intervals, permutation_pvals_and_fdrs], axis=1).sort_values('ic')
+
+    return pd.concat([scores, confidence_intervals, permutation_pvals_and_fdrs], axis=1).sort_values('information_coef')
 
 
-def compare_features_against_features(features1, features2, is_distance=False, result_filename=None,
-                                      figure_filename=None):
+def compare_matrices(matrix1, matrix2, is_distance=False, result_filename=None,
+                     figure_filename=None):
     """
     Make association or distance matrix of the rows of `feature1` and `feature2`.
-    :param features1: pandas DataFrame,
-    :param features2: pandas DataFrame,
+    :param matrix1: pandas DataFrame,
+    :param matrix2: pandas DataFrame,
     :param is_distance: bool, True for distance and False for association
     :param result_filename: str, filepath to save the result
     :param figure_filename: str, filepath to save the figure
     :return:
     """
-    association_matrix = pd.DataFrame(index=features1.index, columns=features2.index, dtype=float)
-    features1_nrow = features1.shape[0]
-    for i, (i1, r1) in enumerate(features1.iterrows()):
+    association_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
+    features1_nrow = matrix1.shape[0]
+    for i, (i1, r1) in enumerate(matrix1.iterrows()):
         verbose_print('Features 1 {} ({}/{}) vs. features 2 ...'.format(i1, i + 1, features1_nrow))
-        for i2, r2 in features2.iterrows():
+        for i2, r2 in matrix2.iterrows():
             association_matrix.ix[i1, i2] = information_coefficient(r1, r2)
     if is_distance:
         verbose_print('Converting association to is_distance (is_distance = 1 - association) ...')
