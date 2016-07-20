@@ -99,9 +99,9 @@ def rank_features_against_reference(features, ref,
         features = features.reindex_axis(ref.index, axis=1)
 
     # Compute scores, sorted by information coefficient
-    scores = compute_against_reference(features, ref, metric=metric,
+    scores = compute_against_reference(features, ref, metric=metric, ascending=features_ascending,
                                        nsampling=nsampling, confidence=confidence, nperm=nperm)
-    features = features.reindex(scores.index).sort_values('information_coef', ascending=features_ascending)
+    features = features.reindex(scores.index)
 
     if output_prefix:
         filename = output_prefix + '.txt'
@@ -112,7 +112,7 @@ def rank_features_against_reference(features, ref,
     # Plot features panel
     verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
     # Make annotation
-    annotations = pd.DataFrame()
+    annotations = pd.DataFrame(index=features.index)
     annotations['IC'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'information_coef']]
     annotations['P'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'Global P-Value']]
     annotations['CI'] = scores.ix[:, '{} CI'.format(confidence)].tolist()
@@ -128,14 +128,16 @@ def rank_features_against_reference(features, ref,
                                 filename_prefix=output_prefix, figure_type=figure_type)
 
 
-def compute_against_reference(features, ref, metric='information_coef', nsampling=3, confidence=0.95, nperm=3):
+def compute_against_reference(features, ref, metric='information_coef', ascending=False, nsampling=30, confidence=0.95,
+                              nperm=30):
     """
     Compute scores[i] = `features`[i] vs. `ref` with computation using `metric` and get CI, p-val, and FDR (BH).
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
     :param metric: str, {information_coef}
+    :param ascending: bool, True if score increase from top to bottom, False otherwise
     :param nsampling: int, number of sampling for confidence interval bootstrapping
-    :param confidence: float, confidence interval
+    :param confidence: float, confidence intrval
     :param nperm: int, number of permutations for permutation test
     :return: pandas DataFrame (n_features, n_scores),
     """
@@ -149,8 +151,8 @@ def compute_against_reference(features, ref, metric='information_coef', nsamplin
     else:
         raise ValueError('Unknown metric {}.'.format(metric))
 
-    # Score
-    scores = pd.DataFrame([function(row[1], ref) for row in features.iterrows()],
+    print('Computing with metric {} ...'.format(metric))
+    scores = pd.DataFrame([function(s, ref) for idx, s in features.iterrows()],
                           index=features.index, columns=[metric])
 
     print('Bootstrapping to get {} confidence interval ...'.format(confidence))
@@ -199,8 +201,8 @@ def compute_against_reference(features, ref, metric='information_coef', nsamplin
     # Compute permutation FDR
     permutation_pvals_and_fdrs.ix[:, 'FDR (BH)'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-Value'],
                                                                  method='fdr_bh')[1]
-
-    return pd.concat([scores, confidence_intervals, permutation_pvals_and_fdrs], axis=1).sort_values('information_coef')
+    results = pd.concat([scores, confidence_intervals, permutation_pvals_and_fdrs], axis=1)
+    return results.sort_values('information_coef', ascending=ascending)
 
 
 def compare_matrices(matrix1, matrix2, is_distance=False, result_filename=None,
@@ -283,7 +285,9 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
     :param ks: array-like, list of ks to be used in the factorization
     :param method: str, {'intra_inter_ratio', 'cophenetic_correlation'}
     :param nassignment: int, number of assignments used to make `assigment_matrix` when using 'cophenetic_correlation'
-    :return: dict, NMF result per k (key: k; value: dict (key: w, h, err; value: w matrix, h matrix, and reconstruction error)) and score per k (key:k; value:score)
+    :return: dict, NMF result per k
+                    (key: k; value: dict (key: w, h, err; value: w matrix, h matrix, and reconstruction error)) and
+                    score per k (key:k; value:score)
     """
     nrow, ncol = matrix.shape
     scores = {}
@@ -358,7 +362,8 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
 
             verbose_print('Computing the cophenetic correlation coefficient ...')
 
-            # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and the normalized assignment distances
+            # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and
+            # the normalized assignment distances
             score = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
                              pdist(normalized_assignment_distance_matrix))[0]
             scores[k] = score
