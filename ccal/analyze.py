@@ -50,8 +50,8 @@ SEED = 20121020
 def rank_features_against_reference(features, ref,
                                     features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
-                                    metric='information_coef', nsampling=3, confidence=0.95, nperm=3,
-                                    title=None, n_features=0, rowname_size=25,
+                                    metric='information_coef', nsampling=30, confidence=0.95, nperm=30,
+                                    title=None, n_features=0, rowname_size=24,
                                     output_prefix=None, figure_type='.png'):
     """
     Compute features vs. `ref`.
