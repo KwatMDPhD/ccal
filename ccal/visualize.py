@@ -163,8 +163,9 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     # Add ref texts
     ref_ax.text(-text_margin, 0.5, ref.name,
                 horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
-    ref_ax.text(features_ncol + text_margin, 0.5, annotations.columns[0],
-                horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
+    for j, a in enumerate(annotations.columns):
+        ref_ax.text(features_ncol + text_margin * (4 * j + text_margin), 0.5, a,
+                    horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Add binary or categorical ref labels
     if ref_type in ('binary', 'categorical'):
@@ -200,7 +201,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
         features_ax.text(-text_margin, y, idx[:rowname_size],
                          horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
         for j, a in enumerate(annotations.iloc[i, :]):
-            features_ax.text(features_ncol + text_margin * (j + 1), y, a,
+            features_ax.text(features_ncol + text_margin * (4 * j + text_margin), y, a,
                              horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     fig.tight_layout()
