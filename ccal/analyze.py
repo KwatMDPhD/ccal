@@ -97,7 +97,7 @@ def rank_features_against_reference(features, ref,
     # Compute scores, join them in features, and rank features based on scores
     scores = compute_against_reference(features, ref, metric=metric, nsampling=nsampling, confidence=confidence,
                                        nperm=nperm)
-    return scores
+
     # TODO: sort by features_ascending
     features = features.reindex(scores.index)
 
@@ -105,7 +105,6 @@ def rank_features_against_reference(features, ref,
     annotations = pd.DataFrame()
     annotations['IC'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'ic']]
     annotations['P'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'Global P-Value']]
-    print(scores.ix[:, '{} CI'.format(confidence)])
     annotations['CI'] = scores.ix[:, '{} CI'.format(confidence)].tolist()
 
     #     if output_prefix:
