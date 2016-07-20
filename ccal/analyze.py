@@ -20,9 +20,12 @@ Description:
 Main analysis module for CCAL.
 """
 import os
+import math
 
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
+from statsmodels.sandbox.stats.multicomp import multipletests
 from scipy.spatial import distance
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, cophenet
@@ -49,7 +52,8 @@ SEED = 20121020
 def rank_features_against_reference(features, ref, metric='information_coef',
                                     features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
-                                    title=None, n_features=0.95, rowname_size=25,
+                                    title=None, annotation_columns=('IC', 'Global', 'P-Value', 'CI', 'FDR (BH)'),
+                                    n_features=0.95, rowname_size=25,
                                     output_prefix=None, figure_type='.png'):
     """
     Compute features vs. `ref`.
@@ -62,6 +66,7 @@ def rank_features_against_reference(features, ref, metric='information_coef',
     :param ref_ascending: bool, True if ref values increase from left to right, False otherwise
     :param ref_sort: bool, sort each ref or not
     :param title: string for the title of heatmap
+    :param annotation_columns: list, annotation column names to include in the plot
     :param n_features: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param rowname_size: int, the maximum length of a feature name label
     :param output_prefix: str, file path prefix to save the result (.txt) and figure (`figure_type`)
@@ -91,7 +96,7 @@ def rank_features_against_reference(features, ref, metric='information_coef',
     # Compute scores, join them in features, and rank features based on scores
     scores = compute_against_reference(features, ref, metric)
     features = features.join(scores)
-    features.sort_values(features.columns[-1], ascending=features_ascending, inplace=True)
+    features.sort_values('Global P-Value', ascending=features_ascending, inplace=True)
 
     if output_prefix:
         filename = output_prefix + '.txt'
@@ -113,7 +118,7 @@ def rank_features_against_reference(features, ref, metric='information_coef',
                                 filename_prefix=output_prefix, figure_type=figure_type)
 
 
-def compute_against_reference(features, ref, metric='information_coef'):
+def compute_against_reference(features, ref, metric='information_coef', nsampling=50, confidence=0.95, nperm=30):
     """
     Compute scores[i] = `features`[i] vs. `ref` with computation using `metric`.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
@@ -123,16 +128,68 @@ def compute_against_reference(features, ref, metric='information_coef'):
     """
     # Compute score[i] = <features>[i] vs. <ref>
     if metric is 'information_coef':
-        return pd.DataFrame([information_coefficient(ref, row[1]) for row in features.iterrows()],
-                            index=features.index, columns=['IC'])
+        function = information_coefficient
     elif metric is 'information_cmi_diff':
-        return pd.DataFrame([cmi_diff(ref, row[1]) for row in features.iterrows()],
-                            index=features.index, columns=['information_cmi_diff'])
+        function = cmi_diff
     elif metric is 'information_cmi_ratio':
-        return pd.DataFrame([cmi_ratio(ref, row[1]) for row in features.iterrows()],
-                            index=features.index, columns=['information_cmi_ratio'])
+        function = cmi_ratio
     else:
         raise ValueError('Unknown metric {}.'.format(metric))
+
+    # Score
+    scores = pd.DataFrame([function(row[1], ref) for row in features.iterrows()],
+                          index=features.index, columns=[metric])
+
+    print('Bootstrapping to get {} confidence interval ...'.format(confidence))
+    confidence_intervals = pd.DataFrame(index=features.index,
+                                        columns=['{0:.2f} Quantile'.format(1 - confidence),
+                                                 '{0:.2f} Qualtile'.format(confidence)])
+    # Random sample elements
+    nsample = math.ceil(0.632 * features.shape[0])
+    sampled_scores = np.empty((features.shape[0], nsampling))
+    for i in range(nsampling):
+        sample_indices = np.random.choice(features.columns.tolist(), int(nsample)).tolist()
+        sampled_features = features.ix[:, sample_indices]
+        sampled_ref = ref.ix[sample_indices]
+        # Compute sample score
+        for j, (idx, s) in enumerate(sampled_features.iterrows()):
+            sampled_scores[j, i] = function(s, sampled_ref)
+    # Get confidence interval
+    z_critical = stats.norm.ppf(q=confidence)
+    for i, f in enumerate(sampled_scores):
+        mean = f.mean()
+        stdev = f.std()
+        moe = z_critical * (stdev / math.sqrt(f.size))
+        confidence_intervals.iloc[i] = mean - moe, mean + moe
+
+    print('Performing permutation test with {} permutations ...'.format(nperm))
+    permutation_pvals_and_fdrs = pd.DataFrame(index=features.index,
+                                              columns=['Local P-Value', 'Global P-Value', 'FDR (BH)'])
+    permutation_scores = np.empty((features.shape[0], nperm))
+    # Permute ref and compute score against it
+    shuffled_ref = np.array(ref)
+    for i in range(nperm):
+        np.random.shuffle(shuffled_ref)
+        for j, (idx, s) in enumerate(features.iterrows()):
+            permutation_scores[j, i] = information_coefficient(s, shuffled_ref)
+    # Compute permutation p-value
+    all_permutation_scores = permutation_scores.flatten()
+    for i, (idx, f) in enumerate(scores.iterrows()):
+        # Local P-Value
+        local_pval = float(sum(permutation_scores[i, :] > float(f)) / nperm)
+        if not local_pval:
+            local_pval = float(1 / nperm)
+        permutation_pvals_and_fdrs.ix[idx, 'Local P-Value'] = local_pval
+
+        # Global P-Value
+        global_pval = float(sum(all_permutation_scores > float(f)) / (nperm * features.shape[0]))
+        if not global_pval:
+            global_pval = float(1 / (nperm * features.shape[0]))
+        permutation_pvals_and_fdrs.ix[idx, 'Global P-Value'] = global_pval
+    # Compute permutation FDR
+    permutation_pvals_and_fdrs.ix[:, 'FDR (BH)'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-Value'],
+                                                                 method='fdr_bh')[1]
+    return pd.concat([scores, confidence_intervals, permutation_pvals_and_fdrs], axis=1)
 
 
 def compare_features_against_features(features1, features2, is_distance=False, result_filename=None,

@@ -83,13 +83,13 @@ FONT20_BOLD = {'family': 'arial',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_features_and_reference(features, ref, scores, features_type='continuous', ref_type='continuous',
+def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
                                 title=None, rowname_size=25, filename_prefix=None, figure_type='.png'):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
-    :param scores:  pandas DataFrame (n_features, 1), must have the same index and columns
+    :param annotations:  pandas DataFrame (n_features, n_annotations), must have indices, which must match 'features`'s
     :param features_type: str, {continuous, categorical, binary}
     :param ref_type: str, {continuous, categorical, binary}
     :param title: str, figure title
@@ -163,7 +163,7 @@ def plot_features_and_reference(features, ref, scores, features_type='continuous
     # Add ref texts
     ref_ax.text(-text_margin, 0.5, ref.name,
                 horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
-    ref_ax.text(features_ncol + text_margin, 0.5, scores.columns[0],
+    ref_ax.text(features_ncol + text_margin, 0.5, annotations.columns[0],
                 horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Add binary or categorical ref labels
@@ -196,10 +196,12 @@ def plot_features_and_reference(features, ref, scores, features_type='continuous
                 cmap=features_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
 
     for i, idx in enumerate(features.index):
-        features_ax.text(-text_margin, features_nrow - i - 0.5, idx[:rowname_size],
+        y = features_nrow - i - 0.5
+        features_ax.text(-text_margin, y, idx[:rowname_size],
                          horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
-        features_ax.text(features_ncol + text_margin, features_nrow - i - 0.5, '{:.3e}'.format(scores.iloc[i, 0]),
-                         horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
+        for j, a in enumerate(annotations.iloc[i, :]):
+            features_ax.text(features_ncol + text_margin * (j + 1), y, a,
+                             horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     fig.tight_layout()
     plt.show(fig)
