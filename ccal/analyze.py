@@ -53,7 +53,7 @@ def rank_features_against_reference(features, ref,
                                     features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
                                     metric='ic', nsampling=3, confidence=0.95, nperm=3,
-                                    title=None, annotation_columns=('IC', 'Global', 'P-Value', 'CI', 'FDR (BH)'),
+                                    title=None,
                                     n_features=0.95, rowname_size=25,
                                     output_prefix=None, figure_type='.png'):
     """
@@ -67,7 +67,6 @@ def rank_features_against_reference(features, ref,
     :param ref_ascending: bool, True if ref values increase from left to right, False otherwise
     :param ref_sort: bool, sort each ref or not
     :param title: string for the title of heatmap
-    :param annotation_columns: list, annotation column names to include in the plot
     :param n_features: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param rowname_size: int, the maximum length of a feature name label
     :param output_prefix: str, file path prefix to save the result (.txt) and figure (`figure_type`)
@@ -98,6 +97,7 @@ def rank_features_against_reference(features, ref,
     # Compute scores, join them in features, and rank features based on scores
     scores = compute_against_reference(features, ref, metric=metric, nsampling=nsampling, confidence=confidence,
                                        nperm=nperm)
+
     # TODO: sort by features_ascending
     features = features.reindex(scores.index)
 
@@ -112,7 +112,6 @@ def rank_features_against_reference(features, ref,
     #         features.to_csv(filename, sep='\t')
     #         verbose_print('Saved the result as {}.'.format(filename))
 
-
     # Plot features panel
     verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
     if n_features < 1:
@@ -120,6 +119,8 @@ def rank_features_against_reference(features, ref,
         indices_to_plot |= features.iloc[:, -1] <= features.iloc[:, -1].quantile(1 - n_features)
     else:
         indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
+    # TODO: limit the # plotted
+
     plot_features_and_reference(features, ref, annotations,
                                 features_type=features_type, ref_type=ref_type,
                                 title=title, rowname_size=rowname_size,

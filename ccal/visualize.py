@@ -83,6 +83,7 @@ FONT20_BOLD = {'family': 'arial',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
+
 def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
                                 title=None, rowname_size=25, filename_prefix=None, figure_type='.png'):
     """
@@ -165,7 +166,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
                 horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
     for j, a in enumerate(annotations.columns):
         ref_ax.text(features_ncol + text_margin * (4 * j + text_margin), 0.5, a,
-                    horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
+                         horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Add binary or categorical ref labels
     if ref_type in ('binary', 'categorical'):
