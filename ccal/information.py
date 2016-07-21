@@ -80,8 +80,8 @@ def mutual_information(x, y, z=None, n_grid=25, var_types=None, bandwidth_scalin
         return 0
     jitter_scale = 1E-10
     jitters = [jitter_scale * np.random.uniform(size=n_overlap) for v in variables]
-    for i, v in enumerate(variables):
-        v = v[overlap] + jitters[i]
+    for i, variable in enumerate(variables):
+        variable = variable[overlap] + jitters[i]
     grids = [np.linspace(v.min(), v.max(), n_grid) for v in variables]
     mesh_grids = np.meshgrid(*grids)
     grid_shape = tuple([n_grid] * n_vars)
