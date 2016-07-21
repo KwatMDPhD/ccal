@@ -20,13 +20,13 @@ Description:
 Check dependencies and install missing ones.
 """
 import pip
+import random
 
 from .support import _print
 
 print('=' * 79)
-print('=' * 20, 'Computational Cancer Analysis Library', '=' * 20)
+print('=' * 20 + ' Computational Cancer Analysis Library ' + '=' * 20)
 print('=' * 79)
-print()
 
 _print('Checking dependencies ...')
 packages_installed = [pkg.key for pkg in pip.get_installed_distributions()]
@@ -44,3 +44,5 @@ from . import support
 from . import visualize
 from . import information
 from . import analyze
+
+random.seed(20121020)
