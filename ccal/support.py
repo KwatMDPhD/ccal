@@ -25,7 +25,6 @@ import time
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 VERBOSE = True
 
@@ -33,7 +32,7 @@ VERBOSE = True
 # ======================================================================================================================
 # Utilities
 # ======================================================================================================================
-def verbose_print(string):
+def _print(string):
     """
     Print `string` with the current time.
     :param string: str, message to be printed
@@ -44,7 +43,7 @@ def verbose_print(string):
         print('<{}> {}'.format(datetime.datetime.now().time(), string))
 
 
-def runtime(function, n_range, plot=True):
+def runtime(function, n_range):
     """
     For i in n_range, get runtimes of function(x, y) where x and y are random vectors of size (i + 1) * 10.
     :param function: function,
@@ -56,7 +55,7 @@ def runtime(function, n_range, plot=True):
     runtimes = []
     for i in n_range:
         n = (i + 1) * 10
-        verbose_print('Getting runtime with vectors (x, y) with size {} ...'.format(n))
+        _print('Getting runtime with vectors (x, y) with size {} ...'.format(n))
         x = np.random.random_sample(n)
         y = np.random.random_sample(n)
         t0 = time.time()
@@ -66,12 +65,6 @@ def runtime(function, n_range, plot=True):
         t = time.time() - t0
         ns.append(n)
         runtimes.append(t)
-
-    if plot:
-        verbose_print('Plotting size vs. time ...')
-        sns.pointplot(x=ns, y=runtimes)
-        sns.plt.xlabel('Vector Size')
-        sns.plt.ylabel('Time')
 
     return ns, runtimes
 
@@ -86,7 +79,7 @@ def establish_path(path):
     :return: None
     """
     if not (os.path.isdir(path) or os.path.isfile(path) or os.path.islink(path)):
-        verbose_print('Path {} doesn\'t exist, creating it ...'.format(path))
+        _print('Path {} doesn\'t exist, creating it ...'.format(path))
         path_dirs = []
         p, q = os.path.split(path)
         while q != '':

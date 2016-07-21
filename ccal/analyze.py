@@ -33,7 +33,7 @@ from sklearn.decomposition import NMF
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .support import verbose_print, establish_path
+from .support import _print, establish_path
 from .visualize import CMAP_CONTINUOUS, plot_nmf_result, plot_features_and_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 
@@ -73,7 +73,7 @@ def rank_features_against_reference(features, ref,
     :param figure_type: str, file type to save the output figure
     :return: None
     """
-    verbose_print('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
+    _print('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
 
     # Establish output file path
     if output_prefix:
@@ -87,7 +87,7 @@ def rank_features_against_reference(features, ref,
         raise ValueError(
             'No intersecting columns from features and ref, which have {} and {} columns respectively'.format(
                 features.shape[1], ref.size))
-    verbose_print(
+    _print(
         'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
             len(col_intersection), features.shape[1], ref.size))
     features = features.ix[:, col_intersection]
@@ -107,10 +107,10 @@ def rank_features_against_reference(features, ref,
         filename = output_prefix + '.txt'
         # TODO: add scores
         features.to_csv(filename, sep='\t')
-        verbose_print('Saved the result as {}.'.format(filename))
+        _print('Saved the result as {}.'.format(filename))
 
     # Plot features panel
-    verbose_print('Plotting top {} features vs. ref ...'.format(n_features))
+    _print('Plotting top {} features vs. ref ...'.format(n_features))
     # Make annotation
     annotations = pd.DataFrame(index=features.index)
     annotations['IC'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'information_coef']]
@@ -219,25 +219,25 @@ def compare_matrices(matrix1, matrix2, is_distance=False, result_filename=None,
     association_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
     features1_nrow = matrix1.shape[0]
     for i, (i1, r1) in enumerate(matrix1.iterrows()):
-        verbose_print('Features 1 {} ({}/{}) vs. features 2 ...'.format(i1, i + 1, features1_nrow))
+        _print('Features 1 {} ({}/{}) vs. features 2 ...'.format(i1, i + 1, features1_nrow))
         for i2, r2 in matrix2.iterrows():
             association_matrix.ix[i1, i2] = information_coefficient(r1, r2)
     if is_distance:
-        verbose_print('Converting association to is_distance (is_distance = 1 - association) ...')
+        _print('Converting association to is_distance (is_distance = 1 - association) ...')
         association_matrix = 1 - association_matrix
     if result_filename:
         establish_path(result_filename)
         association_matrix.to_csv(result_filename, sep='\t')
-        verbose_print('Saved the resulting matrix as {}.'.format(result_filename))
+        _print('Saved the resulting matrix as {}.'.format(result_filename))
 
-    verbose_print('Plotting the resulting matrix ...')
+    _print('Plotting the resulting matrix ...')
     ax = sns.clustermap(association_matrix, cmap=CMAP_CONTINUOUS)
     plt.setp(ax.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
     plt.setp(ax.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
     if figure_filename:
         establish_path(figure_filename)
         association_matrix.to_csv(figure_filename, sep='\t')
-        verbose_print('Saved the resulting figure as {}.'.format(figure_filename))
+        _print('Saved the resulting figure as {}.'.format(figure_filename))
 
 
 # ======================================================================================================================
@@ -259,7 +259,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     """
     nmf_results = {}  # dict (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:
-        verbose_print('Performing NMF with k={} ...'.format(k))
+        _print('Performing NMF with k={} ...'.format(k))
         model = NMF(n_components=k,
                     init=initialization,
                     max_iter=max_iteration,
@@ -272,7 +272,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
         if plot:
-            verbose_print('\tPlotting W and H matrices ...')
+            _print('\tPlotting W and H matrices ...')
             plot_nmf_result(nmf_results, k)
 
     return nmf_results
@@ -295,7 +295,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
     if method == 'intra_inter_ratio':
         nmf_results = nmf(matrix, ks)
         for k, nmf_result in nmf_results.items():
-            verbose_print('Computing clustering score for k={} using method {} ...'.format(k, method))
+            _print('Computing clustering score for k={} using method {} ...'.format(k, method))
 
             assignments = {}  # dict (key: assignemnt index; value: samples)
             # Cluster of a sample is the index with the highest value in corresponding H column
@@ -331,17 +331,17 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
                         assignment_scores_per_k[sidx] = score
 
             scores[k] = assignment_scores_per_k.mean()
-            verbose_print('Score for k={}: {}'.format(k, assignment_scores_per_k.mean()))
+            _print('Score for k={}: {}'.format(k, assignment_scores_per_k.mean()))
 
     elif method == 'cophenetic_correlation':
         nmf_results = {}
         for k in ks:
-            verbose_print('Computing clustering score for k={} using method {} ...'.format(k, method))
+            _print('Computing clustering score for k={} using method {} ...'.format(k, method))
 
             # Make assignment matrix (nassignment, ncol assingments from H)
             assignment_matrix = np.empty((nassignment, ncol))
             for i in range(nassignment):
-                verbose_print('Running NMF #{} (total number of assignments={}) ...'.format(i, nassignment))
+                _print('Running NMF #{} (total number of assignments={}) ...'.format(i, nassignment))
                 nmf_result = nmf(matrix, [k])[k]
                 # Save the 1st NMF result for each k
                 if i == 0:
@@ -360,14 +360,14 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
             # Normalize assignment distance matrix by the nassignment
             normalized_assignment_distance_matrix = assignment_distance_matrix / nassignment
 
-            verbose_print('Computing the cophenetic correlation coefficient ...')
+            _print('Computing the cophenetic correlation coefficient ...')
 
             # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and
             # the normalized assignment distances
             score = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
                              pdist(normalized_assignment_distance_matrix))[0]
             scores[k] = score
-            verbose_print('Score for k={}: {}'.format(k, score))
+            _print('Score for k={}: {}'.format(k, score))
     else:
         raise ValueError('Unknown method {}.'.format(method))
 

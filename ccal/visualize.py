@@ -28,7 +28,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .support import verbose_print
+from .support import _print
 
 # ======================================================================================================================
 # Parameters
@@ -143,14 +143,14 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
 
     # Normalize
     if features_type is 'continuous':
-        verbose_print('Normalizing continuous features ...')
+        _print('Normalizing continuous features ...')
         for i, (idx, s) in enumerate(features.iterrows()):
             mean = s.mean()
             std = s.std()
             for j, v in enumerate(s):
                 features.iloc[i, j] = (v - mean) / std
     if ref_type is 'continuous':
-        verbose_print('Normalizing continuous ref ...')
+        _print('Normalizing continuous ref ...')
         ref = (ref - ref.mean()) / ref.std()
 
     # Plot ref
@@ -215,7 +215,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     if filename_prefix:
         filename = filename_prefix + figure_type
         fig.savefig(filename)
-        verbose_print('Saved the figure as {}.'.format(filename))
+        _print('Saved the figure as {}.'.format(filename))
 
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):

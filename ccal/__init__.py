@@ -21,24 +21,24 @@ Check dependencies and install missing ones.
 """
 import pip
 
-from .support import verbose_print
+from .support import _print
 
 print('=' * 79)
 print('=' * 20, 'Computational Cancer Analysis Library', '=' * 20)
 print('=' * 79)
 print()
 
-verbose_print('Checking dependencies ...')
+_print('Checking dependencies ...')
 packages_installed = [pkg.key for pkg in pip.get_installed_distributions()]
 packages_needed = ['rpy2', 'numpy', 'pandas', 'scipy', 'scikit-learn', 'matplotlib', 'seaborn']
 for pkg in packages_needed:
     if pkg not in packages_installed:
-        verbose_print('{} not found! Installing ...'.format(pkg))
+        _print('{} not found! Installing ...'.format(pkg))
         pip.main(['install', pkg])
-verbose_print('Using the following packages:')
+_print('Using the following packages:')
 for pkg in pip.get_installed_distributions():
     if pkg.key in packages_needed:
-        verbose_print('\t{} (v{})'.format(pkg.key, pkg.version))
+        _print('\t{} (v{})'.format(pkg.key, pkg.version))
 
 from . import support
 from . import visualize
