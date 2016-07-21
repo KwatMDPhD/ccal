@@ -19,6 +19,8 @@ Laboratory of Jill Mesirov
 Description:
 Plotting module for CCAL.
 """
+import math
+
 import pandas as pd
 import numpy as np
 import networkx as nx
@@ -26,7 +28,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .support import verbose_print
+from .support import _print
 
 # ======================================================================================================================
 # Parameters
@@ -59,23 +61,28 @@ RED_VIOLET = 'C71585'
 
 # Color maps
 CMAP_CONTINUOUS = mpl.cm.bwr
-CMAP_CATEGORICAL = mpl.cm.Paired
-CMAP_BINARY = sns.light_palette('black', n_colors=128, as_cmap=True)
+CMAP_CATEGORICAL = mpl.cm.gist_ncar
+CMAP_BINARY = sns.light_palette('black', n_colors=2, as_cmap=True)
 
 # Fonts
-FONT12 = {'family': 'arial',
+FONT = 'arial'
+FONT9_BOLD = {'family': FONT,
+              'size': 9,
+              'color': BLACK,
+              'weight': 'bold'}
+FONT12 = {'family': FONT,
           'size': 12,
           'color': BLACK,
           'weight': 'normal'}
-FONT12_BOLD = {'family': 'arial',
+FONT12_BOLD = {'family': FONT,
                'size': 12,
                'color': BLACK,
                'weight': 'bold'}
-FONT16_BOLD = {'family': 'arial',
+FONT16_BOLD = {'family': FONT,
                'size': 16,
                'color': BLACK,
                'weight': 'bold'}
-FONT20_BOLD = {'family': 'arial',
+FONT20_BOLD = {'family': FONT,
                'size': 20,
                'color': BLACK,
                'weight': 'bold'}
@@ -84,7 +91,6 @@ FONT20_BOLD = {'family': 'arial',
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-
 def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
                                 title=None, rowname_size=25, filename_prefix=None, figure_type='.png'):
     """
@@ -100,20 +106,11 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     :param figure_type: str, file type to save the figure
     :return: None
     """
-    features_nrow, features_ncol = features.shape
 
     # Set figure size
-    if features_ncol < 10:
-        fig_width = 10 / 6
-    elif features_ncol < 35:
-        fig_width = features_ncol / 6
-    else:
-        fig_width = 35 / 6
-
-    if features_nrow < 3:
-        fig_height = 4 / 3
-    else:
-        fig_height = features_nrow / 3
+    fig_height = math.pow(features.shape[0], 0.5)
+    fig_width = math.pow(features.shape[1], 0.5)
+    annotation_margin = lambda x: x * math.pow(features.shape[1], 0.3)
 
     fig = plt.figure(figsize=(fig_width, fig_height), dpi=900)
     text_margin = 1
@@ -146,20 +143,20 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
 
     # Normalize
     if features_type is 'continuous':
-        verbose_print('Normalizing continuous features ...')
+        _print('Normalizing continuous features ...')
         for i, (idx, s) in enumerate(features.iterrows()):
             mean = s.mean()
             std = s.std()
             for j, v in enumerate(s):
                 features.iloc[i, j] = (v - mean) / std
     if ref_type is 'continuous':
-        verbose_print('Normalizing continuous ref ...')
+        _print('Normalizing continuous ref ...')
         ref = (ref - ref.mean()) / ref.std()
 
     # Plot ref
-    ref_ax = plt.subplot2grid((features_nrow, 1), (0, 0))
+    ref_ax = plt.subplot2grid((features.shape[0], 1), (0, 0))
     if title:
-        ref_ax.text(features_ncol / 2, 4 * text_margin, title,
+        ref_ax.text(features.shape[1] / 2, 4 * text_margin, title,
                     horizontalalignment='center', verticalalignment='bottom', **FONT16_BOLD)
     sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True,
                 cmap=ref_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
@@ -167,7 +164,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     ref_ax.text(-text_margin, 0.5, ref.name,
                 horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
     for j, a in enumerate(annotations.columns):
-        ref_ax.text(features_ncol + text_margin * (4 * j + text_margin), 0.5, a,
+        ref_ax.text(features.shape[1] + text_margin + annotation_margin(j), 0.5, a,
                     horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Add binary or categorical ref labels
@@ -179,7 +176,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
             if prev_v != v:
                 boundaries.append(i + 1)
             prev_v = v
-        boundaries.append(features_ncol)
+        boundaries.append(features.shape[1])
         # Calculate label's horizontal positions
         label_horizontal_positions = []
         prev_b = 0
@@ -194,17 +191,23 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
                         horizontalalignment='center', **FONT12_BOLD)
 
     # Plot features
-    features_ax = plt.subplot2grid((features_nrow, 1), (0, 1), rowspan=features_nrow)
+    features_ax = plt.subplot2grid((features.shape[0], 1), (0, 1), rowspan=features.shape[0])
     sns.heatmap(features, vmin=features_min, vmax=features_max, robust=True,
                 cmap=features_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
 
     for i, idx in enumerate(features.index):
-        y = features_nrow - i - 0.5
+        y = features.shape[0] - i - 0.5
         features_ax.text(-text_margin, y, idx[:rowname_size],
                          horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
         for j, a in enumerate(annotations.iloc[i, :]):
-            features_ax.text(features_ncol + text_margin * (4 * j + text_margin), y, a,
+            features_ax.text(features.shape[1] + text_margin + annotation_margin(j), y, a,
                              horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
+
+    # Plot column names at the bottom
+    if features.shape[1] < 50:
+        for j, c in enumerate(features.columns):
+            features_ax.text(j + 0.5, -text_margin, c,
+                             rotation=90, horizontalalignment='center', verticalalignment='top', **FONT9_BOLD)
 
     fig.tight_layout()
     plt.show(fig)
@@ -212,7 +215,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     if filename_prefix:
         filename = filename_prefix + figure_type
         fig.savefig(filename)
-        verbose_print('Saved the figure as {}.'.format(filename))
+        _print('Saved the figure as {}.'.format(filename))
 
 
 def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):

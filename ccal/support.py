@@ -25,7 +25,6 @@ import time
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 VERBOSE = True
 
@@ -33,7 +32,7 @@ VERBOSE = True
 # ======================================================================================================================
 # Utilities
 # ======================================================================================================================
-def verbose_print(string):
+def _print(string):
     """
     Print `string` with the current time.
     :param string: str, message to be printed
@@ -44,7 +43,7 @@ def verbose_print(string):
         print('<{}> {}'.format(datetime.datetime.now().time(), string))
 
 
-def runtime(function, n_range, plot=True):
+def runtime(function, n_range):
     """
     For i in n_range, get runtimes of function(x, y) where x and y are random vectors of size (i + 1) * 10.
     :param function: function,
@@ -56,7 +55,7 @@ def runtime(function, n_range, plot=True):
     runtimes = []
     for i in n_range:
         n = (i + 1) * 10
-        verbose_print('Getting runtime with vectors (x, y) with size {} ...'.format(n))
+        _print('Getting runtime with vectors (x, y) with size {} ...'.format(n))
         x = np.random.random_sample(n)
         y = np.random.random_sample(n)
         t0 = time.time()
@@ -66,12 +65,6 @@ def runtime(function, n_range, plot=True):
         t = time.time() - t0
         ns.append(n)
         runtimes.append(t)
-
-    if plot:
-        verbose_print('Plotting size vs. time ...')
-        sns.pointplot(x=ns, y=runtimes)
-        sns.plt.xlabel('Vector Size')
-        sns.plt.ylabel('Time')
 
     return ns, runtimes
 
@@ -86,7 +79,7 @@ def establish_path(path):
     :return: None
     """
     if not (os.path.isdir(path) or os.path.isfile(path) or os.path.islink(path)):
-        verbose_print('Path {} doesn\'t exist, creating it ...'.format(path))
+        _print('Path {} doesn\'t exist, creating it ...'.format(path))
         path_dirs = []
         p, q = os.path.split(path)
         while q != '':
@@ -123,35 +116,41 @@ def read_gct(filename, fill_na=None, drop_description=True):
     return dataframe
 
 
-def write_gct(dataframe, filename, description=None, index_column=None):
+def write_gct(pandas_object, filename, index_column=None, description=None):
     """
-    Write a `dataframe` to a `filename` as a .gct.
-    :param dataframe: pandas DataFrame (n_samples, n_features),
-    :param filename: str, path
-    :param description: array-like (n_samples), description column for the .gct
+    Write a `pandas_object` to a `filename` as a .gct.
+    :param pandas_object: pandas DataFrame or Serires (n_samples, m_features),
+    :param filename: str, path to save the .gct
     :param index_column: str, column to be used as the .gct index
+    :param description: array-like (n_samples), description column for the .gct
     """
+    pandas_object = pandas_object.copy()
+
+    # Convert Series to DataFrame
+    if isinstance(pandas_object, pd.Series):
+        pandas_object = pd.DataFrame(pandas_object).T
+
     # Set output filename
     if not filename.endswith('.gct'):
         filename += '.gct'
 
     # Set index (Name)
     if index_column:
-        dataframe.set_index(index_column, inplace=True)
-    dataframe.index.name = 'Name'
+        pandas_object.set_index(index_column, inplace=True)
+    pandas_object.index.name = 'Name'
 
-    n_rows, n_cols = dataframe.shape[0], dataframe.shape[1]
+    n_rows, n_cols = pandas_object.shape[0], pandas_object.shape[1]
 
     # Set Description
     if description:
-        assert len(description) == n_rows, 'Description\' length doesn\'t match the dataframe\'s'
+        assert len(description) is n_rows, 'Description\' length doesn\'t match the dataframe\'s'
     else:
-        description = dataframe.index
-    dataframe.insert(0, 'Description', description)
+        description = pandas_object.index
+    pandas_object.insert(0, 'Description', description)
 
     with open(filename, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(n_rows, n_cols))
-        dataframe.to_csv(f, sep='\t')
+        pandas_object.to_csv(f, sep='\t')
 
 
 # ======================================================================================================================
