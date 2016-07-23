@@ -56,13 +56,13 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_pe
     :param n_grid: int, number of grid points at which to evaluate kernel density
     :param vector_data_types: str, 3 chars of 'c' (continuous), 'u' (unordered discrete), or 'o' (ordered discrete)
     :param n_perm: int, >0 will return a p-value in addition to the information coefficient
-    :param adaptive: bool, quit permutations after achieving a specified confidence that the p-value is above (or below)
-            alpha
+    :param adaptive: bool, quit permutations after achieving a specified confidence that the p-value is above (or below) alpha
     :param alpha: float, threshold empirical p-value for significance of IC
     :param perm_alpha: float, threshold probability for terminating adaptive permutation
-    :return: float, information coefficient; if nperm > 0, also the empirical p-value
-    Note that if adaptive, the accuracy of the empirical p-value will vary: values closer to alpha will be estimated
-    more precisely, while values obviously greater or less than alpha will be estimated less precisely.
+    :return: float, information coefficient; if nperm > 0, also the empirical p-value.
+                Note that if adaptive, the accuracy of the empirical p-value will vary:
+                values closer to alpha will be estimated more precisely, while values obviously
+                greater or less than alpha will be estimated less precisely.
     """
     x = np.array(x)
     y = np.array(y)
