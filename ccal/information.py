@@ -36,15 +36,7 @@ from rpy2.robjects.packages import importr
 
 mass = importr('MASS')
 
-
-def rbcv(x):
-    """
-    TODO
-    :param x: array-like, (n_samples,)
-    :return: float, bandwidth
-    """
-    bandwidth = np.array(mass.bcv(x))[0]
-    return bandwidth
+from .support import drop_nan_columns, add_jitter
 
 
 def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_perm=0, adaptive=True, alpha=0.05,
@@ -59,19 +51,21 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_pe
     :param adaptive: bool, quit permutations after achieving a specified confidence that the p-value is above (or below) alpha
     :param alpha: float, threshold empirical p-value for significance of IC
     :param perm_alpha: float, threshold probability for terminating adaptive permutation
-    :return: float, information coefficient; if nperm > 0, also the empirical p-value.
-                Note that if adaptive, the accuracy of the empirical p-value will vary:
-                values closer to alpha will be estimated more precisely, while values obviously
-                greater or less than alpha will be estimated less precisely.
+    :return: float and float, information coefficient, and the empirical p-value if n_perm > 0
+                Note that if adaptive, the accuracy of the empirical p-value will vary: values closer to alpha will be estimated
+                more precisely, while values obviously greater or less than alpha will be estimated less precisely.
     """
-    x = np.array(x)
-    y = np.array(y)
+    vectors = [x, y]
     if z:
-        z = np.array(z)
+        vectors.append(z)
+        x, y, z = drop_nan_columns(vectors)
+    else:
+        x, y = drop_nan_columns(vectors)
 
     rho, p = pearsonr(x, y)
     rho2 = abs(rho)
-    bandwidth_scaling = (1 + (-0.75) * rho2)
+    bandwidth_scaling = 1 + (-0.75) * rho2
+
     mi = mutual_information(x, y, z=z, n_grid=n_grid,
                             vector_data_types=vector_data_type, bandwidth_scaling=bandwidth_scaling)
     ic_sign = np.sign(rho)
@@ -106,8 +100,6 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_pe
         p_value = n_more_extreme / float(trials)
         return ic, p_value
     else:
-        if np.isnan(ic):
-            print(x, y)
         return ic
 
 
@@ -125,10 +117,10 @@ def mutual_information(x, y, z=None, n_grid=25, vector_data_types=None, bandwidt
     vectors = [x, y]
     if z:
         vectors.append(z)
-
-    for v in vectors[1:]:
-        if len(v) != x.size:
-            raise ValueError('Input arrays have different lengths.')
+        x, y, z = drop_nan_columns(vectors)
+    else:
+        x, y = drop_nan_columns(vectors)
+    add_jitter(vectors)
 
     if not vector_data_types:
         # TODO: guess variable types
@@ -136,16 +128,16 @@ def mutual_information(x, y, z=None, n_grid=25, vector_data_types=None, bandwidt
     elif len(vector_data_types) is not len(vectors):
         raise ValueError('Number of specified variable types does not match number of vectors.')
 
-    # Keep only columns that are not NaN in all vectors, and add jitter to the filtered vectors
-    not_nan_filter = [True] * vectors[0].size
-    for v in vectors:
-        not_nan_filter &= ~np.isnan(v)
-    if not_nan_filter.sum() < 3:
-        return 0
-    else:
-        for i in range(len(vectors)):
-            vectors[i] = vectors[i][not_nan_filter]
-            vectors[i] += np.random.random_sample(vectors[i].size) * 1E-10
+    # # Keep only columns that are not NaN in all vectors, and add jitter to the filtered vectors
+    # not_nan_filter = [True] * vectors[0].size
+    # for v in vectors:
+    #     not_nan_filter &= ~np.isnan(v)
+    # if not_nan_filter.sum() < 3:
+    #     return 0
+    # else:
+    #     for i in range(len(vectors)):
+    #         vectors[i] = vectors[i][not_nan_filter]
+    #         vectors[i] += np.random.random_sample(vectors[i].size) * 1E-10
 
     grids = [np.linspace(v.min(), v.max(), n_grid) for v in vectors]
     mesh_grids = np.meshgrid(*grids)
@@ -181,6 +173,15 @@ def mutual_information(x, y, z=None, n_grid=25, vector_data_types=None, bandwidt
         hy = -np.sum(py * np.log(py)) * dy
         mi = hx + hy - h_joint
         return mi
+
+
+def rbcv(x):
+    """
+    :param x: array-like, (n_samples,)
+    :return: float, bandwidth
+    """
+    bandwidth = np.array(mass.bcv(x))[0]
+    return bandwidth
 
 
 # TODO: refactor

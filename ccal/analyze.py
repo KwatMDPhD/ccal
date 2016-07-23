@@ -33,15 +33,10 @@ from sklearn.decomposition import NMF
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from . import SEED
 from .support import _print, establish_path
 from .visualize import CMAP_CONTINUOUS, plot_nmf_result, plot_features_and_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
-
-# ======================================================================================================================
-# Global variables
-# ======================================================================================================================
-# Path to testing data directory
-SEED = 20121020
 
 
 # ======================================================================================================================
@@ -59,7 +54,7 @@ def rank_features_against_reference(features, ref,
     :param ref: pandas Series (m_elements), must have name and columns, which must match 'features`'s
     :param features_type: str, {continuous, categorical, binary}
     :param ref_type: str, {continuous, categorical, binary}
-    :param features_ascending: bool, True if featres score increase from top to bottom, False otherwise
+    :param features_ascending: bool, True if features score increase from top to bottom, False otherwise
     :param ref_ascending: bool, True if ref values increase from left to right, False otherwise
     :param ref_sort: bool, sort each ref or not
     :param metric: str, {information_coef}
@@ -109,8 +104,6 @@ def rank_features_against_reference(features, ref,
         features.to_csv(filename, sep='\t')
         _print('Saved the result as {}.'.format(filename))
 
-    # Plot features panel
-    _print('Plotting top {} features vs. ref ...'.format(n_features))
     # Make annotation
     annotations = pd.DataFrame(index=features.index)
     annotations['IC'] = ['{0:.2f}'.format(x) for x in scores.ix[:, metric]]
@@ -120,18 +113,14 @@ def rank_features_against_reference(features, ref,
     # Limit features to be plotted
     # TODO: use the same features for the bootstrapping
     if n_features < 1:
-        print(scores)
-        print(scores.ix[:, metric])
-        print(scores.ix[:, metric].quantile(n_features))
-        print(scores.ix[:, metric].quantile(1 - n_features))
         above_quantile = scores.ix[:, metric] >= scores.ix[:, metric].quantile(n_features)
-        _print('Plotting {} features > {} quantile ...'.format(sum(above_quantile), n_features))
+        _print('Plotting {} features vs. reference > {} quantile ...'.format(sum(above_quantile), n_features))
         below_quantile = scores.ix[:, metric] <= scores.ix[:, metric].quantile(1 - n_features)
-        _print('Plotting {} features < {} quantile ...'.format(sum(below_quantile), 1 - n_features))
+        _print('Plotting {} features vs. reference  < {} quantile ...'.format(sum(below_quantile), 1 - n_features))
         indices_to_plot = features.index[above_quantile | below_quantile].tolist()
     else:
         indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
-        _print('Plotting top and bottom {} features ...'.format(len(indices_to_plot)))
+        _print('Plotting top and bottom {} features vs. reference ...'.format(len(indices_to_plot)))
     plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                 features_type=features_type, ref_type=ref_type,
                                 title=title, rowname_size=rowname_size,
@@ -163,7 +152,6 @@ def compute_against_reference(features, ref, metric='information_coef', ascendin
 
     scores = pd.DataFrame([function(s, ref) for idx, s in features.iterrows()],
                           index=features.index, columns=[metric])
-    print('scores:', scores)
 
     _print('Bootstrapping to get {} confidence interval ...'.format(confidence))
     confidence_intervals = pd.DataFrame(index=features.index, columns=['{} CI'.format(confidence)])

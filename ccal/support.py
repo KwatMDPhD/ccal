@@ -211,3 +211,33 @@ def simulate_x_y(n, rho, threshold=3):
             elif y[i] < -threshold:
                 y[i] = -threshold
     return x, y
+
+
+def drop_nan_columns(vectors):
+    """
+    Keep only column positions that are not nan in all vectors.
+    :param vectors: list of numpy array, must have the same length (avoid [v1, ..., vn])
+    :return: list of numpy arrays,
+    """
+    for v in vectors[1:]:
+        if len(v) != len(vectors[0]):
+            raise ValueError('Input arrays have different lengths: {} & {}.'.format(len(v), len(vectors[0])))
+
+    not_nan_filter = np.ones(len(vectors[0]), dtype=bool)
+    for v in vectors:
+        not_nan_filter &= ~np.isnan(v)
+
+    only_not_nan = []
+    for i in range(len(vectors)):
+        only_not_nan.append(vectors[i][not_nan_filter])
+    return only_not_nan
+
+
+def add_jitter(vectors, jitter=1E-10):
+    """
+    Add jitter to vectors inplace.
+    :param vectors: numpy array,
+    :return: None
+    """
+    for i in range(len(vectors)):
+        vectors[i] += np.random.random_sample(vectors[i].size) * jitter

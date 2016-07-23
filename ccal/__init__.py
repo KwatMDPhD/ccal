@@ -40,9 +40,11 @@ for pkg in pip.get_installed_distributions():
     if pkg.key in packages_needed:
         _print('\t{} (v{})'.format(pkg.key, pkg.version))
 
+SEED = 20121020
+random.seed(SEED)
+
 from . import support
 from . import visualize
 from . import information
 from . import analyze
 
-random.seed(20121020)
