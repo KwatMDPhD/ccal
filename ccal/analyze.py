@@ -104,8 +104,13 @@ def rank_features_against_reference(features, ref,
     # Make annotations
     annotations = pd.DataFrame(index=features.index)
     for idx, s in features.iterrows():
-        annotations.ix[idx, 'IC \xb1 \u0394'] = '{0:.2f} '.format(scores.ix[idx, metric]) + '\xb1 {0:.2f}'.format(
-            scores.ix[idx, '{} MoE'.format(confidence)])
+        if '{} MoE'.format(confidence) in scores.columns:
+            annotations.ix[idx, 'IC \xb1 \u0394'] = '{0:.2f} '.format(scores.ix[idx, metric]) + '\xb1 {0:.2f}'.format(
+                scores.ix[idx, '{} MoE'.format(confidence)])
+        else:
+            annotations.ix[idx, 'IC'] = '{0:.2f} '.format(scores.ix[idx, metric])
+
+
     annotations['P-val'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'Global P-value']]
     annotations['FDR'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
 
@@ -115,7 +120,7 @@ def rank_features_against_reference(features, ref,
         above_quantile = scores.ix[:, metric] >= scores.ix[:, metric].quantile(n_features)
         _print('Plotting {} features vs. reference > {} quantile ...'.format(sum(above_quantile), n_features))
         below_quantile = scores.ix[:, metric] <= scores.ix[:, metric].quantile(1 - n_features)
-        _print('Plotting {} features vs. reference  < {} quantile ...'.format(sum(below_quantile), 1 - n_features))
+        _print('Plotting {} features vs. reference < {} quantile ...'.format(sum(below_quantile), 1 - n_features))
         indices_to_plot = features.index[above_quantile | below_quantile].tolist()
     else:
         indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
