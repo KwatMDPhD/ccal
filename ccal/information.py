@@ -26,8 +26,7 @@ from scipy.stats import pearsonr
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
 from scipy.stats import binom_test
 
-# TODO
-# For bcv():
+# TODO pythonize bcv
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 
@@ -39,7 +38,7 @@ mass = importr('MASS')
 from .support import drop_nan_columns, add_jitter
 
 
-def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_perm=0, adaptive=True, alpha=0.05,
+def information_coefficient(x, y, z=None, n_grid=25, vector_data_types=None, n_perm=0, adaptive=True, alpha=0.05,
                             perm_alpha=0.05):
     """
     :param x: array-like, (n_samples,)
@@ -51,7 +50,7 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_pe
     :param adaptive: bool, quit permutations after achieving a specified confidence that the p-value is above (or below) alpha
     :param alpha: float, threshold empirical p-value for significance of IC
     :param perm_alpha: float, threshold probability for terminating adaptive permutation
-    :return: float and float, information coefficient, and the empirical p-value if n_perm > 0
+    :return: float (and float), information coefficient, and the empirical p-value if n_perm > 0
                 Note that if adaptive, the accuracy of the empirical p-value will vary: values closer to alpha will be estimated
                 more precisely, while values obviously greater or less than alpha will be estimated less precisely.
     """
@@ -62,12 +61,24 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_pe
     else:
         x, y = drop_nan_columns(vectors)
 
+    if not vector_data_types:
+        # TODO: guess variable types
+        vector_data_types = 'c' * len(vectors)
+    elif len(vector_data_types) is not len(vectors):
+        raise ValueError('Number of specified variable types does not match number of vectors.')
+
+    if len(x) <= len(vector_data_types):
+        return 0
+
+    add_jitter(vectors)
+
     rho, p = pearsonr(x, y)
     rho2 = abs(rho)
     bandwidth_scaling = 1 + (-0.75) * rho2
 
-    mi = mutual_information(x, y, z=z, n_grid=n_grid,
-                            vector_data_types=vector_data_type, bandwidth_scaling=bandwidth_scaling)
+    mi = mutual_information(x, y, z=z,
+                            n_grid=n_grid, vector_data_types=vector_data_types, bandwidth_scaling=bandwidth_scaling)
+
     ic_sign = np.sign(rho)
     ic = ic_sign * np.sqrt(1 - np.exp(- 2 * mi))
 
@@ -84,7 +95,7 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_pe
             pm_rho2 = abs(pm_rho)
             pm_bandwidth_scaling = (1 + (-0.75) * pm_rho2)
             pm_mi = mutual_information(pm_x, y, z, n_grid=n_grid,
-                                       vector_data_types=vector_data_type, bandwidth_scaling=pm_bandwidth_scaling)
+                                       vector_data_types=vector_data_types, bandwidth_scaling=pm_bandwidth_scaling)
             pm_ic_sign = np.sign(pm_rho)
             pm_ic = pm_ic_sign * np.sqrt(1 - np.exp(- 2 * pm_mi))
             if (pm_ic <= ic and ic < 0) or (0 < ic and ic <= pm_ic):
@@ -117,27 +128,6 @@ def mutual_information(x, y, z=None, n_grid=25, vector_data_types=None, bandwidt
     vectors = [x, y]
     if z:
         vectors.append(z)
-        x, y, z = drop_nan_columns(vectors)
-    else:
-        x, y = drop_nan_columns(vectors)
-    add_jitter(vectors)
-
-    if not vector_data_types:
-        # TODO: guess variable types
-        vector_data_types = 'c' * len(vectors)
-    elif len(vector_data_types) is not len(vectors):
-        raise ValueError('Number of specified variable types does not match number of vectors.')
-
-    # # Keep only columns that are not NaN in all vectors, and add jitter to the filtered vectors
-    # not_nan_filter = [True] * vectors[0].size
-    # for v in vectors:
-    #     not_nan_filter &= ~np.isnan(v)
-    # if not_nan_filter.sum() < 3:
-    #     return 0
-    # else:
-    #     for i in range(len(vectors)):
-    #         vectors[i] = vectors[i][not_nan_filter]
-    #         vectors[i] += np.random.random_sample(vectors[i].size) * 1E-10
 
     grids = [np.linspace(v.min(), v.max(), n_grid) for v in vectors]
     mesh_grids = np.meshgrid(*grids)
@@ -198,15 +188,15 @@ def cmi_diff(x, y):
     x = x - np.mean(x)
     y = y - np.mean(y)
 
-    lattice_x = np.zeros((n, n), dtype="float_")  # Array of lower x tile coordinates
-    lattice_y = np.zeros((n, n), dtype="float_")  # Array of lower y tile coordinates
+    lattice_x = np.zeros((n, n), dtype='float_')  # Array of lower x tile coordinates
+    lattice_y = np.zeros((n, n), dtype='float_')  # Array of lower y tile coordinates
 
-    lattice_area = np.zeros((n, n), dtype="float_")  # Array of tile areas
-    lattice_count = np.zeros((n, n), dtype="uint8")  # Array of tile data counts
+    lattice_area = np.zeros((n, n), dtype='float_')  # Array of tile areas
+    lattice_count = np.zeros((n, n), dtype='uint8')  # Array of tile data counts
 
-    x_order = np.argsort(x, kind='quicksort')
+    x_order = np.argsort(x)
     x_sorted = x[x_order]
-    y_order = np.argsort(y, kind='quicksort')
+    y_order = np.argsort(y)
     y_sorted = y[y_order]
 
     ind = np.arange(0, n, 1)
@@ -267,10 +257,10 @@ def cmi_ratio(x, y):
     x = x - np.mean(x)
     y = y - np.mean(y)
 
-    lattice_x = np.zeros((n, n), dtype="float_")  # Array of lower x tile coordinates
-    lattice_y = np.zeros((n, n), dtype="float_")  # Array of lower y tile coordinates
-    lattice_area = np.zeros((n, n), dtype="float_")  # Array of tile areas
-    lattice_count = np.zeros((n, n), dtype="uint8")  # Array of tile data counts
+    lattice_x = np.zeros((n, n), dtype='float_')  # Array of lower x tile coordinates
+    lattice_y = np.zeros((n, n), dtype='float_')  # Array of lower y tile coordinates
+    lattice_area = np.zeros((n, n), dtype='float_')  # Array of tile areas
+    lattice_count = np.zeros((n, n), dtype='uint8')  # Array of tile data counts
 
     x_order = np.argsort(x)
     x_sorted = x[x_order]

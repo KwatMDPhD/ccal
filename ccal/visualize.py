@@ -92,7 +92,7 @@ FONT20_BOLD = {'family': FONT,
 # Functions
 # ======================================================================================================================
 def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
-                                title=None, rowname_size=25, filename_prefix=None, figure_type='.png'):
+                                title=None, rowname_size=25, plot_colname=False, filename_prefix=None, figure_type='.png'):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
@@ -102,14 +102,15 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     :param ref_type: str, {continuous, categorical, binary}
     :param title: str, figure title
     :param rowname_size: int, the maximum length of a feature name label
+    :param plot_colname: bool, plot column names or not
     :param filename_prefix: str, file path prefix to save the figure
     :param figure_type: str, file type to save the figure
     :return: None
     """
 
     # Set figure size
-    fig_height = math.pow(features.shape[0], 0.5)
-    fig_width = math.pow(features.shape[1], 0.5)
+    fig_height = math.pow(features.shape[0], 0.9)
+    fig_width = min(math.pow(features.shape[1], 0.5), 7.7)
     annotation_margin = lambda x: x * math.pow(features.shape[1], 0.3)
 
     fig = plt.figure(figsize=(fig_width, fig_height), dpi=900)
@@ -204,7 +205,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
                              horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Plot column names at the bottom
-    if features.shape[1] < 50:
+    if plot_colname:
         for j, c in enumerate(features.columns):
             features_ax.text(j + 0.5, -text_margin, c,
                              rotation=90, horizontalalignment='center', verticalalignment='top', **FONT9_BOLD)
