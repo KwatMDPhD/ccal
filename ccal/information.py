@@ -47,49 +47,114 @@ def rbcv(x):
     return bandwidth
 
 
-# TODO: understand the math
-def mutual_information(x, y, z=None, n_grid=25, var_types=None, bandwidth_scaling=None):
+def information_coefficient(x, y, z=None, n_grid=25, vector_data_type=None, n_perm=0, adaptive=True, alpha=0.05,
+                            perm_alpha=0.05):
     """
     :param x: array-like, (n_samples,)
     :param y: array-like, (n_samples,)
     :param z: array-like, (n_samples,), optional, variable on which to condition
     :param n_grid: int, number of grid points at which to evaluate kernel density
-    :param var_types: three-character string of 'c' (continuous), 'u' (unordered discrete) or 'o' (ordered discrete)
-    :param bandwidth_scaling: float
+    :param vector_data_types: str, 3 chars of 'c' (continuous), 'u' (unordered discrete), or 'o' (ordered discrete)
+    :param n_perm: int, >0 will return a p-value in addition to the information coefficient
+    :param adaptive: bool, quit permutations after achieving a specified confidence that the p-value is above (or below)
+            alpha
+    :param alpha: float, threshold empirical p-value for significance of IC
+    :param perm_alpha: float, threshold probability for terminating adaptive permutation
+    :return: float, information coefficient; if nperm > 0, also the empirical p-value
+    Note that if adaptive, the accuracy of the empirical p-value will vary: values closer to alpha will be estimated
+    more precisely, while values obviously greater or less than alpha will be estimated less precisely.
+    """
+    x = np.array(x)
+    y = np.array(y)
+    if z:
+        z = np.array(z)
+
+    rho, p = pearsonr(x, y)
+    rho2 = abs(rho)
+    bandwidth_scaling = (1 + (-0.75) * rho2)
+    mi = mutual_information(x, y, z=z, n_grid=n_grid,
+                            vector_data_types=vector_data_type, bandwidth_scaling=bandwidth_scaling)
+    ic_sign = np.sign(rho)
+    ic = ic_sign * np.sqrt(1 - np.exp(- 2 * mi))
+
+    if n_perm:
+        n_more_extreme = 0
+        trials = 0
+        for i in range(n_perm):
+            trials += 1
+            # The question is whether I want to have
+            # a certain width of confidence interval around my estimate of the pval
+            # or just a certain confidence that the pval is greater than 0.05 (current solution)
+            pm_x = np.random.permutation(x)
+            pm_rho, p = pearsonr(pm_x, y)
+            pm_rho2 = abs(pm_rho)
+            pm_bandwidth_scaling = (1 + (-0.75) * pm_rho2)
+            pm_mi = mutual_information(pm_x, y, z, n_grid=n_grid,
+                                       vector_data_types=vector_data_type, bandwidth_scaling=pm_bandwidth_scaling)
+            pm_ic_sign = np.sign(pm_rho)
+            pm_ic = pm_ic_sign * np.sqrt(1 - np.exp(- 2 * pm_mi))
+            if (pm_ic <= ic and ic < 0) or (0 < ic and ic <= pm_ic):
+                n_more_extreme += 1
+            if adaptive:
+                ge_binom_p = binom_test(n_more_extreme, i + 1, alpha, alternative='greater')
+                # * 2 because what I'm doing is two-sided testing in both directions
+                if ge_binom_p * 2 < perm_alpha:
+                    break
+                le_binom_p = binom_test(n_more_extreme, i + 1, alpha, alternative='less')
+                if le_binom_p * 2 < perm_alpha:
+                    break
+        p_value = n_more_extreme / float(trials)
+        return ic, p_value
+    else:
+        if np.isnan(ic):
+            print(x, y)
+        return ic
+
+
+# TODO: understand the math
+def mutual_information(x, y, z=None, n_grid=25, vector_data_types=None, bandwidth_scaling=None):
+    """
+    :param x: array-like, (n_samples,)
+    :param y: array-like, (n_samples,)
+    :param z: array-like, (n_samples,), optional, variable on which to condition
+    :param n_grid: int, number of grid points at which to evaluate kernel density
+    :param vector_data_types: str, 3 chars of 'c' (continuous), 'u' (unordered discrete), or 'o' (ordered discrete)
+    :param bandwidth_scaling: float,
     :return: float, information coefficient
     """
-    n = len(x)
-    variables = [x, y]
-    if z is not None:
-        variables.append(z)
-    for v in variables[1:]:
-        if len(v) != n:
-            raise ValueError("Input arrays have different lengths")
-    n_vars = len(variables)
-    if var_types is None:
-        var_types = ''.join(['c' for _ in range(n_vars)])
-        # Todo: guess variable types
-    if len(var_types) != n_vars:
-        raise ValueError("Number of specified variable types does not match number of variables")
-    non_nans = [np.logical_not(np.isnan(v)) for v in variables]
-    overlap = [True] * n
-    for non_nan in non_nans:
-        overlap &= non_nan
-    n_overlap = overlap.sum()
-    if n_overlap < 3:
+    vectors = [x, y]
+    if z:
+        vectors.append(z)
+
+    for v in vectors[1:]:
+        if len(v) != x.size:
+            raise ValueError('Input arrays have different lengths.')
+
+    if not vector_data_types:
+        # TODO: guess variable types
+        vector_data_types = 'c' * len(vectors)
+    elif len(vector_data_types) is not len(vectors):
+        raise ValueError('Number of specified variable types does not match number of vectors.')
+
+    # Keep only columns that are not NaN in all vectors, and add jitter to the filtered vectors
+    not_nan_filter = [True] * vectors[0].size
+    for v in vectors:
+        not_nan_filter &= ~np.isnan(v)
+    if not_nan_filter.sum() < 3:
         return 0
-    jitter_scale = 1E-10
-    jitters = [jitter_scale * np.random.uniform(size=n_overlap) for v in variables]
-    for i, v in enumerate(variables):
-        v = v[overlap] + jitters[i]
-    grids = [np.linspace(v.min(), v.max(), n_grid) for v in variables]
+    else:
+        for i in range(len(vectors)):
+            vectors[i] = vectors[i][not_nan_filter]
+            vectors[i] += np.random.random_sample(vectors[i].size) * 1E-10
+
+    grids = [np.linspace(v.min(), v.max(), n_grid) for v in vectors]
     mesh_grids = np.meshgrid(*grids)
-    grid_shape = tuple([n_grid] * n_vars)
+    grid_shape = tuple([n_grid] * len(vectors))
     grid = np.vstack([mesh_grid.flatten() for mesh_grid in mesh_grids])
-    delta = np.array([rbcv(q) for q in variables]).reshape((n_vars,)) / 4
-    if bandwidth_scaling is not None:
+    delta = np.array([rbcv(q) for q in vectors]).reshape((len(vectors),)) / 4
+    if bandwidth_scaling:
         delta *= bandwidth_scaling
-    kde = KDEMultivariate(variables, bw=delta, var_type=var_types)
+    kde = KDEMultivariate(vectors, bw=delta, var_type=vector_data_types)
     p_joint = kde.pdf(grid).reshape(grid_shape) + np.finfo(float).eps
     ds = [grid[1] - grid[0] for grid in grids]
     ds_prod = np.prod(ds)
@@ -97,16 +162,7 @@ def mutual_information(x, y, z=None, n_grid=25, var_types=None, bandwidth_scalin
     h_joint = - np.sum(p_joint * np.log(p_joint)) * ds_prod
     dx = ds[0]
     dy = ds[1]
-    if z is None:
-        dx = ds[0]
-        dy = ds[1]
-        px = p_joint.sum(axis=1) * dy
-        py = p_joint.sum(axis=0) * dx
-        hx = -np.sum(px * np.log(px)) * dx
-        hy = -np.sum(py * np.log(py)) * dy
-        mi = hx + hy - h_joint
-        return mi
-    else:
+    if z:
         dz = ds[2]
         pxz = p_joint.sum(axis=1) * dy
         pyz = p_joint.sum(axis=0) * dx
@@ -116,70 +172,15 @@ def mutual_information(x, y, z=None, n_grid=25, var_types=None, bandwidth_scalin
         hz = -np.sum(pz * np.log(pz)) * dz
         cmi = hxz + hyz - h_joint - hz
         return cmi
-
-
-def information_coefficient(x, y, z=None, n_grid=25, var_types=None, n_permutations=0, adaptive=True, alpha=0.05,
-                            perm_alpha=0.05):
-    """
-    :param x: array-like, (n_samples,)
-    :param y: array-like, (n_samples,)
-    :param z: array-like, (n_samples,), optional, variable on which to condition
-    :param n_grid: int, number of grid points at which to evaluate kernel density
-    :param var_types: three-character string of 'c' (continuous), 'u' (unordered discrete) or 'o' (ordered discrete)
-    :param n_permutations: int, >0 will return a p-value in addition to the information coefficient
-    :param adaptive: bool, quit permutations after achieving a specified confidence that the p-value is above (or below)
-            alpha
-    :param alpha: float, threshold empirical p-value for significance of IC
-    :param perm_alpha: float, threshold probability for terminating adaptive permutation
-    :return: float, information coefficient; if n_permutations > 0, also the empirical p-value
-    Note that if adaptive, the accuracy of the empirical p-value will vary: values closer to alpha will be estimated
-    more precisely, while values obviously greater or less than alpha will be estimated less precisely.
-    """
-
-    rho, p = pearsonr(x, y)
-    rho2 = abs(rho)
-    bandwidth_scaling = (1 + (-0.75) * rho2)
-    ic_sign = np.sign(rho)
-    mi = mutual_information(x, y, z=z, n_grid=n_grid,
-                            var_types=var_types, bandwidth_scaling=bandwidth_scaling)
-    ic = ic_sign * np.sqrt(1 - np.exp(- 2 * mi))
-
-    if n_permutations > 0:
-        n_more_extreme = 0
-        trials = 0
-        for i in range(n_permutations):
-            trials += 1
-            # the question is whether I want to have
-            # a certain width of confidence interval around my estimate of the pval
-            # or just a certain confidence that the pval is greater than 0.05 (current solution)
-            pm_x = np.random.permutation(x)
-            pm_rho, p = pearsonr(pm_x, y)
-            pm_rho2 = abs(pm_rho)
-            pm_bandwidth_scaling = (1 + (-0.75) * pm_rho2)
-            pm_mi = mutual_information(pm_x, y, z, n_grid=n_grid,
-                                       var_types=var_types, bandwidth_scaling=pm_bandwidth_scaling)
-            pm_ic_sign = np.sign(pm_rho)
-            pm_ic = pm_ic_sign * np.sqrt(1 - np.exp(- 2 * pm_mi))
-            # print pm_ic
-            if ic > 0:
-                if pm_ic >= ic:
-                    n_more_extreme += 1
-            elif ic < 0:
-                if pm_ic <= ic:
-                    n_more_extreme += 1
-            else:
-                n_more_extreme += 1
-            if adaptive:
-                ge_binom_p = binom_test(n_more_extreme, i + 1, alpha, alternative='greater')
-                if ge_binom_p * 2 < perm_alpha:  # * 2 because what I'm doing is two-sided, testing in both directions
-                    break
-                le_binom_p = binom_test(n_more_extreme, i + 1, alpha, alternative='less')
-                if le_binom_p * 2 < perm_alpha:
-                    break
-        # print i + 1, 'trials'
-        p_value = n_more_extreme / float(trials)
-        return ic, p_value
-    return ic
+    else:
+        dx = ds[0]
+        dy = ds[1]
+        px = p_joint.sum(axis=1) * dy
+        py = p_joint.sum(axis=0) * dx
+        hx = -np.sum(px * np.log(px)) * dx
+        hy = -np.sum(py * np.log(py)) * dy
+        mi = hx + hy - h_joint
+        return mi
 
 
 # TODO: refactor

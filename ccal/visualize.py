@@ -148,7 +148,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
             mean = s.mean()
             std = s.std()
             for j, v in enumerate(s):
-                features.iloc[i, j] = (v - mean) / std
+                features.ix[i, j] = (v - mean) / std
     if ref_type is 'continuous':
         _print('Normalizing continuous ref ...')
         ref = (ref - ref.mean()) / ref.std()
