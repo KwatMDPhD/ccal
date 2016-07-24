@@ -57,9 +57,9 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_types=None, n_p
     vectors = [x, y]
     if z:
         vectors.append(z)
-        x, y, z = drop_nan_columns(vectors)
+        x, y, z = add_jitter(drop_nan_columns(vectors))
     else:
-        x, y = drop_nan_columns(vectors)
+        x, y = add_jitter(drop_nan_columns(vectors))
 
     if not vector_data_types:
         # TODO: guess variable types
@@ -69,8 +69,6 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_types=None, n_p
 
     if len(x) <= len(vector_data_types):
         return 0
-
-    add_jitter(vectors)
 
     rho, p = pearsonr(x, y)
     rho2 = abs(rho)

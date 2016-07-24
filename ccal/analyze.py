@@ -69,6 +69,9 @@ def rank_features_against_reference(features, ref,
     :param figure_type: str, file type to save the output figure
     :return: None
     """
+    if features.shape[0] is 1 or isinstance(features, pd.Series):
+        features = pd.DataFrame(features).T
+
     _print('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
 
     if output_prefix:
@@ -105,14 +108,14 @@ def rank_features_against_reference(features, ref,
     annotations = pd.DataFrame(index=features.index)
     for idx, s in features.iterrows():
         if '{} MoE'.format(confidence) in scores.columns:
-            annotations.ix[idx, 'IC \xb1 \u0394'] = '{0:.2f} '.format(scores.ix[idx, metric]) + '\xb1 {0:.2f}'.format(
+            annotations.ix[idx, 'IC\xb1\u0394'] = '{0:.3f}'.format(scores.ix[idx, metric]) + '\xb1{0:.3f}'.format(
                 scores.ix[idx, '{} MoE'.format(confidence)])
         else:
-            annotations.ix[idx, 'IC'] = '{0:.2f} '.format(scores.ix[idx, metric])
+            annotations.ix[idx, 'IC'] = '{0:.3f} '.format(scores.ix[idx, metric])
 
 
-    annotations['P-val'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'Global P-value']]
-    annotations['FDR'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
+    annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global P-value']]
+    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
 
     # Limit features to be plotted
     # TODO: use the same features for the bootstrapping

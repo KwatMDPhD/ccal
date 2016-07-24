@@ -156,19 +156,19 @@ def write_gct(pandas_object, filename, index_column=None, description=None):
 # ======================================================================================================================
 # Simulate
 # ======================================================================================================================
-def make_random_features(nrow, ncol, ncategory=None):
+def make_random_features(nrow, ncol, n_category=None):
     """
-    Make simulation features dataframe.
+    Make simulation features DataFrame (1D or 2D).
     :param nrow: int, number of rows
     :param ncol: int, number of columns
-    :param ncategory: None or int, if None, use continuous; if int, use  categorical
+    :param n_category: None or int, if None, use continuous; if int, use  categorical
     :return: pandas DataFrame, features (`nrow`, `ncol`)
     """
     shape = (nrow, ncol)
     indices = ['Feature {}'.format(i) for i in range(nrow)]
     columns = ['Element {}'.format(i) for i in range(ncol)]
-    if ncategory:
-        features = pd.DataFrame(np.random.random_integers(0, ncategory, shape),
+    if n_category:
+        features = pd.DataFrame(np.random.random_integers(0, n_category, shape),
                                 index=indices,
                                 columns=columns)
     else:
@@ -235,9 +235,11 @@ def drop_nan_columns(vectors):
 
 def add_jitter(vectors, jitter=1E-10):
     """
-    Add jitter to vectors inplace.
+    Add jitter to vectors.
     :param vectors: numpy array,
-    :return: None
+    :return: list of numpy arrays
     """
+    jittered_vectors = []
     for i in range(len(vectors)):
-        vectors[i] += np.random.random_sample(vectors[i].size) * jitter
+        jittered_vectors.append(vectors[i] + np.random.random_sample(vectors[i].size) * jitter)
+    return jittered_vectors

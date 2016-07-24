@@ -63,7 +63,7 @@ RED_VIOLET = 'C71585'
 BAD_COLOR = 'wheat'
 CMAP_CONTINUOUS = mpl.cm.bwr
 CMAP_CONTINUOUS.set_bad(BAD_COLOR)
-CMAP_CATEGORICAL = mpl.cm.gist_ncar
+CMAP_CATEGORICAL = mpl.cm.Paired
 CMAP_CATEGORICAL.set_bad(BAD_COLOR)
 CMAP_BINARY = sns.light_palette('black', n_colors=2, as_cmap=True)
 CMAP_BINARY.set_bad(BAD_COLOR)
@@ -113,9 +113,9 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     :return: None
     """
     fig = plt.figure(figsize=(min(math.pow(features.shape[1], 0.5), 7), math.pow(features.shape[0], 0.9)))
+    plot_grid = (features.shape[0] + 1, 1)
 
-    vertical_text_margin = math.pow(features.shape[0], 0.1)
-    horizontal_text_margin = math.pow(features.shape[1], 0.69)
+    horizontal_text_margin = math.pow(features.shape[1], 0.73)
     horizontal_annotation_pos = lambda x: x * horizontal_text_margin + horizontal_text_margin / 9
 
     if features_type is 'continuous':
@@ -153,9 +153,9 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
         ref = (ref - ref.mean()) / ref.std()
 
     # Plot ref
-    ref_ax = plt.subplot2grid((features.shape[0], 1), (0, 0))
+    ref_ax = plt.subplot2grid(plot_grid, (0, 0))
     if title:
-        ref_ax.text(features.shape[1] / 2, vertical_text_margin, title,
+        ref_ax.text(features.shape[1] / 2, 1.9, title,
                     horizontalalignment='center', **FONT16_BOLD)
     sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True,
                 cmap=ref_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
@@ -186,11 +186,11 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
         unique_ref_labels = np.unique(ref.values)[::-1]
         # Add labels
         for i, pos in enumerate(label_horizontal_positions):
-            ref_ax.text(pos, vertical_text_margin, unique_ref_labels[i],
-                        horizontalalignment='center', verticalalignment='center', **FONT12_BOLD)
+            ref_ax.text(pos, 1.19, unique_ref_labels[i],
+                        horizontalalignment='center', **FONT12_BOLD)
 
-    # Plot features
-    features_ax = plt.subplot2grid((features.shape[0], 1), (0, 1), rowspan=features.shape[0])
+    # # Plot features
+    features_ax = plt.subplot2grid(plot_grid, (1, 0), rowspan=features.shape[0])
     sns.heatmap(features, vmin=features_min, vmax=features_max, robust=True,
                 cmap=features_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
 
@@ -205,7 +205,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     # Plot column names at the bottom
     if plot_colname:
         for j, c in enumerate(features.columns):
-            features_ax.text(j + 0.5, -vertical_text_margin / 2, c,
+            features_ax.text(j + 0.5, -1, c,
                              rotation=90, horizontalalignment='center', verticalalignment='top', **FONT9_BOLD)
 
     # fig.tight_layout()
@@ -244,7 +244,7 @@ def plot_nmf_result(nmf_results, k, figsize=(7, 5), dpi=80, output_filename=None
 
 def plot_nmf_scores(scores, figsize=(25, 10), title=None, filename=None):
     """
-    Plot NMF score
+    Plot NMF `scores`.
     :param scores: dict, NMF score per k (key: k; value: score)
     :param figsize: tuple (width, height),
     :param title: str, figure title
