@@ -60,9 +60,13 @@ HOT_PINK = 'FF69B4 '
 RED_VIOLET = 'C71585'
 
 # Color maps
+BAD_COLOR = 'wheat'
 CMAP_CONTINUOUS = mpl.cm.bwr
+CMAP_CONTINUOUS.set_bad(BAD_COLOR)
 CMAP_CATEGORICAL = mpl.cm.gist_ncar
+CMAP_CATEGORICAL.set_bad(BAD_COLOR)
 CMAP_BINARY = sns.light_palette('black', n_colors=2, as_cmap=True)
+CMAP_BINARY.set_bad(BAD_COLOR)
 
 # Fonts
 FONT = 'arial'
@@ -108,11 +112,10 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     :param figure_type: str, file type to save the figure
     :return: None
     """
-    fig = plt.figure(figsize=(min(math.pow(features.shape[1], 0.5), 7.7), math.pow(features.shape[0], 0.9)))
+    fig = plt.figure(figsize=(min(math.pow(features.shape[1], 0.5), 7), math.pow(features.shape[0], 0.9)))
 
-    vertical_text_margin = math.pow(features.shape[0], 0.05)
-    horizontal_text_margin = math.pow(features.shape[0], 0.7)
-    print(vertical_text_margin, horizontal_text_margin)
+    vertical_text_margin = math.pow(features.shape[0], 0.1)
+    horizontal_text_margin = math.pow(features.shape[1], 0.69)
     horizontal_annotation_pos = lambda x: x * horizontal_text_margin + horizontal_text_margin / 9
 
     if features_type is 'continuous':
@@ -214,7 +217,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
         _print('Saved the figure as {}.'.format(filename))
 
 
-def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
+def plot_nmf_result(nmf_results, k, figsize=(7, 5), dpi=80, output_filename=None):
     """
     Plot NMF results from cca.library.cca.nmf.
     :param nmf_results: dict, NMF result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and reconstruction error))
@@ -290,45 +293,3 @@ def plot_graph(graph, filename=None):
 
     if filename:
         plt.savefig(filename, bbox_inches='tight')
-
-
-def make_colorbar():
-    """
-    Make colorbar examples.
-    """
-    fig = plt.figure(figsize=(8, 3))
-    ax1 = fig.add_axes([0.05, 0.80, 0.9, 0.15])
-    ax2 = fig.add_axes([0.05, 0.475, 0.9, 0.15])
-
-    # Set the colormap and norm to correspond to the data for which the colorbar will be used.
-    cmap = CMAP_CONTINUOUS
-    norm = mpl.colors.Normalize(vmin=5, vmax=10)
-
-    # ColorbarBase derives from ScalarMappable and puts a colorbar in a specified axes,
-    # so it has everything needed for a standalone colorbar.
-    # There are many more kwargs, but the following gives a basic continuous colorbar with ticks and labels.
-    cb1 = mpl.colorbar.ColorbarBase(ax1,
-                                    cmap=cmap,
-                                    norm=norm,
-                                    orientation='horizontal')
-    cb1.set_label('Unit')
-
-    # The length of the bounds array must be one greater than the length of the color list.
-    cmap = mpl.colors.ListedColormap([RED, PURPLE, GREEN])
-    # The bounds must be monotonically increasing.
-    bounds = [1, 2, 6, 8]
-    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-
-    # Eextended ends to show the 'over' and 'under' value colors.
-    cmap.set_over(SILVER)
-    cmap.set_under(SILVER)
-    cb2 = mpl.colorbar.ColorbarBase(ax2,
-                                    cmap=cmap,
-                                    norm=norm,
-                                    boundaries=[bounds[0] - 3] + bounds + [bounds[-1] + 3],
-                                    extend='both',
-                                    extendfrac='auto',
-                                    ticks=bounds,
-                                    spacing='proportional',
-                                    orientation='horizontal')
-    cb2.set_label('Unit')
