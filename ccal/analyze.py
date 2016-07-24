@@ -128,6 +128,8 @@ def rank_features_against_reference(features, ref,
     else:
         indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
         _print('Plotting top and bottom {} features vs. reference ...'.format(len(indices_to_plot)))
+
+    return features, ref, annotations
     plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                 features_type=features_type, ref_type=ref_type,
                                 title=title, rowname_size=rowname_size, plot_colname=plot_colname,
