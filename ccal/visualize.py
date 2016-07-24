@@ -26,6 +26,9 @@ import numpy as np
 import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+# from matplotlib import rcParams
+#
+# rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 
 from .support import _print
@@ -209,11 +212,12 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
                              rotation=90, horizontalalignment='center', verticalalignment='top', **FONT9_BOLD)
 
     # fig.tight_layout()
+    # plt.gcf().subplots_adjust(left=0.1, right=0.3)
     plt.show(fig)
 
     if filename_prefix:
         filename = filename_prefix + figure_type
-        fig.savefig(filename)
+        fig.savefig(filename, figsize=(10, 7), dpi=900)
         _print('Saved the figure as {}.'.format(filename))
 
 
