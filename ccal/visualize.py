@@ -26,6 +26,9 @@ import numpy as np
 import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+# from matplotlib import rcParams
+#
+# rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 
 from .support import _print
@@ -60,9 +63,13 @@ HOT_PINK = 'FF69B4 '
 RED_VIOLET = 'C71585'
 
 # Color maps
+BAD_COLOR = 'wheat'
 CMAP_CONTINUOUS = mpl.cm.bwr
-CMAP_CATEGORICAL = mpl.cm.gist_ncar
+CMAP_CONTINUOUS.set_bad(BAD_COLOR)
+CMAP_CATEGORICAL = mpl.cm.Paired
+CMAP_CATEGORICAL.set_bad(BAD_COLOR)
 CMAP_BINARY = sns.light_palette('black', n_colors=2, as_cmap=True)
+CMAP_BINARY.set_bad(BAD_COLOR)
 
 # Fonts
 FONT = 'arial'
@@ -92,7 +99,8 @@ FONT20_BOLD = {'family': FONT,
 # Functions
 # ======================================================================================================================
 def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
-                                title=None, rowname_size=25, filename_prefix=None, figure_type='.png'):
+                                title=None, rowname_size=25, plot_colname=False, filename_prefix=None,
+                                figure_type='.png'):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
@@ -102,23 +110,31 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     :param ref_type: str, {continuous, categorical, binary}
     :param title: str, figure title
     :param rowname_size: int, the maximum length of a feature name label
+    :param plot_colname: bool, plot column names or not
     :param filename_prefix: str, file path prefix to save the figure
     :param figure_type: str, file type to save the figure
     :return: None
     """
+    fig = plt.figure(figsize=(min(math.pow(features.shape[1], 0.5), 7), math.pow(features.shape[0], 0.9)))
+    plot_grid = (features.shape[0] + 1, 1)
 
-    # Set figure size
-    fig_height = math.pow(features.shape[0], 0.5)
-    fig_width = math.pow(features.shape[1], 0.5)
-    annotation_margin = lambda x: x * math.pow(features.shape[1], 0.3)
+    horizontal_text_margin = math.pow(features.shape[1], 0.73)
+    horizontal_annotation_pos = lambda x: x * horizontal_text_margin + horizontal_text_margin / 9
 
-    fig = plt.figure(figsize=(fig_width, fig_height), dpi=900)
-    text_margin = 1
-
-    # Set heatmap parameters for ref
+    if features_type is 'continuous':
+        features_cmap = CMAP_CONTINUOUS
+        features_min, features_max = -3, 3
+    elif features_type is 'categorical':
+        features_cmap = CMAP_CATEGORICAL
+        features_min, features_max = 0, np.unique(features.values).size
+    elif features_type is 'binary':
+        features_cmap = CMAP_BINARY
+        features_min, features_max = 0, 1
+    else:
+        raise ValueError('Unknown features_type {}.'.format(features_type))
     if ref_type is 'continuous':
         ref_cmap = CMAP_CONTINUOUS
-        ref_min, ref_max = -2.5, 2.5
+        ref_min, ref_max = -3, 3
     elif ref_type is 'categorical':
         ref_cmap = CMAP_CATEGORICAL
         ref_min, ref_max = 0, np.unique(ref.values).size
@@ -128,43 +144,29 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     else:
         raise ValueError('Unknown ref_type {}.'.format(ref_type))
 
-    # Set heatmap parameters for features
-    if features_type is 'continuous':
-        features_cmap = CMAP_CONTINUOUS
-        features_min, features_max = -2.5, 2.5
-    elif features_type is 'categorical':
-        features_cmap = CMAP_CATEGORICAL
-        features_min, features_max = 0, np.unique(features.values).size
-    elif features_type is 'binary':
-        features_cmap = CMAP_BINARY
-        features_min, features_max = -0.025, 1
-    else:
-        raise ValueError('Unknown features_type {}.'.format(features_type))
-
-    # Normalize
     if features_type is 'continuous':
         _print('Normalizing continuous features ...')
         for i, (idx, s) in enumerate(features.iterrows()):
             mean = s.mean()
             std = s.std()
             for j, v in enumerate(s):
-                features.iloc[i, j] = (v - mean) / std
+                features.ix[i, j] = (v - mean) / std
     if ref_type is 'continuous':
         _print('Normalizing continuous ref ...')
         ref = (ref - ref.mean()) / ref.std()
 
     # Plot ref
-    ref_ax = plt.subplot2grid((features.shape[0], 1), (0, 0))
+    ref_ax = plt.subplot2grid(plot_grid, (0, 0))
     if title:
-        ref_ax.text(features.shape[1] / 2, 4 * text_margin, title,
-                    horizontalalignment='center', verticalalignment='bottom', **FONT16_BOLD)
+        ref_ax.text(features.shape[1] / 2, 1.9, title,
+                    horizontalalignment='center', **FONT16_BOLD)
     sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, robust=True,
                 cmap=ref_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
     # Add ref texts
-    ref_ax.text(-text_margin, 0.5, ref.name,
+    ref_ax.text(-horizontal_annotation_pos(0), 0.5, ref.name,
                 horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
     for j, a in enumerate(annotations.columns):
-        ref_ax.text(features.shape[1] + text_margin + annotation_margin(j), 0.5, a,
+        ref_ax.text(features.shape[1] + horizontal_annotation_pos(j), 0.5, a,
                     horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Add binary or categorical ref labels
@@ -187,38 +189,39 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
         unique_ref_labels = np.unique(ref.values)[::-1]
         # Add labels
         for i, pos in enumerate(label_horizontal_positions):
-            ref_ax.text(pos, 1, unique_ref_labels[i],
+            ref_ax.text(pos, 1.19, unique_ref_labels[i],
                         horizontalalignment='center', **FONT12_BOLD)
 
-    # Plot features
-    features_ax = plt.subplot2grid((features.shape[0], 1), (0, 1), rowspan=features.shape[0])
+    # # Plot features
+    features_ax = plt.subplot2grid(plot_grid, (1, 0), rowspan=features.shape[0])
     sns.heatmap(features, vmin=features_min, vmax=features_max, robust=True,
                 cmap=features_cmap, linecolor=BLACK, fmt=None, xticklabels=False, yticklabels=False, cbar=False)
 
     for i, idx in enumerate(features.index):
         y = features.shape[0] - i - 0.5
-        features_ax.text(-text_margin, y, idx[:rowname_size],
+        features_ax.text(-horizontal_annotation_pos(0), y, idx[:rowname_size],
                          horizontalalignment='right', verticalalignment='center', **FONT12_BOLD)
         for j, a in enumerate(annotations.iloc[i, :]):
-            features_ax.text(features.shape[1] + text_margin + annotation_margin(j), y, a,
+            features_ax.text(features.shape[1] + horizontal_annotation_pos(j), y, a,
                              horizontalalignment='left', verticalalignment='center', **FONT12_BOLD)
 
     # Plot column names at the bottom
-    if features.shape[1] < 50:
+    if plot_colname:
         for j, c in enumerate(features.columns):
-            features_ax.text(j + 0.5, -text_margin, c,
+            features_ax.text(j + 0.5, -1, c,
                              rotation=90, horizontalalignment='center', verticalalignment='top', **FONT9_BOLD)
 
-    fig.tight_layout()
+    # fig.tight_layout()
+    # plt.gcf().subplots_adjust(left=0.1, right=0.3)
     plt.show(fig)
 
     if filename_prefix:
         filename = filename_prefix + figure_type
-        fig.savefig(filename)
+        fig.savefig(filename, figsize=(10, 7), dpi=900)
         _print('Saved the figure as {}.'.format(filename))
 
 
-def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=None):
+def plot_nmf_result(nmf_results, k, figsize=(7, 5), dpi=80, output_filename=None):
     """
     Plot NMF results from cca.library.cca.nmf.
     :param nmf_results: dict, NMF result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and reconstruction error))
@@ -245,7 +248,7 @@ def plot_nmf_result(nmf_results, k, figsize=(25, 10), dpi=80, output_filename=No
 
 def plot_nmf_scores(scores, figsize=(25, 10), title=None, filename=None):
     """
-    Plot NMF score
+    Plot NMF `scores`.
     :param scores: dict, NMF score per k (key: k; value: score)
     :param figsize: tuple (width, height),
     :param title: str, figure title
@@ -294,45 +297,3 @@ def plot_graph(graph, filename=None):
 
     if filename:
         plt.savefig(filename, bbox_inches='tight')
-
-
-def make_colorbar():
-    """
-    Make colorbar examples.
-    """
-    fig = plt.figure(figsize=(8, 3))
-    ax1 = fig.add_axes([0.05, 0.80, 0.9, 0.15])
-    ax2 = fig.add_axes([0.05, 0.475, 0.9, 0.15])
-
-    # Set the colormap and norm to correspond to the data for which the colorbar will be used.
-    cmap = CMAP_CONTINUOUS
-    norm = mpl.colors.Normalize(vmin=5, vmax=10)
-
-    # ColorbarBase derives from ScalarMappable and puts a colorbar in a specified axes,
-    # so it has everything needed for a standalone colorbar.
-    # There are many more kwargs, but the following gives a basic continuous colorbar with ticks and labels.
-    cb1 = mpl.colorbar.ColorbarBase(ax1,
-                                    cmap=cmap,
-                                    norm=norm,
-                                    orientation='horizontal')
-    cb1.set_label('Unit')
-
-    # The length of the bounds array must be one greater than the length of the color list.
-    cmap = mpl.colors.ListedColormap([RED, PURPLE, GREEN])
-    # The bounds must be monotonically increasing.
-    bounds = [1, 2, 6, 8]
-    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-
-    # Eextended ends to show the 'over' and 'under' value colors.
-    cmap.set_over(SILVER)
-    cmap.set_under(SILVER)
-    cb2 = mpl.colorbar.ColorbarBase(ax2,
-                                    cmap=cmap,
-                                    norm=norm,
-                                    boundaries=[bounds[0] - 3] + bounds + [bounds[-1] + 3],
-                                    extend='both',
-                                    extendfrac='auto',
-                                    ticks=bounds,
-                                    spacing='proportional',
-                                    orientation='horizontal')
-    cb2.set_label('Unit')

@@ -33,15 +33,10 @@ from sklearn.decomposition import NMF
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from . import SEED
 from .support import _print, establish_path
 from .visualize import CMAP_CONTINUOUS, plot_nmf_result, plot_features_and_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
-
-# ======================================================================================================================
-# Global variables
-# ======================================================================================================================
-# Path to testing data directory
-SEED = 20121020
 
 
 # ======================================================================================================================
@@ -50,8 +45,8 @@ SEED = 20121020
 def rank_features_against_reference(features, ref,
                                     features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
-                                    metric='information_coef', nsampling=30, confidence=0.95, nperm=30,
-                                    title=None, n_features=0, rowname_size=24,
+                                    metric='information_coef', n_sampling=30, confidence=0.95, n_perm=30,
+                                    title=None, n_features=0.95, rowname_size=24, plot_colname=False,
                                     output_prefix=None, figure_type='.png'):
     """
     Compute features vs. `ref`.
@@ -63,85 +58,97 @@ def rank_features_against_reference(features, ref,
     :param ref_ascending: bool, True if ref values increase from left to right, False otherwise
     :param ref_sort: bool, sort each ref or not
     :param metric: str, {information_coef}
-    :param nsampling: int, number of sampling for confidence interval bootstrapping
+    :param n_sampling: int, number of sampling for confidence interval bootstrapping; must be > 2 for CI computation
     :param confidence: float, confidence interval
-    :param nperm: int, number of permutations for permutation test
-    :param title: string for the title of heatmap
+    :param n_perm: int, number of permutations for permutation test
+    :param title: str, plot title
     :param n_features: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param rowname_size: int, the maximum length of a feature name label
+    :param plot_colname: bool, plot column names or not
     :param output_prefix: str, file path prefix to save the result (.txt) and figure (`figure_type`)
     :param figure_type: str, file type to save the output figure
     :return: None
     """
+    if features.shape[0] is 1 or isinstance(features, pd.Series):
+        features = pd.DataFrame(features).T
+
     _print('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
 
-    # Establish output file path
     if output_prefix:
         output_prefix = os.path.abspath(output_prefix)
         establish_path(output_prefix)
 
-    # Use only the intersecting columns
     # TODO: preserve order
     col_intersection = set(features.columns) & set(ref.index)
     if not col_intersection:
         raise ValueError(
             'No intersecting columns from features and ref, which have {} and {} columns respectively'.format(
                 features.shape[1], ref.size))
-    _print(
-        'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
-            len(col_intersection), features.shape[1], ref.size))
-    features = features.ix[:, col_intersection]
-    ref = ref.ix[col_intersection]
+    else:
+        _print(
+            'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
+                len(col_intersection), features.shape[1], ref.size))
+        features = features.ix[:, col_intersection]
+        ref = ref.ix[col_intersection]
 
-    # Sort ref and use its sorted indices to sort features indices
     if ref_sort:
         ref = ref.sort_values(ascending=ref_ascending)
         features = features.reindex_axis(ref.index, axis=1)
 
-    # Compute scores, sorted by information coefficient
     scores = compute_against_reference(features, ref, metric=metric, ascending=features_ascending,
-                                       nsampling=nsampling, confidence=confidence, nperm=nperm)
+                                       n_sampling=n_sampling, confidence=confidence, n_perm=n_perm)
     features = features.reindex(scores.index)
 
     if output_prefix:
         filename = output_prefix + '.txt'
-        # TODO: add scores
-        features.to_csv(filename, sep='\t')
+        pd.merge(features, scores, left_index=True, right_index=True).to_csv(filename, sep='\t')
         _print('Saved the result as {}.'.format(filename))
 
-    # Plot features panel
-    _print('Plotting top {} features vs. ref ...'.format(n_features))
-    # Make annotation
+    # Make annotations
     annotations = pd.DataFrame(index=features.index)
-    annotations['IC'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'information_coef']]
-    annotations['P'] = ['{0:.2f}'.format(x) for x in scores.ix[:, 'Global P-Value']]
-    annotations['CI'] = scores.ix[:, '{} CI'.format(confidence)].tolist()
+    for idx, s in features.iterrows():
+        if '{} MoE'.format(confidence) in scores.columns:
+            annotations.ix[idx, 'IC\xb1\u0394'] = '{0:.3f}'.format(scores.ix[idx, metric]) + '\xb1{0:.3f}'.format(
+                scores.ix[idx, '{} MoE'.format(confidence)])
+        else:
+            annotations.ix[idx, 'IC'] = '{0:.3f} '.format(scores.ix[idx, metric])
 
+
+    annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global P-value']]
+    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
+
+    # Limit features to be plotted
+    # TODO: use the same features for the bootstrapping
     if n_features < 1:
-        indices_to_plot = features.iloc[:, -1] >= features.iloc[:, -1].quantile(n_features)
-        indices_to_plot |= features.iloc[:, -1] <= features.iloc[:, -1].quantile(1 - n_features)
+        above_quantile = scores.ix[:, metric] >= scores.ix[:, metric].quantile(n_features)
+        _print('Plotting {} features vs. reference > {} quantile ...'.format(sum(above_quantile), n_features))
+        below_quantile = scores.ix[:, metric] <= scores.ix[:, metric].quantile(1 - n_features)
+        _print('Plotting {} features vs. reference < {} quantile ...'.format(sum(below_quantile), 1 - n_features))
+        indices_to_plot = features.index[above_quantile | below_quantile].tolist()
     else:
         indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
+        _print('Plotting top and bottom {} features vs. reference ...'.format(len(indices_to_plot)))
+
+    return features, ref, annotations
     plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                 features_type=features_type, ref_type=ref_type,
-                                title=title, rowname_size=rowname_size,
+                                title=title, rowname_size=rowname_size, plot_colname=plot_colname,
                                 filename_prefix=output_prefix, figure_type=figure_type)
 
 
-def compute_against_reference(features, ref, metric='information_coef', ascending=False, nsampling=30, confidence=0.95,
-                              nperm=30):
+def compute_against_reference(features, ref, metric='information_coef', ascending=False, n_sampling=30, confidence=0.95,
+                              n_perm=30):
     """
     Compute scores[i] = `features`[i] vs. `ref` with computation using `metric` and get CI, p-val, and FDR (BH).
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
     :param ref: pandas Series (m_elements), must have indices, which must match 'features`'s columns
     :param metric: str, {information_coef}
     :param ascending: bool, True if score increase from top to bottom, False otherwise
-    :param nsampling: int, number of sampling for confidence interval bootstrapping
+    :param n_sampling: int, number of sampling for confidence interval bootstrapping; must be > 2 for CI computation
     :param confidence: float, confidence intrval
-    :param nperm: int, number of permutations for permutation test
+    :param n_perm: int, number of permutations for permutation test
     :return: pandas DataFrame (n_features, n_scores),
     """
-    # Compute score[i] = <features>[i] vs. <ref>
     if metric is 'information_coef':
         function = information_coefficient
     elif metric is 'information_cmi_diff':
@@ -151,58 +158,64 @@ def compute_against_reference(features, ref, metric='information_coef', ascendin
     else:
         raise ValueError('Unknown metric {}.'.format(metric))
 
-    print('Computing with metric {} ...'.format(metric))
+    _print('Computing scores using {} metric ...'.format(metric))
     scores = pd.DataFrame([function(s, ref) for idx, s in features.iterrows()],
                           index=features.index, columns=[metric])
 
-    print('Bootstrapping to get {} confidence interval ...'.format(confidence))
-    confidence_intervals = pd.DataFrame(index=features.index, columns=['{} CI'.format(confidence)])
-    # Random sample elements
-    nsample = math.ceil(0.632 * features.shape[0])
-    sampled_scores = np.empty((features.shape[0], nsampling))
-    for i in range(nsampling):
-        sample_indices = np.random.choice(features.columns.tolist(), int(nsample)).tolist()
-        sampled_features = features.ix[:, sample_indices]
-        sampled_ref = ref.ix[sample_indices]
-        # Compute sample score
-        for j, (idx, s) in enumerate(sampled_features.iterrows()):
-            sampled_scores[j, i] = function(s, sampled_ref)
-    # Get confidence interval
-    z_critical = stats.norm.ppf(q=confidence)
-    for i, f in enumerate(sampled_scores):
-        mean = f.mean()
-        stdev = f.std()
-        moe = z_critical * (stdev / math.sqrt(f.size))
-        confidence_intervals.iloc[i] = '<{0:.2f}, {0:.2f}>'.format(mean - moe, mean + moe)
+    _print('Bootstrapping to get {} confidence interval ...'.format(confidence))
+    nsample = math.ceil(0.632 * features.shape[1])
+    if n_sampling < 2:
+        _print('Not bootstrapping because number of sampling < 3.')
+    elif nsample < 3:
+        _print('Not bootstrapping because 0.632 * number of sample < 3.')
+    else:
+        # Random sample columns and compute scores using the sampled columns
+        sampled_scores = np.empty((features.shape[0], n_sampling))
+        for i in range(n_sampling):
+            sample_indices = np.random.choice(features.columns.tolist(), int(nsample)).tolist()
+            sampled_features = features.ix[:, sample_indices]
+            sampled_ref = ref.ix[sample_indices]
+            for j, (idx, s) in enumerate(sampled_features.iterrows()):
+                sampled_scores[j, i] = function(s, sampled_ref)
+        # Get confidence intervals
+        confidence_intervals = pd.DataFrame(index=features.index, columns=['{} MoE'.format(confidence)])
+        z_critical = stats.norm.ppf(q=confidence)
 
-    print('Performing permutation test with {} permutations ...'.format(nperm))
+        for i, f in enumerate(sampled_scores):
+            std = f.std()
+            moe = z_critical * (std / math.sqrt(f.size))
+            confidence_intervals.iloc[i, 0] = moe
+        scores = pd.merge(scores, confidence_intervals, left_index=True, right_index=True)
+
+    _print('Performing permutation test with {} permutations ...'.format(n_perm))
     permutation_pvals_and_fdrs = pd.DataFrame(index=features.index,
-                                              columns=['Local P-Value', 'Global P-Value', 'FDR (BH)'])
-    permutation_scores = np.empty((features.shape[0], nperm))
-    # Permute ref and compute score against it
+                                              columns=['Local P-value', 'Global P-value', 'FDR (BH)'])
+    # Compute scores using permuted ref
+    permutation_scores = np.empty((features.shape[0], n_perm))
     shuffled_ref = np.array(ref)
-    for i in range(nperm):
+    for i in range(n_perm):
         np.random.shuffle(shuffled_ref)
         for j, (idx, s) in enumerate(features.iterrows()):
-            permutation_scores[j, i] = information_coefficient(s, shuffled_ref)
-    # Compute permutation p-value
+            permutation_scores[j, i] = function(s, shuffled_ref)
+
+    # Compute permutation P-values and FDRs
     all_permutation_scores = permutation_scores.flatten()
     for i, (idx, f) in enumerate(scores.iterrows()):
-        # Local P-Value
-        local_pval = float(sum(permutation_scores[i, :] > float(f)) / nperm)
+        local_pval = float(sum(permutation_scores[i, :] > float(f.ix[metric])) / n_perm)
         if not local_pval:
-            local_pval = float(1 / nperm)
-        permutation_pvals_and_fdrs.ix[idx, 'Local P-Value'] = local_pval
-        # Global P-Value
-        global_pval = float(sum(all_permutation_scores > float(f)) / (nperm * features.shape[0]))
+            local_pval = float(1 / n_perm)
+        permutation_pvals_and_fdrs.ix[idx, 'Local P-value'] = local_pval
+
+        global_pval = float(sum(all_permutation_scores > float(f.ix[metric])) / (n_perm * features.shape[0]))
         if not global_pval:
-            global_pval = float(1 / (nperm * features.shape[0]))
-        permutation_pvals_and_fdrs.ix[idx, 'Global P-Value'] = global_pval
-    # Compute permutation FDR
-    permutation_pvals_and_fdrs.ix[:, 'FDR (BH)'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-Value'],
+            global_pval = float(1 / (n_perm * features.shape[0]))
+        permutation_pvals_and_fdrs.ix[idx, 'Global P-value'] = global_pval
+
+    permutation_pvals_and_fdrs.ix[:, 'FDR (BH)'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-value'],
                                                                  method='fdr_bh')[1]
-    results = pd.concat([scores, confidence_intervals, permutation_pvals_and_fdrs], axis=1)
-    return results.sort_values('information_coef', ascending=ascending)
+    scores = pd.merge(scores, permutation_pvals_and_fdrs, left_index=True, right_index=True)
+
+    return scores.sort_values(metric, ascending=ascending)
 
 
 def compare_matrices(matrix1, matrix2, is_distance=False, result_filename=None,
@@ -212,8 +225,8 @@ def compare_matrices(matrix1, matrix2, is_distance=False, result_filename=None,
     :param matrix1: pandas DataFrame,
     :param matrix2: pandas DataFrame,
     :param is_distance: bool, True for distance and False for association
-    :param result_filename: str, filepath to save the result
-    :param figure_filename: str, filepath to save the figure
+    :param result_filename: str, file path to save the result
+    :param figure_filename: str, file path to save the figure
     :return:
     """
     association_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)

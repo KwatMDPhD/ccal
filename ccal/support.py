@@ -156,19 +156,19 @@ def write_gct(pandas_object, filename, index_column=None, description=None):
 # ======================================================================================================================
 # Simulate
 # ======================================================================================================================
-def make_random_features(nrow, ncol, ncategory=None):
+def make_random_features(nrow, ncol, n_category=None):
     """
-    Make simulation features dataframe.
+    Make simulation features DataFrame (1D or 2D).
     :param nrow: int, number of rows
     :param ncol: int, number of columns
-    :param ncategory: None or int, if None, use continuous; if int, use  categorical
+    :param n_category: None or int, if None, use continuous; if int, use  categorical
     :return: pandas DataFrame, features (`nrow`, `ncol`)
     """
     shape = (nrow, ncol)
     indices = ['Feature {}'.format(i) for i in range(nrow)]
     columns = ['Element {}'.format(i) for i in range(ncol)]
-    if ncategory:
-        features = pd.DataFrame(np.random.random_integers(0, ncategory, shape),
+    if n_category:
+        features = pd.DataFrame(np.random.random_integers(0, n_category, shape),
                                 index=indices,
                                 columns=columns)
     else:
@@ -211,3 +211,35 @@ def simulate_x_y(n, rho, threshold=3):
             elif y[i] < -threshold:
                 y[i] = -threshold
     return x, y
+
+
+def drop_nan_columns(vectors):
+    """
+    Keep only column positions that are not nan in all vectors.
+    :param vectors: list of numpy array, must have the same length (avoid [v1, ..., vn])
+    :return: list of numpy arrays,
+    """
+    for v in vectors[1:]:
+        if len(v) != len(vectors[0]):
+            raise ValueError('Input arrays have different lengths: {} & {}.'.format(len(v), len(vectors[0])))
+
+    not_nan_filter = np.ones(len(vectors[0]), dtype=bool)
+    for v in vectors:
+        not_nan_filter &= ~np.isnan(v)
+
+    only_not_nan = []
+    for i in range(len(vectors)):
+        only_not_nan.append(vectors[i][not_nan_filter])
+    return only_not_nan
+
+
+def add_jitter(vectors, jitter=1E-10):
+    """
+    Add jitter to vectors.
+    :param vectors: numpy array,
+    :return: list of numpy arrays
+    """
+    jittered_vectors = []
+    for i in range(len(vectors)):
+        jittered_vectors.append(vectors[i] + np.random.random_sample(vectors[i].size) * jitter)
+    return jittered_vectors
