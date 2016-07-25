@@ -108,7 +108,7 @@ def rank_features_against_reference(features, ref,
     annotations = pd.DataFrame(index=features.index)
     for idx, s in features.iterrows():
         if '{} MoE'.format(confidence) in scores.columns:
-            annotations.ix[idx, 'IC\xb1\u0394'] = '{0:.3f}'.format(scores.ix[idx, metric]) + '\xb1{0:.3f}'.format(
+            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, metric]) + '\xb1{0:.3f}'.format(
                 scores.ix[idx, '{} MoE'.format(confidence)])
         else:
             annotations.ix[idx, 'IC'] = '{0:.3f} '.format(scores.ix[idx, metric])
@@ -128,11 +128,13 @@ def rank_features_against_reference(features, ref,
         indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
         _print('Plotting top and bottom {} features vs. reference ...'.format(len(indices_to_plot)))
 
-    return features, ref, annotations
     plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                 features_type=features_type, ref_type=ref_type,
                                 title=title, rowname_size=rowname_size, plot_colname=plot_colname,
                                 filename_prefix=output_prefix, figure_type=figure_type)
+
+
+
 
 
 def compute_against_reference(features, ref, metric='information_coef', ascending=False, n_sampling=30, confidence=0.95,
