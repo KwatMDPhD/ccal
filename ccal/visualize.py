@@ -45,6 +45,7 @@ CMAP_CATEGORICAL.set_bad(BAD_COLOR)
 CMAP_BINARY = sns.light_palette('black', n_colors=2, as_cmap=True)
 CMAP_BINARY.set_bad(BAD_COLOR)
 
+DPI = 900
 
 # ======================================================================================================================
 # Functions
@@ -133,9 +134,8 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     plt.show(fig)
 
     if filename_prefix:
-        filename = filename_prefix
-        fig.savefig(filename, dpi=900)
-        _print('Saved the figure as {}.'.format(filename))
+        fig.savefig(filename_prefix, dpi=DPI, bbox_inches='tight')
+        _print('Saved the figure as {}.'.format(filename_prefix))
 
 
 def _setup_heatmap_parameters(pandas_obj, data_type):
@@ -179,7 +179,7 @@ def plot_nmf_result(nmf_results, k, figsize=(7, 5), title=None, output_filename=
     plt.show()
 
     if output_filename:
-        plt.savefig(output_filename)
+        plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
 
 
 def plot_nmf_scores(scores, figsize=(7, 5), title=None, output_filename=None):
@@ -201,7 +201,7 @@ def plot_nmf_scores(scores, figsize=(7, 5), title=None, output_filename=None):
     plt.show()
 
     if output_filename:
-        plt.savefig(output_filename, bbox_inches='tight')
+        plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
 
 
 def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
@@ -237,4 +237,4 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
     plt.show()
 
     if output_filename:
-        plt.savefig(output_filename, bbox_inches='tight')
+        plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
