@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 # rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 
-from .support import _print, normalize_pandas_object
+from .support import print_log, normalize_pandas_object
 
 # ======================================================================================================================
 # Parameters
@@ -72,10 +72,10 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
 
     # Normalize
     if features_type is 'continuous':
-        _print('Normalizing continuous features ...')
+        print_log('Normalizing continuous features ...')
         normalize_pandas_object(features)
     if ref_type is 'continuous':
-        _print('Normalizing continuous ref ...')
+        print_log('Normalizing continuous ref ...')
         ref = (ref - ref.mean()) / ref.std()
         normalize_pandas_object(ref)
 
@@ -135,7 +135,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
 
     if filename_prefix:
         fig.savefig(filename_prefix, dpi=DPI, bbox_inches='tight')
-        _print('Saved the figure as {}.'.format(filename_prefix))
+        print_log('Saved the figure as {}.'.format(filename_prefix))
 
 
 def _setup_heatmap_parameters(pandas_obj, data_type):

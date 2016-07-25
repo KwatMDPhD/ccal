@@ -47,11 +47,11 @@ def information_coefficient(x, y, z=None, n_grid=25, vector_data_types=None, n_p
     :param n_grid: int, number of grid points at which to evaluate kernel density
     :param vector_data_types: str, 3 chars of 'c' (continuous), 'u' (unordered discrete), or 'o' (ordered discrete)
     :param n_perm: int, >0 will return a p-value in addition to the information coefficient
-    :param adaptive: bool, quit permutations after achieving a specified confidence that the p-value is above (or below) alpha
+    :param adaptive: bool, quit permutations after achieving a confidence that the p-value is above (or below) alpha
     :param alpha: float, threshold empirical p-value for significance of IC
     :param perm_alpha: float, threshold probability for terminating adaptive permutation
     :return: float (and float), information coefficient, and the empirical p-value if n_perm > 0
-                Note that if adaptive, the accuracy of the empirical p-value will vary: values closer to alpha will be estimated
+                If adaptive, the accuracy of the empirical p-value will vary: values closer to alpha will be estimated
                 more precisely, while values obviously greater or less than alpha will be estimated less precisely.
     """
     vectors = [x, y]
@@ -232,7 +232,7 @@ def cmi_diff(x, y):
     for i in range(n):
         for j in range(n):
             if cdf_xy[i, j] != 0:
-                ce_xy = ce_xy - lattice_area[i, j] * cdf_xy[i, j] * math.log(cdf_xy[i, j])
+                ce_xy -= lattice_area[i, j] * cdf_xy[i, j] * math.log(cdf_xy[i, j])
 
     # Compute the cmi based on the difference between joint and marginals ce's
     cmi = ce_xy - (max(y) - np.mean(y)) * ce_x - (max(x) - np.mean(x)) * ce_y

@@ -32,7 +32,7 @@ VERBOSE = True
 # ======================================================================================================================
 # Utilities
 # ======================================================================================================================
-def _print(string):
+def print_log(string):
     """
     Print `string` with the current time.
     :param string: str, message to be printed
@@ -54,7 +54,7 @@ def runtime(function, n_range):
     runtimes = []
     for i in n_range:
         n = (i + 1) * 10
-        _print('Getting runtime with vectors (x, y) with size {} ...'.format(n))
+        print_log('Getting runtime with vectors (x, y) with size {} ...'.format(n))
         x = np.random.random_sample(n)
         y = np.random.random_sample(n)
         t0 = time.time()
@@ -78,7 +78,7 @@ def establish_path(path):
     :return: None
     """
     if not (os.path.isdir(path) or os.path.isfile(path) or os.path.islink(path)):
-        _print('Path {} doesn\'t exist, creating it ...'.format(path))
+        print_log('Path {} doesn\'t exist, creating it ...'.format(path))
         path_dirs = []
         p, q = os.path.split(path)
         while q != '':
