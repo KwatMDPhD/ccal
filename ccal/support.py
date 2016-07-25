@@ -43,29 +43,58 @@ def print_log(string):
         print('<{}> {}'.format(datetime.datetime.now().time(), string))
 
 
-def runtime(function, n_range):
+# ======================================================================================================================#
+# Functions
+# ======================================================================================================================#
+def drop_nan_columns(vectors):
     """
-    For i in n_range, get runtimes of function(x, y) where x and y are random vectors of size (i + 1) * 10.
-    :param function: function,
-    :param n_range: int,
-    :return:
+    Keep only column positions that are not nan in all vectors.
+    :param vectors: list of numpy array, must have the same length (avoid [v1, ..., vn])
+    :return: list of numpy arrays,
     """
-    ns = []
-    runtimes = []
-    for i in n_range:
-        n = (i + 1) * 10
-        print_log('Getting runtime with vectors (x, y) with size {} ...'.format(n))
-        x = np.random.random_sample(n)
-        y = np.random.random_sample(n)
-        t0 = time.time()
+    for v in vectors[1:]:
+        if len(v) != len(vectors[0]):
+            raise ValueError('Input arrays have different lengths: {} & {}.'.format(len(v), len(vectors[0])))
 
-        function(x, y)
+    not_nan_filter = np.ones(len(vectors[0]), dtype=bool)
+    for v in vectors:
+        not_nan_filter &= ~np.isnan(v)
 
-        t = time.time() - t0
-        ns.append(n)
-        runtimes.append(t)
+    only_not_nan = []
+    for i in range(len(vectors)):
+        only_not_nan.append(vectors[i][not_nan_filter])
+    return only_not_nan
 
-    return ns, runtimes
+
+def add_jitter(vectors, jitter=1E-10):
+    """
+    Add jitter to vectors.
+    :param vectors: numpy array,
+    :param jitter: float, fitter to be added to `vector`
+    :return: list of numpy arrays
+    """
+    jittered_vectors = []
+    for i in range(len(vectors)):
+        jittered_vectors.append(vectors[i] + np.random.random_sample(vectors[i].size) * jitter)
+    return jittered_vectors
+
+
+def normalize_pandas_object(pandas_obj):
+    """
+    Normalize a pandas object (by row for a DataFrame).
+    :param pandas_obj: pandas DataFrame or Series
+    :return: pandas DataFrame or Series
+    """
+    normalized = pandas_obj.copy()
+    if isinstance(normalized, pd.DataFrame):
+        for i, (idx, s) in enumerate(normalized.iterrows()):
+            mean = s.mean()
+            std = s.std()
+            for j, v in enumerate(s):
+                normalized.ix[i, j] = (v - mean) / std
+    elif isinstance(normalized, pd.Series):
+        normalized = (normalized - normalized.mean()) / normalized.std()
+    return normalized
 
 
 # ======================================================================================================================
@@ -152,63 +181,34 @@ def write_gct(pandas_object, filename, index_column=None, description=None):
         pandas_object.to_csv(f, sep='\t')
 
 
-# ======================================================================================================================#
-# Functions
-# ======================================================================================================================#
-def drop_nan_columns(vectors):
-    """
-    Keep only column positions that are not nan in all vectors.
-    :param vectors: list of numpy array, must have the same length (avoid [v1, ..., vn])
-    :return: list of numpy arrays,
-    """
-    for v in vectors[1:]:
-        if len(v) != len(vectors[0]):
-            raise ValueError('Input arrays have different lengths: {} & {}.'.format(len(v), len(vectors[0])))
-
-    not_nan_filter = np.ones(len(vectors[0]), dtype=bool)
-    for v in vectors:
-        not_nan_filter &= ~np.isnan(v)
-
-    only_not_nan = []
-    for i in range(len(vectors)):
-        only_not_nan.append(vectors[i][not_nan_filter])
-    return only_not_nan
-
-
-def add_jitter(vectors, jitter=1E-10):
-    """
-    Add jitter to vectors.
-    :param vectors: numpy array,
-    :param jitter: float, fitter to be added to `vector`
-    :return: list of numpy arrays
-    """
-    jittered_vectors = []
-    for i in range(len(vectors)):
-        jittered_vectors.append(vectors[i] + np.random.random_sample(vectors[i].size) * jitter)
-    return jittered_vectors
-
-
-def normalize_pandas_object(pandas_obj):
-    """
-    Normalize a pandas object (by row for a DataFrame).
-    :param pandas_obj: pandas DataFrame or Series
-    :return: pandas DataFrame or Series
-    """
-    normalized = pandas_obj.copy()
-    if isinstance(normalized, pd.DataFrame):
-        for i, (idx, s) in enumerate(normalized.iterrows()):
-            mean = s.mean()
-            std = s.std()
-            for j, v in enumerate(s):
-                normalized.ix[i, j] = (v - mean) / std
-    elif isinstance(normalized, pd.Series):
-        normalized = (normalized - normalized.mean()) / normalized.std()
-    return normalized
-
-
 # ======================================================================================================================
 # Simulate
 # ======================================================================================================================
+def runtime(function, n_range):
+    """
+    For i in n_range, get runtimes of function(x, y) where x and y are random vectors of size (i + 1) * 10.
+    :param function: function,
+    :param n_range: int,
+    :return:
+    """
+    ns = []
+    runtimes = []
+    for i in n_range:
+        n = (i + 1) * 10
+        print_log('Getting runtime with vectors (x, y) with size {} ...'.format(n))
+        x = np.random.random_sample(n)
+        y = np.random.random_sample(n)
+        t0 = time.time()
+
+        function(x, y)
+
+        t = time.time() - t0
+        ns.append(n)
+        runtimes.append(t)
+
+    return ns, runtimes
+
+
 def make_random_features(nrow, ncol, n_category=None):
     """
     Make simulation features DataFrame (1D or 2D).

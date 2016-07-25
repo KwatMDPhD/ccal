@@ -133,13 +133,14 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
                                 plot_colname=plot_colname, filename_prefix=output_prefix)
 
 
-def compute_against_reference(features, ref, metric='information_coef', ascending=False, nsampling=30, confidence=0.95,
-                              nperm=30):
+def compute_against_reference(features, ref, metric='information_coef', nfeatures=0, ascending=False,
+                              nsampling=30, confidence=0.95, nperm=30):
     """
     Compute scores[i] = `features`[i] vs. `ref` with computation using `metric` and get CI, p-val, and FDR (BH).
     :param features: pandas DataFrame (nfeatures, nelements), must have indices and columns
     :param ref: pandas Series (nelements), must have indices, which must match 'features`'s columns
     :param metric: str, {information_coef}
+    :param nfeatures: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param ascending: bool, True if score increase from top to bottom, False otherwise
     :param nsampling: int, number of sampling for confidence interval bootstrapping; must be > 2 for CI computation
     :param confidence: float, confidence intrval
