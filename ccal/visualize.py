@@ -26,9 +26,6 @@ import numpy as np
 import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-# from matplotlib import rcParams
-#
-# rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 
 from .support import print_log, normalize_pandas_object
@@ -47,11 +44,12 @@ CMAP_BINARY.set_bad(BAD_COLOR)
 
 DPI = 900
 
+
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
 def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
-                                title=None, title_size=16, annotation_label_size=9, plot_colname=False,
+                                title=None, title_size=16, annotation_header=None, annotation_label_size=9, plot_colname=False,
                                 filename_prefix=None):
     """
     Plot a heatmap panel.
@@ -62,6 +60,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     :param ref_type: str, {continuous, categorical, binary}
     :param title: str, figure title
     :param title_size: int, title text size
+    :param annotation_header: str, annotation header to be plotted
     :param annotation_label_size: int, annotation text size
     :param plot_colname: bool, plot column names or not
     :param filename_prefix: str, file path prefix to save the figure
@@ -116,21 +115,23 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     sns.heatmap(features, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=plot_colname,
                 cbar=False)
     plt.setp(features_ax.get_yticklabels(), rotation=0)
+    plt.setp(features_ax.get_yticklabels(), weight='bold')
 
     # Plot annotations
     annotation_header_ax = plt.subplot(gridspec.new_subplotspec((0, features.shape[1])))
     annotation_header_ax.set_axis_off()
-    a = '\t'.join(annotations.columns).expandtabs()
-    annotation_header_ax.text(horizontal_text_margin, 0.5, a, horizontalalignment='left', verticalalignment='center',
+    if not annotation_header:
+        annotation_header = '\t'.join(annotations.columns).expandtabs()
+    annotation_header_ax.text(horizontal_text_margin, 0.5, annotation_header, horizontalalignment='left', verticalalignment='center',
                               size=annotation_label_size, weight='bold')
     for i, (idx, s) in enumerate(annotations.iterrows()):
         ax = plt.subplot(gridspec.new_subplotspec((1 + i, features.shape[1])))
         ax.set_axis_off()
         a = '\t'.join(s.tolist()).expandtabs()
         ax.text(horizontal_text_margin, 0.5, a, horizontalalignment='left', verticalalignment='center',
-                size=annotation_label_size)
+                size=annotation_label_size, weight='bold')
 
-    fig.subplots_adjust(left=0.15, right=0.7)
+    # fig.subplots_adjust(left=0.15, right=0.7)
     plt.show(fig)
 
     if filename_prefix:

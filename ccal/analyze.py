@@ -45,8 +45,8 @@ from .information import information_coefficient, cmi_diff, cmi_ratio
 def rank_features_against_reference(features, ref, features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
                                     metric='information_coef', nsampling=30, confidence=0.95, nperm=30, nfeatures=0.95,
-                                    title=None, title_size=16, annotation_label_size=9, plot_colname=False,
-                                    output_prefix=None):
+                                    title=None, title_size=16, annotation_header=None, annotation_label_size=9,
+                                    plot_colname=False, output_prefix=None):
     """
     Compute features vs. `ref`.
     :param features: pandas DataFrame (nfeatures, nelements), must have indices and columns
@@ -63,6 +63,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
     :param nfeatures: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param title: str, plot title
     :param title_size: int, title text size
+    :param annotation_header: str, annotation header to be plotted
     :param annotation_label_size: int, annotation text size
     :param plot_colname: bool, plot column names or not
     :param output_prefix: str, file path prefix to save the result (.txt) and figure (`figure_type`)
@@ -75,7 +76,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
 
     if output_prefix:
         output_prefix = os.path.abspath(output_prefix)
-        establish_path(output_prefix)
+        establish_path(os.path.split(output_prefix)[0])
 
     # TODO: preserve order
     col_intersection = set(features.columns) & set(ref.index)
@@ -107,8 +108,8 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
     annotations = pd.DataFrame(index=features.index)
     for idx, s in features.iterrows():
         if '{} MoE'.format(confidence) in scores.columns:
-            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, metric]) + '\xb1{0:.3f}'.format(
-                scores.ix[idx, '{} MoE'.format(confidence)])
+            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, metric]) \
+                                                + '({0:.3f})'.format(scores.ix[idx, '{} MoE'.format(confidence)])
         else:
             annotations.ix[idx, 'IC'] = '{0:.3f} '.format(scores.ix[idx, metric])
 
@@ -128,8 +129,8 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
         print_log('Plotting top and bottom {} features vs. reference ...'.format(len(indices_to_plot)))
 
     plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
-                                features_type=features_type, ref_type=ref_type,
-                                title=title, title_size=title_size, annotation_label_size=annotation_label_size,
+                                features_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
+                                annotation_header=annotation_header, annotation_label_size=annotation_label_size,
                                 plot_colname=plot_colname, filename_prefix=output_prefix)
 
 

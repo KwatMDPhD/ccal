@@ -40,7 +40,7 @@ def print_log(string):
     """
     global VERBOSE
     if VERBOSE:
-        print('<{}> {}'.format(datetime.datetime.now().time(), string))
+        print('<{}> {}'.format(datetime.datetime.now().strftime('%H:%M:%S'), string))
 
 
 # ======================================================================================================================#
