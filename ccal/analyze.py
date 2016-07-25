@@ -113,7 +113,6 @@ def rank_features_against_reference(features, ref,
         else:
             annotations.ix[idx, 'IC'] = '{0:.3f} '.format(scores.ix[idx, metric])
 
-
     annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global P-value']]
     annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
 
@@ -159,8 +158,12 @@ def compute_against_reference(features, ref, metric='information_coef', ascendin
         raise ValueError('Unknown metric {}.'.format(metric))
 
     _print('Computing scores using {} metric ...'.format(metric))
-    scores = pd.DataFrame([function(s, ref) for idx, s in features.iterrows()],
-                          index=features.index, columns=[metric])
+    scores = np.empty(features.shape[0])
+    for i, (idx, s) in enumerate(features.iterrows()):
+        if i % 100 is 0:
+            _print('\t{}/{} ...'.format(i, features.shape[0]))
+        scores[i] = function(s, ref)
+    scores = pd.DataFrame(scores, index=features.index, columns=[metric])
 
     _print('Bootstrapping to get {} confidence interval ...'.format(confidence))
     nsample = math.ceil(0.632 * features.shape[1])
