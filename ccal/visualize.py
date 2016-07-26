@@ -50,7 +50,7 @@ DPI = 900
 # ======================================================================================================================
 def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
                                 title=None, title_size=16, annotation_header=None, annotation_label_size=9, plot_colname=False,
-                                filename_prefix=None):
+                                figure_filename=None):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
@@ -63,7 +63,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     :param annotation_header: str, annotation header to be plotted
     :param annotation_label_size: int, annotation text size
     :param plot_colname: bool, plot column names or not
-    :param filename_prefix: str, file path prefix to save the figure
+    :param figure_filename: str, file path prefix to save the figure
     :return: None
     """
     features_cmap, features_min, features_max = _setup_heatmap_parameters(features, features_type)
@@ -134,9 +134,9 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     # fig.subplots_adjust(left=0.15, right=0.7)
     plt.show(fig)
 
-    if filename_prefix:
-        fig.savefig(filename_prefix, dpi=DPI, bbox_inches='tight')
-        print_log('Saved the figure as {}.'.format(filename_prefix))
+    if figure_filename:
+        fig.savefig(figure_filename, dpi=DPI, bbox_inches='tight')
+        print_log('Saved the figure as {}.'.format(figure_filename))
 
 
 def _setup_heatmap_parameters(pandas_obj, data_type):

@@ -184,17 +184,18 @@ def write_gct(pandas_object, filename, index_column=None, description=None):
 # ======================================================================================================================
 # Simulate
 # ======================================================================================================================
-def runtime(function, n_range):
+def runtime(function, increment, n=10):
     """
-    For i in n_range, get runtimes of function(x, y) where x and y are random vectors of size (i + 1) * 10.
-    :param function: function,
-    :param n_range: int,
+    Time `function` `n` times using arrays of length incremented by `increment` each time.
+    :param function: function, function to time
+    :param increment: int, increment to accrue on each consecutive timing
+    :param n: int, number time points
     :return:
     """
     ns = []
     runtimes = []
-    for i in n_range:
-        n = (i + 1) * 10
+    for i in range(n):
+        n = (i + 1) * increment
         print_log('Getting runtime with vectors (x, y) with size {} ...'.format(n))
         x = np.random.random_sample(n)
         y = np.random.random_sample(n)

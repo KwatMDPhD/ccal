@@ -45,8 +45,8 @@ from .information import information_coefficient, cmi_diff, cmi_ratio
 def rank_features_against_reference(features, ref, features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
                                     metric='information_coef', nsampling=30, confidence=0.95, nperm=30, nfeatures=0.95,
-                                    title=None, title_size=16, annotation_header=None, annotation_label_size=9,
-                                    plot_colname=False, output_prefix=None):
+                                    title=None, title_size=16, annotation_label_size=9, plot_colname=False,
+                                    result_filename=None, figure_filename=None):
     """
     Compute features vs. `ref`.
     :param features: pandas DataFrame (nfeatures, nelements), must have indices and columns
@@ -63,10 +63,10 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
     :param nfeatures: int or float, number threshold if >= 1 and quantile threshold if < 1
     :param title: str, plot title
     :param title_size: int, title text size
-    :param annotation_header: str, annotation header to be plotted
     :param annotation_label_size: int, annotation text size
     :param plot_colname: bool, plot column names or not
-    :param output_prefix: str, file path prefix to save the result (.txt) and figure (`figure_type`)
+    :param result_filename: str, file path to the output result
+    :param figure_filename: str, file path to the output figure
     :return: None
     """
     if features.shape[0] is 1 or isinstance(features, pd.Series):
@@ -74,9 +74,9 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
 
     print_log('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
 
-    if output_prefix:
-        output_prefix = os.path.abspath(output_prefix)
-        establish_path(os.path.split(output_prefix)[0])
+    if figure_filename:
+        figure_filename = os.path.abspath(figure_filename)
+        establish_path(os.path.split(figure_filename)[0])
 
     # TODO: preserve order
     col_intersection = set(features.columns) & set(ref.index)
@@ -99,9 +99,8 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
                                        nsampling=nsampling, confidence=confidence, nperm=nperm)
     features = features.reindex(scores.index)
 
-    if output_prefix:
-        filename = output_prefix + '.txt'
-        pd.merge(features, scores, left_index=True, right_index=True).to_csv(filename, sep='\t')
+    if result_filename:
+        pd.merge(features, scores, left_index=True, right_index=True).to_csv(result_filename, sep='\t')
         print_log('Saved the result as {}.'.format(filename))
 
     # Make annotations
@@ -130,8 +129,9 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
 
     plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                 features_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
-                                annotation_header=annotation_header, annotation_label_size=annotation_label_size,
-                                plot_colname=plot_colname, filename_prefix=output_prefix)
+                                annotation_header='IC' + ' ' * 21 + 'P-val' + ' ' * 4 + 'FDR',
+                                annotation_label_size=annotation_label_size,
+                                plot_colname=plot_colname, figure_filename=figure_filename)
 
 
 def compute_against_reference(features, ref, metric='information_coef', nfeatures=0, ascending=False,
