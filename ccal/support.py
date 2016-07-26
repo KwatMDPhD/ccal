@@ -106,7 +106,9 @@ def establish_path(path):
     :param path:
     :return: None
     """
-    if not (os.path.isdir(path) or os.path.isfile(path) or os.path.islink(path)):
+    if os.path.isdir(path) or os.path.isfile(path) or os.path.islink(path):
+        print_log('{} already exists.'.format(path))
+    else:
         print_log('Path {} doesn\'t exist, creating it ...'.format(path))
         path_dirs = []
         p, q = os.path.split(path)

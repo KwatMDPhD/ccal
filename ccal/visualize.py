@@ -19,6 +19,7 @@ Laboratory of Jill Mesirov
 Description:
 Plotting module for CCAL.
 """
+import os
 import math
 
 import pandas as pd
@@ -28,7 +29,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .support import print_log, normalize_pandas_object
+from .support import print_log, normalize_pandas_object, establish_path
 
 # ======================================================================================================================
 # Parameters
@@ -49,7 +50,8 @@ DPI = 900
 # Functions
 # ======================================================================================================================
 def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
-                                title=None, title_size=16, annotation_header=None, annotation_label_size=9, plot_colname=False,
+                                title=None, title_size=16, annotation_header=None, annotation_label_size=9,
+                                plot_colname=False,
                                 figure_filename=None):
     """
     Plot a heatmap panel.
@@ -122,7 +124,8 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     annotation_header_ax.set_axis_off()
     if not annotation_header:
         annotation_header = '\t'.join(annotations.columns).expandtabs()
-    annotation_header_ax.text(horizontal_text_margin, 0.5, annotation_header, horizontalalignment='left', verticalalignment='center',
+    annotation_header_ax.text(horizontal_text_margin, 0.5, annotation_header, horizontalalignment='left',
+                              verticalalignment='center',
                               size=annotation_label_size, weight='bold')
     for i, (idx, s) in enumerate(annotations.iterrows()):
         ax = plt.subplot(gridspec.new_subplotspec((1 + i, features.shape[1])))
@@ -135,6 +138,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     plt.show(fig)
 
     if figure_filename:
+        establish_path(os.path.split(figure_filename)[0])
         fig.savefig(figure_filename, dpi=DPI, bbox_inches='tight')
         print_log('Saved the figure as {}.'.format(figure_filename))
 

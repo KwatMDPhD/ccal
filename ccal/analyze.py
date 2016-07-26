@@ -74,10 +74,6 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
 
     print_log('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
 
-    if figure_filename:
-        figure_filename = os.path.abspath(figure_filename)
-        establish_path(os.path.split(figure_filename)[0])
-
     # TODO: preserve order
     col_intersection = set(features.columns) & set(ref.index)
     if not col_intersection:
@@ -100,6 +96,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
     features = features.reindex(scores.index)
 
     if result_filename:
+        establish_path(os.path.split(result_filename)[0])
         pd.merge(features, scores, left_index=True, right_index=True).to_csv(result_filename, sep='\t')
         print_log('Saved the result as {}.'.format(result_filename))
 
@@ -110,7 +107,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
             annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, metric]) \
                                                 + '({0:.3f})'.format(scores.ix[idx, '{} MoE'.format(confidence)])
         else:
-            annotations.ix[idx, 'IC'] = '{0:.3f} '.format(scores.ix[idx, metric])
+            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}(x.xxx)'.format(scores.ix[idx, metric])
 
     annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global P-value']]
     annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
@@ -129,7 +126,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
 
     plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                 features_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
-                                annotation_header='IC' + ' ' * 21 + 'P-val' + ' ' * 4 + 'FDR',
+                                annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
                                 annotation_label_size=annotation_label_size,
                                 plot_colname=plot_colname, figure_filename=figure_filename)
 
