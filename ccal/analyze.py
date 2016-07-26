@@ -101,7 +101,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
 
     if result_filename:
         pd.merge(features, scores, left_index=True, right_index=True).to_csv(result_filename, sep='\t')
-        print_log('Saved the result as {}.'.format(filename))
+        print_log('Saved the result as {}.'.format(result_filename))
 
     # Make annotations
     annotations = pd.DataFrame(index=features.index)
