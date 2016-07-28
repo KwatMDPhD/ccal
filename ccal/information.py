@@ -38,8 +38,38 @@ mass = importr('MASS')
 from .support import drop_nan_columns, add_jitter
 
 
-def information_coefficient(x, y, z=None, n_grid=25, vector_data_types=None, n_perm=0, adaptive=True, alpha=0.05,
-                            perm_alpha=0.05):
+def information_coefficient(x, y, ngrid=25):
+    x, y = add_jitter(drop_nan_columns([x, y]))
+
+    if len(x) <= 2:
+        return 0
+
+    cor, p = pearsonr(x, y)
+    bandwidth_x = np.asarray(mass.bcv(x)[0]) * (1 + (-0.75) * abs(cor))
+    bandwidth_y = np.asarray(mass.bcv(y)[0]) * (1 + (-0.75) * abs(cor))
+
+    fxy = np.asarray(mass.kde2d(x, y, np.asarray([bandwidth_x, bandwidth_y]), n=np.asarray([ngrid]))[2]) + np.finfo(
+        float).eps
+    dx = (x.max() - x.min()) / (ngrid - 1)
+    dy = (y.max() - y.min()) / (ngrid - 1)
+    pxy = fxy / (fxy.sum() * dx * dy)
+    px = pxy.sum(axis=1) * dy
+    py = pxy.sum(axis=0) * dx
+
+    mi = np.sum(pxy * np.log(pxy / (np.array([px] * ngrid).T * np.array([py] * ngrid)))) * dx * dy
+
+    # hxy = - np.sum(pxy * np.log(pxy)) * dx * dy
+    # hx = -np.sum(px * np.log(px)) * dx
+    # hy = -np.sum(py * np.log(py)) * dy
+    # mi = hx + hy - hxy
+
+    ic = np.sign(cor) * np.sqrt(1 - np.exp(- 2 * mi))
+
+    return ic
+
+
+def information_coefficient_james(x, y, z=None, n_grid=25, vector_data_types=None, n_perm=0, adaptive=True, alpha=0.05,
+                                  perm_alpha=0.05):
     """
     :param x: array-like, (n_samples,)
     :param y: array-like, (n_samples,)
