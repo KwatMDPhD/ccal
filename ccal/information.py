@@ -142,7 +142,6 @@ def information_coefficient_james(x, y, z=None, n_grid=25, vector_data_types=Non
         return ic
 
 
-# TODO: understand the math
 def mutual_information(x, y, z=None, n_grid=25, vector_data_types=None, bandwidth_scaling=None):
     """
     :param x: array-like, (n_samples,)
