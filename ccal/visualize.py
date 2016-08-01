@@ -29,7 +29,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .support import print_log, normalize_pandas_object, establish_path
+from .support import print_log, standardize_pandas_object, establish_path
 
 # ======================================================================================================================
 # Parameters
@@ -74,11 +74,11 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     # Normalize
     if features_type is 'continuous':
         print_log('Normalizing continuous features ...')
-        features = normalize_pandas_object(features)
+        features = standardize_pandas_object(features)
     if ref_type is 'continuous':
         print_log('Normalizing continuous ref ...')
         ref = (ref - ref.mean()) / ref.std()
-        ref = normalize_pandas_object(ref)
+        ref = standardize_pandas_object(ref)
 
     fig = plt.figure(figsize=(min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9)))
     horizontal_text_margin = math.pow(features.shape[1], 0.39)

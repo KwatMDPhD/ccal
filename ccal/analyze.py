@@ -218,39 +218,38 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
     return scores.sort_values(metric, ascending=ascending)
 
 
-def compare_matrices(matrix1, matrix2, is_distance=False, result_filename=None,
-                     figure_filename=None):
+def compare_matrices(matrix1, matrix2, is_distance=False, plot=False, figure_filename=None):
     """
-    Make association or distance matrix of the rows of `feature1` and `feature2`.
+    Make association or distance matrix of the rows of `matrix1` and `matrix2`.
     :param matrix1: pandas DataFrame,
     :param matrix2: pandas DataFrame,
     :param is_distance: bool, True for distance and False for association
-    :param result_filename: str, file path to save the result
+    :param plot: bool, plot or not
     :param figure_filename: str, file path to save the figure
     :return:
     """
-    association_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
+    compared_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
     features1_nrow = matrix1.shape[0]
+
     for i, (i1, r1) in enumerate(matrix1.iterrows()):
         print_log('Features 1 {} ({}/{}) vs. features 2 ...'.format(i1, i + 1, features1_nrow))
         for i2, r2 in matrix2.iterrows():
-            association_matrix.ix[i1, i2] = information_coefficient(r1, r2)
+            compared_matrix.ix[i1, i2] = information_coefficient(r1, r2)
     if is_distance:
         print_log('Converting association to is_distance (is_distance = 1 - association) ...')
-        association_matrix = 1 - association_matrix
-    if result_filename:
-        establish_path(result_filename)
-        association_matrix.to_csv(result_filename, sep='\t')
-        print_log('Saved the resulting matrix as {}.'.format(result_filename))
+        compared_matrix = 1 - compared_matrix
 
-    print_log('Plotting the resulting matrix ...')
-    ax = sns.clustermap(association_matrix, cmap=CMAP_CONTINUOUS)
-    plt.setp(ax.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
-    plt.setp(ax.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
-    if figure_filename:
-        establish_path(figure_filename)
-        association_matrix.to_csv(figure_filename, sep='\t')
-        print_log('Saved the resulting figure as {}.'.format(figure_filename))
+    if plot:
+        print_log('Plotting the resulting matrix ...')
+        ax = sns.clustermap(compared_matrix, cmap=CMAP_CONTINUOUS)
+        plt.setp(ax.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
+        plt.setp(ax.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+        if figure_filename:
+            establish_path(figure_filename)
+            compared_matrix.to_csv(figure_filename, sep='\t')
+            print_log('Saved the resulting figure as {}.'.format(figure_filename))
+
+    return compared_matrix
 
 
 # ======================================================================================================================
@@ -310,7 +309,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
         for k, nmf_result in nmf_results.items():
             print_log('Computing clustering score for k={} using method {} ...'.format(k, method))
 
-            assignments = {}  # dict (key: assignemnt index; value: samples)
+            assignments = {}  # dict (key: assignment index; value: samples)
             # Cluster of a sample is the index with the highest value in corresponding H column
             for assigned_sample in zip(np.argmax(nmf_result['H'], axis=0), matrix):
                 if assigned_sample[0] not in assignments:

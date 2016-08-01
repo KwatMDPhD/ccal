@@ -79,22 +79,22 @@ def add_jitter(vectors, jitter=1E-10):
     return jittered_vectors
 
 
-def normalize_pandas_object(pandas_obj):
+def standardize_pandas_object(pandas_obj):
     """
-    Normalize a pandas object (by row for a DataFrame).
+    Standardize a pandas object (by row for a DataFrame).
     :param pandas_obj: pandas DataFrame or Series
     :return: pandas DataFrame or Series
     """
-    normalized = pandas_obj.copy()
-    if isinstance(normalized, pd.DataFrame):
-        for i, (idx, s) in enumerate(normalized.iterrows()):
+    standardized = pandas_obj.copy()
+    if isinstance(standardized, pd.DataFrame):
+        for i, (idx, s) in enumerate(standardized.iterrows()):
             mean = s.mean()
             std = s.std()
             for j, v in enumerate(s):
-                normalized.ix[i, j] = (v - mean) / std
-    elif isinstance(normalized, pd.Series):
-        normalized = (normalized - normalized.mean()) / normalized.std()
-    return normalized
+                standardized.ix[i, j] = (v - mean) / std
+    elif isinstance(standardized, pd.Series):
+        standardized = (standardized - standardized.mean()) / standardized.std()
+    return standardized
 
 
 # ======================================================================================================================
