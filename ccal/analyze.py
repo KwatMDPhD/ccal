@@ -218,36 +218,30 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
     return scores.sort_values(metric, ascending=ascending)
 
 
-def compare_matrices(matrix1, matrix2, is_distance=False, plot=False, figure_filename=None):
+def compare_matrices(matrix1, matrix2, axis=0, function=information_coefficient, is_distance=False):
     """
     Make association or distance matrix of the rows of `matrix1` and `matrix2`.
     :param matrix1: pandas DataFrame,
     :param matrix2: pandas DataFrame,
+    :param axis: int, 0 for row-wise and 1 for column-wise
+    :param function: function, function for computing association or dissociation
     :param is_distance: bool, True for distance and False for association
-    :param plot: bool, plot or not
-    :param figure_filename: str, file path to save the figure
-    :return:
+    :return: pandas DataFrame
     """
-    compared_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
-    features1_nrow = matrix1.shape[0]
+    if axis is 1:
+        matrix1 = matrix1.T
+        matrix2 = matrix2.T
 
+    compared_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
+    nrow = matrix1.shape[0]
     for i, (i1, r1) in enumerate(matrix1.iterrows()):
-        print_log('Features 1 {} ({}/{}) vs. features 2 ...'.format(i1, i + 1, features1_nrow))
+        print_log('Comparing {} ({}/{}) vs. ...'.format(i1, i + 1, nrow))
         for i2, r2 in matrix2.iterrows():
-            compared_matrix.ix[i1, i2] = information_coefficient(r1, r2)
+            compared_matrix.ix[i1, i2] = function(r1, r2)
+
     if is_distance:
         print_log('Converting association to is_distance (is_distance = 1 - association) ...')
         compared_matrix = 1 - compared_matrix
-
-    if plot:
-        print_log('Plotting the resulting matrix ...')
-        ax = sns.clustermap(compared_matrix, cmap=CMAP_CONTINUOUS)
-        plt.setp(ax.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
-        plt.setp(ax.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
-        if figure_filename:
-            establish_path(figure_filename)
-            compared_matrix.to_csv(figure_filename, sep='\t')
-            print_log('Saved the resulting figure as {}.'.format(figure_filename))
 
     return compared_matrix
 
