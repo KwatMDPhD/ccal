@@ -228,6 +228,7 @@ def compare_matrices(matrix1, matrix2, axis=0, function=information_coefficient,
     :param is_distance: bool, True for distance and False for association
     :return: pandas DataFrame
     """
+    # TODO: check if the original matrices change; may cause problems
     if axis is 1:
         matrix1 = matrix1.T
         matrix2 = matrix2.T
