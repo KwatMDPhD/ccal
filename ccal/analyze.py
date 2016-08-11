@@ -25,17 +25,16 @@ import math
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-from statsmodels.sandbox.stats.multicomp import multipletests
 from scipy.spatial import distance
+from scipy.cluster.hierarchy import linkage, fcluster, cophenet
 from scipy.spatial.distance import pdist
-from scipy.cluster.hierarchy import linkage, cophenet
+from statsmodels.sandbox.stats.multicomp import multipletests
 from sklearn.decomposition import NMF
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.cluster import AgglomerativeClustering
 
 from . import SEED
-from .support import print_log, establish_path
-from .visualize import CMAP_CONTINUOUS, plot_nmf_result, plot_features_and_reference
+from .support import print_log, establish_path, standardize_pandas_object
+from .visualize import plot_nmf_result, plot_features_and_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 
 
@@ -384,22 +383,50 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
 # ======================================================================================================================
 # Onco GPS functions
 # ======================================================================================================================
-def oncogps_define_state():
-    """
-    Compute the OncoGPS states by consensus clustering.
-    :return:
-    """
+def get_states_from_h(h, ks, nclustering=10, filename=None):
+    # Standardize H and clip values less than -3 and more than 3
+    standardized_h = standardize_pandas_object(h)
+    standardized_clipped_h = standardized_h.clip(-3, 3)
 
+    # Get association between samples
+    sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, axis=1)
 
-def oncogps_map():
-    """
-    Plot and map OncoGPS.
-    :return:
-    """
+    # Assign labels using each k
+    labels = pd.DataFrame(index=ks, columns=list(sample_associations.index) + ['cophenetic_correlation'])
+    labels.index.name = 'state'
+    for k in ks:
+        print_log('Clustering with k = {} ...'.format(k))
 
+        # For nclustering times, cluster sample associations and assign labels using this k
+        nclustering_labels = pd.DataFrame(index=range(nclustering), columns=sample_associations.index)
+        for i in range(nclustering):
+            print_log('\tClustering sample associations and assigning labels ({}/{}) ...'.format(i, nclustering))
+            ward = AgglomerativeClustering(n_clusters=k)
+            ward.fit(sample_associations)
+            nclustering_labels.iloc[i, :] = ward.labels_
 
-def oncogps_populate_map():
-    """
-    Populate samples on a Onco GPS map with features.
-    :return:
-    """
+        # Count co-clustering between samples
+        ncoclusterings = pd.DataFrame(index=nclustering_labels.columns, columns=nclustering_labels.columns)
+        ncoclusterings.fillna(0, inplace=True)
+        for i, s in nclustering_labels.iterrows():
+            print_log('\tCounting co-clustering between samples ({}/{}) ...'.format(i, nclustering))
+            for i in s.index:
+                for j in s.index:
+                    if i == j or s.ix[i] == s.ix[j]:
+                        ncoclusterings.ix[i, j] += 1
+
+        # Normalize by the nclustering and convert to distances
+        distances = 1 - ncoclusterings / nclustering
+
+        # Cluster the distances and assign the final label using this k
+        ward = linkage(distances, method='ward')
+        labels_ = fcluster(ward, k, criterion='maxclust')
+        labels.ix[k, sample_associations.index] = labels_
+
+        # Compute the cophenetic correlation, the correlation between cophenetic and Euclidian distances between samples
+        labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
+
+    if filename:
+        labels.to_csv(filename, sep='\t')
+
+    return labels.iloc[:, :-1], labels.iloc[:, -1:]

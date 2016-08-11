@@ -21,9 +21,18 @@ Plotting module for CCAL.
 """
 import os
 import math
+import rpy2.robjects as ro
+from rpy2.robjects.numpy2ri import numpy2ri
 
-import pandas as pd
+ro.conversion.py2ri = numpy2ri
+from rpy2.robjects.packages import importr
+
+mass = importr('MASS')
+
 import numpy as np
+import pandas as pd
+from sklearn import manifold
+from scipy.spatial import Delaunay, ConvexHull
 import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -43,7 +52,7 @@ CMAP_CATEGORICAL.set_bad(BAD_COLOR)
 CMAP_BINARY = sns.light_palette('black', n_colors=2, as_cmap=True)
 CMAP_BINARY.set_bad(BAD_COLOR)
 
-DPI = 900
+DPI = 1000
 
 
 # ======================================================================================================================
@@ -243,3 +252,177 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
 
     if output_filename:
         plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
+
+
+def map_onco_gps(h, states, sample_states, filename=None, dpi=DPI,
+                 figure_size=(10, 8), ax_space=0.9, coordinates_margin_factor=1 / 24, ngrids=100,
+                 title='Onco-GPS', title_fontsize=24, title_fontcolor='#000726',
+                 delaunay_linewidth=1, delaunay_linecolor='#000000',
+                 component_markersize=13, component_markerfacecolor='#000726',
+                 component_markeredgewidth=2, component_markeredgecolor='#ffffff',
+                 component_text_verticalshift=1.3, component_fontsize=16,
+                 sample_stretch=2, sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
+                 contour_n=30, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
+                 background_max_alpha=1, background_markersize=5.55,
+                 legend_markersize=10, legend_fontsize=13):
+    # Standardize H and clip values less than -3 and more than 3
+    standardized_h = standardize_pandas_object(h)
+    standardized_clipped_h = standardized_h.clip(-3, 3)
+
+    # Project the H's components from <nsample>D to 2D, getting the x & y coordinates
+    # TODO: freeze random seed
+    mds = manifold.MDS()
+    components_coordinates = mds.fit_transform(standardized_clipped_h)
+
+    # Delaunay triangulate the components' 2D projected coordinates
+    delaunay = Delaunay(components_coordinates)
+
+    # Compute convexhull for the components' 2D projected coordinates
+    convexhull = ConvexHull(components_coordinates)
+    convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
+
+    # Sample and their state labels and x & y coordinates computed using Delaunay triangulation simplices
+    samples = pd.DataFrame(index=h.columns, columns=['states', 'x', 'y'])
+
+    # Get sample states
+    samples['state'] = sample_states
+
+    # Get sample x & y coordinates using Delaunay triangulation simplices
+    for sample in samples.index:
+        col = h.ix[:, sample]
+        third = col.sort_values()[-3]
+        col = col.mask(col < third, other=0)
+
+        x = sum(col ** sample_stretch * components_coordinates[:, 0]) / sum(col ** sample_stretch)
+        y = sum(col ** sample_stretch * components_coordinates[:, 1]) / sum(col ** sample_stretch)
+        samples.ix[sample, ['x', 'y']] = x, y
+
+    # Set x & y coordinate boundaries
+    xcoordinates = np.concatenate((components_coordinates[:, 0], np.array(samples.ix[:, 'x'])))
+    xmin = min(xcoordinates)
+    xmax = max(xcoordinates)
+    xmargin = (xmax - xmin) * coordinates_margin_factor
+    xmin -= xmargin
+    xmax += xmargin
+    ycoordinates = np.concatenate((components_coordinates[:, 1], np.array(samples.ix[:, 'y'])))
+    ymin = min(ycoordinates)
+    ymax = max(ycoordinates)
+    ymargin = (ymax - ymin) * coordinates_margin_factor
+    ymin -= ymargin
+    ymax += ymargin
+
+    # Make x & y grids
+    xgrids = np.linspace(xmin, xmax, ngrids)
+    ygrids = np.linspace(ymin, ymax, ngrids)
+
+    # Get KDE for each state using bandwidth created from all states' x & y coordinates
+    kdes = np.zeros((states + 1, ngrids, ngrids))
+    bandwidth_x = mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0]
+    bandwidth_y = mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]
+    bandwidths = np.array([bandwidth_x, bandwidth_y]) / 2
+    for s in sorted(samples.ix[:, 'state'].unique()):
+        coordiantes = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
+        x = np.array(coordiantes.ix[:, 'x'], dtype=float)
+        y = np.array(coordiantes.ix[:, 'y'], dtype=float)
+        kde = mass.kde2d(x, y, bandwidths, n=np.array([ngrids]), lims=np.array([xmin, xmax, ymin, ymax]))
+        kdes[s] = np.array(kde[2])
+
+        # Save x & y coordinates used for KDE (same for all states' KDEs)
+        xkde = np.array(kde[0])
+        ykde = np.array(kde[1])
+
+    # Assign the best KDE probability and state for each grid intersection
+    grid_probabilities = np.zeros((ngrids, ngrids))
+    grid_states = np.empty((ngrids, ngrids))
+    for i in range(ngrids):
+        for j in range(ngrids):
+            grid_probabilities[i, j] = max(kdes[:, j, i])
+            grid_states[i, j] = np.argmax(kdes[:, i, j])
+
+    # Set up figure
+    figure = plt.figure(figsize=figure_size)
+
+    # Set up axes
+    gridspec = mpl.gridspec.GridSpec(10, 11)
+    ax_title = plt.subplot(gridspec[0, :])
+    ax_title.axis('off')
+    ax_map = plt.subplot(gridspec[1:, :10])
+    ax_map.axis('off')
+    ax_legend = plt.subplot(gridspec[1:, 10:])
+    ax_legend.axis([0, 1, 0, 1])
+    ax_legend.axis('off')
+
+    # Plot title
+    ax_title.text(0.5, ax_space, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold',
+                  horizontalalignment='center')
+
+    # Plot components
+    ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], linestyle='', marker='D',
+                markersize=component_markersize, markerfacecolor=component_markerfacecolor,
+                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, zorder=6)
+
+    # Plot component labels
+    for i in range(components_coordinates.shape[0]):
+        if convexhull_region.contains_point(
+                (components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift)):
+            x, y = components_coordinates[i, 0], components_coordinates[i, 1] + component_text_verticalshift
+        else:
+            x, y = components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift
+        ax_map.text(x, y, standardized_clipped_h.index[i],
+                    fontsize=component_fontsize, weight='bold', color=component_markerfacecolor,
+                    horizontalalignment='center', verticalalignment='center', zorder=6)
+
+    # Plot Delaunay triangulation
+    ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
+                   linewidth=delaunay_linewidth, color=delaunay_linecolor, zorder=4)
+
+    # Plot samples
+    for i, (idx, s) in enumerate(samples.iterrows()):
+        ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
+                    markerfacecolor=CMAP_CATEGORICAL(int(s.ix['state'] / states * 255)),
+                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=5)
+
+    # Plot contours
+    masked_coordinates = []
+    for i in range(ngrids):
+        for j in range(ngrids):
+            if not convexhull_region.contains_point((xkde[i], ykde[j])):
+                masked_coordinates.append([i, j])
+    masked_coordinates = np.array(masked_coordinates)
+    z = grid_probabilities.copy()
+    z[masked_coordinates[:, 0], masked_coordinates[:, 1]] = np.nan
+    ax_map.contour(xkde, ykde, z, contour_n,
+                   linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
+    ax_map.contour(xkde, ykde, grid_probabilities, contour_n,
+                   linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
+
+    # Plot background
+    for i in range(ngrids):
+        for j in range(ngrids):
+            if convexhull_region.contains_point((xkde[i], ykde[j])):
+                # Normalize color
+                background_color = CMAP_CATEGORICAL(int(grid_states[i, j] / states * 255))
+
+                # Background color is less saturated than the sample color
+                background_alpha = min(background_max_alpha, (grid_probabilities[i, j] - grid_probabilities.min()) / (
+                    grid_probabilities.max() - grid_probabilities.min()))
+
+                ax_map.plot(xkde[i], ykde[j], marker='s', markersize=background_markersize,
+                            markerfacecolor=background_color, alpha=background_alpha, zorder=1)
+            else:
+                ax_map.plot(xkde[i], ykde[j], marker='s', markersize=background_markersize * 1.1, markerfacecolor='w',
+                            zorder=3)
+
+    # Plot legends
+    for i, state in enumerate(sorted(samples.ix[:, 'state'].unique())):
+        y = 1 - (i + 1) / (states + 1)
+        c = CMAP_CATEGORICAL(int(state / states * 255))
+        ax_legend.plot(ax_space, y, marker='s', markersize=legend_markersize, markerfacecolor=c, zorder=5)
+        ax_legend.text(ax_space * 1.5, y, 'State {}'.format(state), fontsize=legend_fontsize, weight='bold', color=c,
+                       verticalalignment='center')
+
+    if filename:
+        figure.subplots_adjust(left=0.06, right=0.9, top=0.97, bottom=0.03)
+        figure.savefig(filename, dpi=dpi)
+
+    plt.show()
