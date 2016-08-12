@@ -61,7 +61,7 @@ DPI = 1000
 def plot_features_against_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
                                     title=None, title_size=16, annotation_header=None, annotation_label_size=9,
                                     plot_colname=False,
-                                    figure_filename=None):
+                                    figure_filename=None, dpi=DPI):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
@@ -75,6 +75,7 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
     :param annotation_label_size: int, annotation text size
     :param plot_colname: bool, plot column names or not
     :param figure_filename: str, file path prefix to save the figure
+    :param dpi: int, dots-per-inch for the output figure
     :return: None
     """
     features_cmap, features_min, features_max = _setup_cmap(features, features_type)
@@ -148,7 +149,7 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
 
     if figure_filename:
         establish_path(os.path.split(figure_filename)[0])
-        fig.savefig(figure_filename, dpi=DPI, bbox_inches='tight')
+        fig.savefig(figure_filename, dpi=dpi, bbox_inches='tight')
         print_log('Saved the figure as {}.'.format(figure_filename))
 
 
@@ -167,7 +168,7 @@ def _setup_cmap(pandas_obj, data_type):
     return data_cmap, data_min, data_max
 
 
-def plot_nmf_result(nmf_results, k, figsize=(7, 5), title=None, output_filename=None):
+def plot_nmf_result(nmf_results, k, figsize=(7, 5), title=None, output_filename=None, dpi=DPI):
     """
     Plot NMF results from cca.library.cca.nmf function.
     :param nmf_results: dict, result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
@@ -175,6 +176,7 @@ def plot_nmf_result(nmf_results, k, figsize=(7, 5), title=None, output_filename=
     :param figsize: tuple (width, height),
     :param title: str, figure title
     :param output_filename: str, file path to save the figure
+    :param dpi: int, dots-per-inch for the output figure
     :return: None
     """
     # Plot W and H
@@ -193,7 +195,7 @@ def plot_nmf_result(nmf_results, k, figsize=(7, 5), title=None, output_filename=
     plt.show()
 
     if output_filename:
-        plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
+        plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
 
 
 def plot_nmf_scores(scores, figsize=(7, 5), title=None, output_filename=None):
@@ -254,7 +256,7 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
         plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
 
 
-def map_onco_gps(h, states, sample_states, filename=None, dpi=DPI,
+def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
                  figure_size=(10, 8), ax_space=0.9, coordinates_margin_factor=1 / 24, ngrids=100,
                  title='Onco-GPS', title_fontsize=24, title_fontcolor='#000726',
                  delaunay_linewidth=1, delaunay_linecolor='#000000',
@@ -266,6 +268,43 @@ def map_onco_gps(h, states, sample_states, filename=None, dpi=DPI,
                  contour_n=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
                  background_max_alpha=1, background_markersize=5.55,
                  legend_markersize=10, legend_fontsize=13):
+    """
+
+    :param h:
+    :param states:
+    :param sample_states:
+    :param output_filename:
+    :param dpi:
+    :param figure_size:
+    :param ax_space:
+    :param coordinates_margin_factor:
+    :param ngrids:
+    :param title:
+    :param title_fontsize:
+    :param title_fontcolor:
+    :param delaunay_linewidth:
+    :param delaunay_linecolor:
+    :param component_markersize:
+    :param component_markerfacecolor:
+    :param component_markeredgewidth:
+    :param component_markeredgecolor:
+    :param component_text_verticalshift:
+    :param component_fontsize:
+    :param kde_bandwidths_factor:
+    :param sample_stretch:
+    :param sample_markersize:
+    :param sample_markeredgewidth:
+    :param sample_markeredgecolor:
+    :param contour_n:
+    :param contour_linewidth:
+    :param contour_linecolor:
+    :param contour_alpha:
+    :param background_max_alpha:
+    :param background_markersize:
+    :param legend_markersize:
+    :param legend_fontsize:
+    :return:
+    """
     # Standardize H and clip values less than -3 and more than 3
     standardized_h = standardize_pandas_object(h)
     standardized_clipped_h = standardized_h.clip(-3, 3)
@@ -422,8 +461,8 @@ def map_onco_gps(h, states, sample_states, filename=None, dpi=DPI,
         ax_legend.text(ax_space * 1.5, y, 'State {}'.format(state), fontsize=legend_fontsize, weight='bold', color=c,
                        verticalalignment='center')
 
-    if filename:
+    if output_filename:
         figure.subplots_adjust(left=0.06, right=0.9, top=0.97, bottom=0.03)
-        figure.savefig(filename, dpi=dpi)
+        figure.savefig(output_filename, dpi=dpi)
 
     plt.show()

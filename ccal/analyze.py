@@ -35,7 +35,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from . import SEED
-from .support import print_log, establish_path, standardize_pandas_object
+from .support import print_log, establish_path, standardize_pandas_object, compare_matrices
 from .visualize import plot_nmf_result, plot_features_against_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 
@@ -219,35 +219,6 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
     return scores.sort_values(metric, ascending=ascending)
 
 
-def compare_matrices(matrix1, matrix2, axis=0, function=information_coefficient, is_distance=False):
-    """
-    Make association or distance matrix of the rows of `matrix1` and `matrix2`.
-    :param matrix1: pandas DataFrame,
-    :param matrix2: pandas DataFrame,
-    :param axis: int, 0 for row-wise and 1 for column-wise
-    :param function: function, function for computing association or dissociation
-    :param is_distance: bool, True for distance and False for association
-    :return: pandas DataFrame
-    """
-    # TODO: check if the original matrices change; may cause problems
-    if axis is 1:
-        matrix1 = matrix1.T
-        matrix2 = matrix2.T
-
-    compared_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
-    nrow = matrix1.shape[0]
-    for i, (i1, r1) in enumerate(matrix1.iterrows()):
-        print_log('Comparing {} ({}/{}) vs. ...'.format(i1, i + 1, nrow))
-        for i2, r2 in matrix2.iterrows():
-            compared_matrix.ix[i1, i2] = function(r1, r2)
-
-    if is_distance:
-        print_log('Converting association to is_distance (is_distance = 1 - association) ...')
-        compared_matrix = 1 - compared_matrix
-
-    return compared_matrix
-
-
 # ======================================================================================================================
 # NMF
 # ======================================================================================================================
@@ -382,22 +353,22 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
     return nmf_results, scores
 
 
-def nmf_bcv(x, nmf, folds=2, reps=1):
+def nmf_bcv(x, nmf, nfold=2, nrepeat=1):
     """
     Bi-crossvalidation of NMF as in Owen and Perry (2009).
     Note that this implementation does not require the intermediates to be non-negative. Details of how to add this
-    constraint can be found on page 11 (beginning of section 5) of Owen and Perry (2009). The authors did not seem to
+    constraint can be found on page 11 (beginning of section 5) of Owen and Perry (2009); the authors did not seem to
     consider it especially important for quality of model selection.
-    :param x: data array to be decomposed, (n_samples, n_features)
+    :param x: data array to be decomposed, (nsamples, nfeatures)
     :param nmf: sklearn NMF object, already initialized
-    :param folds: number of folds for cross-validation (O&P suggest 2)
-    :param reps: how many times to repeat, to average out variation based on which rows and columns were held out
-    :return: mean_error, mean mse across reps
+    :param nfold: number of folds for cross-validation (O&P suggest 2)
+    :param nrepeat: how many times to repeat, to average out variation based on which rows and columns were held out
+    :return: mean_error, mean mse across nrepeat
     """
     errors = []
-    for rep in range(reps):
-        kf_rows = KFold(x.shape[0], folds, shuffle=True)
-        kf_cols = KFold(x.shape[1], folds, shuffle=True)
+    for rep in range(nrepeat):
+        kf_rows = KFold(x.shape[0], nfold, shuffle=True)
+        kf_cols = KFold(x.shape[1], nfold, shuffle=True)
         for row_train, row_test in kf_rows:
             for col_train, col_test in kf_cols:
                 a = x[row_test][:, col_test]
@@ -424,12 +395,21 @@ def nmf_bcv(x, nmf, folds=2, reps=1):
 # Onco GPS functions
 # ======================================================================================================================
 def get_states_from_h(h, ks, nclustering=10, filename=None):
+    """
+    Cluster H matrix's samples into k clusters.
+    :param h: pandas DataFrame (n_component, n_sample), H matrix from NMF
+    :param ks: array-like, list of ks used for clustering
+    :param nclustering: int, number of consensus clustering to perform
+    :param filename: str, file path to save the assignment matrix (n_k, n_samples)
+    :return: pandas DataFrame (n_k, n_samples), array-like (n_k), assignment matrix and the cophenetic correlations
+    """
     # Standardize H and clip values less than -3 and more than 3
     standardized_h = standardize_pandas_object(h)
     standardized_clipped_h = standardized_h.clip(-3, 3)
 
     # Get association between samples
-    sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, axis=1)
+    sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, information_coefficient,
+                                           axis=1)
 
     # Assign labels using each k
     labels = pd.DataFrame(index=ks, columns=list(sample_associations.index) + ['cophenetic_correlation'])
@@ -471,11 +451,10 @@ def get_states_from_h(h, ks, nclustering=10, filename=None):
 
     return labels.iloc[:, :-1], labels.iloc[:, -1:]
 
-# ======================================================================================================================
-# GSEA and ssGSEA
-# ======================================================================================================================
 
-
+# ======================================================================================================================
+# GSEA functions
+# ======================================================================================================================
 def ssgsea(exp_data, sets_to_genes, alpha=0.25):
     """
     Single-sample GSEA as described in Barbie et al. (2009)
@@ -558,11 +537,10 @@ def _base_gsea(ranked_genes, sets_to_genes, collect_func, alpha=0.25):
         enrichment_scores[set_name] = enrichment_score
     return pd.Series(enrichment_scores)
 
+
 # ======================================================================================================================
 # Bayesian classifier
 # ======================================================================================================================
-
-
 class BayesianClassifier(BaseEstimator, ClassifierMixin):
     """
     Note: still differs from Pablo's R version, so it needs fixing, but hopefully it's a headstart.
@@ -583,7 +561,6 @@ class BayesianClassifier(BaseEstimator, ClassifierMixin):
 
     def fit(self, x, y):
         """
-
         :param x: Pandas DataFrame, (n_samples, n_features)
         :param y: Pandas Series, (n_samples,)
         :return: self
@@ -623,7 +600,7 @@ class BayesianClassifier(BaseEstimator, ClassifierMixin):
                 evidence = np.log(odds / prior_odds)
                 feature_evidence[k].loc[:, feature] = evidence
                 log_odds.loc[:, k] += evidence
-        posterior_probs = np.exp(log_odds)/(np.exp(log_odds) + 1)
+        posterior_probs = np.exp(log_odds) / (np.exp(log_odds) + 1)
         if return_all:
             return posterior_probs, feature_evidence
         if normalize:
@@ -634,3 +611,7 @@ class BayesianClassifier(BaseEstimator, ClassifierMixin):
         posterior_probs = self.predict_proba(x)
         max_idxs = np.argmax(posterior_probs.values, axis=1)
         return pd.Series(self.classes_[max_idxs], index=x.index)
+
+# ======================================================================================================================
+# Others
+# ======================================================================================================================
