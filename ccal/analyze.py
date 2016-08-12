@@ -30,6 +30,8 @@ from scipy.cluster.hierarchy import linkage, fcluster, cophenet
 from scipy.spatial.distance import pdist
 from statsmodels.sandbox.stats.multicomp import multipletests
 from sklearn.decomposition import NMF
+from sklearn.cross_validation import KFold
+from sklearn.metrics import mean_squared_error
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator, ClassifierMixin
