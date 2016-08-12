@@ -256,18 +256,18 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
         plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
 
 
-def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
-                 figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
-                 title='Onco-GPS', title_fontsize=24, title_fontcolor='#000726',
-                 delaunay_linewidth=1, delaunay_linecolor='#000000',
-                 component_markersize=13, component_markerfacecolor='#000726',
-                 component_markeredgewidth=2, component_markeredgecolor='#ffffff',
-                 component_text_verticalshift=1.3, component_fontsize=16,
-                 kde_bandwidths_factor=1.5, sample_stretch_factor=2,
-                 sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                 n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
-                 background_max_alpha=1, background_markersize=5.55,
-                 legend_markersize=10, legend_fontsize=13):
+def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
+                  figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
+                  title='Onco-GPS', title_fontsize=24, title_fontcolor='#000726',
+                  delaunay_linewidth=1, delaunay_linecolor='#000000',
+                  component_markersize=13, component_markerfacecolor='#000726',
+                  component_markeredgewidth=2, component_markeredgecolor='#ffffff',
+                  component_text_verticalshift=1.3, component_fontsize=16,
+                  kde_bandwidths_factor=1.5, sample_stretch_factor=2,
+                  sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
+                  n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
+                  background_max_alpha=1, background_markersize=5.55,
+                  legend_markersize=10, legend_fontsize=13):
     """
     :param h: pandas DataFrame (n_nmf_component, n_samples),
     :param states: int,
