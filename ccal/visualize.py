@@ -257,60 +257,60 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
 
 
 def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
-                 figure_size=(10, 8), ax_space=0.9, coordinates_margin_factor=1 / 24, ngrids=100,
+                 figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
                  title='Onco-GPS', title_fontsize=24, title_fontcolor='#000726',
                  delaunay_linewidth=1, delaunay_linecolor='#000000',
                  component_markersize=13, component_markerfacecolor='#000726',
                  component_markeredgewidth=2, component_markeredgecolor='#ffffff',
                  component_text_verticalshift=1.3, component_fontsize=16,
-                 kde_bandwidths_factor=1.5, sample_stretch=2,
+                 kde_bandwidths_factor=1.5, sample_stretch_factor=2,
                  sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                 contour_n=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
+                 n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
                  background_max_alpha=1, background_markersize=5.55,
                  legend_markersize=10, legend_fontsize=13):
     """
-    :param h:
-    :param states:
-    :param sample_states:
-    :param output_filename:
-    :param dpi:
-    :param figure_size:
-    :param ax_space:
-    :param coordinates_margin_factor:
-    :param ngrids:
-    :param title:
-    :param title_fontsize:
-    :param title_fontcolor:
-    :param delaunay_linewidth:
-    :param delaunay_linecolor:
-    :param component_markersize:
-    :param component_markerfacecolor:
-    :param component_markeredgewidth:
-    :param component_markeredgecolor:
-    :param component_text_verticalshift:
-    :param component_fontsize:
-    :param kde_bandwidths_factor:
-    :param sample_stretch:
-    :param sample_markersize:
-    :param sample_markeredgewidth:
-    :param sample_markeredgecolor:
-    :param contour_n:
-    :param contour_linewidth:
-    :param contour_linecolor:
-    :param contour_alpha:
-    :param background_max_alpha:
-    :param background_markersize:
-    :param legend_markersize:
-    :param legend_fontsize:
-    :return:
+    :param h: pandas DataFrame (n_nmf_component, n_samples),
+    :param states: int,
+    :param sample_states: array-like (n_samples),
+    :param output_filename: str,
+    :param dpi: int,
+    :param figure_size: array_like (2),
+    :param ax_spacing: float,
+    :param coordinates_extending_factor: float,
+    :param n_grid: int,
+    :param title: str,
+    :param title_fontsize: float,
+    :param title_fontcolor: matplotlib compatible color expression,
+    :param delaunay_linewidth: float,
+    :param delaunay_linecolor: matplotlib compatible color expression,
+    :param component_markersize: float,
+    :param component_markerfacecolor: matplotlib compatible color expression,
+    :param component_markeredgewidth: float,
+    :param component_markeredgecolor: matplotlib compatible color expression,
+    :param component_text_verticalshift: float,
+    :param component_fontsize: float,
+    :param kde_bandwidths_factor: float,
+    :param sample_stretch_factor: float,
+    :param sample_markersize: float,
+    :param sample_markeredgewidth: float,
+    :param sample_markeredgecolor: matplotlib compatible color expression
+    :param n_contour: int,
+    :param contour_linewidth: float,
+    :param contour_linecolor: float,
+    :param contour_alpha: float,
+    :param background_max_alpha: float,
+    :param background_markersize: float,
+    :param legend_markersize: float,
+    :param legend_fontsize: float,
+    :return: None
     """
     # Standardize H and clip values less than -3 and more than 3
     standardized_h = standardize_pandas_object(h)
     standardized_clipped_h = standardized_h.clip(-3, 3)
 
     # Project the H's components from <nsample>D to 2D, getting the x & y coordinates
-    # TODO: freeze random seed
     mds = manifold.MDS()
+    # TODO: freeze random seed
     components_coordinates = mds.fit_transform(standardized_clipped_h)
 
     # Delaunay triangulate the components' 2D projected coordinates
@@ -332,30 +332,30 @@ def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
         third = col.sort_values()[-3]
         col = col.mask(col < third, other=0)
 
-        x = sum(col ** sample_stretch * components_coordinates[:, 0]) / sum(col ** sample_stretch)
-        y = sum(col ** sample_stretch * components_coordinates[:, 1]) / sum(col ** sample_stretch)
+        x = sum(col ** sample_stretch_factor * components_coordinates[:, 0]) / sum(col ** sample_stretch_factor)
+        y = sum(col ** sample_stretch_factor * components_coordinates[:, 1]) / sum(col ** sample_stretch_factor)
         samples.ix[sample, ['x', 'y']] = x, y
 
     # Set x & y coordinate boundaries
-    xcoordinates = np.concatenate((components_coordinates[:, 0], np.array(samples.ix[:, 'x'])))
+    xcoordinates = components_coordinates[:, 0]
     xmin = min(xcoordinates)
     xmax = max(xcoordinates)
-    xmargin = (xmax - xmin) * coordinates_margin_factor
+    xmargin = (xmax - xmin) * coordinates_extending_factor
     xmin -= xmargin
     xmax += xmargin
-    ycoordinates = np.concatenate((components_coordinates[:, 1], np.array(samples.ix[:, 'y'])))
+    ycoordinates = components_coordinates[:, 1]
     ymin = min(ycoordinates)
     ymax = max(ycoordinates)
-    ymargin = (ymax - ymin) * coordinates_margin_factor
+    ymargin = (ymax - ymin) * coordinates_extending_factor
     ymin -= ymargin
     ymax += ymargin
 
     # Make x & y grids
-    xgrids = np.linspace(xmin, xmax, ngrids)
-    ygrids = np.linspace(ymin, ymax, ngrids)
+    xgrids = np.linspace(xmin, xmax, n_grid)
+    ygrids = np.linspace(ymin, ymax, n_grid)
 
     # Get KDE for each state using bandwidth created from all states' x & y coordinates
-    kdes = np.zeros((states + 1, ngrids, ngrids))
+    kdes = np.zeros((states + 1, n_grid, n_grid))
     bandwidth_x = mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0]
     bandwidth_y = mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]
     bandwidths = np.array([bandwidth_x * kde_bandwidths_factor, bandwidth_y * kde_bandwidths_factor]) / 2
@@ -363,18 +363,22 @@ def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
         coordiantes = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
         x = np.array(coordiantes.ix[:, 'x'], dtype=float)
         y = np.array(coordiantes.ix[:, 'y'], dtype=float)
-        kde = mass.kde2d(x, y, bandwidths, n=np.array([ngrids]), lims=np.array([xmin, xmax, ymin, ymax]))
+        kde = mass.kde2d(x, y, bandwidths, n=np.array([n_grid]), lims=np.array([xmin, xmax, ymin, ymax]))
         kdes[s] = np.array(kde[2])
 
         # Save x & y coordinates used for KDE (same for all states' KDEs)
-        xkde = np.array(kde[0])
-        ykde = np.array(kde[1])
+        xkde_grids = np.array(kde[0])
+        ykde_grids = np.array(kde[1])
+
+        # TODO: remove assertion
+        assert xgrids == xkde_grids
+        assert ygrids == ykde_grids
 
     # Assign the best KDE probability and state for each grid intersection
-    grid_probabilities = np.zeros((ngrids, ngrids))
-    grid_states = np.empty((ngrids, ngrids))
-    for i in range(ngrids):
-        for j in range(ngrids):
+    grid_probabilities = np.zeros((n_grid, n_grid))
+    grid_states = np.empty((n_grid, n_grid))
+    for i in range(n_grid):
+        for j in range(n_grid):
             grid_probabilities[i, j] = max(kdes[:, j, i])
             grid_states[i, j] = np.argmax(kdes[:, i, j])
 
@@ -392,8 +396,8 @@ def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
     ax_legend.axis('off')
 
     # Plot title
-    ax_title.text(0.5, ax_space, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold',
-                  horizontalalignment='center')
+    ax_title.text(0.5, ax_spacing, title,
+                  fontsize=title_fontsize, color=title_fontcolor, weight='bold', horizontalalignment='center')
 
     # Plot components
     ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], linestyle='', marker='D',
@@ -408,7 +412,7 @@ def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
         else:
             x, y = components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift
         ax_map.text(x, y, standardized_clipped_h.index[i],
-                    fontsize=component_fontsize, weight='bold', color=component_markerfacecolor,
+                    fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
                     horizontalalignment='center', verticalalignment='center', zorder=6)
 
     # Plot Delaunay triangulation
@@ -422,43 +426,42 @@ def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
                     markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=5)
 
     # Plot contours
-    masked_coordinates = []
-    for i in range(ngrids):
-        for j in range(ngrids):
-            if not convexhull_region.contains_point((xkde[i], ykde[j])):
-                masked_coordinates.append([i, j])
-    masked_coordinates = np.array(masked_coordinates)
-    z = grid_probabilities.copy()
-    z[masked_coordinates[:, 0], masked_coordinates[:, 1]] = np.nan
-    ax_map.contour(xkde, ykde, z, contour_n,
-                   linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
-    ax_map.contour(xkde, ykde, grid_probabilities, contour_n,
+    # TODO: don't draw masked contours
+    # masked_coordinates = []
+    # for i in range(n_grid):
+    #     for j in range(n_grid):
+    #         if not convexhull_region.contains_point((xgrids[i], ygrids[j])):
+    #             masked_coordinates.append([i, j])
+    # masked_coordinates = np.array(masked_coordinates)
+    # z = grid_probabilities.copy()
+    # z[masked_coordinates[:, 0], masked_coordinates[:, 1]] = np.nan
+    # ax_map.contour(xgrids, ygrids, z, n_contour,
+    #                linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
+    ax_map.contour(xgrids, ygrids, grid_probabilities, n_contour,
                    linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
 
     # Plot background
-    for i in range(ngrids):
-        for j in range(ngrids):
-            if convexhull_region.contains_point((xkde[i], ykde[j])):
-                # Normalize color
-                background_color = CMAP_CATEGORICAL(int(grid_states[i, j] / states * 255))
+    for i in range(n_grid):
+        for j in range(n_grid):
+            if convexhull_region.contains_point((xgrids[i], ygrids[j])):
+                c = CMAP_CATEGORICAL(int(grid_states[i, j] / states * 255))
+                a = min(background_max_alpha,
+                        (grid_probabilities[i, j] - grid_probabilities.min()) /
+                        (grid_probabilities.max() - grid_probabilities.min()))
 
-                # Background color is less saturated than the sample color
-                background_alpha = min(background_max_alpha, (grid_probabilities[i, j] - grid_probabilities.min()) / (
-                    grid_probabilities.max() - grid_probabilities.min()))
-
-                ax_map.plot(xkde[i], ykde[j], marker='s', markersize=background_markersize,
-                            markerfacecolor=background_color, alpha=background_alpha, zorder=1)
+                ax_map.plot(xgrids[i], ygrids[j], marker='s',
+                            markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
             else:
-                ax_map.plot(xkde[i], ykde[j], marker='s', markersize=background_markersize * 1.1, markerfacecolor='w',
-                            zorder=3)
+                ax_map.plot(xgrids[i], ygrids[j], marker='s',
+                            markersize=background_markersize * 1.1, markerfacecolor='w', zorder=3)
 
     # Plot legends
     for i, state in enumerate(sorted(samples.ix[:, 'state'].unique())):
         y = 1 - (i + 1) / (states + 1)
         c = CMAP_CATEGORICAL(int(state / states * 255))
-        ax_legend.plot(ax_space, y, marker='s', markersize=legend_markersize, markerfacecolor=c, zorder=5)
-        ax_legend.text(ax_space * 1.5, y, 'State {}'.format(state), fontsize=legend_fontsize, weight='bold', color=c,
-                       verticalalignment='center')
+        ax_legend.plot(ax_spacing, y, marker='s', markersize=legend_markersize, markerfacecolor=c, zorder=5)
+        ax_legend.text(ax_spacing * 1.5, y, 'State {}'.format(state),
+                       fontsize=legend_fontsize, weight='bold', color=c, verticalalignment='center')
 
     if output_filename:
         figure.subplots_adjust(left=0.06, right=0.9, top=0.97, bottom=0.03)
