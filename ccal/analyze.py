@@ -396,11 +396,11 @@ def nmf_bcv(x, nmf, nfold=2, nrepeat=1):
 # ======================================================================================================================
 # Onco GPS functions
 # ======================================================================================================================
-def get_states_from_h(h, states, nclustering=10, filename=None):
+def get_states_from_h(h, n_states, nclustering=10, filename=None):
     """
     Cluster H matrix's samples into k clusters.
     :param h: pandas DataFrame (n_component, n_sample), H matrix from NMF
-    :param states: array-like, list of ks used for clustering states
+    :param n_states: array-like, list of ks used for clustering states
     :param nclustering: int, number of consensus clustering to perform
     :param filename: str, file path to save the assignment matrix (n_k, n_samples)
     :return: pandas DataFrame (n_k, n_samples), array-like (n_k), assignment matrix and the cophenetic correlations
@@ -414,9 +414,9 @@ def get_states_from_h(h, states, nclustering=10, filename=None):
                                            axis=1)
 
     # Assign labels using each k
-    labels = pd.DataFrame(index=states, columns=list(sample_associations.index) + ['cophenetic_correlation'])
+    labels = pd.DataFrame(index=n_states, columns=list(sample_associations.index) + ['cophenetic_correlation'])
     labels.index.name = 'state'
-    for k in states:
+    for k in n_states:
         print_log('Clustering with k = {} ...'.format(k))
 
         # For nclustering times, cluster sample associations and assign labels using this k
