@@ -256,7 +256,7 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
         plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
 
 
-def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
+def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continuous', output_filename=None, dpi=DPI,
                   figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
                   title='Onco-GPS', title_fontsize=24, title_fontcolor='#000726',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
@@ -269,11 +269,12 @@ def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
                   background_max_alpha=0.9, background_markersize=5.55,
                   legend_markersize=10, legend_fontsize=13):
     """
-    :param h: pandas DataFrame (n_nmf_component, n_samples),
-    :param states: int,
-    :param sample_states: array-like (n_samples),
-    :param output_filename: str,
-    :param dpi: int,
+    :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
+    :param n_state: int, number of states to plot
+    :param states: array-like (n_samples), samples' state
+    :param annotations: array-like (n_samples), samples' annotations; samples are plotted based on annotations
+    :param output_filename: str, file path to save the output figure
+    :param dpi: int, dots-per-inch for the output figure
     :param figure_size: array_like (2),
     :param ax_spacing: float,
     :param coordinates_extending_factor: float,
@@ -321,10 +322,14 @@ def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
     convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
 
     # Sample and their state labels and x & y coordinates computed using Delaunay triangulation simplices
-    samples = pd.DataFrame(index=h.columns, columns=['states', 'x', 'y'])
+    samples = pd.DataFrame(index=h.columns, columns=['state', 'x', 'y'])
 
     # Get sample states
-    samples['state'] = sample_states
+    samples['state'] = states
+
+    # Get sample annotations
+    if any(annotations):
+        samples['annotation'] = (np.array(annotations) - min(annotations)) / (max(annotations) - min(annotations))
 
     # Get sample x & y coordinates using Delaunay triangulation simplices
     for sample in samples.index:
@@ -354,8 +359,8 @@ def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
     xgrids = np.linspace(xmin, xmax, n_grid)
     ygrids = np.linspace(ymin, ymax, n_grid)
 
-    # Get KDE for each state using bandwidth created from all states' x & y coordinates
-    kdes = np.zeros((states + 1, n_grid, n_grid))
+    # Get KDE for each state using bandwidth created from all n_state' x & y coordinates
+    kdes = np.zeros((n_state + 1, n_grid, n_grid))
     bandwidth_x = mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0]
     bandwidth_y = mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]
     bandwidths = np.array([bandwidth_x * kde_bandwidths_factor, bandwidth_y * kde_bandwidths_factor]) / 2
@@ -413,9 +418,19 @@ def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
 
     # Plot samples
     for i, (idx, s) in enumerate(samples.iterrows()):
+        if any(annotations):
+            if annotation_type is 'continuous':
+                cmap = CMAP_CONTINUOUS
+            elif annotation_type is 'categorical':
+                cmap = CMAP_CATEGORICAL
+            elif annotation_type is 'binary':
+                cmap = CMAP_BINARY
+            c = cmap(s.ix['annotation'])
+        else:
+            c = CMAP_CATEGORICAL(int(s.ix['state'] / n_state * 255))
         ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
-                    markerfacecolor=CMAP_CATEGORICAL(int(s.ix['state'] / states * 255)),
-                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=5)
+                    markerfacecolor=c, markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
+                    zorder=5)
 
     # Plot contours
     # TODO: don't draw masked contours
@@ -436,7 +451,7 @@ def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
     for i in range(n_grid):
         for j in range(n_grid):
             if convexhull_region.contains_point((xgrids[i], ygrids[j])):
-                c = CMAP_CATEGORICAL(int(grid_states[i, j] / states * 255))
+                c = CMAP_CATEGORICAL(int(grid_states[i, j] / n_state * 255))
                 a = min(background_max_alpha,
                         (grid_probabilities[i, j] - grid_probabilities.min()) /
                         (grid_probabilities.max() - grid_probabilities.min()))
@@ -449,8 +464,8 @@ def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
 
     # Plot legends
     for i, state in enumerate(sorted(samples.ix[:, 'state'].unique())):
-        y = 1 - (i + 1) / (states + 1)
-        c = CMAP_CATEGORICAL(int(state / states * 255))
+        y = 1 - (i + 1) / (n_state + 1)
+        c = CMAP_CATEGORICAL(int(state / n_state * 255))
         ax_legend.plot(ax_spacing, y, marker='s', markersize=legend_markersize, markerfacecolor=c, zorder=5)
         ax_legend.text(ax_spacing * 1.5, y, 'State {}'.format(state),
                        fontsize=legend_fontsize, weight='bold', color=c, verticalalignment='center')
