@@ -34,7 +34,7 @@ from sklearn.cluster import AgglomerativeClustering
 
 from . import SEED
 from .support import print_log, establish_path, standardize_pandas_object
-from .visualize import plot_nmf_result, plot_features_and_reference
+from .visualize import plot_nmf_result, plot_features_against_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 
 
@@ -123,11 +123,11 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
         indices_to_plot = features.index[:nfeatures].tolist() + features.index[-nfeatures:].tolist()
         print_log('Plotting top and bottom {} features vs. reference ...'.format(len(indices_to_plot)))
 
-    plot_features_and_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
-                                features_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
-                                annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
-                                annotation_label_size=annotation_label_size,
-                                plot_colname=plot_colname, figure_filename=figure_filename)
+    plot_features_against_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
+                                    features_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
+                                    annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
+                                    annotation_label_size=annotation_label_size,
+                                    plot_colname=plot_colname, figure_filename=figure_filename)
 
 
 def compute_against_reference(features, ref, metric='information_coef', nfeatures=0, ascending=False,

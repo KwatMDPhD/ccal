@@ -58,10 +58,10 @@ DPI = 1000
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_features_and_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
-                                title=None, title_size=16, annotation_header=None, annotation_label_size=9,
-                                plot_colname=False,
-                                figure_filename=None):
+def plot_features_against_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
+                                    title=None, title_size=16, annotation_header=None, annotation_label_size=9,
+                                    plot_colname=False,
+                                    figure_filename=None):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
@@ -77,8 +77,8 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
     :param figure_filename: str, file path prefix to save the figure
     :return: None
     """
-    features_cmap, features_min, features_max = _setup_heatmap_parameters(features, features_type)
-    ref_cmap, ref_min, ref_max = _setup_heatmap_parameters(ref, ref_type)
+    features_cmap, features_min, features_max = _setup_cmap(features, features_type)
+    ref_cmap, ref_min, ref_max = _setup_cmap(ref, ref_type)
 
     # Normalize
     if features_type is 'continuous':
@@ -152,7 +152,7 @@ def plot_features_and_reference(features, ref, annotations, features_type='conti
         print_log('Saved the figure as {}.'.format(figure_filename))
 
 
-def _setup_heatmap_parameters(pandas_obj, data_type):
+def _setup_cmap(pandas_obj, data_type):
     if data_type is 'continuous':
         data_cmap = CMAP_CONTINUOUS
         data_min, data_max = -3, 3
