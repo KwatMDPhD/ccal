@@ -366,14 +366,6 @@ def plot_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
         kde = mass.kde2d(x, y, bandwidths, n=np.array([n_grid]), lims=np.array([xmin, xmax, ymin, ymax]))
         kdes[s] = np.array(kde[2])
 
-        # Save x & y coordinates used for KDE (same for all states' KDEs)
-        xkde_grids = np.array(kde[0])
-        ykde_grids = np.array(kde[1])
-
-        # TODO: remove assertion
-        assert xgrids == xkde_grids
-        assert ygrids == ykde_grids
-
     # Assign the best KDE probability and state for each grid intersection
     grid_probabilities = np.zeros((n_grid, n_grid))
     grid_states = np.empty((n_grid, n_grid))
