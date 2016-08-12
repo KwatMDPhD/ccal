@@ -269,7 +269,6 @@ def map_onco_gps(h, states, sample_states, output_filename=None, dpi=DPI,
                  background_max_alpha=1, background_markersize=5.55,
                  legend_markersize=10, legend_fontsize=13):
     """
-
     :param h:
     :param states:
     :param sample_states:
