@@ -261,8 +261,9 @@ def map_onco_gps(h, states, sample_states, filename=None, dpi=DPI,
                  component_markersize=13, component_markerfacecolor='#000726',
                  component_markeredgewidth=2, component_markeredgecolor='#ffffff',
                  component_text_verticalshift=1.3, component_fontsize=16,
-                 sample_stretch=2, sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                 contour_n=30, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
+                 kde_bandwidths_factor=1.5, sample_stretch=2,
+                 sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
+                 contour_n=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
                  background_max_alpha=1, background_markersize=5.55,
                  legend_markersize=10, legend_fontsize=13):
     # Standardize H and clip values less than -3 and more than 3
@@ -319,7 +320,7 @@ def map_onco_gps(h, states, sample_states, filename=None, dpi=DPI,
     kdes = np.zeros((states + 1, ngrids, ngrids))
     bandwidth_x = mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0]
     bandwidth_y = mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]
-    bandwidths = np.array([bandwidth_x, bandwidth_y]) / 2
+    bandwidths = np.array([bandwidth_x * kde_bandwidths_factor, bandwidth_y * kde_bandwidths_factor]) / 2
     for s in sorted(samples.ix[:, 'state'].unique()):
         coordiantes = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
         x = np.array(coordiantes.ix[:, 'x'], dtype=float)
