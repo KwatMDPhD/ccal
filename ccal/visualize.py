@@ -328,7 +328,7 @@ def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continu
     samples['state'] = states
 
     # Get sample annotations
-    if any(annotations):
+    if annotations and any(annotations):
         samples['annotation'] = (np.array(annotations) - min(annotations)) / (max(annotations) - min(annotations))
 
     # Get sample x & y coordinates using Delaunay triangulation simplices
@@ -418,7 +418,7 @@ def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continu
 
     # Plot samples
     for i, (idx, s) in enumerate(samples.iterrows()):
-        if any(annotations):
+        if annotations and any(annotations):
             if annotation_type is 'continuous':
                 cmap = CMAP_CONTINUOUS
             elif annotation_type is 'categorical':
