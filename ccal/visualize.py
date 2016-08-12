@@ -256,17 +256,18 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
         plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
 
 
-def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continuous', output_filename=None, dpi=DPI,
+def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
                   figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
-                  title='Onco-GPS', title_fontsize=24, title_fontcolor='#000726',
+                  title='OncoGenic Positional System (Onco-GPS) Map', title_fontsize=24, title_fontcolor='#3326c0',
+                  subtitle_fontsize=16, subtitle_fontcolor='#4E41D9',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   component_markersize=13, component_markerfacecolor='#000726',
-                  component_markeredgewidth=2, component_markeredgecolor='#ffffff',
+                  component_markeredgewidth=1, component_markeredgecolor='#ffffff',
                   component_text_verticalshift=1.3, component_fontsize=16,
                   kde_bandwidths_factor=1.5, sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                  n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.50,
-                  background_max_alpha=0.9, background_markersize=5.55,
+                  n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
+                  background_max_alpha=0.92, background_markersize=5.55,
                   legend_markersize=10, legend_fontsize=13):
     """
     :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
@@ -282,6 +283,8 @@ def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continu
     :param title: str,
     :param title_fontsize: float,
     :param title_fontcolor: matplotlib compatible color expression,
+    :param subtitle_fontsize: float,
+    :param subtitle_fontcolor: matplotlib compatible color expression,
     :param delaunay_linewidth: float,
     :param delaunay_linecolor: matplotlib compatible color expression,
     :param component_markersize: float,
@@ -328,7 +331,7 @@ def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continu
     samples['state'] = states
 
     # Get sample annotations
-    if annotations and any(annotations):
+    if any(annotations):
         samples['annotation'] = (np.array(annotations) - min(annotations)) / (max(annotations) - min(annotations))
 
     # Get sample x & y coordinates using Delaunay triangulation simplices
@@ -393,8 +396,11 @@ def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continu
     ax_legend.axis('off')
 
     # Plot title
-    ax_title.text(0.5, ax_spacing, title,
-                  fontsize=title_fontsize, color=title_fontcolor, weight='bold', horizontalalignment='center')
+    ax_title.text(0, ax_spacing, title,
+                  fontsize=title_fontsize, color=title_fontcolor, weight='bold', horizontalalignment='left')
+    ax_title.text(0, ax_spacing * 0.5,
+                  '{} samples, {} components, and {} states'.format(samples.shape[0], h.shape[0], n_state),
+                  fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold', horizontalalignment='left')
 
     # Plot components
     ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], linestyle='', marker='D',
@@ -418,7 +424,7 @@ def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continu
 
     # Plot samples
     for i, (idx, s) in enumerate(samples.iterrows()):
-        if annotations and any(annotations):
+        if any(annotations):
             if annotation_type is 'continuous':
                 cmap = CMAP_CONTINUOUS
             elif annotation_type is 'categorical':
@@ -455,6 +461,7 @@ def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continu
                 a = min(background_max_alpha,
                         (grid_probabilities[i, j] - grid_probabilities.min()) /
                         (grid_probabilities.max() - grid_probabilities.min()))
+                a *=0.69
 
                 ax_map.plot(xgrids[i], ygrids[j], marker='s',
                             markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
@@ -463,12 +470,13 @@ def plot_onco_gps(h, n_state, states, annotations=None, annotation_type='continu
                             markersize=background_markersize * 1.1, markerfacecolor='w', zorder=3)
 
     # Plot legends
+    ax_legend.text(ax_spacing - 0.1, 0.96, 'States', fontsize=legend_fontsize, weight='bold', color='#000000')
     for i, state in enumerate(sorted(samples.ix[:, 'state'].unique())):
-        y = 1 - (i + 1) / (n_state + 1)
+        y = 1 - 0.04 * (i + 2)  # 1 - (i + 1) / (n_state + 1)
         c = CMAP_CATEGORICAL(int(state / n_state * 255))
-        ax_legend.plot(ax_spacing, y, marker='s', markersize=legend_markersize, markerfacecolor=c, zorder=5)
-        ax_legend.text(ax_spacing * 1.5, y, 'State {}'.format(state),
-                       fontsize=legend_fontsize, weight='bold', color=c, verticalalignment='center')
+        ax_legend.plot(ax_spacing, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
+        ax_legend.text(ax_spacing * 1.5, y, 'S{}'.format(state),
+                       fontsize=legend_fontsize, weight='bold', color='#000000', verticalalignment='center')
 
     if output_filename:
         figure.subplots_adjust(left=0.06, right=0.9, top=0.97, bottom=0.03)
