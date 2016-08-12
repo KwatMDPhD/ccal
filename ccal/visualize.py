@@ -259,7 +259,7 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
 def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
                   figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
                   title='OncoGenic Positional System (Onco-GPS) Map', title_fontsize=24, title_fontcolor='#3326c0',
-                  subtitle_fontsize=16, subtitle_fontcolor='#4E41D9',
+                  subtitle_fontsize=16, subtitle_fontcolor='#990000',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   component_markersize=13, component_markerfacecolor='#000726',
                   component_markeredgewidth=1, component_markeredgecolor='#ffffff',
@@ -267,13 +267,14 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   kde_bandwidths_factor=1.5, sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
-                  background_max_alpha=0.92, background_markersize=5.55,
+                  background_max_alpha=0.92, background_alpha_factor=0.39, background_markersize=5.55,
                   legend_markersize=10, legend_fontsize=13):
     """
     :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
     :param n_state: int, number of states to plot
     :param states: array-like (n_samples), samples' state
     :param annotations: array-like (n_samples), samples' annotations; samples are plotted based on annotations
+    :param annotation_type: str, {continuous, categorical, binary}
     :param output_filename: str, file path to save the output figure
     :param dpi: int, dots-per-inch for the output figure
     :param figure_size: array_like (2),
@@ -304,6 +305,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     :param contour_alpha: float,
     :param background_max_alpha: float,
     :param background_markersize: float,
+    :param background_alpha_factor: float, factor to multiply the background alpha
     :param legend_markersize: float,
     :param legend_fontsize: float,
     :return: None
@@ -461,7 +463,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                 a = min(background_max_alpha,
                         (grid_probabilities[i, j] - grid_probabilities.min()) /
                         (grid_probabilities.max() - grid_probabilities.min()))
-                a *=0.69
+                a *= background_alpha_factor
 
                 ax_map.plot(xgrids[i], ygrids[j], marker='s',
                             markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
