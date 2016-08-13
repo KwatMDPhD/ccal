@@ -267,7 +267,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   kde_bandwidths_factor=1.5, sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
-                  background_max_alpha=0.92, background_alpha_factor=0.39, background_markersize=5.55,
+                  background_max_alpha=1, background_alpha_factor=0.69, background_markersize=5.55,
                   legend_markersize=10, legend_fontsize=13):
     """
     :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
