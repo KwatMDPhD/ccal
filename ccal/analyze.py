@@ -47,7 +47,7 @@ from .information import information_coefficient, cmi_diff, cmi_ratio
 # ======================================================================================================================
 def rank_features_against_reference(features, ref, features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
-                                    metric='information_coef', nsampling=30, confidence=0.95, nperm=30, nfeatures=0.95,
+                                    metric='information_coef', nfeatures=0.95, nsampling=30, confidence=0.95, nperm=30,
                                     title=None, title_size=16, annotation_label_size=9, plot_colname=False,
                                     result_filename=None, figure_filename=None):
     """
@@ -94,7 +94,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
         ref = ref.sort_values(ascending=ref_ascending)
         features = features.reindex_axis(ref.index, axis=1)
 
-    scores = compute_against_reference(features, ref, metric=metric, ascending=features_ascending,
+    scores = compute_against_reference(features, ref, metric=metric, nfeatures=nfeatures, ascending=features_ascending,
                                        nsampling=nsampling, confidence=confidence, nperm=nperm)
     features = features.reindex(scores.index)
 
