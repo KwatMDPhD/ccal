@@ -116,7 +116,6 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
     annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
 
     # Limit features to be plotted
-    # TODO: use the same features for the bootstrapping
     if nfeatures < 1:
         above_quantile = scores.ix[:, metric] >= scores.ix[:, metric].quantile(nfeatures)
         print_log('Plotting {} features vs. reference > {} quantile ...'.format(sum(above_quantile), nfeatures))
@@ -125,7 +124,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
         indices_to_plot = features.index[above_quantile | below_quantile].tolist()
     else:
         indices_to_plot = features.index[:nfeatures].tolist() + features.index[-nfeatures:].tolist()
-        print_log('Plotting top and bottom {} features vs. reference ...'.format(len(indices_to_plot)))
+        print_log('Plotting top & bottom {} features vs. reference ...'.format(len(indices_to_plot)))
 
     plot_features_against_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                     features_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
@@ -163,7 +162,7 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
         if i % 100 is 0:
             print_log('\t{}/{} ...'.format(i, features.shape[0]))
         scores[i] = function(s, ref)
-    scores = pd.DataFrame(scores, index=features.index, columns=[metric])
+    scores = pd.DataFrame(scores, index=features.index, columns=[metric]).sort_values(metric)
 
     print_log('Bootstrapping to get {} confidence interval ...'.format(confidence))
     nsample = math.ceil(0.632 * features.shape[1])
@@ -172,23 +171,37 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
     elif nsample < 3:
         print_log('Not bootstrapping because 0.632 * number of sample < 3.')
     else:
+        # Limit features to be bootstrapped
+        if nfeatures < 1:
+            above_quantile = scores.ix[:, metric] >= scores.ix[:, metric].quantile(nfeatures)
+            print_log('Bootstrapping {} features vs. reference > {} quantile ...'.format(sum(above_quantile),
+                                                                                         nfeatures))
+            below_quantile = scores.ix[:, metric] <= scores.ix[:, metric].quantile(1 - nfeatures)
+            print_log('Bootstrapping {} features vs. reference < {} quantile ...'.format(sum(below_quantile),
+                                                                                         1 - nfeatures))
+            indices_to_bootstrap = scores.index[above_quantile | below_quantile].tolist()
+        else:
+            indices_to_bootstrap = scores.index[:nfeatures].tolist() + scores.index[-nfeatures:].tolist()
+            print_log('Bootstrapping top & bottom {} features vs. reference ...'.format(len(indices_to_bootstrap)))
+
         # Random sample columns and compute scores using the sampled columns
-        sampled_scores = np.empty((features.shape[0], nsampling))
-        for i in range(nsampling):
+        sampled_scores = pd.DataFrame(index=indices_to_bootstrap, columns=range(nsampling))
+        for c in sampled_scores:
             sample_indices = np.random.choice(features.columns.tolist(), int(nsample)).tolist()
-            sampled_features = features.ix[:, sample_indices]
+            sampled_features = features.ix[indices_to_bootstrap, sample_indices]
             sampled_ref = ref.ix[sample_indices]
-            for j, (idx, s) in enumerate(sampled_features.iterrows()):
-                sampled_scores[j, i] = function(s, sampled_ref)
+            for idx, s in sampled_features.iterrows():
+                sampled_scores.ix[idx, c] = function(s, sampled_ref)
+
         # Get confidence intervals
-        confidence_intervals = pd.DataFrame(index=features.index, columns=['{} MoE'.format(confidence)])
+        confidence_intervals = pd.DataFrame(index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
         z_critical = stats.norm.ppf(q=confidence)
 
-        for i, f in enumerate(sampled_scores):
-            std = f.std()
-            moe = z_critical * (std / math.sqrt(f.size))
-            confidence_intervals.iloc[i, 0] = moe
-        scores = pd.merge(scores, confidence_intervals, left_index=True, right_index=True)
+        for i, s in sampled_scores.iterrows():
+            std = s.std()
+            moe = z_critical * (std / math.sqrt(s.size))
+            confidence_intervals.ix[i, 0] = moe
+        scores = pd.merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
 
     print_log('Performing permutation test with {} permutations ...'.format(nperm))
     permutation_pvals_and_fdrs = pd.DataFrame(index=features.index,
