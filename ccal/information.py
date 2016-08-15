@@ -20,13 +20,6 @@ Description:
 Information computing module for CCAL.
 """
 import math
-
-import numpy as np
-from scipy.stats import pearsonr
-from statsmodels.nonparametric.kernel_density import KDEMultivariate
-from scipy.stats import binom_test
-
-# TODO pythonize bcv
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 
@@ -34,6 +27,11 @@ ro.conversion.py2ri = numpy2ri
 from rpy2.robjects.packages import importr
 
 mass = importr('MASS')
+
+import numpy as np
+from scipy.stats import pearsonr
+from statsmodels.nonparametric.kernel_density import KDEMultivariate
+from scipy.stats import binom_test
 
 from .support import drop_nan_columns, add_jitter
 

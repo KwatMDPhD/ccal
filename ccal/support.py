@@ -97,6 +97,35 @@ def standardize_pandas_object(pandas_obj):
     return standardized
 
 
+def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
+    """
+    Make association or distance matrix of the rows of `matrix1` and `matrix2`.
+    :param matrix1: pandas DataFrame,
+    :param matrix2: pandas DataFrame,
+    :param function: function, function for computing association or dissociation
+    :param axis: int, 0 for row-wise and 1 for column-wise
+    :param is_distance: bool, True for distance and False for association
+    :return: pandas DataFrame
+    """
+    # TODO: check if the original matrices change; may cause problems
+    if axis is 1:
+        matrix1 = matrix1.T
+        matrix2 = matrix2.T
+
+    compared_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
+    nrow = matrix1.shape[0]
+    for i, (i1, r1) in enumerate(matrix1.iterrows()):
+        print_log('Comparing {} ({}/{}) vs. ...'.format(i1, i + 1, nrow))
+        for i2, r2 in matrix2.iterrows():
+            compared_matrix.ix[i1, i2] = function(r1, r2)
+
+    if is_distance:
+        print_log('Converting association to is_distance (is_distance = 1 - association) ...')
+        compared_matrix = 1 - compared_matrix
+
+    return compared_matrix
+
+
 # ======================================================================================================================
 # File operations
 # ======================================================================================================================
