@@ -133,7 +133,7 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
                                     plot_colname=plot_colname, figure_filename=figure_filename)
 
 
-def compute_against_reference(features, ref, metric='information_coef', nfeatures=0, ascending=False,
+def compute_against_reference(features, ref, metric='information_coef', nfeatures=0.95, ascending=False,
                               nsampling=30, confidence=0.95, nperm=30):
     """
     Compute scores[i] = `features`[i] vs. `ref` with computation using `metric` and get CI, p-val, and FDR (BH).
