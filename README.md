@@ -1,3 +1,3 @@
-Computational Cancer Analysis
+Computational Cancer Analysis Library
 
 UCSD Cancer Center
