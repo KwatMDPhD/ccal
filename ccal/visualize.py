@@ -38,6 +38,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from ccal import SEED
 from .support import print_log, standardize_pandas_object, establish_path
 
 # ======================================================================================================================
@@ -168,7 +169,7 @@ def _setup_cmap(pandas_obj, data_type):
     return data_cmap, data_min, data_max
 
 
-def plot_nmf_result(nmf_results, k, figsize=(7, 5), title=None, output_filename=None, dpi=DPI):
+def plot_nmf_result(nmf_results, k, figsize=(10, 10), title=None, output_filename=None, dpi=DPI):
     """
     Plot NMF results from cca.library.cca.nmf function.
     :param nmf_results: dict, result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
@@ -209,6 +210,7 @@ def plot_nmf_scores(scores, figsize=(7, 5), title=None, output_filename=None):
     """
     plt.figure(figsize=figsize)
     if title:
+        # TODO: enlarge title font size
         plt.gcf().suptitle(title)
 
     ax = sns.pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
@@ -261,13 +263,15 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   title='OncoGenic Positional System (Onco-GPS) Map', title_fontsize=24, title_fontcolor='#3326c0',
                   subtitle_fontsize=16, subtitle_fontcolor='#990000',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
+                  n_respective_component=3,
+                  mds_metric=False, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726',
                   component_markeredgewidth=1, component_markeredgecolor='#ffffff',
                   component_text_verticalshift=1.3, component_fontsize=16,
                   kde_bandwidths_factor=1.5, sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
-                  background_max_alpha=1, background_alpha_factor=0.69, background_markersize=5.55,
+                  background=True, background_max_alpha=1, background_alpha_factor=0.69, background_markersize=5.55,
                   legend_markersize=10, legend_fontsize=13):
     """
     :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
@@ -315,7 +319,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     standardized_clipped_h = standardized_h.clip(-3, 3)
 
     # Project the H's components from <nsample>D to 2D, getting the x & y coordinates
-    mds = manifold.MDS()
+    mds = manifold.MDS(metric=mds_metric, random_state=mds_seed)
     # TODO: freeze random seed
     components_coordinates = mds.fit_transform(standardized_clipped_h)
 
@@ -339,8 +343,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     # Get sample x & y coordinates using Delaunay triangulation simplices
     for sample in samples.index:
         col = h.ix[:, sample]
-        third = col.sort_values()[-3]
-        col = col.mask(col < third, other=0)
+        col = col.mask(col < col.sort_values()[-n_respective_component], other=0)
 
         x = sum(col ** sample_stretch_factor * components_coordinates[:, 0]) / sum(col ** sample_stretch_factor)
         y = sum(col ** sample_stretch_factor * components_coordinates[:, 1]) / sum(col ** sample_stretch_factor)
@@ -458,7 +461,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     # Plot background
     for i in range(n_grid):
         for j in range(n_grid):
-            if convexhull_region.contains_point((xgrids[i], ygrids[j])):
+            if background and convexhull_region.contains_point((xgrids[i], ygrids[j])):
                 c = CMAP_CATEGORICAL(int(grid_states[i, j] / n_state * 255))
                 a = min(background_max_alpha,
                         (grid_probabilities[i, j] - grid_probabilities.min()) /

@@ -279,9 +279,9 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
     :param ks: array-like, list of ks to be used in the factorization
     :param method: str, {'intra_inter_ratio', 'cophenetic_correlation'}
     :param nassignment: int, number of assignments used to make `assigment_matrix` when using 'cophenetic_correlation'
-    :return: dict, NMF result per k
-                    (key: k; value: dict (key: w, h, err; value: w matrix, h matrix, and reconstruction error)) and
-                    score per k (key:k; value:score)
+    :return: 2 dict, NMF result per k
+                     (key: k; value: dict (key: w, h, err; value: w matrix, h matrix, and reconstruction error)) and
+                     score per k (key:k; value:score)
     """
     nrow, ncol = matrix.shape
     scores = {}
@@ -335,7 +335,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
             # Make assignment matrix (nassignment, ncol assingments from H)
             assignment_matrix = np.empty((nassignment, ncol))
             for i in range(nassignment):
-                print_log('Running NMF #{} (total number of assignments={}) ...'.format(i, nassignment))
+                print_log('Running NMF ({}/{}) ...'.format(i, nassignment))
                 nmf_result = nmf(matrix, [k])[k]
                 # Save the 1st NMF result for each k
                 if i == 0:
