@@ -241,7 +241,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
         regularizer=0, plot=False):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
-    :param matrix: numpy array (nsamples, nfeatures), the matrix to be factorized by NMF
+    :param matrix: numpy array or pandas DataFrame (nsamples, nfeatures), the matrix to be factorized by NMF
     :param ks: array-like, list of ks to be used in the factorization
     :param initialization: str, {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
     :param max_iteration: int, number of NMF iterations
@@ -263,6 +263,10 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
 
         # Compute W, H, and reconstruction error
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
+        if isinstance(matrix, pd.DataFrame):
+            c = ['C{}'.format(i + 1) for i in range(k)]
+            w = pd.DataFrame(w, index=matrix.index, columns=c)
+            h = pd.DataFrame(h, index=c, columns=matrix.columns)
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
         if plot:
@@ -272,7 +276,7 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
     return nmf_results
 
 
-def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
+def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=30):
     """
     Perform NMF with multiple k and score each computation.
     :param matrix: numpy array (nsamples, nfeatures), the matrix to be factorized by NMF
@@ -341,7 +345,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=20):
                 if i == 0:
                     nmf_results[k] = nmf_result
                 # Assignment a col with the highest index value
-                assignment_matrix[i, :] = np.argmax(nmf_result['H'], axis=0)
+                assignment_matrix[i, :] = np.argmax(np.asarray(nmf_result['H']), axis=0)
 
             # Make assignment distance matrix (ncol, ncol)
             assignment_distance_matrix = np.zeros((ncol, ncol))

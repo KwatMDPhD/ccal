@@ -169,7 +169,8 @@ def _setup_cmap(pandas_obj, data_type):
     return data_cmap, data_min, data_max
 
 
-def plot_nmf_result(nmf_results, k, figsize=(10, 10), title=None, output_filename=None, dpi=DPI):
+def plot_nmf_result(nmf_results, k, figsize=(10, 10), title='NMF Result', title_fontsize=20,
+                    output_filename=None, dpi=100):
     """
     Plot NMF results from cca.library.cca.nmf function.
     :param nmf_results: dict, result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
@@ -183,23 +184,26 @@ def plot_nmf_result(nmf_results, k, figsize=(10, 10), title=None, output_filenam
     # Plot W and H
     fig, (ax_w, ax_h) = plt.subplots(1, 2, figsize=figsize)
     if title:
-        fig.suptitle(title)
+        fig.suptitle(title, fontsize=title_fontsize, fontweight='bold')
 
-    sns.heatmap(nmf_results[k]['W'], cmap='bwr', yticklabels=False, ax=ax_w)
-    ax_w.set(xlabel='Component', ylabel='Gene')
-    ax_w.set_title('W matrix generated using k={}'.format(k))
+    sns.heatmap(standardize_pandas_object(nmf_results[k]['W']), cmap='bwr', yticklabels=False, ax=ax_w)
+    ax_w.set_title('W matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
+    ax_w.set_xlabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
+    ax_w.set_ylabel('Feature', fontsize=title_fontsize * 0.69, fontweight='bold')
 
-    sns.heatmap(nmf_results[k]['H'], cmap='bwr', xticklabels=False, ax=ax_h)
-    ax_h.set(xlabel='Sample', ylabel='Component')
-    ax_h.set_title('H matrix generated using k={}'.format(k))
-
-    plt.show()
+    sns.heatmap(standardize_pandas_object(nmf_results[k]['H']), cmap='bwr', xticklabels=False, ax=ax_h)
+    ax_h.set_title('H matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
+    ax_h.set_xlabel('Sample', fontsize=title_fontsize * 0.69, fontweight='bold')
+    ax_h.set_ylabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
 
     if output_filename:
         plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
 
+    plt.show()
 
-def plot_nmf_scores(scores, figsize=(7, 5), title=None, output_filename=None):
+
+def plot_nmf_scores(scores, figsize=(10, 10), title='NMF Clustering Score vs. k', title_fontsize=20,
+                    output_filename=None, dpi=DPI):
     """
     Plot NMF `scores`.
     :param scores: dict, NMF score per k (key: k; value: score)
@@ -209,17 +213,16 @@ def plot_nmf_scores(scores, figsize=(7, 5), title=None, output_filename=None):
     :return: None
     """
     plt.figure(figsize=figsize)
-    if title:
-        # TODO: enlarge title font size
-        plt.gcf().suptitle(title)
-
     ax = sns.pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
-    ax.set(xlabel='k', ylabel='Score')
-
-    plt.show()
+    if title:
+        ax.set_title(title, fontsize=title_fontsize, fontweight='bold')
+    ax.set_xlabel('k', fontsize=title_fontsize * 0.81, fontweight='bold')
+    ax.set_ylabel('Score', fontsize=title_fontsize * 0.81, fontweight='bold')
 
     if output_filename:
-        plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
+        plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
+
+    plt.show()
 
 
 def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
@@ -263,7 +266,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   title='OncoGenic Positional System (Onco-GPS) Map', title_fontsize=24, title_fontcolor='#3326c0',
                   subtitle_fontsize=16, subtitle_fontcolor='#990000',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
-                  n_respective_component=3,
+                  n_respective_component='all',
                   mds_metric=False, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726',
                   component_markeredgewidth=1, component_markeredgecolor='#ffffff',
