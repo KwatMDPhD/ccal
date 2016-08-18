@@ -630,7 +630,3 @@ class BayesianClassifier(BaseEstimator, ClassifierMixin):
         posterior_probs = self.predict_proba(x)
         max_idxs = np.argmax(posterior_probs.values, axis=1)
         return pd.Series(self.classes_[max_idxs], index=x.index)
-
-# ======================================================================================================================
-# Others
-# ======================================================================================================================

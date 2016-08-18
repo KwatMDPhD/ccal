@@ -346,6 +346,8 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     # Get sample x & y coordinates using Delaunay triangulation simplices
     for sample in samples.index:
         col = h.ix[:, sample]
+        if n_respective_component == 'all':
+            n_respective_component = h.shape[0]
         col = col.mask(col < col.sort_values()[-n_respective_component], other=0)
 
         x = sum(col ** sample_stretch_factor * components_coordinates[:, 0]) / sum(col ** sample_stretch_factor)
