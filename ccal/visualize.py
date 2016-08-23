@@ -263,7 +263,7 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
 
 def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
                   figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
-                  title='OncoGenic Positional System (Onco-GPS) Map', title_fontsize=24, title_fontcolor='#3326c0',
+                  title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326c0',
                   subtitle_fontsize=16, subtitle_fontcolor='#990000',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   n_respective_component='all',
@@ -275,7 +275,8 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
                   background=True, background_max_alpha=1, background_alpha_factor=0.69, background_markersize=5.55,
-                  legend_markersize=10, legend_fontsize=13):
+                  legend_markersize=10, legend_fontsize=13,
+                  effect_plot_type='violine'):
     """
     :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
     :param n_state: int, number of states to plot
@@ -397,8 +398,10 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
 
     # Set up axes
     gridspec = mpl.gridspec.GridSpec(10, 11)
-    ax_title = plt.subplot(gridspec[0, :])
+    ax_title = plt.subplot(gridspec[0, :6])
     ax_title.axis('off')
+    ax_effect = plt.subplot(gridspec[0, 6:])
+    ax_effect.set_axis_bgcolor('white')
     ax_map = plt.subplot(gridspec[1:, :10])
     ax_map.axis('off')
     ax_legend = plt.subplot(gridspec[1:, 10:])
@@ -487,6 +490,14 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
         ax_legend.plot(ax_spacing, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
         ax_legend.text(ax_spacing * 1.5, y, 'S{}'.format(state),
                        fontsize=legend_fontsize, weight='bold', color='#000000', verticalalignment='center')
+
+    sns.set_style('whitegrid')
+    # Plot effects
+    if any(annotations):
+        if effect_plot_type == 'violine':
+            sns.violinplot(x=states, y=annotations, scale='area', inner='stick', ax=ax_effect)
+        elif effect_plot_type == 'box':
+            sns.boxplot(x=states, y=annotations, ax=ax_effect)
 
     if output_filename:
         figure.subplots_adjust(left=0.06, right=0.9, top=0.97, bottom=0.03)
