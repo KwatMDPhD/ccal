@@ -267,13 +267,13 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   subtitle_fontsize=16, subtitle_fontcolor='#990000',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   n_respective_component='all',
-                  mds_metric=False, mds_seed=SEED,
+                  mds_metric=True, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726',
                   component_markeredgewidth=1, component_markeredgecolor='#ffffff',
                   component_text_verticalshift=1.3, component_fontsize=16,
                   kde_bandwidths_factor=1.5, sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                  n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
+                  contour=True, n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
                   background=True, background_max_alpha=1, background_alpha_factor=0.69, background_markersize=5.55,
                   legend_markersize=10, legend_fontsize=13,
                   effect_plot_type='violine'):
@@ -397,16 +397,12 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     figure = plt.figure(figsize=figure_size)
 
     # Set up axes
-    gridspec = mpl.gridspec.GridSpec(10, 11)
-    ax_title = plt.subplot(gridspec[0, :6])
+    gridspec = mpl.gridspec.GridSpec(10, 10)
+    ax_title = plt.subplot(gridspec[0, :])
     ax_title.axis('off')
-    ax_effect = plt.subplot(gridspec[0, 6:])
-    ax_effect.set_axis_bgcolor('white')
-    ax_map = plt.subplot(gridspec[1:, :10])
+    ax_map = plt.subplot(gridspec[1:, :9])
     ax_map.axis('off')
-    ax_legend = plt.subplot(gridspec[1:, 10:])
-    ax_legend.axis([0, 1, 0, 1])
-    ax_legend.axis('off')
+    ax_legend = plt.subplot(gridspec[1:, 9:])
 
     # Plot title
     ax_title.text(0, ax_spacing, title,
@@ -446,7 +442,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                 cmap = CMAP_BINARY
             c = cmap(s.ix['annotation'])
         else:
-            c = CMAP_CATEGORICAL(int(s.ix['state'] / n_state * 255))
+            c = CMAP_CATEGORICAL(int(s.ix['state'] / n_state * CMAP_CATEGORICAL.N))
         ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
                     markerfacecolor=c, markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
                     zorder=5)
@@ -463,44 +459,61 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     # z[masked_coordinates[:, 0], masked_coordinates[:, 1]] = np.nan
     # ax_map.contour(xgrids, ygrids, z, n_contour,
     #                linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
-    ax_map.contour(xgrids, ygrids, grid_probabilities, n_contour,
-                   linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
+    if contour:
+        ax_map.contour(xgrids, ygrids, grid_probabilities, n_contour,
+                       linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
 
     # Plot background
     for i in range(n_grid):
         for j in range(n_grid):
-            if background and convexhull_region.contains_point((xgrids[i], ygrids[j])):
-                c = CMAP_CATEGORICAL(int(grid_states[i, j] / n_state * 255))
-                a = min(background_max_alpha,
-                        (grid_probabilities[i, j] - grid_probabilities.min()) /
-                        (grid_probabilities.max() - grid_probabilities.min()))
-                a *= background_alpha_factor
+            if background:
+                if convexhull_region.contains_point((xgrids[i], ygrids[j])):
+                    c = CMAP_CATEGORICAL(int(grid_states[i, j] / n_state * CMAP_CATEGORICAL.N))
+                    a = min(background_max_alpha,
+                            (grid_probabilities[i, j] - grid_probabilities.min()) /
+                            (grid_probabilities.max() - grid_probabilities.min()))
+                    a *= background_alpha_factor
 
-                ax_map.plot(xgrids[i], ygrids[j], marker='s',
-                            markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
-            else:
-                ax_map.plot(xgrids[i], ygrids[j], marker='s',
-                            markersize=background_markersize * 1.1, markerfacecolor='w', zorder=3)
+                    ax_map.plot(xgrids[i], ygrids[j], marker='s',
+                                markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
+                else:
+                    ax_map.plot(xgrids[i], ygrids[j], marker='s',
+                                markersize=background_markersize * 1.1, markerfacecolor='w', zorder=3)
 
     # Plot legends
-    ax_legend.text(ax_spacing - 0.1, 0.96, 'States', fontsize=legend_fontsize, weight='bold', color='#000000')
-    for i, state in enumerate(sorted(samples.ix[:, 'state'].unique())):
-        y = 1 - 0.04 * (i + 2)  # 1 - (i + 1) / (n_state + 1)
-        c = CMAP_CATEGORICAL(int(state / n_state * 255))
-        ax_legend.plot(ax_spacing, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
-        ax_legend.text(ax_spacing * 1.5, y, 'S{}'.format(state),
-                       fontsize=legend_fontsize, weight='bold', color='#000000', verticalalignment='center')
-
-    sns.set_style('whitegrid')
-    # Plot effects
     if any(annotations):
+        palette = {}
+        for s in set(states):
+            palette[s] = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
+
         if effect_plot_type == 'violine':
-            sns.violinplot(x=states, y=annotations, scale='area', inner='stick', ax=ax_effect)
+            sns.violinplot(x=annotations, y=states, palette=palette, scale='count', inner='quartile', orient='h',
+                           ax=ax_legend)
         elif effect_plot_type == 'box':
-            sns.boxplot(x=states, y=annotations, ax=ax_effect)
+            sns.boxplot(x=annotations, y=states, palette=palette, orient='h', ax=ax_legend)
+
+        ax_legend.set_yticklabels(['State {}'.format(s) for s in sorted(set(states))], fontsize=legend_fontsize, weight='bold')
+        ax_legend.yaxis.tick_right()
+        xticklabels = ax_legend.get_xticklabels()
+        for i, t in enumerate(xticklabels):
+            if i == 0 or i == len(xticklabels) - 1:
+                t.set(rotation=90, size=legend_fontsize, weight='bold')
+            else:
+                t.set(visible=False)
+        ax_legend.patch.set_visible(False)
+        ax_legend.axvline(np.mean(annotations), color='#000000', ls='--', alpha=0.69)
+
+    else:
+        ax_legend.axis('off')
+        for i, s in enumerate(sorted(samples.ix[:, 'state'].unique())):
+            y = 1 - 0.04 * (i + 2)  # 1 - (i + 1) / (n_state + 1)
+            c = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
+            ax_legend.plot(ax_spacing, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
+            ax_legend.text(ax_spacing * 1.03, y, 'State {}'.format(s),
+                           fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if output_filename:
-        figure.subplots_adjust(left=0.06, right=0.9, top=0.97, bottom=0.03)
+        figure.subplots_adjust(left=0.06, right=0.9, top=0.96, bottom=0.069)
         figure.savefig(output_filename, dpi=dpi)
 
     plt.show()
