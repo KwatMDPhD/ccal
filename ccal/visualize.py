@@ -264,7 +264,7 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
 def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
                   figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326c0',
-                  subtitle_fontsize=16, subtitle_fontcolor='#990000',
+                  subtitle_fontsize=16, subtitle_fontcolor='#FF0082',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   n_respective_component='all',
                   mds_metric=True, mds_seed=SEED,
@@ -275,7 +275,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   contour=True, n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
                   background=True, background_max_alpha=1, background_alpha_factor=0.69, background_markersize=5.55,
-                  legend_markersize=10, legend_fontsize=13,
+                  legend_markersize=10, legend_fontsize=11,
                   effect_plot_type='violine'):
     """
     :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
@@ -397,12 +397,12 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     figure = plt.figure(figsize=figure_size)
 
     # Set up axes
-    gridspec = mpl.gridspec.GridSpec(10, 10)
+    gridspec = mpl.gridspec.GridSpec(9, 16)
     ax_title = plt.subplot(gridspec[0, :])
     ax_title.axis('off')
-    ax_map = plt.subplot(gridspec[1:, :9])
+    ax_map = plt.subplot(gridspec[1:, :13])
     ax_map.axis('off')
-    ax_legend = plt.subplot(gridspec[1:, 9:])
+    ax_legend = plt.subplot(gridspec[1:, 14:])
 
     # Plot title
     ax_title.text(0, ax_spacing, title,
@@ -482,26 +482,48 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
 
     # Plot legends
     if any(annotations):
+        boxplot_mean_markerfacecolor = '#ffffff'
+        boxplot_mean_markeredgecolor = '#FF0082'
+        boxplot_median_markeredgecolor = '#FF0082'
+
+        ax_legend.set_title('Feature\nIC=xxx (p-val=xxx)', fontsize=legend_fontsize * 1.26, weight='bold')
+
         palette = {}
         for s in set(states):
             palette[s] = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
 
         if effect_plot_type == 'violine':
-            sns.violinplot(x=annotations, y=states, palette=palette, scale='count', inner='quartile', orient='h',
+            sns.violinplot(x=annotations, y=states, palette=palette, scale='count', inner=None, orient='h',
                            ax=ax_legend)
+            sns.boxplot(x=annotations, y=states,
+                        showbox=False, showmeans=True, meanprops={'marker': 'o',
+                                                                  'markerfacecolor': boxplot_mean_markerfacecolor,
+                                                                  'markeredgewidth': 0.9,
+                                                                  'markeredgecolor': boxplot_mean_markeredgecolor},
+                        medianprops={'color': boxplot_median_markeredgecolor},
+                        orient='h', ax=ax_legend)
         elif effect_plot_type == 'box':
-            sns.boxplot(x=annotations, y=states, palette=palette, orient='h', ax=ax_legend)
+            sns.boxplot(x=annotations, y=states,
+                        palette=palette, showmeans=True, meanprops={'marker': 'o',
+                                                                    'markerfacecolor': boxplot_mean_markerfacecolor,
+                                                                    'markeredgewidth': 0.9,
+                                                                    'markeredgecolor': boxplot_mean_markeredgecolor},
+                        medianprops={'color': boxplot_median_markeredgecolor},
+                        orient='h', ax=ax_legend)
 
-        ax_legend.set_yticklabels(['State {}'.format(s) for s in sorted(set(states))], fontsize=legend_fontsize, weight='bold')
+        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(states == s)) for s in sorted(set(states))],
+                                  fontsize=legend_fontsize,
+                                  weight='bold')
         ax_legend.yaxis.tick_right()
-        xticklabels = ax_legend.get_xticklabels()
-        for i, t in enumerate(xticklabels):
-            if i == 0 or i == len(xticklabels) - 1:
-                t.set(rotation=90, size=legend_fontsize, weight='bold')
-            else:
-                t.set(visible=False)
+        ax_legend.set_xticks([np.min(annotations), np.mean(annotations), np.max(annotations)])
+        for t in ax_legend.get_xticklabels():
+            t.set(rotation=90, size=legend_fontsize * 0.81, weight='bold')
+
         ax_legend.patch.set_visible(False)
-        ax_legend.axvline(np.mean(annotations), color='#000000', ls='--', alpha=0.69)
+        ax_legend.axvline(np.min(annotations), color='#000000', ls='-', alpha=0.33)
+        ax_legend.axvline(np.mean(annotations), color='#000000', ls='-', alpha=0.33)
+        ax_legend.axvline(np.max(annotations), color='#000000', ls='-', alpha=0.33)
+        right_adjust = 0.86
 
     else:
         ax_legend.axis('off')
@@ -509,11 +531,12 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
             y = 1 - 0.04 * (i + 2)  # 1 - (i + 1) / (n_state + 1)
             c = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
             ax_legend.plot(ax_spacing, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
-            ax_legend.text(ax_spacing * 1.03, y, 'State {}'.format(s),
+            ax_legend.text(ax_spacing * 1.03, y, 'State {} (n={})'.format(s, sum(states == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
+        right_adjust = 0.89
 
     if output_filename:
-        figure.subplots_adjust(left=0.06, right=0.9, top=0.96, bottom=0.069)
+        figure.subplots_adjust(left=0.06, right=right_adjust, top=0.96, bottom=0.069)
         figure.savefig(output_filename, dpi=dpi)
 
     plt.show()
