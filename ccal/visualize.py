@@ -526,12 +526,13 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
         right_adjust = 0.88
 
     else:
+        ax_legend.axis([0, 1, 0, 1])
         ax_legend.axis('off')
         for i, s in enumerate(sorted(samples.ix[:, 'state'].unique())):
-            y = 1 - 0.05 * (i + 2)  # 1 - (i + 1) / (n_state + 1)
+            y = 1 - float(1 / (n_state + 1)) * (i + 1)
             c = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
-            ax_legend.plot(ax_spacing, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
-            ax_legend.text(ax_spacing * 1.03, y, 'State {} (n={})'.format(s, sum(states == s)),
+            ax_legend.plot(0.5, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
+            ax_legend.text(0.6, y, 'State {} (n={})'.format(s, sum(states == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
         right_adjust = 0.92
 
