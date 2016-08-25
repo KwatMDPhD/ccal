@@ -517,26 +517,26 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
         ax_legend.yaxis.tick_right()
         ax_legend.set_xticks([np.min(annotations), np.mean(annotations), np.max(annotations)])
         for t in ax_legend.get_xticklabels():
-            t.set(rotation=90, size=legend_fontsize * 0.81, weight='bold')
+            t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
 
         ax_legend.patch.set_visible(False)
-        ax_legend.axvline(np.min(annotations), color='#000000', ls='-', alpha=0.33)
-        ax_legend.axvline(np.mean(annotations), color='#000000', ls='-', alpha=0.33)
-        ax_legend.axvline(np.max(annotations), color='#000000', ls='-', alpha=0.33)
-        right_adjust = 0.86
+        ax_legend.axvline(np.min(annotations), color='#000000', ls='-', alpha=0.16)
+        ax_legend.axvline(np.mean(annotations), color='#000000', ls='-', alpha=0.39)
+        ax_legend.axvline(np.max(annotations), color='#000000', ls='-', alpha=0.16)
+        right_adjust = 0.88
 
     else:
         ax_legend.axis('off')
         for i, s in enumerate(sorted(samples.ix[:, 'state'].unique())):
-            y = 1 - 0.04 * (i + 2)  # 1 - (i + 1) / (n_state + 1)
+            y = 1 - 0.05 * (i + 2)  # 1 - (i + 1) / (n_state + 1)
             c = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
             ax_legend.plot(ax_spacing, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
             ax_legend.text(ax_spacing * 1.03, y, 'State {} (n={})'.format(s, sum(states == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
-        right_adjust = 0.89
+        right_adjust = 0.92
 
     if output_filename:
-        figure.subplots_adjust(left=0.06, right=right_adjust, top=0.96, bottom=0.069)
+        figure.subplots_adjust(left=0.069, right=right_adjust, top=0.96, bottom=0.069)
         figure.savefig(output_filename, dpi=dpi)
 
     plt.show()
