@@ -43,7 +43,7 @@ def print_log(string):
         print('<{}> {}'.format(datetime.datetime.now().strftime('%H:%M:%S'), string))
 
 
-def verbose(boolean):
+def set_verbose(boolean):
     global VERBOSE
     VERBOSE = boolean
 
