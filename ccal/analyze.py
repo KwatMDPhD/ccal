@@ -434,12 +434,10 @@ def get_states_from_h(h, n_states, nclustering=50, filename=None):
     labels = pd.DataFrame(index=n_states, columns=list(sample_associations.index) + ['cophenetic_correlation'])
     labels.index.name = 'state'
     for k in n_states:
-        print_log('Clustering with k = {} ...'.format(k))
-
         # For nclustering times, cluster sample associations and assign labels using this k
         nclustering_labels = pd.DataFrame(index=range(nclustering), columns=sample_associations.index)
         for i in range(nclustering):
-            print_log('\tClustering sample associations and assigning labels ({}/{}) ...'.format(i, nclustering))
+            print_log('Clustering sample associations and assigning labels with k = {} ({}/{}) ...'.format(k, i, nclustering))
             ward = AgglomerativeClustering(n_clusters=k)
             ward.fit(sample_associations)
             nclustering_labels.iloc[i, :] = ward.labels_
@@ -448,7 +446,7 @@ def get_states_from_h(h, n_states, nclustering=50, filename=None):
         ncoclusterings = pd.DataFrame(index=nclustering_labels.columns, columns=nclustering_labels.columns)
         ncoclusterings.fillna(0, inplace=True)
         for i, s in nclustering_labels.iterrows():
-            print_log('\tCounting co-clustering between samples ({}/{}) ...'.format(i, nclustering))
+            print_log('Counting co-clustering between samples with k = {} ({}/{}) ...'.format(k, i, nclustering))
             for i in s.index:
                 for j in s.index:
                     if i == j or s.ix[i] == s.ix[j]:
