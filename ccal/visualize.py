@@ -264,7 +264,7 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
 def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
                   figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326c0',
-                  subtitle_fontsize=16, subtitle_fontcolor='#FF0082',
+                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   n_respective_component='all',
                   mds_metric=True, mds_seed=SEED,
@@ -397,17 +397,17 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     figure = plt.figure(figsize=figure_size)
 
     # Set up axes
-    gridspec = mpl.gridspec.GridSpec(9, 16)
+    gridspec = mpl.gridspec.GridSpec(10, 16)
     ax_title = plt.subplot(gridspec[0, :])
     ax_title.axis('off')
-    ax_map = plt.subplot(gridspec[1:, :13])
+    ax_map = plt.subplot(gridspec[2:, :13])
     ax_map.axis('off')
     ax_legend = plt.subplot(gridspec[1:, 14:])
 
     # Plot title
     ax_title.text(0, ax_spacing, title,
                   fontsize=title_fontsize, color=title_fontcolor, weight='bold', horizontalalignment='left')
-    ax_title.text(0, ax_spacing * 0.5,
+    ax_title.text(0, ax_spacing * 0.39,
                   '{} samples, {} components, and {} states'.format(samples.shape[0], h.shape[0], n_state),
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold', horizontalalignment='left')
 

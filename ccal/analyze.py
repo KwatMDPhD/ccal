@@ -413,7 +413,7 @@ def nmf_bcv(x, nmf, nfold=2, nrepeat=1):
 # ======================================================================================================================
 # Onco GPS functions
 # ======================================================================================================================
-def get_states_from_h(h, n_states, nclustering=10, filename=None):
+def get_states_from_h(h, n_states, nclustering=50, filename=None):
     """
     Cluster H matrix's samples into k clusters.
     :param h: pandas DataFrame (n_component, n_sample), H matrix from NMF
