@@ -262,7 +262,7 @@ def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
 
 
 def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
-                  figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=100,
+                  figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326c0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0082',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
@@ -274,7 +274,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   kde_bandwidths_factor=1.5, sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   contour=True, n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
-                  background=True, background_max_alpha=1, background_alpha_factor=0.69, background_markersize=5.55,
+                  background=True, background_max_alpha=1, background_alpha_factor=0.69, background_markersize=3.72,
                   legend_markersize=10, legend_fontsize=11,
                   effect_plot_type='violine'):
     """
@@ -478,7 +478,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                                 markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
                 else:
                     ax_map.plot(xgrids[i], ygrids[j], marker='s',
-                                markersize=background_markersize * 1.1, markerfacecolor='w', zorder=3)
+                                markersize=background_markersize * 1.16, markerfacecolor='w', zorder=3)
 
     # Plot legends
     if any(annotations):
