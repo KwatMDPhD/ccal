@@ -511,7 +511,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                         medianprops={'color': boxplot_median_markeredgecolor},
                         orient='h', ax=ax_legend)
 
-        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(states == s)) for s in sorted(set(states))],
+        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in sorted(set(states))],
                                   fontsize=legend_fontsize,
                                   weight='bold')
         ax_legend.yaxis.tick_right()
