@@ -324,7 +324,6 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
 
     # Project the H's components from <nsample>D to 2D, getting the x & y coordinates
     mds = manifold.MDS(metric=mds_metric, random_state=mds_seed)
-    # TODO: freeze random seed
     components_coordinates = mds.fit_transform(standardized_clipped_h)
 
     # Delaunay triangulate the components' 2D projected coordinates

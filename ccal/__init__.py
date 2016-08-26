@@ -19,32 +19,19 @@ Laboratory of Jill Mesirov
 Description:
 Check dependencies and install missing ones.
 """
-import pip
 import random
-
-from .support import print_log
-
-print('=' * 79)
-print('=' * 20 + ' Computational Cancer Analysis Library ' + '=' * 20)
-print('=' * 79)
-
-print_log('Checking dependencies ...')
-packages_installed = [pkg.key for pkg in pip.get_installed_distributions()]
-packages_needed = ['rpy2', 'numpy', 'pandas', 'scipy', 'scikit-learn', 'matplotlib', 'seaborn']
-for pkg in packages_needed:
-    if pkg not in packages_installed:
-        print_log('{} not found! Installing ...'.format(pkg))
-        pip.main(['install', pkg])
-print_log('Using the following packages:')
-for pkg in pip.get_installed_distributions():
-    if pkg.key in packages_needed:
-        print_log('\t{} (v{})'.format(pkg.key, pkg.version))
-
-SEED = 20121020
-random.seed(SEED)
 
 from . import support
 from . import visualize
 from . import information
 from . import analyze
 
+print('=' * 79)
+print('=' * 20 + ' Computational Cancer Analysis Library ' + '=' * 20)
+print('=' * 79)
+
+support.install_libraries(['rpy2', 'numpy', 'pandas', 'scipy', 'statsmodels', 'scikit-learn', 'matplotlib', 'seaborn'])
+
+SEED = 20121020
+random.seed(SEED)
+support.print_log('Random seed is {}.'.format(SEED))

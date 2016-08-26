@@ -19,10 +19,6 @@ Laboratory of Jill Mesirov
 Description:
 Supporting module for CCAL.
 """
-import os
-import datetime
-import time
-
 import numpy as np
 import pandas as pd
 
@@ -38,123 +34,58 @@ def print_log(string):
     :param string: str, message to be printed
     :return: None
     """
+    from datetime import datetime
+
     global VERBOSE
     if VERBOSE:
-        print('<{}> {}'.format(datetime.datetime.now().strftime('%H:%M:%S'), string))
+        print('<{}> {}'.format(datetime.now().strftime('%H:%M:%S'), string))
 
 
-def set_verbose(boolean):
-    global VERBOSE
-    VERBOSE = boolean
-
-
-# ======================================================================================================================#
-# Functions
-# ======================================================================================================================#
-def drop_nan_columns(vectors):
+def install_libraries(libraries_needed):
     """
-    Keep only column positions that are not nan in all vectors.
-    :param vectors: list of numpy array, must have the same length (avoid [v1, ..., vn])
-    :return: list of numpy arrays,
-    """
-    for v in vectors[1:]:
-        if len(v) != len(vectors[0]):
-            raise ValueError('Input arrays have different lengths: {} & {}.'.format(len(v), len(vectors[0])))
-
-    not_nan_filter = np.ones(len(vectors[0]), dtype=bool)
-    for v in vectors:
-        not_nan_filter &= ~np.isnan(v)
-
-    only_not_nan = []
-    for i in range(len(vectors)):
-        only_not_nan.append(vectors[i][not_nan_filter])
-    return only_not_nan
-
-
-def add_jitter(vectors, jitter=1E-10):
-    """
-    Add jitter to vectors.
-    :param vectors: numpy array,
-    :param jitter: float, fitter to be added to `vector`
-    :return: list of numpy arrays
-    """
-    jittered_vectors = []
-    for i in range(len(vectors)):
-        jittered_vectors.append(vectors[i] + np.random.random_sample(vectors[i].size) * jitter)
-    return jittered_vectors
-
-
-def standardize_pandas_object(pandas_obj):
-    """
-    Standardize a pandas object (by row for a DataFrame).
-    :param pandas_obj: pandas DataFrame or Series
-    :return: pandas DataFrame or Series
-    """
-    standardized = pandas_obj.copy()
-    if isinstance(standardized, pd.DataFrame):
-        for i, (idx, s) in enumerate(standardized.iterrows()):
-            mean = s.mean()
-            std = s.std()
-            for j, v in enumerate(s):
-                standardized.ix[i, j] = (v - mean) / std
-    elif isinstance(standardized, pd.Series):
-        standardized = (standardized - standardized.mean()) / standardized.std()
-    return standardized
-
-
-def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
-    """
-    Make association or distance matrix of the rows of `matrix1` and `matrix2`.
-    :param matrix1: pandas DataFrame,
-    :param matrix2: pandas DataFrame,
-    :param function: function, function for computing association or dissociation
-    :param axis: int, 0 for row-wise and 1 for column-wise
-    :param is_distance: bool, True for distance and False for association
-    :return: pandas DataFrame
-    """
-    # TODO: check if the original matrices change; may cause problems
-    if axis is 1:
-        matrix1 = matrix1.T
-        matrix2 = matrix2.T
-
-    compared_matrix = pd.DataFrame(index=matrix1.index, columns=matrix2.index, dtype=float)
-    nrow = matrix1.shape[0]
-    for i, (i1, r1) in enumerate(matrix1.iterrows()):
-        print_log('Comparing {} ({}/{}) vs. ...'.format(i1, i + 1, nrow))
-        for i2, r2 in matrix2.iterrows():
-            compared_matrix.ix[i1, i2] = function(r1, r2)
-
-    if is_distance:
-        print_log('Converting association to is_distance (is_distance = 1 - association) ...')
-        compared_matrix = 1 - compared_matrix
-
-    return compared_matrix
-
-
-# ======================================================================================================================
-# File operations
-# ======================================================================================================================
-def establish_path(path):
-    """
-    Make 'path' if it doesn't already exist.
-    :param path:
+    Check if `libraries` are installed; if not then install using pip.
+    :param libraries_needed: list of strings, library names
     :return: None
     """
-    if os.path.isdir(path) or os.path.isfile(path) or os.path.islink(path):
-        print_log('{} already exists.'.format(path))
+    from pip import get_installed_distributions, main
+
+    print_log('Checking library dependencies ...')
+    libraries_installed = [lib.key for lib in get_installed_distributions()]
+    for lib in libraries_needed:
+        if lib not in libraries_installed:
+            print_log('{} not found! Installing {} using pip ...'.format(lib, lib))
+            main(['install', lib])
+    print_log('Using the following libraries:')
+    for lib in get_installed_distributions():
+        if lib.key in libraries_needed:
+            print_log('\t{} (v{})'.format(lib.key, lib.version))
+
+
+def establish_path(fullpath):
+    """
+    Make `path` if it doesn't already exist.
+    :param fullpath: string,
+    :return: None
+    """
+    from os import path, mkdir
+
+    if path.isdir(fullpath) or path.isfile(fullpath) or path.islink(fullpath):
+        print_log('{} already exists.'.format(fullpath))
     else:
-        print_log('Path {} doesn\'t exist, creating it ...'.format(path))
-        path_dirs = []
-        p, q = os.path.split(path)
-        while q != '':
-            path_dirs.append(q)
-            p, q = os.path.split(p)
-        path_dirs.append(p)
+        print_log('Full path {} doesn\'t exist, creating it ...'.format(fullpath))
+
+        dirs = []
+        prefix, suffix = path.split(fullpath)
+        while suffix != '':
+            dirs.append(suffix)
+            prefix, suffix = fullpath.split(prefix)
+        dirs.append(prefix)
+
         partial_path = ''
-        for path_element in path_dirs[::-1]:
-            partial_path = os.path.join(partial_path, path_element)
-            if not (os.path.isdir(partial_path) or os.path.isfile(partial_path) or os.path.islink(partial_path)):
-                os.mkdir(partial_path)
+        for d in dirs[::-1]:
+            partial_path = path.join(partial_path, d)
+            if not (path.isdir(partial_path) or path.isfile(partial_path) or path.islink(partial_path)):
+                mkdir(partial_path)
 
 
 def read_gct(filename, fill_na=None, drop_description=True):
@@ -165,139 +96,149 @@ def read_gct(filename, fill_na=None, drop_description=True):
     :param drop_description: bool, drop the .gct's Description column (#2) or not
     :return: pandas DataFrame, (n_samples, 2 + n_features)
     """
-    dataframe = pd.read_csv(filename, skiprows=2, sep='\t')
+    df = pd.read_csv(filename, skiprows=2, sep='\t')
     if fill_na:
-        dataframe.fillna(fill_na, inplace=True)
-    column1, column2 = dataframe.columns[:2]
-    assert column1 == 'Name', 'Column 1 != \'Name\''
-    assert column2 == 'Description', 'Column 2 != \'Description\''
+        df.fillna(fill_na, inplace=True)
+    c1, c2 = df.columns[:2]
 
-    dataframe.set_index('Name', inplace=True)
+    if c1 != 'Name':
+        raise ValueError('Column 1 != \'Name\'')
+    if c2 != 'Description':
+        raise ValueError('Column 2 != \'Description\'')
+
+    df.set_index('Name', inplace=True)
+    df.index.name = None
     if drop_description:
-        dataframe.drop('Description', axis=1, inplace=True)
-    dataframe.index.name = None
+        df.drop('Description', axis=1, inplace=True)
 
-    return dataframe
+    return df
 
 
-def write_gct(pandas_object, filename, index_column=None, description=None):
+def write_gct(pandas_object, filename, index_column_name=None, descriptions=None):
     """
     Write a `pandas_object` to a `filename` as a .gct.
     :param pandas_object: pandas DataFrame or Serires (n_samples, m_features),
     :param filename: str, path to save the .gct
-    :param index_column: str, column to be used as the .gct index
-    :param description: array-like (n_samples), description column for the .gct
+    :param index_column_name: str, column to be used as the .gct index
+    :param descriptions: array-like (n_samples), description column for the .gct
     """
-    pandas_object = pandas_object.copy()
+    pd_obj = pandas_object.copy()
 
     # Convert Series to DataFrame
-    if isinstance(pandas_object, pd.Series):
-        pandas_object = pd.DataFrame(pandas_object).T
+    if isinstance(pd_obj, pd.Series):
+        pd_obj = pd.DataFrame(pd_obj).T
 
-    # Set output filename
+    # Set index (Name)
+    if index_column_name:
+        pd_obj.set_index(index_column_name, inplace=True)
+    pd_obj.index.name = 'Name'
+
+    # Set Description
+    if descriptions:
+        pd_obj.insert(0, 'Description', descriptions)
+    else:
+        pd_obj.insert(0, 'Description', pd_obj.index)
+
+    # Set output filename suffix
     if not filename.endswith('.gct'):
         filename += '.gct'
 
-    # Set index (Name)
-    if index_column:
-        pandas_object.set_index(index_column, inplace=True)
-    pandas_object.index.name = 'Name'
-
-    n_rows, n_cols = pandas_object.shape[0], pandas_object.shape[1]
-
-    # Set Description
-    if description:
-        assert len(description) is n_rows, 'Description\' length doesn\'t match the dataframe\'s'
-    else:
-        description = pandas_object.index
-    pandas_object.insert(0, 'Description', description)
-
     with open(filename, 'w') as f:
-        f.writelines('#1.2\n{}\t{}\n'.format(n_rows, n_cols))
-        pandas_object.to_csv(f, sep='\t')
+        f.writelines('#1.2\n{}\t{}\n'.format(*pd_obj.shape))
+        pd_obj.to_csv(f, sep='\t')
 
 
-# ======================================================================================================================
-# Simulate
-# ======================================================================================================================
-def runtime(function, increment, n=10):
-    """
-    Time `function` `n` times using arrays of length incremented by `increment` each time.
-    :param function: function, function to time
-    :param increment: int, increment to accrue on each consecutive timing
-    :param n: int, number time points
-    :return:
-    """
-    ns = []
-    runtimes = []
-    for i in range(n):
-        n = (i + 1) * increment
-        print_log('Getting runtime with vectors (x, y) with size {} ...'.format(n))
-        x = np.random.random_sample(n)
-        y = np.random.random_sample(n)
-        t0 = time.time()
-
-        function(x, y)
-
-        t = time.time() - t0
-        ns.append(n)
-        runtimes.append(t)
-
-    return ns, runtimes
-
-
-def make_random_features(nrow, ncol, n_category=None):
+# ======================================================================================================================#
+# Data analysis functions
+# ======================================================================================================================#
+def make_random_features(n_row, n_col, n_category=None):
     """
     Make simulation features DataFrame (1D or 2D).
-    :param nrow: int, number of rows
-    :param ncol: int, number of columns
+    :param n_row: int, number of rows
+    :param n_col: int, number of columns
     :param n_category: None or int, if None, use continuous; if int, use  categorical
     :return: pandas DataFrame, features (`nrow`, `ncol`)
     """
-    shape = (nrow, ncol)
-    indices = ['Feature {}'.format(i) for i in range(nrow)]
-    columns = ['Element {}'.format(i) for i in range(ncol)]
+    shape = (n_row, n_col)
+    indices = ['Feature {}'.format(i) for i in range(n_row)]
+    columns = ['Element {}'.format(i) for i in range(n_col)]
     if n_category:
-        features = pd.DataFrame(np.random.random_integers(0, n_category, shape),
-                                index=indices,
-                                columns=columns)
+        features = pd.DataFrame(np.random.random_integers(0, n_category, shape), index=indices, columns=columns)
     else:
-        features = pd.DataFrame(np.random.random_sample(shape),
-                                index=indices,
-                                columns=columns)
-    if nrow == 1:
+        features = pd.DataFrame(np.random.random_sample(shape), index=indices, columns=columns)
+    if n_row == 1:
         # Return series
         return features.iloc[0, :]
     else:
         return features
 
 
-def simulate_x_y(n, rho, threshold=3):
+def drop_nan_columns(vectors):
     """
-    Generate 2 normal random vectors with correlation `rho` of length `n`.
-    :param n: int, size of the output arrays
-    :param rho: rho, correlation
-    :param threshold: float, max absolute value in the data
-    :return: 2 array-like, 2 normal random vectors with correlation `rho` of length `n`
+    Keep only column positions that are not nan in all vectors.
+    :param vectors: list of numpy array, must have the same length
+    :return: list of numpy arrays,
     """
-    means = [0, 1]
-    stds = [0.5, 0.5]
-    covs = [[stds[0] ** 2, stds[0] * stds[1] * rho], [stds[0] * stds[1] * rho, stds[1] ** 2]]
+    not_nan_filter = np.ones(len(vectors[0]), dtype=bool)
+    for v in vectors:
+        not_nan_filter &= ~np.isnan(v)
+    return [v[not_nan_filter] for v in vectors]
 
-    m = np.random.multivariate_normal(means, covs, n).T
-    x = (m[0] - np.mean(m[0])) / np.std(m[0])
-    y = (m[1] - np.mean(m[1])) / np.std(m[1])
 
-    if threshold:
-        x = (x - np.min(x)) / (np.max(x) - np.min(x))
-        y = (y - np.min(y)) / (np.max(y) - np.min(y))
-        for i in range(n):
-            if x[i] > threshold:
-                x[i] = threshold
-            elif x[i] < -threshold:
-                x[i] = -threshold
-            if y[i] > threshold:
-                y[i] = threshold
-            elif y[i] < -threshold:
-                y[i] = -threshold
-    return x, y
+def add_jitter(vectors, jitter=1E-10):
+    """
+    Add jitter to vectors.
+    :param vectors: numpy array,
+    :param jitter: float, jitter
+    :return: list of numpy arrays
+    """
+    return [v + np.random.random_sample(v.size) * jitter for v in vectors]
+
+
+def standardize_pandas_object(pandas_object):
+    """
+    Standardize a pandas object (by row for a DataFrame).
+    :param pandas_object: pandas DataFrame or Series
+    :return: pandas DataFrame or Series
+    """
+    standardized_obj = pandas_object.copy()
+    if isinstance(standardized_obj, pd.DataFrame):
+        for i, (idx, s) in enumerate(standardized_obj.iterrows()):
+            mean = s.mean()
+            std = s.std()
+            for j, v in enumerate(s):
+                standardized_obj.ix[i, j] = (v - mean) / std
+    elif isinstance(standardized_obj, pd.Series):
+        standardized_obj = (standardized_obj - standardized_obj.mean()) / standardized_obj.std()
+    return standardized_obj
+
+
+def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
+    """
+    Make association or distance matrix of `matrix1` and `matrix2` by row or column.
+    :param matrix1: pandas DataFrame,
+    :param matrix2: pandas DataFrame,
+    :param function: function, function for computing association or dissociation
+    :param axis: int, 0 for by-row and 1 for by-column
+    :param is_distance: bool, True for distance and False for association
+    :return: pandas DataFrame
+    """
+    if axis is 1:
+        m1 = matrix1.T
+        m2 = matrix2.T
+    else:
+        m1 = matrix1.copy()
+        m2 = matrix2.copy()
+
+    compared_matrix = pd.DataFrame(index=m1.index, columns=m2.index, dtype=float)
+    nrow = m1.shape[0]
+    for i, (i1, r1) in enumerate(m1.iterrows()):
+        print_log('Comparing {} ({}/{}) vs. ...'.format(i1, i + 1, nrow))
+        for i2, r2 in m2.iterrows():
+            compared_matrix.ix[i1, i2] = function(r1, r2)
+
+    if is_distance:
+        print_log('Converting association to is_distance (is_distance = 1 - association) ...')
+        compared_matrix = 1 - compared_matrix
+
+    return compared_matrix
