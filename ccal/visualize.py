@@ -342,7 +342,10 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
 
     # Get sample annotations
     if any(annotations):
-        samples['annotation'] = (np.array(annotations) - min(annotations)) / (max(annotations) - min(annotations))
+        if annotation_type is 'continuous':
+            samples['annotation'] = (np.array(annotations) - np.mean(annotations)) / np.std(annotations)
+        else:
+            samples['annotation'] = (np.array(annotations) - min(annotations)) / (max(annotations) - min(annotations))
 
     # Get sample x & y coordinates using Delaunay triangulation simplices
     for sample in samples.index:
