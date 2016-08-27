@@ -36,7 +36,7 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from .support import SEED, print_log, establish_path, standardize_pandas_object, compare_matrices
+from .support import SEED, print_log, establish_path, normalize_pandas_object, compare_matrices
 from .visualize import plot_nmf_result, plot_features_against_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 
@@ -422,7 +422,7 @@ def get_states_from_h(h, n_states, nclustering=50, filename=None):
     :return: pandas DataFrame (n_k, n_samples), array-like (n_k), assignment matrix and the cophenetic correlations
     """
     # Standardize H and clip values less than -3 and more than 3
-    standardized_h = standardize_pandas_object(h)
+    standardized_h = normalize_pandas_object(h)
     standardized_clipped_h = standardized_h.clip(-3, 3)
 
     # Get association between samples

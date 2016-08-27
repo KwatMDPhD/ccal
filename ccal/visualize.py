@@ -26,7 +26,6 @@ import numpy as np
 import pandas as pd
 from sklearn import manifold
 from scipy.spatial import Delaunay, ConvexHull
-import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
@@ -35,7 +34,7 @@ import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 
-from .support import SEED, print_log, establish_path, standardize_pandas_object
+from .support import SEED, print_log, establish_path, normalize_pandas_object
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -59,8 +58,8 @@ DPI = 1000
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_nmf_result(nmf_results, k, figure_size=(10, 10), title='NMF Result', title_fontsize=20,
-                    output_filename=None, dpi=100):
+def plot_nmf_result(nmf_results, k, title='NMF Result', title_fontsize=20,
+                    output_filename=None, figure_size=FIGURE_SIZE, dpi=DPI):
     """
     Plot NMF results from cca.library.cca.nmf function.
     :param nmf_results: dict, result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
@@ -77,12 +76,12 @@ def plot_nmf_result(nmf_results, k, figure_size=(10, 10), title='NMF Result', ti
     if title:
         fig.suptitle(title, fontsize=title_fontsize, fontweight='bold')
 
-    heatmap(standardize_pandas_object(nmf_results[k]['W']), cmap='bwr', yticklabels=False, ax=ax_w)
+    heatmap(normalize_pandas_object(nmf_results[k]['W']), cmap='bwr', yticklabels=False, ax=ax_w)
     ax_w.set_title('W matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
     ax_w.set_xlabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
     ax_w.set_ylabel('Feature', fontsize=title_fontsize * 0.69, fontweight='bold')
 
-    heatmap(standardize_pandas_object(nmf_results[k]['H']), cmap='bwr', xticklabels=False, ax=ax_h)
+    heatmap(normalize_pandas_object(nmf_results[k]['H']), cmap='bwr', xticklabels=False, ax=ax_h)
     ax_h.set_title('H matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
     ax_h.set_xlabel('Sample', fontsize=title_fontsize * 0.69, fontweight='bold')
     ax_h.set_ylabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
@@ -143,11 +142,11 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
     # Normalize
     if features_type is 'continuous':
         print_log('Normalizing continuous features ...')
-        features = standardize_pandas_object(features)
+        features = normalize_pandas_object(features)
     if ref_type is 'continuous':
         print_log('Normalizing continuous ref ...')
         ref = (ref - ref.mean()) / ref.std()
-        ref = standardize_pandas_object(ref)
+        ref = normalize_pandas_object(ref)
 
     fig = plt.figure(figure_size=(min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9)))
     horizontal_text_margin = math.pow(features.shape[1], 0.39)
@@ -227,93 +226,95 @@ def _setup_cmap(pandas_obj, data_type):
     return data_cmap, data_min, data_max
 
 
-def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
-                  figure_size=(10, 8), ax_spacing=0.9, coordinates_extending_factor=1 / 24, n_grid=128,
-                  title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326c0',
+def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='continuous',
+                  coordinates_extending_factor=1 / 24, n_grid=128,
+                  title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                  delaunay_linewidth=1, delaunay_linecolor='#000000',
-                  n_respective_component='all',
-                  mds_metric=True, mds_seed=SEED,
+                  mds_is_metric=True, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726',
-                  component_markeredgewidth=1, component_markeredgecolor='#ffffff',
+                  component_markeredgewidth=1, component_markeredgecolor='#FFFFFF',
                   component_text_verticalshift=1.3, component_fontsize=16,
-                  kde_bandwidths_factor=1.5, sample_stretch_factor=2,
+                  delaunay_linewidth=1, delaunay_linecolor='#000000',
+                  kde_bandwidths_factor=1.5, n_respective_component='all', sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                  contour=True, n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
-                  background=True, background_max_alpha=1, background_alpha_factor=0.69, background_markersize=3.73,
+                  contour=True, n_contour=30, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.5,
+                  background=True, background_markersize=3.73, background_max_alpha=0.9, background_alpha_factor=0.69,
                   legend_markersize=10, legend_fontsize=11,
-                  effect_plot_type='violine', annotation_min_std=-3, annotation_max_std=3):
+                  effect_plot_type='violine',
+                  output_filename=None, figure_size=FIGURE_SIZE, dpi=DPI):
+    # TODO: add descriptions for XXX
     """
-    :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
-    :param n_state: int, number of states to plot
-    :param states: array-like (n_samples), samples' state
-    :param annotations: array-like (n_samples), samples' annotations; samples are plotted based on annotations
-    :param annotation_type: str, {continuous, categorical, binary}
-    :param output_filename: str, file path to save the output figure
-    :param dpi: int, dots-per-inch for the output figure
-    :param figure_size: array_like (2),
-    :param ax_spacing: float,
-    :param coordinates_extending_factor: float,
-    :param n_grid: int,
-    :param title: str,
-    :param title_fontsize: float,
-    :param title_fontcolor: matplotlib compatible color expression,
-    :param subtitle_fontsize: float,
-    :param subtitle_fontcolor: matplotlib compatible color expression,
-    :param delaunay_linewidth: float,
-    :param delaunay_linecolor: matplotlib compatible color expression,
-    :param component_markersize: float,
-    :param component_markerfacecolor: matplotlib compatible color expression,
-    :param component_markeredgewidth: float,
-    :param component_markeredgecolor: matplotlib compatible color expression,
-    :param component_text_verticalshift: float,
-    :param component_fontsize: float,
-    :param kde_bandwidths_factor: float,
-    :param sample_stretch_factor: float,
-    :param sample_markersize: float,
-    :param sample_markeredgewidth: float,
-    :param sample_markeredgecolor: matplotlib compatible color expression
-    :param n_contour: int,
-    :param contour_linewidth: float,
-    :param contour_linecolor: float,
-    :param contour_alpha: float,
-    :param background_max_alpha: float,
-    :param background_markersize: float,
-    :param background_alpha_factor: float, factor to multiply the background alpha
-    :param legend_markersize: float,
-    :param legend_fontsize: float,
+    :param h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param states: array-like; (n_samples); sample states
+    :param max_std: number;
+    :param annotations: pandas Series; (n_samples); sample annotations; color samples based on annotations when given
+    :param annotation_type: string; {'continuous', 'categorical', 'binary'}
+    :param coordinates_extending_factor: number; factor to extend the map ax's coordinate dimensions
+    :param n_grid: int;
+    :param title: string;
+    :param title_fontsize: number;
+    :param title_fontcolor: matplotlib compatible color;
+    :param subtitle_fontsize: number;
+    :param subtitle_fontcolor: matplotlib compatible color;
+    :param mds_is_metric: bool; use metric multidimensional scaling or not
+    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :param component_markersize: number;
+    :param component_markerfacecolor: matplotlib compatible color;
+    :param component_markeredgewidth: number;
+    :param component_markeredgecolor: matplotlib compatible color;
+    :param component_text_verticalshift: number; XXX
+    :param component_fontsize: number;
+    :param delaunay_linewidth: int or flaot;
+    :param delaunay_linecolor: matplotlib compatible color;
+    :param kde_bandwidths_factor: number; XXX
+    :param n_respective_component: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param sample_stretch_factor: number; power to raise components' influence on each sample
+    :param sample_markersize: number;
+    :param sample_markeredgewidth: number;
+    :param sample_markeredgecolor: matplotlib compatible color;
+    :param contour: bool; plot contours or not
+    :param n_contour: int;
+    :param contour_linewidth: number;
+    :param contour_linecolor: matplotlib compatible color;
+    :param contour_alpha: float; [0, 1]
+    :param background: bool; plot background or not
+    :param background_markersize: number;
+    :param background_max_alpha: float; [0, 1]; the maximum background alpha (transparency)
+    :param background_alpha_factor: number; XXX
+    :param legend_markersize: number;
+    :param legend_fontsize: number;
+    :param effect_plot_type: string; {'violine', 'box'}
+    :param output_filename: string;
+    :param figure_size: tuple; (height, width)
+    :param dpi: int;
     :return: None
     """
-    # Standardize H and clip values less than -3 and more than 3
-    standardized_h = standardize_pandas_object(h)
-    standardized_clipped_h = standardized_h.clip(-3, 3)
+    print_log('Creating Onco-GPS with {} samples, {} components, and states: {} ...'.format(*reversed(h.shape), states))
 
-    # Project the H's components from <nsample>D to 2D, getting the x & y coordinates
-    mds = manifold.MDS(metric=mds_metric, random_state=mds_seed)
+    # Standardize H and clip values with extreme standard deviation
+    standardized_h = normalize_pandas_object(h)
+    standardized_clipped_h = standardized_h.clip(-max_std, max_std)
+
+    # Project the H's components from <n_sample>D to 2D, Delaunay triangulate the 2D-projected component coordinates,
+    # and compute convexhull for the 2D-projected component coordinates
+    mds = manifold.MDS(metric=mds_is_metric, random_state=mds_seed)
     components_coordinates = mds.fit_transform(standardized_clipped_h)
-
-    # Delaunay triangulate the components' 2D projected coordinates
     delaunay = Delaunay(components_coordinates)
-
-    # Compute convexhull for the components' 2D projected coordinates
     convexhull = ConvexHull(components_coordinates)
     convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
 
-    # Sample and their state labels and x & y coordinates computed using Delaunay triangulation simplices
     samples = pd.DataFrame(index=h.columns, columns=['state', 'x', 'y'])
 
-    # Get sample states
+    # Get sample states and (if any) annotations
     samples['state'] = states
-
-    # Get sample annotations
-    if any(annotations):
-        if annotation_type is 'continuous':
-            samples['annotation'] = ((np.array(annotations) - np.mean(annotations)) / np.std(annotations)).clip(
-                annotation_min_std, annotation_max_std)
+    if annotations:
+        if annotation_type == 'continuous':
+            samples['annotation'] = normalize_pandas_object(annotations)
+            samples.clip(-max_std, max_std)
         else:
-            samples['annotation'] = (np.array(annotations) - min(annotations)) / (max(annotations) - min(annotations))
+            samples['annotation'] = normalize_pandas_object(annotations, method='0-1')
 
-    # Get sample x & y coordinates using Delaunay triangulation simplices
+    # Get x & y coordinates of each sample
     for sample in samples.index:
         col = h.ix[:, sample]
         if n_respective_component == 'all':
@@ -324,34 +325,35 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
         y = sum(col ** sample_stretch_factor * components_coordinates[:, 1]) / sum(col ** sample_stretch_factor)
         samples.ix[sample, ['x', 'y']] = x, y
 
-    # Set x & y coordinate boundaries
-    xcoordinates = components_coordinates[:, 0]
-    xmin = min(xcoordinates)
-    xmax = max(xcoordinates)
-    xmargin = (xmax - xmin) * coordinates_extending_factor
-    xmin -= xmargin
-    xmax += xmargin
-    ycoordinates = components_coordinates[:, 1]
-    ymin = min(ycoordinates)
-    ymax = max(ycoordinates)
-    ymargin = (ymax - ymin) * coordinates_extending_factor
-    ymin -= ymargin
-    ymax += ymargin
+    # Get x & y coordinate boundaries
+    x_coordinates = components_coordinates[:, 0]
+    x_min = min(x_coordinates)
+    x_max = max(x_coordinates)
+    x_margin = (x_max - x_min) * coordinates_extending_factor
+    x_min -= x_margin
+    x_max += x_margin
+    y_coordinates = components_coordinates[:, 1]
+    y_min = min(y_coordinates)
+    y_max = max(y_coordinates)
+    y_margin = (y_max - y_min) * coordinates_extending_factor
+    y_min -= y_margin
+    y_max += y_margin
 
     # Make x & y grids
-    xgrids = np.linspace(xmin, xmax, n_grid)
-    ygrids = np.linspace(ymin, ymax, n_grid)
+    x_grids = np.linspace(x_min, x_max, n_grid)
+    y_grids = np.linspace(y_min, y_max, n_grid)
 
-    # Get KDE for each state using bandwidth created from all n_state' x & y coordinates
-    kdes = np.zeros((n_state + 1, n_grid, n_grid))
-    bandwidth_x = mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0]
-    bandwidth_y = mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]
-    bandwidths = np.array([bandwidth_x * kde_bandwidths_factor, bandwidth_y * kde_bandwidths_factor]) / 2
+    # Get KDE for each state using bandwidth created from all states' x & y coordinates
+    kdes = np.zeros((len(states), n_grid, n_grid))
+    x_bandwidth = mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0]
+    y_bandwidth = mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]
+
+    bandwidths = np.array([x_bandwidth * kde_bandwidths_factor, y_bandwidth * kde_bandwidths_factor]) / 2
     for s in sorted(samples.ix[:, 'state'].unique()):
         coordiantes = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
         x = np.array(coordiantes.ix[:, 'x'], dtype=float)
         y = np.array(coordiantes.ix[:, 'y'], dtype=float)
-        kde = mass.kde2d(x, y, bandwidths, n=np.array([n_grid]), lims=np.array([xmin, xmax, ymin, ymax]))
+        kde = mass.kde2d(x, y, bandwidths, n=np.array([n_grid]), lims=np.array([x_min, x_max, y_min, y_max]))
         kdes[s] = np.array(kde[2])
 
     # Assign the best KDE probability and state for each grid intersection
@@ -378,7 +380,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     ax_title.text(0, ax_spacing, title,
                   fontsize=title_fontsize, color=title_fontcolor, weight='bold', horizontalalignment='left')
     ax_title.text(0, ax_spacing * 0.39,
-                  '{} samples, {} components, and {} states'.format(samples.shape[0], h.shape[0], n_state),
+                  '{} samples, {} components, and {} states'.format(*reversed(h.shape), len(states)),
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold', horizontalalignment='left')
 
     # Plot components
@@ -430,24 +432,24 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     # ax_map.contour(xgrids, ygrids, z, n_contour,
     #                linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
     if contour:
-        ax_map.contour(xgrids, ygrids, grid_probabilities, n_contour,
+        ax_map.contour(x_grids, y_grids, grid_probabilities, n_contour,
                        linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
 
     # Plot background
     for i in range(n_grid):
         for j in range(n_grid):
             if background:
-                if convexhull_region.contains_point((xgrids[i], ygrids[j])):
+                if convexhull_region.contains_point((x_grids[i], y_grids[j])):
                     c = CMAP_CATEGORICAL(int(grid_states[i, j] / n_state * CMAP_CATEGORICAL.N))
                     a = min(background_max_alpha,
                             (grid_probabilities[i, j] - grid_probabilities.min()) /
                             (grid_probabilities.max() - grid_probabilities.min()))
                     a *= background_alpha_factor
 
-                    ax_map.plot(xgrids[i], ygrids[j], marker='s',
+                    ax_map.plot(x_grids[i], y_grids[j], marker='s',
                                 markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
                 else:
-                    ax_map.plot(xgrids[i], ygrids[j], marker='s',
+                    ax_map.plot(x_grids[i], y_grids[j], marker='s',
                                 markersize=background_markersize * 1.16, markerfacecolor='w', zorder=3)
 
     # Plot legends

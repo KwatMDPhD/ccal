@@ -205,22 +205,36 @@ def add_jitter(vectors, jitter=1E-10):
     return [v + np.random.random_sample(v.size) * jitter for v in vectors]
 
 
-def standardize_pandas_object(pandas_object):
+def normalize_pandas_object(pandas_object, method='0-mean'):
     """
-    Standardize a pandas object (by row for a DataFrame).
-    :param pandas_object: pandas DataFrame or Series
+    Normalize a pandas object (by row for a DataFrame) using one of various methods.
+    :param pandas_object: pandas DataFrame or Series;
+    :param method: string; normalization method; {'-0-', '0-1'}
     :return: pandas DataFrame or Series
     """
-    standardized_obj = pandas_object.copy()
-    if isinstance(standardized_obj, pd.DataFrame):
-        for i, (idx, s) in enumerate(standardized_obj.iterrows()):
-            mean = s.mean()
-            std = s.std()
-            for j, v in enumerate(s):
-                standardized_obj.ix[i, j] = (v - mean) / std
-    elif isinstance(standardized_obj, pd.Series):
-        standardized_obj = (standardized_obj - standardized_obj.mean()) / standardized_obj.std()
-    return standardized_obj
+    obj = pandas_object.copy()
+    if method == '-0-':
+        if isinstance(obj, pd.DataFrame):
+            for i, (idx, s) in enumerate(obj.iterrows()):
+                ax_mean = s.mean()
+                ax_std = s.std()
+                for j, v in enumerate(s):
+                    obj.ix[i, j] = (v - ax_mean) / ax_std
+        elif isinstance(obj, pd.Series):
+            obj = (obj - obj.mean()) / obj.std()
+
+    elif method == '0-1':
+        if isinstance(obj, pd.DataFrame):
+            for i, (idx, s) in enumerate(obj.iterrows()):
+                ax_min = s.min()
+                ax_max = s.max()
+                ax_range = ax_max - ax_min
+                for j, v in enumerate(s):
+                    obj.ix[i, j] = (v - ax_min) / ax_range
+        elif isinstance(obj, pd.Series):
+            obj = (obj - obj.min()) / (obj.max() - obj.min())
+
+    return obj
 
 
 def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
