@@ -21,13 +21,6 @@ Plotting module for CCAL.
 """
 import os
 import math
-import rpy2.robjects as ro
-from rpy2.robjects.numpy2ri import numpy2ri
-
-ro.conversion.py2ri = numpy2ri
-from rpy2.robjects.packages import importr
-
-mass = importr('MASS')
 
 import numpy as np
 import pandas as pd
@@ -36,10 +29,17 @@ from scipy.spatial import Delaunay, ConvexHull
 import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import seaborn as sns
+from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
+
+import rpy2.robjects as ro
+from rpy2.robjects.numpy2ri import numpy2ri
+from rpy2.robjects.packages import importr
 
 from ccal import SEED
-from .support import print_log, standardize_pandas_object, establish_path
+from .support import print_log, establish_path, standardize_pandas_object
+
+ro.conversion.py2ri = numpy2ri
+mass = importr('MASS')
 
 # ======================================================================================================================
 # Parameters
@@ -50,19 +50,57 @@ CMAP_CONTINUOUS = mpl.cm.bwr
 CMAP_CONTINUOUS.set_bad(BAD_COLOR)
 CMAP_CATEGORICAL = mpl.cm.Paired
 CMAP_CATEGORICAL.set_bad(BAD_COLOR)
-CMAP_BINARY = sns.light_palette('black', n_colors=2, as_cmap=True)
+CMAP_BINARY = light_palette('black', n_colors=2, as_cmap=True)
 CMAP_BINARY.set_bad(BAD_COLOR)
 
+FIGURE_SIZE = (10, 16)
 DPI = 1000
 
 
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
+def plot_graph(graph, title=None, output_filename=None, figure_size=FIGURE_SIZE, dpi=DPI):
+    """
+    Plot networkx `graph`.
+    :param graph: networkx Graph,
+    :param title: string, figure title
+    :param output_filename: str, file path to save the figure
+    :param figure_size: tuple, figure size (width, height)
+    :param dpi: int, dots-per-inch for the output figure
+    :return: None
+    """
+    plt.figure(num=None, figure_size=figure_size)
+    plt.axis('off')
+
+    if title:
+        plt.gcf().suptitle(title)
+
+    # Get position
+    positions = nx.spring_layout(graph)
+
+    # Draw
+    nx.draw_networkx_nodes(graph, positions)
+    nx.draw_networkx_edges(graph, positions)
+    nx.draw_networkx_labels(graph, positions)
+    nx.draw_networkx_edge_labels(graph, positions)
+
+    # Configure figure
+    cut = 1.00
+    xmax = cut * max(x for x, y in positions.values())
+    ymax = cut * max(y for x, y in positions.values())
+    plt.xlim(0, xmax)
+    plt.ylim(0, ymax)
+
+    plt.show()
+
+    if output_filename:
+        plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
+
+
 def plot_features_against_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
                                     title=None, title_size=16, annotation_header=None, annotation_label_size=9,
-                                    plot_colname=False,
-                                    figure_filename=None, dpi=DPI):
+                                    plot_colname=False, figure_filename=None, dpi=DPI):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame (n_features, m_elements), must have indices and columns
@@ -91,13 +129,13 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
         ref = (ref - ref.mean()) / ref.std()
         ref = standardize_pandas_object(ref)
 
-    fig = plt.figure(figsize=(min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9)))
+    fig = plt.figure(figure_size=(min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9)))
     horizontal_text_margin = math.pow(features.shape[1], 0.39)
     gridspec = plt.GridSpec(features.shape[0] + 1, features.shape[1] + 1)
 
     # Plot ref, ref label, and title,
     ref_ax = plt.subplot(gridspec.new_subplotspec((0, 0), colspan=features.shape[1]))
-    sns.heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, cmap=ref_cmap, xticklabels=False, cbar=False)
+    heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, cmap=ref_cmap, xticklabels=False, cbar=False)
     plt.setp(ref_ax.get_yticklabels(), rotation=0)
     plt.setp(ref_ax.get_yticklabels(), weight='bold')
 
@@ -125,8 +163,8 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
 
     # Plot features
     features_ax = plt.subplot(gridspec.new_subplotspec((1, 0), rowspan=features.shape[0], colspan=features.shape[1]))
-    sns.heatmap(features, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=plot_colname,
-                cbar=False)
+    heatmap(features, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=plot_colname,
+            cbar=False)
     plt.setp(features_ax.get_yticklabels(), rotation=0)
     plt.setp(features_ax.get_yticklabels(), weight='bold')
 
@@ -169,29 +207,30 @@ def _setup_cmap(pandas_obj, data_type):
     return data_cmap, data_min, data_max
 
 
-def plot_nmf_result(nmf_results, k, figsize=(10, 10), title='NMF Result', title_fontsize=20,
+def plot_nmf_result(nmf_results, k, figure_size=(10, 10), title='NMF Result', title_fontsize=20,
                     output_filename=None, dpi=100):
     """
     Plot NMF results from cca.library.cca.nmf function.
     :param nmf_results: dict, result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
     :param k: int, k for NMF
-    :param figsize: tuple (width, height),
+    :param figure_size: tuple (width, height),
     :param title: str, figure title
+    :param title_fontsize: int, title-font size
     :param output_filename: str, file path to save the figure
     :param dpi: int, dots-per-inch for the output figure
     :return: None
     """
     # Plot W and H
-    fig, (ax_w, ax_h) = plt.subplots(1, 2, figsize=figsize)
+    fig, (ax_w, ax_h) = plt.subplots(1, 2, figure_size=figure_size)
     if title:
         fig.suptitle(title, fontsize=title_fontsize, fontweight='bold')
 
-    sns.heatmap(standardize_pandas_object(nmf_results[k]['W']), cmap='bwr', yticklabels=False, ax=ax_w)
+    heatmap(standardize_pandas_object(nmf_results[k]['W']), cmap='bwr', yticklabels=False, ax=ax_w)
     ax_w.set_title('W matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
     ax_w.set_xlabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
     ax_w.set_ylabel('Feature', fontsize=title_fontsize * 0.69, fontweight='bold')
 
-    sns.heatmap(standardize_pandas_object(nmf_results[k]['H']), cmap='bwr', xticklabels=False, ax=ax_h)
+    heatmap(standardize_pandas_object(nmf_results[k]['H']), cmap='bwr', xticklabels=False, ax=ax_h)
     ax_h.set_title('H matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
     ax_h.set_xlabel('Sample', fontsize=title_fontsize * 0.69, fontweight='bold')
     ax_h.set_ylabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
@@ -202,18 +241,20 @@ def plot_nmf_result(nmf_results, k, figsize=(10, 10), title='NMF Result', title_
     plt.show()
 
 
-def plot_nmf_scores(scores, figsize=(10, 10), title='NMF Clustering Score vs. k', title_fontsize=20,
-                    output_filename=None, dpi=DPI):
+def plot_nmf_scores(scores, title='NMF Clustering Score vs. k', title_fontsize=20, output_filename=None,
+                    figure_size=(10, 10), dpi=DPI):
     """
     Plot NMF `scores`.
     :param scores: dict, NMF score per k (key: k; value: score)
-    :param figsize: tuple, figure size (width, height)
+    :param figure_size: tuple, figure size (width, height)
     :param title: str, figure title
+    :param title_fontsize: int, title-font size
     :param output_filename: str, file path to save the figure
+    :param dpi: int, dots-per-inch for the output figure
     :return: None
     """
-    plt.figure(figsize=figsize)
-    ax = sns.pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
+    plt.figure(figure_size=figure_size)
+    ax = pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
     if title:
         ax.set_title(title, fontsize=title_fontsize, fontweight='bold')
     ax.set_xlabel('k', fontsize=title_fontsize * 0.81, fontweight='bold')
@@ -223,42 +264,6 @@ def plot_nmf_scores(scores, figsize=(10, 10), title='NMF Clustering Score vs. k'
         plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
 
     plt.show()
-
-
-def plot_graph(graph, figsize=(7, 5), title=None, output_filename=None):
-    """
-    Plot networkx `graph`.
-    :param graph: networkx Graph,
-    :param figsize: tuple, figure size (width, height)
-    :param title: str, figure title
-    :param output_filename: str, file path to save the figure
-    :return: None
-    """
-    plt.figure(num=None, figsize=figsize)
-    if title:
-        plt.gcf().suptitle(title)
-    plt.axis('off')
-
-    # Get position
-    positions = nx.spring_layout(graph)
-
-    # Draw
-    nx.draw_networkx_nodes(graph, positions)
-    nx.draw_networkx_edges(graph, positions)
-    nx.draw_networkx_labels(graph, positions)
-    nx.draw_networkx_edge_labels(graph, positions)
-
-    # Configure figure
-    cut = 1.00
-    xmax = cut * max(x for x, y in positions.values())
-    ymax = cut * max(y for x, y in positions.values())
-    plt.xlim(0, xmax)
-    plt.ylim(0, ymax)
-
-    plt.show()
-
-    if output_filename:
-        plt.savefig(output_filename, dpi=DPI, bbox_inches='tight')
 
 
 def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
@@ -396,7 +401,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
             grid_states[i, j] = np.argmax(kdes[:, i, j])
 
     # Set up figure
-    figure = plt.figure(figsize=figure_size)
+    figure = plt.figure(figure_size=figure_size)
 
     # Set up axes
     gridspec = mpl.gridspec.GridSpec(10, 16)
@@ -495,27 +500,28 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
             palette[s] = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
 
         if effect_plot_type == 'violine':
-            sns.violinplot(x=annotations, y=states, palette=palette, scale='count', inner=None, orient='h',
-                           ax=ax_legend)
-            sns.boxplot(x=annotations, y=states,
-                        showbox=False, showmeans=True, meanprops={'marker': 'o',
-                                                                  'markerfacecolor': boxplot_mean_markerfacecolor,
-                                                                  'markeredgewidth': 0.9,
-                                                                  'markeredgecolor': boxplot_mean_markeredgecolor},
-                        medianprops={'color': boxplot_median_markeredgecolor},
-                        orient='h', ax=ax_legend)
+            violinplot(x=annotations, y=states, palette=palette, scale='count', inner=None, orient='h',
+                       ax=ax_legend)
+            boxplot(x=annotations, y=states,
+                    showbox=False, showmeans=True, meanprops={'marker': 'o',
+                                                              'markerfacecolor': boxplot_mean_markerfacecolor,
+                                                              'markeredgewidth': 0.9,
+                                                              'markeredgecolor': boxplot_mean_markeredgecolor},
+                    medianprops={'color': boxplot_median_markeredgecolor},
+                    orient='h', ax=ax_legend)
         elif effect_plot_type == 'box':
-            sns.boxplot(x=annotations, y=states,
-                        palette=palette, showmeans=True, meanprops={'marker': 'o',
-                                                                    'markerfacecolor': boxplot_mean_markerfacecolor,
-                                                                    'markeredgewidth': 0.9,
-                                                                    'markeredgecolor': boxplot_mean_markeredgecolor},
-                        medianprops={'color': boxplot_median_markeredgecolor},
-                        orient='h', ax=ax_legend)
+            boxplot(x=annotations, y=states,
+                    palette=palette, showmeans=True, meanprops={'marker': 'o',
+                                                                'markerfacecolor': boxplot_mean_markerfacecolor,
+                                                                'markeredgewidth': 0.9,
+                                                                'markeredgecolor': boxplot_mean_markeredgecolor},
+                    medianprops={'color': boxplot_median_markeredgecolor},
+                    orient='h', ax=ax_legend)
 
-        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in sorted(set(states))],
-                                  fontsize=legend_fontsize,
-                                  weight='bold')
+        ax_legend.set_yticklabels(
+            ['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in sorted(set(states))],
+            fontsize=legend_fontsize,
+            weight='bold')
         ax_legend.yaxis.tick_right()
         ax_legend.set_xticks([np.min(annotations), np.mean(annotations), np.max(annotations)])
         for t in ax_legend.get_xticklabels():
