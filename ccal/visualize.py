@@ -98,6 +98,65 @@ def plot_graph(graph, title=None, output_filename=None, figure_size=FIGURE_SIZE,
         plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
 
 
+def plot_nmf_result(nmf_results, k, figure_size=(10, 10), title='NMF Result', title_fontsize=20,
+                    output_filename=None, dpi=100):
+    """
+    Plot NMF results from cca.library.cca.nmf function.
+    :param nmf_results: dict, result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
+    :param k: int, k for NMF
+    :param figure_size: tuple (width, height),
+    :param title: str, figure title
+    :param title_fontsize: int, title-font size
+    :param output_filename: str, file path to save the figure
+    :param dpi: int, dots-per-inch for the output figure
+    :return: None
+    """
+    # Plot W and H
+    fig, (ax_w, ax_h) = plt.subplots(1, 2, figure_size=figure_size)
+    if title:
+        fig.suptitle(title, fontsize=title_fontsize, fontweight='bold')
+
+    heatmap(standardize_pandas_object(nmf_results[k]['W']), cmap='bwr', yticklabels=False, ax=ax_w)
+    ax_w.set_title('W matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
+    ax_w.set_xlabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
+    ax_w.set_ylabel('Feature', fontsize=title_fontsize * 0.69, fontweight='bold')
+
+    heatmap(standardize_pandas_object(nmf_results[k]['H']), cmap='bwr', xticklabels=False, ax=ax_h)
+    ax_h.set_title('H matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
+    ax_h.set_xlabel('Sample', fontsize=title_fontsize * 0.69, fontweight='bold')
+    ax_h.set_ylabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
+
+    if output_filename:
+        plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
+
+    plt.show()
+
+
+def plot_nmf_scores(scores, title='NMF Clustering Score vs. k', title_fontsize=20, output_filename=None,
+                    figure_size=(10, 10), dpi=DPI):
+    """
+    Plot NMF `scores`.
+    :param scores: dict, NMF score per k (key: k; value: score)
+    :param figure_size: tuple, figure size (width, height)
+    :param title: str, figure title
+    :param title_fontsize: int, title-font size
+    :param output_filename: str, file path to save the figure
+    :param dpi: int, dots-per-inch for the output figure
+    :return: None
+    """
+    plt.figure(figure_size=figure_size)
+    ax = pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
+    if title:
+        ax.set_title(title, fontsize=title_fontsize, fontweight='bold')
+    ax.set_xlabel('k', fontsize=title_fontsize * 0.81, fontweight='bold')
+    ax.set_ylabel('Score', fontsize=title_fontsize * 0.81, fontweight='bold')
+
+    if output_filename:
+        plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
+
+    plt.show()
+
+
 def plot_features_against_reference(features, ref, annotations, features_type='continuous', ref_type='continuous',
                                     title=None, title_size=16, annotation_header=None, annotation_label_size=9,
                                     plot_colname=False, figure_filename=None, dpi=DPI):
@@ -205,65 +264,6 @@ def _setup_cmap(pandas_obj, data_type):
     else:
         raise ValueError('Unknown data_type {}.'.format(data_type))
     return data_cmap, data_min, data_max
-
-
-def plot_nmf_result(nmf_results, k, figure_size=(10, 10), title='NMF Result', title_fontsize=20,
-                    output_filename=None, dpi=100):
-    """
-    Plot NMF results from cca.library.cca.nmf function.
-    :param nmf_results: dict, result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
-    :param k: int, k for NMF
-    :param figure_size: tuple (width, height),
-    :param title: str, figure title
-    :param title_fontsize: int, title-font size
-    :param output_filename: str, file path to save the figure
-    :param dpi: int, dots-per-inch for the output figure
-    :return: None
-    """
-    # Plot W and H
-    fig, (ax_w, ax_h) = plt.subplots(1, 2, figure_size=figure_size)
-    if title:
-        fig.suptitle(title, fontsize=title_fontsize, fontweight='bold')
-
-    heatmap(standardize_pandas_object(nmf_results[k]['W']), cmap='bwr', yticklabels=False, ax=ax_w)
-    ax_w.set_title('W matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
-    ax_w.set_xlabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
-    ax_w.set_ylabel('Feature', fontsize=title_fontsize * 0.69, fontweight='bold')
-
-    heatmap(standardize_pandas_object(nmf_results[k]['H']), cmap='bwr', xticklabels=False, ax=ax_h)
-    ax_h.set_title('H matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
-    ax_h.set_xlabel('Sample', fontsize=title_fontsize * 0.69, fontweight='bold')
-    ax_h.set_ylabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
-
-    if output_filename:
-        plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
-
-    plt.show()
-
-
-def plot_nmf_scores(scores, title='NMF Clustering Score vs. k', title_fontsize=20, output_filename=None,
-                    figure_size=(10, 10), dpi=DPI):
-    """
-    Plot NMF `scores`.
-    :param scores: dict, NMF score per k (key: k; value: score)
-    :param figure_size: tuple, figure size (width, height)
-    :param title: str, figure title
-    :param title_fontsize: int, title-font size
-    :param output_filename: str, file path to save the figure
-    :param dpi: int, dots-per-inch for the output figure
-    :return: None
-    """
-    plt.figure(figure_size=figure_size)
-    ax = pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
-    if title:
-        ax.set_title(title, fontsize=title_fontsize, fontweight='bold')
-    ax.set_xlabel('k', fontsize=title_fontsize * 0.81, fontweight='bold')
-    ax.set_ylabel('Score', fontsize=title_fontsize * 0.81, fontweight='bold')
-
-    if output_filename:
-        plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
-
-    plt.show()
 
 
 def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuous', output_filename=None, dpi=DPI,
