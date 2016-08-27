@@ -310,13 +310,13 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     samples = pd.DataFrame(index=h.columns, columns=['state', 'x', 'y'])
 
     # Get sample states and (if any) annotations
-    samples['state'] = states
-    if annotations:
+    samples.ix[:, 'state'] = states
+    if isinstance(annotations, pd.Series):
         if annotation_type == 'continuous':
-            samples['annotation'] = normalize_pandas_object(annotations)
-            samples.clip(-max_std, max_std)
+            samples.ix[:, 'annotation'] = np.asarray(normalize_pandas_object(annotations))
+            samples.ix[:, 'annotation'] = samples.ix[:, 'annotation'].clip(-max_std, max_std)
         else:
-            samples['annotation'] = normalize_pandas_object(annotations, method='0-1')
+            samples.ix[:, 'annotation'] = normalize_pandas_object(annotations, method='0-1')
 
     # Get x & y coordinates of each sample
     for sample in samples.index:
@@ -373,7 +373,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     ax_map = plt.subplot(gridspec[2:, :13])
     ax_map.axis('off')
     ax_legend = plt.subplot(gridspec[1:, 14:])
-    ax_title.axis('off')
+    ax_legend.axis('off')
 
     #  Assign colors to states
     states_color = {}
@@ -406,10 +406,10 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, zorder=3)
 
     # Plot samples
-    if annotations:
+    if isinstance(annotations, pd.Series):
         cmap, cmap_min, cmap_max, = _setup_cmap(annotations, annotation_type)
     for idx, s in samples.iterrows():
-        if annotations:
+        if isinstance(annotations, pd.Series):
             c = cmap(s.ix['annotation'])
         else:
             c = states_color[s.ix['state']]
@@ -450,12 +450,19 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                                 markersize=background_markersize * 2, markerfacecolor='w', zorder=2)
 
     # Plot legends
-    if annotations:
-        # TODO:
-        ax_legend.set_title('Feature\nIC=xxx (p-val=xxx)', fontsize=legend_fontsize * 1.26, weight='bold')
+    if isinstance(annotations, pd.Series):
+        ax_legend.axis('on')
+        if annotations.name:
+            annotation_name = annotations.name
+        else:
+            annotation_name = 'Please name `annotation` (pandas Series)'
+
+        ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
+                            fontsize=legend_fontsize * 1.26, weight='bold')
 
         if effectplot_type == 'violine':
-            violinplot(x=annotations, y=states, palette=states_color, scale='count', inner=None, orient='h', ax=ax_legend)
+            violinplot(x=annotations, y=states, palette=states_color, scale='count', inner=None, orient='h',
+                       ax=ax_legend)
             boxplot(x=annotations, y=states, showbox=False, showmeans=True,
                     meanprops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
@@ -470,13 +477,15 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                                'markeredgecolor': effectplot_mean_markeredgecolor},
                     medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
-        ax_legend.set_yticklabels(
-            ['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in unique_states],
-            fontsize=legend_fontsize, weight='bold')
-        ax_legend.yaxis.tick_right()
+        # Set xticks
         ax_legend.set_xticks([np.min(annotations), np.mean(annotations), np.max(annotations)])
+        ax_legend.set_xlabel('')
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
+        # Set yticks
+        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in unique_states],
+                                  fontsize=legend_fontsize, weight='bold')
+        ax_legend.yaxis.tick_right()
 
         ax_legend.patch.set_visible(False)
         ax_legend.axvline(np.min(annotations), color='#000000', ls='-', alpha=0.16)
@@ -486,7 +495,6 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
     else:
         ax_legend.axis([0, 1, 0, 1])
-        ax_legend.axis('off')
         for i, s in enumerate(unique_states):
             y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
             c = states_color[s]

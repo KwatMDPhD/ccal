@@ -205,7 +205,7 @@ def add_jitter(vectors, jitter=1E-10):
     return [v + np.random.random_sample(v.size) * jitter for v in vectors]
 
 
-def normalize_pandas_object(pandas_object, method='0-mean'):
+def normalize_pandas_object(pandas_object, method='-0-'):
     """
     Normalize a pandas object (by row for a DataFrame) using one of various methods.
     :param pandas_object: pandas DataFrame or Series;
@@ -222,6 +222,8 @@ def normalize_pandas_object(pandas_object, method='0-mean'):
                     obj.ix[i, j] = (v - ax_mean) / ax_std
         elif isinstance(obj, pd.Series):
             obj = (obj - obj.mean()) / obj.std()
+        else:
+            raise ValueError('Not a pandas DataFrame or Series.')
 
     elif method == '0-1':
         if isinstance(obj, pd.DataFrame):
@@ -233,7 +235,8 @@ def normalize_pandas_object(pandas_object, method='0-mean'):
                     obj.ix[i, j] = (v - ax_min) / ax_range
         elif isinstance(obj, pd.Series):
             obj = (obj - obj.min()) / (obj.max() - obj.min())
-
+        else:
+            raise ValueError('Not a pandas DataFrame or Series.')
     return obj
 
 
