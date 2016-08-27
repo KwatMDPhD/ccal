@@ -231,12 +231,12 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   mds_is_metric=True, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726',
-                  component_markeredgewidth=1, component_markeredgecolor='#FFFFFF', component_fontsize=16,
+                  component_markeredgewidth=1.69, component_markeredgecolor='#FFFFFF', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   kde_bandwidths_factor=1, n_respective_component='all', sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   contour=True, n_contour=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                  background=True, background_markersize=3.73, background_max_alpha=0.92, background_alpha_factor=1,
+                  background=True, background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.81,
                   legend_markersize=10, legend_fontsize=11,
                   effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
                   effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
@@ -275,8 +275,8 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     :param contour_alpha: float; [0, 1]
     :param background: bool; plot background or not
     :param background_markersize: number;
+    :param background_mask_markersize: number;
     :param background_max_alpha: float; [0, 1]; the maximum background alpha (transparency)
-    :param background_alpha_factor: number; factor to multiply background alpha
     :param legend_markersize: number;
     :param legend_fontsize: number;
     :param effectplot_type: string; {'violine', 'box'}
@@ -300,65 +300,48 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     # Get sample annotations (if any)
     if isinstance(annotations, pd.Series):
         if annotation_type == 'continuous':
-            samples.ix[:, 'annotation'] = np.asarray(normalize_pandas_object(annotations))
+            samples.ix[:, 'annotation'] = np.array(normalize_pandas_object(annotations))
             samples.ix[:, 'annotation'] = samples.ix[:, 'annotation'].clip(-max_std, max_std)
         else:
             samples.ix[:, 'annotation'] = normalize_pandas_object(annotations, method='0-1')
 
     # Get sample coordinates
     # Standardize H and clip values with extreme standard deviation
-    normalized_h = normalize_pandas_object(h)
-    normalized_clipped_h = normalized_h.clip(-max_std, max_std)
+    normalized_clipped_h = normalize_pandas_object(h).clip(-max_std, max_std)
     # Project the H's components from <n_sample>D to 2D
     mds = MDS(metric=mds_is_metric, random_state=mds_seed)
     components_coordinates = mds.fit_transform(normalized_clipped_h)
-    # print('components_coordinates (raw):\n', components_coordinates)
     x_min = min(components_coordinates[:, 0])
     x_max = max(components_coordinates[:, 0])
     x_range = x_max - x_min
-    # print('x_min & x_max & x_range:', x_min, x_max, x_range)
     y_min = min(components_coordinates[:, 1])
     y_max = max(components_coordinates[:, 1])
     y_range = y_max - y_min
-    # print('y_min & y_max & y_range:', y_min, y_max, y_range)
     # 0-1 normalize the coordinates
     x_grids = np.linspace(0, 1, n_grid)
     y_grids = np.linspace(0, 1, n_grid)
-    # print('x_grid:', x_grids)
-    # print('y_grid:', y_grids)
     for i, (x, y) in enumerate(components_coordinates):
         components_coordinates[i, 0] = (x - x_min) / x_range
         components_coordinates[i, 1] = (y - y_min) / y_range
-    # print('components_coordinates (0-1 normalized):\n', components_coordinates)
-
-    # Delaunay triangulate and compute convexhull for the 2D-projected component coordinates
-    delaunay = Delaunay(components_coordinates)
-    convexhull = ConvexHull(components_coordinates)
-    convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
-
-    # Get x & y coordinates of each sample
+    # Compute x & y coordinates
     for sample in samples.index:
         col = h.ix[:, sample]
         if n_respective_component == 'all':
             n_respective_component = h.shape[0]
         col = col.mask(col < col.sort_values()[-n_respective_component], other=0)
-
         x = sum(col ** sample_stretch_factor * components_coordinates[:, 0]) / sum(col ** sample_stretch_factor)
         y = sum(col ** sample_stretch_factor * components_coordinates[:, 1]) / sum(col ** sample_stretch_factor)
         samples.ix[sample, ['x', 'y']] = x, y
-    # print('samples:\n', samples)
 
     # Get KDE for each state using bandwidth created from all states' x & y coordinates
     kdes = np.zeros((len(unique_states) + 1, n_grid, n_grid))
     bandwidths = np.array([mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0],
                            mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
-    # print('global bandwidths:', bandwidths)
     for s in unique_states:
         coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
         kde = mass.kde2d(np.array(coordinates.ix[:, 'x'], dtype=float), np.array(coordinates.ix[:, 'y'], dtype=float),
                          bandwidths, n=np.array([n_grid]), lims=np.array([0, 1, 0, 1]))
         kdes[s] = np.array(kde[2])
-
     # Assign the best KDE probability and state for each grid
     grid_probabilities = np.zeros((n_grid, n_grid))
     grid_states = np.empty((n_grid, n_grid))
@@ -366,8 +349,6 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         for j in range(n_grid):
             grid_probabilities[i, j] = max(kdes[:, j, i])
             grid_states[i, j] = np.argmax(kdes[:, i, j])
-    # print('grid_probabilities:\n', grid_probabilities)
-    # print('grid_states:\n', grid_states)
 
     # Set up figure
     figure = plt.figure(figsize=figure_size)
@@ -399,6 +380,9 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
                 markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, clip_on=False,
                 aa=True, zorder=6)
+    # Compute convexhull
+    convexhull = ConvexHull(components_coordinates)
+    convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
     # Put labels on top or bottom of the component markers
     component_text_verticalshift = 0.03
     for i in range(h.shape[0]):
@@ -412,6 +396,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                     horizontalalignment='center', verticalalignment='center', zorder=6)
 
     # Plot Delaunay triangulation
+    delaunay = Delaunay(components_coordinates)
     ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, zorder=4)
 
@@ -442,11 +427,10 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                     c = states_color[grid_states[i, j]]
                     a = min(background_max_alpha,
                             (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range)
-                    a *= background_alpha_factor
                     ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_markersize, markerfacecolor=c,
                                 alpha=a, aa=True, zorder=1)
                 else:
-                    ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_markersize * 1.9,
+                    ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_mask_markersize,
                                 markerfacecolor='w', aa=True, zorder=3)
 
     # Plot legends
@@ -458,8 +442,8 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         if annotations.name:
             annotation_name = annotations.name
         else:
-            annotation_name = 'Please name `annotation` (pandas Series)'
-
+            annotation_name = ''
+        # TODO: Compute IC and get p-val
         ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
                             fontsize=legend_fontsize * 1.26, weight='bold')
 
@@ -492,7 +476,6 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in unique_states],
                                   fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
-
 
     else:
         # right_adjust = 0.92
