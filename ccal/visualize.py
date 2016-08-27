@@ -236,7 +236,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                   kde_bandwidths_factor=1, n_respective_component='all', sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   contour=True, n_contour=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                  background=True, background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.81,
+                  background=True, background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.7,
                   legend_markersize=10, legend_fontsize=11,
                   effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
                   effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
@@ -435,7 +435,6 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
     # Plot legends
     if isinstance(annotations, pd.Series):
-        # right_adjust = 0.88
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
 
@@ -478,16 +477,15 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         ax_legend.yaxis.tick_right()
 
     else:
-        # right_adjust = 0.92
         for i, s in enumerate(unique_states):
             y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
             c = states_color[s]
-            ax_legend.plot(0.1, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
-            ax_legend.text(0.2, y, 'State {} (n={})'.format(s, sum(states == s)),
+            ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
+            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(states == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if output_filename:
-        figure.subplots_adjust(left=0.069, top=0.96, bottom=0.069)
-        figure.savefig(output_filename, dpi=dpi)
+        # figure.subplots_adjust(left=0.069, right=0.9, top=0.96, bottom=0.069)
+        figure.savefig(output_filename, dpi=dpi, bbox_inches='tight')
 
     plt.show()
