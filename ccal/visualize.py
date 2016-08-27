@@ -383,7 +383,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     # Plot components and their labels
     ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], marker='D', linestyle='',
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
-                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, zorder=4)
+                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, zorder=5)
     # Put labels on top or bottom of the marker
     component_text_verticalshift = 1.16
     for i in range(h.shape[0]):
@@ -394,7 +394,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
             x, y = components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift
         ax_map.text(x, y, standardized_clipped_h.index[i],
                     fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
-                    horizontalalignment='center', verticalalignment='center', zorder=4)
+                    horizontalalignment='center', verticalalignment='center', zorder=5)
 
     # Plot Delaunay triangulation
     ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
@@ -409,7 +409,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         else:
             c = CMAP_CATEGORICAL(int(s.ix['state'] / len(unique_states) * CMAP_CATEGORICAL.N))
         ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
-                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=3)
+                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=4)
 
     # Plot contours
     # TODO: don't draw masked contours
