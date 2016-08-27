@@ -375,6 +375,11 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     ax_legend = plt.subplot(gridspec[1:, 14:])
     ax_title.axis('off')
 
+    #  Assign colors to states
+    states_color = {}
+    for s in unique_states:
+        states_color[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
+
     # Plot title
     ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
     ax_title.text(0, 0.26, '{} samples, {} components, and {} states'.format(*reversed(h.shape), len(unique_states)),
@@ -407,7 +412,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         if annotations:
             c = cmap(s.ix['annotation'])
         else:
-            c = CMAP_CATEGORICAL(int(s.ix['state'] / len(unique_states) * CMAP_CATEGORICAL.N))
+            c = states_color[s.ix['state']]
         ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
                     markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=4)
 
@@ -432,7 +437,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         for i in range(n_grid):
             for j in range(n_grid):
                 if convexhull_region.contains_point((x_grids[i], y_grids[j])):
-                    c = CMAP_CATEGORICAL(int(grid_states[i, j] / len(unique_states) * CMAP_CATEGORICAL.N))
+                    c = states_color[grid_states[i, j]]
                     a = min(background_max_alpha,
                             (grid_probabilities[i, j] - grid_probabilities.min()) /
                             (grid_probabilities.max() - grid_probabilities.min()))
@@ -449,12 +454,8 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         # TODO:
         ax_legend.set_title('Feature\nIC=xxx (p-val=xxx)', fontsize=legend_fontsize * 1.26, weight='bold')
 
-        palette = {}
-        for s in unique_states:
-            palette[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
-
         if effectplot_type == 'violine':
-            violinplot(x=annotations, y=states, palette=palette, scale='count', inner=None, orient='h', ax=ax_legend)
+            violinplot(x=annotations, y=states, palette=states_color, scale='count', inner=None, orient='h', ax=ax_legend)
             boxplot(x=annotations, y=states, showbox=False, showmeans=True,
                     meanprops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
@@ -462,7 +463,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                                'markeredgecolor': effectplot_mean_markeredgecolor},
                     medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         elif effectplot_type == 'box':
-            boxplot(x=annotations, y=states, palette=palette, showmeans=True,
+            boxplot(x=annotations, y=states, palette=states_color, showmeans=True,
                     meanprops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
                                'markeredgewidth': 0.9,
@@ -488,7 +489,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         ax_legend.axis('off')
         for i, s in enumerate(unique_states):
             y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
-            c = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
+            c = states_color[s]
             ax_legend.plot(0.5, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
             ax_legend.text(0.6, y, 'State {} (n={})'.format(s, sum(states == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
