@@ -211,10 +211,10 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
         print_log('Saved the figure as {}.'.format(figure_filename))
 
 
-def _setup_cmap(pandas_obj, data_type):
+def _setup_cmap(pandas_obj, data_type, std_max=3):
     if data_type is 'continuous':
         data_cmap = CMAP_CONTINUOUS
-        data_min, data_max = -3, 3
+        data_min, data_max = -std_max, std_max
     elif data_type is 'categorical':
         data_cmap = CMAP_CATEGORICAL
         data_min, data_max = 0, np.unique(pandas_obj.values).size
@@ -227,22 +227,21 @@ def _setup_cmap(pandas_obj, data_type):
 
 
 def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='continuous',
-                  coordinates_extending_factor=1 / 24, n_grid=128,
+                  coordinates_extending_factor=1 / 26, n_grid=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   mds_is_metric=True, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726',
-                  component_markeredgewidth=1, component_markeredgecolor='#FFFFFF',
-                  component_text_verticalshift=1.3, component_fontsize=16,
+                  component_markeredgewidth=1, component_markeredgecolor='#FFFFFF', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
-                  kde_bandwidths_factor=1.5, n_respective_component='all', sample_stretch_factor=2,
+                  kde_bandwidths_factor=0.69, n_respective_component='all', sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   contour=True, n_contour=30, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.5,
                   background=True, background_markersize=3.73, background_max_alpha=0.9, background_alpha_factor=0.69,
                   legend_markersize=10, legend_fontsize=11,
-                  effect_plot_type='violine',
+                  effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
+                  effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
                   output_filename=None, figure_size=FIGURE_SIZE, dpi=DPI):
-    # TODO: add descriptions for XXX
     """
     :param h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: array-like; (n_samples); sample states
@@ -262,11 +261,10 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     :param component_markerfacecolor: matplotlib compatible color;
     :param component_markeredgewidth: number;
     :param component_markeredgecolor: matplotlib compatible color;
-    :param component_text_verticalshift: number; XXX
     :param component_fontsize: number;
     :param delaunay_linewidth: int or flaot;
     :param delaunay_linecolor: matplotlib compatible color;
-    :param kde_bandwidths_factor: number; XXX
+    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param n_respective_component: int; [1, n_components]; number of components influencing a sample's coordinate
     :param sample_stretch_factor: number; power to raise components' influence on each sample
     :param sample_markersize: number;
@@ -280,16 +278,21 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     :param background: bool; plot background or not
     :param background_markersize: number;
     :param background_max_alpha: float; [0, 1]; the maximum background alpha (transparency)
-    :param background_alpha_factor: number; XXX
+    :param background_alpha_factor: number; factor to multiply background alpha
     :param legend_markersize: number;
     :param legend_fontsize: number;
-    :param effect_plot_type: string; {'violine', 'box'}
+    :param effectplot_type: string; {'violine', 'box'}
+    :param effectplot_mean_markerfacecolor:
+    :param effectplot_mean_markeredgecolor:
+    :param effectplot_median_markeredgecolor:
     :param output_filename: string;
     :param figure_size: tuple; (height, width)
     :param dpi: int;
     :return: None
     """
-    print_log('Creating Onco-GPS with {} samples, {} components, and states: {} ...'.format(*reversed(h.shape), states))
+    unique_states = sorted(set(states))
+    print_log('Creating Onco-GPS with {} samples, {} components, and states: {} ...'.format(*reversed(h.shape),
+                                                                                            unique_states))
 
     # Standardize H and clip values with extreme standard deviation
     standardized_h = normalize_pandas_object(h)
@@ -326,15 +329,13 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         samples.ix[sample, ['x', 'y']] = x, y
 
     # Get x & y coordinate boundaries
-    x_coordinates = components_coordinates[:, 0]
-    x_min = min(x_coordinates)
-    x_max = max(x_coordinates)
+    x_min = min(components_coordinates[:, 0])
+    x_max = max(components_coordinates[:, 0])
     x_margin = (x_max - x_min) * coordinates_extending_factor
     x_min -= x_margin
     x_max += x_margin
-    y_coordinates = components_coordinates[:, 1]
-    y_min = min(y_coordinates)
-    y_max = max(y_coordinates)
+    y_min = min(components_coordinates[:, 1])
+    y_max = max(components_coordinates[:, 1])
     y_margin = (y_max - y_min) * coordinates_extending_factor
     y_min -= y_margin
     y_max += y_margin
@@ -345,18 +346,15 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
     # Get KDE for each state using bandwidth created from all states' x & y coordinates
     kdes = np.zeros((len(states), n_grid, n_grid))
-    x_bandwidth = mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0]
-    y_bandwidth = mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]
-
-    bandwidths = np.array([x_bandwidth * kde_bandwidths_factor, y_bandwidth * kde_bandwidths_factor]) / 2
-    for s in sorted(samples.ix[:, 'state'].unique()):
+    bandwidths = np.array([mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0],
+                           mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
+    for s in unique_states:
         coordiantes = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
-        x = np.array(coordiantes.ix[:, 'x'], dtype=float)
-        y = np.array(coordiantes.ix[:, 'y'], dtype=float)
-        kde = mass.kde2d(x, y, bandwidths, n=np.array([n_grid]), lims=np.array([x_min, x_max, y_min, y_max]))
+        kde = mass.kde2d(np.array(coordiantes.ix[:, 'x'], dtype=float), np.array(coordiantes.ix[:, 'y'], dtype=float),
+                         bandwidths, n=np.array([n_grid]), lims=np.array([x_min, x_max, y_min, y_max]))
         kdes[s] = np.array(kde[2])
 
-    # Assign the best KDE probability and state for each grid intersection
+    # Assign the best KDE probability and state for each grid
     grid_probabilities = np.zeros((n_grid, n_grid))
     grid_states = np.empty((n_grid, n_grid))
     for i in range(n_grid):
@@ -377,19 +375,17 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     ax_title.axis('off')
 
     # Plot title
-    ax_title.text(0, ax_spacing, title,
-                  fontsize=title_fontsize, color=title_fontcolor, weight='bold', horizontalalignment='left')
-    ax_title.text(0, ax_spacing * 0.39,
-                  '{} samples, {} components, and {} states'.format(*reversed(h.shape), len(states)),
-                  fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold', horizontalalignment='left')
+    ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
+    ax_title.text(0, 0.26, '{} samples, {} components, and {} states'.format(*reversed(h.shape), len(unique_states)),
+                  fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
 
-    # Plot components
-    ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], linestyle='', marker='D',
+    # Plot components and their labels
+    ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], marker='D', linestyle='',
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
                 markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, zorder=6)
-
-    # Plot component labels
-    for i in range(components_coordinates.shape[0]):
+    # Put labels on top or bottom of the marker
+    component_text_verticalshift = 1.39
+    for i in range(h.shape[0]):
         if convexhull_region.contains_point(
                 (components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift)):
             x, y = components_coordinates[i, 0], components_coordinates[i, 1] + component_text_verticalshift
@@ -404,20 +400,15 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, zorder=4)
 
     # Plot samples
-    for i, (idx, s) in enumerate(samples.iterrows()):
-        if any(annotations):
-            if annotation_type is 'continuous':
-                cmap = CMAP_CONTINUOUS
-            elif annotation_type is 'categorical':
-                cmap = CMAP_CATEGORICAL
-            elif annotation_type is 'binary':
-                cmap = CMAP_BINARY
+    if annotations:
+        cmap, cmap_min, cmap_max, = _setup_cmap(annotations, annotation_type)
+    for idx, s in samples.iterrows():
+        if annotations:
             c = cmap(s.ix['annotation'])
         else:
-            c = CMAP_CATEGORICAL(int(s.ix['state'] / n_state * CMAP_CATEGORICAL.N))
-        ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
-                    markerfacecolor=c, markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
-                    zorder=5)
+            c = CMAP_CATEGORICAL(int(s.ix['state'] / len(unique_states) * CMAP_CATEGORICAL.N))
+        ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=5)
 
     # Plot contours
     # TODO: don't draw masked contours
@@ -436,11 +427,11 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                        linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
 
     # Plot background
-    for i in range(n_grid):
-        for j in range(n_grid):
-            if background:
+    if background:
+        for i in range(n_grid):
+            for j in range(n_grid):
                 if convexhull_region.contains_point((x_grids[i], y_grids[j])):
-                    c = CMAP_CATEGORICAL(int(grid_states[i, j] / n_state * CMAP_CATEGORICAL.N))
+                    c = CMAP_CATEGORICAL(int(grid_states[i, j] / len(unique_states) * CMAP_CATEGORICAL.N))
                     a = min(background_max_alpha,
                             (grid_probabilities[i, j] - grid_probabilities.min()) /
                             (grid_probabilities.max() - grid_probabilities.min()))
@@ -450,45 +441,37 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                                 markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
                 else:
                     ax_map.plot(x_grids[i], y_grids[j], marker='s',
-                                markersize=background_markersize * 1.16, markerfacecolor='w', zorder=3)
+                                markersize=background_markersize * 1.26, markerfacecolor='w', zorder=3)
 
     # Plot legends
-    if any(annotations):
+    if annotations:
         ax_legend.axis('on')
-
-        boxplot_mean_markerfacecolor = '#ffffff'
-        boxplot_mean_markeredgecolor = '#FF0082'
-        boxplot_median_markeredgecolor = '#FF0082'
 
         ax_legend.set_title('Feature\nIC=xxx (p-val=xxx)', fontsize=legend_fontsize * 1.26, weight='bold')
 
         palette = {}
-        for s in set(states):
-            palette[s] = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
+        for s in unique_states:
+            palette[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
 
-        if effect_plot_type == 'violine':
-            violinplot(x=annotations, y=states, palette=palette, scale='count', inner=None, orient='h',
-                       ax=ax_legend)
-            boxplot(x=annotations, y=states,
-                    showbox=False, showmeans=True, meanprops={'marker': 'o',
-                                                              'markerfacecolor': boxplot_mean_markerfacecolor,
-                                                              'markeredgewidth': 0.9,
-                                                              'markeredgecolor': boxplot_mean_markeredgecolor},
-                    medianprops={'color': boxplot_median_markeredgecolor},
-                    orient='h', ax=ax_legend)
-        elif effect_plot_type == 'box':
-            boxplot(x=annotations, y=states,
-                    palette=palette, showmeans=True, meanprops={'marker': 'o',
-                                                                'markerfacecolor': boxplot_mean_markerfacecolor,
-                                                                'markeredgewidth': 0.9,
-                                                                'markeredgecolor': boxplot_mean_markeredgecolor},
-                    medianprops={'color': boxplot_median_markeredgecolor},
-                    orient='h', ax=ax_legend)
+        if effectplot_type == 'violine':
+            violinplot(x=annotations, y=states, palette=palette, scale='count', inner=None, orient='h', ax=ax_legend)
+            boxplot(x=annotations, y=states, showbox=False, showmeans=True,
+                    meanprops={'marker': 'o',
+                               'markerfacecolor': effectplot_mean_markerfacecolor,
+                               'markeredgewidth': 0.9,
+                               'markeredgecolor': effectplot_mean_markeredgecolor},
+                    medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
+        elif effectplot_type == 'box':
+            boxplot(x=annotations, y=states, palette=palette, showmeans=True,
+                    meanprops={'marker': 'o',
+                               'markerfacecolor': effectplot_mean_markerfacecolor,
+                               'markeredgewidth': 0.9,
+                               'markeredgecolor': effectplot_mean_markeredgecolor},
+                    medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
         ax_legend.set_yticklabels(
-            ['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in sorted(set(states))],
-            fontsize=legend_fontsize,
-            weight='bold')
+            ['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in unique_states],
+            fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
         ax_legend.set_xticks([np.min(annotations), np.mean(annotations), np.max(annotations)])
         for t in ax_legend.get_xticklabels():
@@ -502,9 +485,9 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
     else:
         ax_legend.axis([0, 1, 0, 1])
-        for i, s in enumerate(sorted(samples.ix[:, 'state'].unique())):
-            y = 1 - float(1 / (n_state + 1)) * (i + 1)
-            c = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
+        for i, s in unique_states:
+            y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
+            c = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
             ax_legend.plot(0.5, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
             ax_legend.text(0.6, y, 'State {} (n={})'.format(s, sum(states == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
