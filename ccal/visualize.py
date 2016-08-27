@@ -51,7 +51,7 @@ CMAP_CATEGORICAL.set_bad(BAD_COLOR)
 CMAP_BINARY = light_palette('black', n_colors=2, as_cmap=True)
 CMAP_BINARY.set_bad(BAD_COLOR)
 
-FIGURE_SIZE = (10, 16)
+FIGURE_SIZE = (16, 10)
 DPI = 1000
 
 
@@ -237,7 +237,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                   kde_bandwidths_factor=0.69, n_respective_component='all', sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   contour=True, n_contour=30, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.5,
-                  background=True, background_markersize=3.73, background_max_alpha=0.9, background_alpha_factor=0.69,
+                  background=True, background_markersize=3.73, background_max_alpha=0.9, background_alpha_factor=1,
                   legend_markersize=10, legend_fontsize=11,
                   effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
                   effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
@@ -291,8 +291,9 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     :return: None
     """
     unique_states = sorted(set(states))
-    print_log('Creating Onco-GPS with {} samples, {} components, and states: {} ...'.format(*reversed(h.shape),
-                                                                                            unique_states))
+    print_log('Creating Onco-GPS with {} samples, {} components, and {} states {} ...'.format(*reversed(h.shape),
+                                                                                              len(unique_states),
+                                                                                              unique_states))
 
     # Standardize H and clip values with extreme standard deviation
     standardized_h = normalize_pandas_object(h)
@@ -382,9 +383,9 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     # Plot components and their labels
     ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], marker='D', linestyle='',
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
-                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, zorder=6)
+                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, zorder=5)
     # Put labels on top or bottom of the marker
-    component_text_verticalshift = 1.39
+    component_text_verticalshift = 1.16
     for i in range(h.shape[0]):
         if convexhull_region.contains_point(
                 (components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift)):
@@ -393,11 +394,11 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
             x, y = components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift
         ax_map.text(x, y, standardized_clipped_h.index[i],
                     fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
-                    horizontalalignment='center', verticalalignment='center', zorder=6)
+                    horizontalalignment='center', verticalalignment='center', zorder=5)
 
     # Plot Delaunay triangulation
     ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
-                   linewidth=delaunay_linewidth, color=delaunay_linecolor, zorder=4)
+                   linewidth=delaunay_linewidth, color=delaunay_linecolor, zorder=3)
 
     # Plot samples
     if annotations:
@@ -408,7 +409,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         else:
             c = CMAP_CATEGORICAL(int(s.ix['state'] / len(unique_states) * CMAP_CATEGORICAL.N))
         ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
-                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=5)
+                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=4)
 
     # Plot contours
     # TODO: don't draw masked contours
@@ -424,7 +425,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     #                linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
     if contour:
         ax_map.contour(x_grids, y_grids, grid_probabilities, n_contour,
-                       linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
+                       linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=1)
 
     # Plot background
     if background:
@@ -438,15 +439,14 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                     a *= background_alpha_factor
 
                     ax_map.plot(x_grids[i], y_grids[j], marker='s',
-                                markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=1)
+                                markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=4)
                 else:
                     ax_map.plot(x_grids[i], y_grids[j], marker='s',
-                                markersize=background_markersize * 1.26, markerfacecolor='w', zorder=3)
+                                markersize=background_markersize * 2, markerfacecolor='w', zorder=2)
 
     # Plot legends
     if annotations:
-        ax_legend.axis('on')
-
+        # TODO:
         ax_legend.set_title('Feature\nIC=xxx (p-val=xxx)', fontsize=legend_fontsize * 1.26, weight='bold')
 
         palette = {}
@@ -485,7 +485,8 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
     else:
         ax_legend.axis([0, 1, 0, 1])
-        for i, s in unique_states:
+        ax_legend.axis('off')
+        for i, s in enumerate(unique_states):
             y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
             c = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
             ax_legend.plot(0.5, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
