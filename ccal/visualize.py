@@ -59,44 +59,6 @@ DPI = 1000
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_graph(graph, title=None, output_filename=None, figure_size=FIGURE_SIZE, dpi=DPI):
-    """
-    Plot networkx `graph`.
-    :param graph: networkx Graph,
-    :param title: string, figure title
-    :param output_filename: str, file path to save the figure
-    :param figure_size: tuple, figure size (width, height)
-    :param dpi: int, dots-per-inch for the output figure
-    :return: None
-    """
-    plt.figure(num=None, figure_size=figure_size)
-    plt.axis('off')
-
-    if title:
-        plt.gcf().suptitle(title)
-
-    # Get position
-    positions = nx.spring_layout(graph)
-
-    # Draw
-    nx.draw_networkx_nodes(graph, positions)
-    nx.draw_networkx_edges(graph, positions)
-    nx.draw_networkx_labels(graph, positions)
-    nx.draw_networkx_edge_labels(graph, positions)
-
-    # Configure figure
-    cut = 1.00
-    xmax = cut * max(x for x, y in positions.values())
-    ymax = cut * max(y for x, y in positions.values())
-    plt.xlim(0, xmax)
-    plt.ylim(0, ymax)
-
-    plt.show()
-
-    if output_filename:
-        plt.savefig(output_filename, dpi=dpi, bbox_inches='tight')
-
-
 def plot_nmf_result(nmf_results, k, figure_size=(10, 10), title='NMF Result', title_fontsize=20,
                     output_filename=None, dpi=100):
     """
@@ -490,7 +452,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
 
     # Plot legends
     if any(annotations):
-        # ax_legend.axis('on')
+        ax_legend.axis('on')
 
         boxplot_mean_markerfacecolor = '#ffffff'
         boxplot_mean_markeredgecolor = '#FF0082'
