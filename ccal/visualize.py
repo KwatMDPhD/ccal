@@ -346,8 +346,8 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     # Get sample annotations
     if any(annotations):
         if annotation_type is 'continuous':
-            # Clip -3 to 3
-            samples['annotation'] = (np.array(annotations) - np.mean(annotations)) / np.std(annotations)
+            samples['annotation'] = (np.array(annotations) - np.mean(annotations)) / np.std(annotations).clip(-2, 2)
+            print('CLIPPING')
         else:
             samples['annotation'] = (np.array(annotations) - min(annotations)) / (max(annotations) - min(annotations))
 
@@ -401,7 +401,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
             grid_states[i, j] = np.argmax(kdes[:, i, j])
 
     # Set up figure
-    figure = plt.figure(figure_size=figure_size)
+    figure = plt.figure(figsize=figure_size)
 
     # Set up axes
     gridspec = mpl.gridspec.GridSpec(10, 16)
@@ -410,6 +410,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     ax_map = plt.subplot(gridspec[2:, :13])
     ax_map.axis('off')
     ax_legend = plt.subplot(gridspec[1:, 14:])
+    ax_title.axis('off')
 
     # Plot title
     ax_title.text(0, ax_spacing, title,
@@ -489,6 +490,8 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
 
     # Plot legends
     if any(annotations):
+        # ax_legend.axis('on')
+
         boxplot_mean_markerfacecolor = '#ffffff'
         boxplot_mean_markeredgecolor = '#FF0082'
         boxplot_median_markeredgecolor = '#FF0082'
@@ -535,7 +538,6 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
 
     else:
         ax_legend.axis([0, 1, 0, 1])
-        ax_legend.axis('off')
         for i, s in enumerate(sorted(samples.ix[:, 'state'].unique())):
             y = 1 - float(1 / (n_state + 1)) * (i + 1)
             c = CMAP_CATEGORICAL(int(s / n_state * CMAP_CATEGORICAL.N))
