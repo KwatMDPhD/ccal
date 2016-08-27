@@ -22,7 +22,11 @@ Supporting module for CCAL.
 import numpy as np
 import pandas as pd
 
+# ======================================================================================================================
+# Parameters
+# ======================================================================================================================
 VERBOSE = True
+SEED = 20121020
 
 
 # ======================================================================================================================
@@ -59,6 +63,12 @@ def install_libraries(libraries_needed):
     for lib in get_installed_distributions():
         if lib.key in libraries_needed:
             print_log('\t{} (v{})'.format(lib.key, lib.version))
+
+
+def plant_seed(a_seed=SEED):
+    from random import seed
+    seed(a_seed)
+    print_log('Planted a random seed {}.'.format(SEED))
 
 
 def establish_path(fullpath):

@@ -35,8 +35,7 @@ import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 
-from ccal import SEED
-from .support import print_log, establish_path, standardize_pandas_object
+from .support import SEED, print_log, establish_path, standardize_pandas_object
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')

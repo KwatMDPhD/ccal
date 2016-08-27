@@ -36,8 +36,7 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from . import SEED
-from .support import print_log, establish_path, standardize_pandas_object, compare_matrices
+from .support import SEED, print_log, establish_path, standardize_pandas_object, compare_matrices
 from .visualize import plot_nmf_result, plot_features_against_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 

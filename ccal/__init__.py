@@ -19,8 +19,6 @@ Laboratory of Jill Mesirov
 Description:
 Check dependencies and install missing ones.
 """
-import random
-
 from . import support
 from . import visualize
 from . import information
@@ -31,7 +29,4 @@ print('=' * 20 + ' Computational Cancer Analysis Library ' + '=' * 20)
 print('=' * 79)
 
 support.install_libraries(['rpy2', 'numpy', 'pandas', 'scipy', 'statsmodels', 'scikit-learn', 'matplotlib', 'seaborn'])
-
-SEED = 20121020
-random.seed(SEED)
-support.print_log('Random seed is {}.'.format(SEED))
+support.plant_seed()
