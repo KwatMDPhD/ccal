@@ -439,7 +439,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                     a *= background_alpha_factor
 
                     ax_map.plot(x_grids[i], y_grids[j], marker='s',
-                                markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=4)
+                                markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=3)
                 else:
                     ax_map.plot(x_grids[i], y_grids[j], marker='s',
                                 markersize=background_markersize * 2, markerfacecolor='w', zorder=2)
