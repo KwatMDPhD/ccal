@@ -294,29 +294,35 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     print_log('Creating Onco-GPS with {} samples, {} components, and {} states {} ...'.format(*reversed(h.shape),
                                                                                               len(unique_states),
                                                                                               unique_states))
+    samples = pd.DataFrame(index=h.columns, columns=['state', 'annotation', 'x', 'y'])
 
-    # Standardize H and clip values with extreme standard deviation
-    standardized_h = normalize_pandas_object(h)
-    standardized_clipped_h = standardized_h.clip(-max_std, max_std)
-
-    # Project the H's components from <n_sample>D to 2D, Delaunay triangulate the 2D-projected component coordinates,
-    # and compute convexhull for the 2D-projected component coordinates
-    mds = manifold.MDS(metric=mds_is_metric, random_state=mds_seed)
-    components_coordinates = mds.fit_transform(standardized_clipped_h)
-    delaunay = Delaunay(components_coordinates)
-    convexhull = ConvexHull(components_coordinates)
-    convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
-
-    samples = pd.DataFrame(index=h.columns, columns=['state', 'x', 'y'])
-
-    # Get sample states and (if any) annotations
+    # Get sample states
     samples.ix[:, 'state'] = states
+
+    # Get sample annotations (if any)
     if isinstance(annotations, pd.Series):
         if annotation_type == 'continuous':
             samples.ix[:, 'annotation'] = np.asarray(normalize_pandas_object(annotations))
             samples.ix[:, 'annotation'] = samples.ix[:, 'annotation'].clip(-max_std, max_std)
         else:
             samples.ix[:, 'annotation'] = normalize_pandas_object(annotations, method='0-1')
+
+    # Get sample coordinates
+    # Standardize H and clip values with extreme standard deviation
+    standardized_h = normalize_pandas_object(h)
+    standardized_clipped_h = standardized_h.clip(-max_std, max_std)
+    # Project the H's components from <n_sample>D to 2D, Delaunay triangulate the 2D-projected component coordinates,
+    # and compute convexhull for the 2D-projected component coordinates
+    mds = manifold.MDS(metric=mds_is_metric, random_state=mds_seed)
+    components_coordinates = mds.fit_transform(standardized_clipped_h)
+    print('components_coordinates:', len(components_coordinates), components_coordinates)
+
+    print('components_coordinates (after 0-1 normalization):', len(components_coordinates), components_coordinates)
+    delaunay = Delaunay(components_coordinates)
+    print('components_coordinates (after Delaunay):', len(components_coordinates), components_coordinates)
+    convexhull = ConvexHull(components_coordinates)
+    convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
+    print('components_coordinates (after convexhull):', len(components_coordinates), components_coordinates)
 
     # Get x & y coordinates of each sample
     for sample in samples.index:
@@ -332,18 +338,24 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     # Get x & y coordinate boundaries
     x_min = min(components_coordinates[:, 0])
     x_max = max(components_coordinates[:, 0])
+    print('x_min & x_max:', x_min, x_max)
     x_margin = (x_max - x_min) * coordinates_extending_factor
     x_min -= x_margin
     x_max += x_margin
+    print('x_min & x_max (after extending):', x_min, x_max)
     y_min = min(components_coordinates[:, 1])
     y_max = max(components_coordinates[:, 1])
+    print('y_min & y_max:', y_min, y_max)
     y_margin = (y_max - y_min) * coordinates_extending_factor
     y_min -= y_margin
     y_max += y_margin
+    print('y_min & y_max (after extending):', y_min, y_max)
 
     # Make x & y grids
     x_grids = np.linspace(x_min, x_max, n_grid)
     y_grids = np.linspace(y_min, y_max, n_grid)
+    print('x_grid:', len(x_grids), x_grids)
+    print('y_grid:', len(y_grids), y_grids)
 
     # Get KDE for each state using bandwidth created from all states' x & y coordinates
     kdes = np.zeros((len(states), n_grid, n_grid))
@@ -369,11 +381,14 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     # Set up axes
     gridspec = mpl.gridspec.GridSpec(10, 16)
     ax_title = plt.subplot(gridspec[0, :])
-    ax_title.axis('off')
+    ax_title.axis('on')
+    print(ax_title.axis())
     ax_map = plt.subplot(gridspec[2:, :13])
-    ax_map.axis('off')
+    ax_map.axis('on')
+    print(ax_map.axis())
     ax_legend = plt.subplot(gridspec[1:, 14:])
-    ax_legend.axis('off')
+    ax_legend.axis('on')
+    print(ax_legend.axis())
 
     #  Assign colors to states
     states_color = {}
@@ -416,21 +431,31 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
                     markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=4)
 
+
+
+
+
+
     # Plot contours
     # TODO: don't draw masked contours
-    # masked_coordinates = []
-    # for i in range(n_grid):
-    #     for j in range(n_grid):
-    #         if not convexhull_region.contains_point((xgrids[i], ygrids[j])):
-    #             masked_coordinates.append([i, j])
-    # masked_coordinates = np.array(masked_coordinates)
-    # z = grid_probabilities.copy()
-    # z[masked_coordinates[:, 0], masked_coordinates[:, 1]] = np.nan
-    # ax_map.contour(xgrids, ygrids, z, n_contour,
-    #                linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=2)
-    if contour:
-        ax_map.contour(x_grids, y_grids, grid_probabilities, n_contour,
-                       linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=1)
+    masked_coordinates = []
+    for i in range(n_grid):
+        for j in range(n_grid):
+            if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
+                masked_coordinates.append([i, j])
+    masked_coordinates = np.array(masked_coordinates)
+    z = grid_probabilities.copy()
+    z[masked_coordinates[:, 0], masked_coordinates[:, 1]] = np.nan
+    ax_map.contour(x_grids, y_grids, z, n_contour,
+                   linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=1)
+    # if contour:
+    #     ax_map.contour(x_grids, y_grids, grid_probabilities, n_contour,
+    #                    linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=1)
+
+
+
+
+
 
     # Plot background
     if background:
