@@ -242,7 +242,7 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
                   contour=True, n_contour=10, contour_linewidth=0.81, contour_linecolor='#5a5a5a', contour_alpha=0.5,
                   background=True, background_max_alpha=1, background_alpha_factor=0.69, background_markersize=3.73,
                   legend_markersize=10, legend_fontsize=11,
-                  effect_plot_type='violine'):
+                  effect_plot_type='violine', annotation_min_std=-3, annotation_max_std=3):
     """
     :param h: pandas DataFrame (n_nmf_component, n_samples), NMF H matrix
     :param n_state: int, number of states to plot
@@ -308,8 +308,8 @@ def plot_onco_gps(h, n_state, states, annotations=(), annotation_type='continuou
     # Get sample annotations
     if any(annotations):
         if annotation_type is 'continuous':
-            samples['annotation'] = (np.array(annotations) - np.mean(annotations)) / np.std(annotations).clip(-2, 2)
-            print('CLIPPING')
+            samples['annotation'] = ((np.array(annotations) - np.mean(annotations)) / np.std(annotations)).clip(
+                annotation_min_std, annotation_max_std)
         else:
             samples['annotation'] = (np.array(annotations) - min(annotations)) / (max(annotations) - min(annotations))
 
