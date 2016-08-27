@@ -24,7 +24,7 @@ import math
 
 import numpy as np
 import pandas as pd
-from sklearn import manifold
+from sklearn.manifold import MDS
 from scipy.spatial import Delaunay, ConvexHull
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -226,18 +226,17 @@ def _setup_cmap(pandas_obj, data_type, std_max=3):
     return data_cmap, data_min, data_max
 
 
-def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='continuous',
-                  coordinates_extending_factor=1 / 26, n_grid=128,
+def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='continuous', n_grid=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   mds_is_metric=True, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726',
                   component_markeredgewidth=1, component_markeredgecolor='#FFFFFF', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
-                  kde_bandwidths_factor=0.69, n_respective_component='all', sample_stretch_factor=2,
+                  kde_bandwidths_factor=1, n_respective_component='all', sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                  contour=True, n_contour=30, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.5,
-                  background=True, background_markersize=3.73, background_max_alpha=0.9, background_alpha_factor=1,
+                  contour=True, n_contour=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
+                  background=True, background_markersize=3.73, background_max_alpha=0.92, background_alpha_factor=1,
                   legend_markersize=10, legend_fontsize=11,
                   effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
                   effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
@@ -248,7 +247,6 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     :param max_std: number;
     :param annotations: pandas Series; (n_samples); sample annotations; color samples based on annotations when given
     :param annotation_type: string; {'continuous', 'categorical', 'binary'}
-    :param coordinates_extending_factor: number; factor to extend the map ax's coordinate dimensions
     :param n_grid: int;
     :param title: string;
     :param title_fontsize: number;
@@ -309,20 +307,34 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
     # Get sample coordinates
     # Standardize H and clip values with extreme standard deviation
-    standardized_h = normalize_pandas_object(h)
-    standardized_clipped_h = standardized_h.clip(-max_std, max_std)
-    # Project the H's components from <n_sample>D to 2D, Delaunay triangulate the 2D-projected component coordinates,
-    # and compute convexhull for the 2D-projected component coordinates
-    mds = manifold.MDS(metric=mds_is_metric, random_state=mds_seed)
-    components_coordinates = mds.fit_transform(standardized_clipped_h)
-    print('components_coordinates:', len(components_coordinates), components_coordinates)
+    normalized_h = normalize_pandas_object(h)
+    normalized_clipped_h = normalized_h.clip(-max_std, max_std)
+    # Project the H's components from <n_sample>D to 2D
+    mds = MDS(metric=mds_is_metric, random_state=mds_seed)
+    components_coordinates = mds.fit_transform(normalized_clipped_h)
+    # print('components_coordinates (raw):\n', components_coordinates)
+    x_min = min(components_coordinates[:, 0])
+    x_max = max(components_coordinates[:, 0])
+    x_range = x_max - x_min
+    # print('x_min & x_max & x_range:', x_min, x_max, x_range)
+    y_min = min(components_coordinates[:, 1])
+    y_max = max(components_coordinates[:, 1])
+    y_range = y_max - y_min
+    # print('y_min & y_max & y_range:', y_min, y_max, y_range)
+    # 0-1 normalize the coordinates
+    x_grids = np.linspace(0, 1, n_grid)
+    y_grids = np.linspace(0, 1, n_grid)
+    # print('x_grid:', x_grids)
+    # print('y_grid:', y_grids)
+    for i, (x, y) in enumerate(components_coordinates):
+        components_coordinates[i, 0] = (x - x_min) / x_range
+        components_coordinates[i, 1] = (y - y_min) / y_range
+    # print('components_coordinates (0-1 normalized):\n', components_coordinates)
 
-    print('components_coordinates (after 0-1 normalization):', len(components_coordinates), components_coordinates)
+    # Delaunay triangulate and compute convexhull for the 2D-projected component coordinates
     delaunay = Delaunay(components_coordinates)
-    print('components_coordinates (after Delaunay):', len(components_coordinates), components_coordinates)
     convexhull = ConvexHull(components_coordinates)
     convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
-    print('components_coordinates (after convexhull):', len(components_coordinates), components_coordinates)
 
     # Get x & y coordinates of each sample
     for sample in samples.index:
@@ -334,37 +346,17 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         x = sum(col ** sample_stretch_factor * components_coordinates[:, 0]) / sum(col ** sample_stretch_factor)
         y = sum(col ** sample_stretch_factor * components_coordinates[:, 1]) / sum(col ** sample_stretch_factor)
         samples.ix[sample, ['x', 'y']] = x, y
-
-    # Get x & y coordinate boundaries
-    x_min = min(components_coordinates[:, 0])
-    x_max = max(components_coordinates[:, 0])
-    print('x_min & x_max:', x_min, x_max)
-    x_margin = (x_max - x_min) * coordinates_extending_factor
-    x_min -= x_margin
-    x_max += x_margin
-    print('x_min & x_max (after extending):', x_min, x_max)
-    y_min = min(components_coordinates[:, 1])
-    y_max = max(components_coordinates[:, 1])
-    print('y_min & y_max:', y_min, y_max)
-    y_margin = (y_max - y_min) * coordinates_extending_factor
-    y_min -= y_margin
-    y_max += y_margin
-    print('y_min & y_max (after extending):', y_min, y_max)
-
-    # Make x & y grids
-    x_grids = np.linspace(x_min, x_max, n_grid)
-    y_grids = np.linspace(y_min, y_max, n_grid)
-    print('x_grid:', len(x_grids), x_grids)
-    print('y_grid:', len(y_grids), y_grids)
+    # print('samples:\n', samples)
 
     # Get KDE for each state using bandwidth created from all states' x & y coordinates
-    kdes = np.zeros((len(states), n_grid, n_grid))
+    kdes = np.zeros((len(unique_states) + 1, n_grid, n_grid))
     bandwidths = np.array([mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0],
                            mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
+    # print('global bandwidths:', bandwidths)
     for s in unique_states:
-        coordiantes = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
-        kde = mass.kde2d(np.array(coordiantes.ix[:, 'x'], dtype=float), np.array(coordiantes.ix[:, 'y'], dtype=float),
-                         bandwidths, n=np.array([n_grid]), lims=np.array([x_min, x_max, y_min, y_max]))
+        coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
+        kde = mass.kde2d(np.array(coordinates.ix[:, 'x'], dtype=float), np.array(coordinates.ix[:, 'y'], dtype=float),
+                         bandwidths, n=np.array([n_grid]), lims=np.array([0, 1, 0, 1]))
         kdes[s] = np.array(kde[2])
 
     # Assign the best KDE probability and state for each grid
@@ -374,6 +366,8 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         for j in range(n_grid):
             grid_probabilities[i, j] = max(kdes[:, j, i])
             grid_states[i, j] = np.argmax(kdes[:, i, j])
+    # print('grid_probabilities:\n', grid_probabilities)
+    # print('grid_states:\n', grid_states)
 
     # Set up figure
     figure = plt.figure(figsize=figure_size)
@@ -381,14 +375,14 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     # Set up axes
     gridspec = mpl.gridspec.GridSpec(10, 16)
     ax_title = plt.subplot(gridspec[0, :])
-    ax_title.axis('on')
-    print(ax_title.axis())
-    ax_map = plt.subplot(gridspec[2:, :13])
-    ax_map.axis('on')
-    print(ax_map.axis())
+    ax_title.axis([0, 1, 0, 1])
+    ax_title.axis('off')
+    ax_map = plt.subplot(gridspec[2:, :12])
+    ax_map.axis([0, 1, 0, 1])
+    ax_map.axis('off')
     ax_legend = plt.subplot(gridspec[1:, 14:])
-    ax_legend.axis('on')
-    print(ax_legend.axis())
+    ax_legend.axis([0, 1, 0, 1])
+    ax_legend.axis('off')
 
     #  Assign colors to states
     states_color = {}
@@ -397,28 +391,29 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
     # Plot title
     ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
-    ax_title.text(0, 0.26, '{} samples, {} components, and {} states'.format(*reversed(h.shape), len(unique_states)),
+    ax_title.text(0, 0.39, '{} samples, {} components, and {} states'.format(*reversed(h.shape), len(unique_states)),
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
 
     # Plot components and their labels
     ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], marker='D', linestyle='',
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
-                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, zorder=5)
-    # Put labels on top or bottom of the marker
-    component_text_verticalshift = 1.16
+                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, clip_on=False,
+                aa=True, zorder=6)
+    # Put labels on top or bottom of the component markers
+    component_text_verticalshift = 0.03
     for i in range(h.shape[0]):
         if convexhull_region.contains_point(
                 (components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift)):
             x, y = components_coordinates[i, 0], components_coordinates[i, 1] + component_text_verticalshift
         else:
             x, y = components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift
-        ax_map.text(x, y, standardized_clipped_h.index[i],
+        ax_map.text(x, y, normalized_clipped_h.index[i],
                     fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
-                    horizontalalignment='center', verticalalignment='center', zorder=5)
+                    horizontalalignment='center', verticalalignment='center', zorder=6)
 
     # Plot Delaunay triangulation
     ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
-                   linewidth=delaunay_linewidth, color=delaunay_linecolor, zorder=3)
+                   linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, zorder=4)
 
     # Plot samples
     if isinstance(annotations, pd.Series):
@@ -429,54 +424,37 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         else:
             c = states_color[s.ix['state']]
         ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
-                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, zorder=4)
-
-
-
-
-
+                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True, zorder=5)
 
     # Plot contours
-    # TODO: don't draw masked contours
-    masked_coordinates = []
-    for i in range(n_grid):
-        for j in range(n_grid):
-            if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
-                masked_coordinates.append([i, j])
-    masked_coordinates = np.array(masked_coordinates)
-    z = grid_probabilities.copy()
-    z[masked_coordinates[:, 0], masked_coordinates[:, 1]] = np.nan
-    ax_map.contour(x_grids, y_grids, z, n_contour,
-                   linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=1)
-    # if contour:
-    #     ax_map.contour(x_grids, y_grids, grid_probabilities, n_contour,
-    #                    linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, zorder=1)
-
-
-
-
-
+    if contour:
+        ax_map.contour(x_grids, y_grids, grid_probabilities, n_contour, corner_mask=True,
+                       linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, aa=True, zorder=2)
 
     # Plot background
     if background:
+        grid_probabilities_min = grid_probabilities.min()
+        grid_probabilities_max = grid_probabilities.max()
+        grid_probabilities_range = grid_probabilities_max - grid_probabilities_min
         for i in range(n_grid):
             for j in range(n_grid):
                 if convexhull_region.contains_point((x_grids[i], y_grids[j])):
                     c = states_color[grid_states[i, j]]
                     a = min(background_max_alpha,
-                            (grid_probabilities[i, j] - grid_probabilities.min()) /
-                            (grid_probabilities.max() - grid_probabilities.min()))
+                            (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range)
                     a *= background_alpha_factor
-
-                    ax_map.plot(x_grids[i], y_grids[j], marker='s',
-                                markersize=background_markersize, markerfacecolor=c, alpha=a, zorder=3)
+                    ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_markersize, markerfacecolor=c,
+                                alpha=a, aa=True, zorder=1)
                 else:
-                    ax_map.plot(x_grids[i], y_grids[j], marker='s',
-                                markersize=background_markersize * 2, markerfacecolor='w', zorder=2)
+                    ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_markersize * 1.9,
+                                markerfacecolor='w', aa=True, zorder=3)
 
     # Plot legends
     if isinstance(annotations, pd.Series):
+        # right_adjust = 0.88
         ax_legend.axis('on')
+        ax_legend.patch.set_visible(False)
+
         if annotations.name:
             annotation_name = annotations.name
         else:
@@ -487,7 +465,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
         if effectplot_type == 'violine':
             violinplot(x=annotations, y=states, palette=states_color, scale='count', inner=None, orient='h',
-                       ax=ax_legend)
+                       ax=ax_legend, clip_on=False)
             boxplot(x=annotations, y=states, showbox=False, showmeans=True,
                     meanprops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
@@ -502,34 +480,31 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                                'markeredgecolor': effectplot_mean_markeredgecolor},
                     medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
-        # Set xticks
+        ax_legend.axvline(np.min(annotations), color='#000000', ls='-', alpha=0.16, aa=True)
+        ax_legend.axvline(np.mean(annotations), color='#000000', ls='-', alpha=0.39, aa=True)
+        ax_legend.axvline(np.max(annotations), color='#000000', ls='-', alpha=0.16, aa=True)
+
         ax_legend.set_xticks([np.min(annotations), np.mean(annotations), np.max(annotations)])
         ax_legend.set_xlabel('')
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
-        # Set yticks
+
         ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in unique_states],
                                   fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
 
-        ax_legend.patch.set_visible(False)
-        ax_legend.axvline(np.min(annotations), color='#000000', ls='-', alpha=0.16)
-        ax_legend.axvline(np.mean(annotations), color='#000000', ls='-', alpha=0.39)
-        ax_legend.axvline(np.max(annotations), color='#000000', ls='-', alpha=0.16)
-        right_adjust = 0.88
 
     else:
-        ax_legend.axis([0, 1, 0, 1])
+        # right_adjust = 0.92
         for i, s in enumerate(unique_states):
             y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
             c = states_color[s]
-            ax_legend.plot(0.5, y, marker='o', markersize=legend_markersize, markerfacecolor=c, zorder=5)
-            ax_legend.text(0.6, y, 'State {} (n={})'.format(s, sum(states == s)),
+            ax_legend.plot(0.1, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
+            ax_legend.text(0.2, y, 'State {} (n={})'.format(s, sum(states == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
-        right_adjust = 0.92
 
     if output_filename:
-        figure.subplots_adjust(left=0.069, right=right_adjust, top=0.96, bottom=0.069)
+        figure.subplots_adjust(left=0.069, top=0.96, bottom=0.069)
         figure.savefig(output_filename, dpi=dpi)
 
     plt.show()
