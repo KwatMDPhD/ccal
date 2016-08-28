@@ -458,7 +458,7 @@ def get_states_from_h(h, n_states, nclustering=50, filename_prefix=None):
         memberships = labels.iloc[:, :-1].apply(lambda s: s == int(s.name), axis=1).astype(int)
 
         if filename_prefix:
-            labels.to_csv(filename_prefix + '_labels', sep='\t')
+            labels.to_csv(filename_prefix + '_labels.txt', sep='\t')
             write_gct(memberships, filename_prefix + '_memberships.gct')
     else:
         raise ValueError('No number of clusters passed.')
