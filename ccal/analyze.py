@@ -36,7 +36,7 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from .support import SEED, print_log, establish_path, normalize_pandas_object, compare_matrices
+from .support import SEED, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices
 from .visualize import plot_nmf_result, plot_features_against_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 
@@ -237,27 +237,22 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
 # NMF
 # ======================================================================================================================
 def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, randomize_coordinate_order=False,
-        regularizer=0, plot=False):
+        regularizer=0):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
-    :param matrix: numpy array or pandas DataFrame (nsamples, nfeatures), the matrix to be factorized by NMF
-    :param ks: array-like, list of ks to be used in the factorization
-    :param initialization: str, {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
-    :param max_iteration: int, number of NMF iterations
-    :param seed: int, random seed
-    :param randomize_coordinate_order: bool,
+    :param matrix: numpy array or pandas DataFrame; (nsamples, nfeatures); the matrix to be factorized by NMF
+    :param ks: array-like; list of ks to be used in the factorization
+    :param initialization: string; {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
+    :param max_iteration: int; number of NMF iterations
+    :param seed: int;
+    :param randomize_coordinate_order: bool;
     :param regularizer: int, NMF's alpha
-    :param plot: bool, whether to plot the NMF results
-    :return: dict, NMF result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
+    :return: dict; {k: {W:w, H:h, ERROR:error}}
     """
     nmf_results = {}  # dict (key:k; value:dict (key:w, h, err; value:w matrix, h matrix, and reconstruction error))
     for k in ks:
         print_log('Performing NMF with k={} ...'.format(k))
-        model = NMF(n_components=k,
-                    init=initialization,
-                    max_iter=max_iteration,
-                    random_state=seed,
-                    alpha=regularizer,
+        model = NMF(n_components=k, init=initialization, max_iter=max_iteration, random_state=seed, alpha=regularizer,
                     shuffle=randomize_coordinate_order)
 
         # Compute W, H, and reconstruction error
@@ -268,23 +263,17 @@ def nmf(matrix, ks, initialization='random', max_iteration=200, seed=SEED, rando
             h = pd.DataFrame(h, index=c, columns=matrix.columns)
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
-        if plot:
-            print_log('\tPlotting W and H matrices ...')
-            plot_nmf_result(nmf_results, k)
-
     return nmf_results
 
 
 def nmf_and_score(matrix, ks, method='cophenetic_correlation', nassignment=30):
     """
     Perform NMF with multiple k and score each computation.
-    :param matrix: numpy array (nsamples, nfeatures), the matrix to be factorized by NMF
-    :param ks: array-like, list of ks to be used in the factorization
-    :param method: str, {'intra_inter_ratio', 'cophenetic_correlation'}
-    :param nassignment: int, number of assignments used to make `assigment_matrix` when using 'cophenetic_correlation'
-    :return: 2 dict, NMF result per k
-                     (key: k; value: dict (key: w, h, err; value: w matrix, h matrix, and reconstruction error)) and
-                     score per k (key:k; value:score)
+    :param matrix: numpy array or pandas DataFrame; (nsamples, nfeatures); the matrix to be factorized by NMF
+    :param ks: array-like; list of ks to be used in the factorization
+    :param method: string; {'intra_inter_ratio', 'cophenetic_correlation'}
+    :param nassignment: int; number of assignments used to make `assigment_matrix` when using 'cophenetic_correlation'
+    :return: 2 dict; {k: {W:w, H:h, ERROR:error}} and {k: score}
     """
     nrow, ncol = matrix.shape
     scores = {}
@@ -412,13 +401,13 @@ def nmf_bcv(x, nmf, nfold=2, nrepeat=1):
 # ======================================================================================================================
 # Onco GPS functions
 # ======================================================================================================================
-def get_states_from_h(h, n_states, nclustering=50, filename=None):
+def get_states_from_h(h, n_states, nclustering=50, filename_prefix=None):
     """
     Cluster H matrix's samples into k clusters.
     :param h: pandas DataFrame (n_component, n_sample), H matrix from NMF
     :param n_states: array-like, list of ks used for clustering states
     :param nclustering: int, number of consensus clustering to perform
-    :param filename: str, file path to save the assignment matrix (n_k, n_samples)
+    :param filename_prefix: str; file path to save the assignment matrix (n_k, n_samples)
     :return: pandas DataFrame (n_k, n_samples), array-like (n_k), assignment matrix and the cophenetic correlations
     """
     # Standardize H and clip values less than -3 and more than 3
@@ -432,40 +421,49 @@ def get_states_from_h(h, n_states, nclustering=50, filename=None):
     # Assign labels using each k
     labels = pd.DataFrame(index=n_states, columns=list(sample_associations.index) + ['cophenetic_correlation'])
     labels.index.name = 'state'
-    for k in n_states:
-        # For nclustering times, cluster sample associations and assign labels using this k
-        nclustering_labels = pd.DataFrame(index=range(nclustering), columns=sample_associations.index)
-        for i in range(nclustering):
-            print_log('Clustering sample associations and assigning labels with k = {} ({}/{}) ...'.format(k, i, nclustering))
-            ward = AgglomerativeClustering(n_clusters=k)
-            ward.fit(sample_associations)
-            nclustering_labels.iloc[i, :] = ward.labels_
+    if any(n_states):
+        for k in n_states:
+            # For nclustering times, cluster sample associations and assign labels using this k
+            nclustering_labels = pd.DataFrame(index=range(nclustering), columns=sample_associations.index)
+            for i in range(nclustering):
+                print_log(
+                    'Clustering sample associations and assigning labels with k = {} ({}/{}) ...'.format(k, i,
+                                                                                                         nclustering))
+                ward = AgglomerativeClustering(n_clusters=k)
+                ward.fit(sample_associations)
+                nclustering_labels.iloc[i, :] = ward.labels_
 
-        # Count co-clustering between samples
-        ncoclusterings = pd.DataFrame(index=nclustering_labels.columns, columns=nclustering_labels.columns)
-        ncoclusterings.fillna(0, inplace=True)
-        for i, s in nclustering_labels.iterrows():
-            print_log('Counting co-clustering between samples with k = {} ({}/{}) ...'.format(k, i, nclustering))
-            for i in s.index:
-                for j in s.index:
-                    if i == j or s.ix[i] == s.ix[j]:
-                        ncoclusterings.ix[i, j] += 1
+            # Count co-clustering between samples
+            ncoclusterings = pd.DataFrame(index=nclustering_labels.columns, columns=nclustering_labels.columns)
+            ncoclusterings.fillna(0, inplace=True)
+            for i, s in nclustering_labels.iterrows():
+                print_log('Counting co-clustering between samples with k = {} ({}/{}) ...'.format(k, i, nclustering))
+                for i in s.index:
+                    for j in s.index:
+                        if i == j or s.ix[i] == s.ix[j]:
+                            ncoclusterings.ix[i, j] += 1
 
-        # Normalize by the nclustering and convert to distances
-        distances = 1 - ncoclusterings / nclustering
+            # Normalize by the nclustering and convert to distances
+            distances = 1 - ncoclusterings / nclustering
 
-        # Cluster the distances and assign the final label using this k
-        ward = linkage(distances, method='ward')
-        labels_ = fcluster(ward, k, criterion='maxclust')
-        labels.ix[k, sample_associations.index] = labels_
+            # Cluster the distances and assign the final label using this k
+            ward = linkage(distances, method='ward')
+            labels_ = fcluster(ward, k, criterion='maxclust')
+            labels.ix[k, sample_associations.index] = labels_
 
-        # Compute the cophenetic correlation, the correlation between cophenetic and Euclidian distances between samples
-        labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
+            # Compute the cophenetic correlation, the correlation between cophenetic and Euclidian distances between samples
+            labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
 
-    if filename:
-        labels.to_csv(filename, sep='\t')
+        # Compute membership matrix
+        memberships = labels.iloc[:, :-1].apply(lambda s: s == int(s.name), axis=1).astype(int)
 
-    return labels.iloc[:, :-1], labels.iloc[:, -1:]
+        if filename_prefix:
+            labels.to_csv(filename_prefix + '_labels', sep='\t')
+            write_gct(memberships, filename_prefix + '_memberships.gct')
+    else:
+        raise ValueError('No number of clusters passed.')
+
+    return labels.iloc[:, :-1], memberships, labels.iloc[:, -1:]
 
 
 # ======================================================================================================================

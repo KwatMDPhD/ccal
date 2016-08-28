@@ -23,18 +23,21 @@ import os
 import math
 
 import numpy as np
-import pandas as pd
+from pandas import DataFrame, Series
 from sklearn.manifold import MDS
 from scipy.spatial import Delaunay, ConvexHull
-import matplotlib as mpl
+from matplotlib.cm import bwr, Paired
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from matplotlib.path import Path
+from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
 
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 
-from .support import SEED, print_log, establish_path, normalize_pandas_object
+from .support import SEED, print_log, establish_path, get_unique_in_order, normalize_pandas_object
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -44,9 +47,9 @@ mass = importr('MASS')
 # ======================================================================================================================
 # Color maps
 BAD_COLOR = 'wheat'
-CMAP_CONTINUOUS = mpl.cm.bwr
+CMAP_CONTINUOUS = bwr
 CMAP_CONTINUOUS.set_bad(BAD_COLOR)
-CMAP_CATEGORICAL = mpl.cm.Paired
+CMAP_CATEGORICAL = Paired
 CMAP_CATEGORICAL.set_bad(BAD_COLOR)
 CMAP_BINARY = light_palette('black', n_colors=2, as_cmap=True)
 CMAP_BINARY.set_bad(BAD_COLOR)
@@ -58,31 +61,37 @@ DPI = 1000
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_nmf_result(nmf_results, k, title='NMF Result', title_fontsize=20,
-                    output_filename=None, figure_size=FIGURE_SIZE, dpi=DPI):
+def plot_nmf_result(nmf_results, k, figure_size=FIGURE_SIZE, title=None, title_fontsize=20, output_filename=None,
+                    dpi=DPI):
     """
-    Plot NMF results from cca.library.cca.nmf function.
-    :param nmf_results: dict, result per k (key: k; value: dict(key: w, h, err; value: w matrix, h matrix, and error))
-    :param k: int, k for NMF
-    :param figure_size: tuple (width, height),
-    :param title: str, figure title
-    :param title_fontsize: int, title-font size
-    :param output_filename: str, file path to save the figure
-    :param dpi: int, dots-per-inch for the output figure
+    Plot NMF results from `ccal.analyze.nmf` function.
+    :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
+    :param k: int; k for NMF
+    :param figure_size: tuple;
+    :param title: str,
+    :param title_fontsize: number,
+    :param output_filename: str; file path to save the figure
+    :param dpi: int;
     :return: None
     """
-    # Plot W and H
-    fig, (ax_w, ax_h) = plt.subplots(1, 2, figure_size=figure_size)
-    if title:
-        fig.suptitle(title, fontsize=title_fontsize, fontweight='bold')
+    figure = plt.figure(figsize=figure_size)
 
-    heatmap(normalize_pandas_object(nmf_results[k]['W']), cmap='bwr', yticklabels=False, ax=ax_w)
-    ax_w.set_title('W matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
+    gridspec = GridSpec(10, 16)
+    ax_w = plt.subplot(gridspec[1:, :5])
+    ax_h = plt.subplot(gridspec[3:8, 7:])
+
+    if not title:
+        title = 'NMF Result (k={})'.format(k)
+    figure.suptitle(title, fontsize=title_fontsize, fontweight='bold')
+
+    heatmap(normalize_pandas_object(nmf_results[k]['W']), cmap=CMAP_CONTINUOUS, yticklabels=False, ax=ax_w)
+    ax_w.set_title('W'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
     ax_w.set_xlabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
     ax_w.set_ylabel('Feature', fontsize=title_fontsize * 0.69, fontweight='bold')
 
-    heatmap(normalize_pandas_object(nmf_results[k]['H']), cmap='bwr', xticklabels=False, ax=ax_h)
-    ax_h.set_title('H matrix generated using k={}'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
+    heatmap(normalize_pandas_object(nmf_results[k]['H']), cmap=CMAP_CONTINUOUS, xticklabels=False, ax=ax_h,
+            cbar_kws={"orientation": "horizontal"})
+    ax_h.set_title('H'.format(k), fontsize=title_fontsize * 0.9, fontweight='bold')
     ax_h.set_xlabel('Sample', fontsize=title_fontsize * 0.69, fontweight='bold')
     ax_h.set_ylabel('Component', fontsize=title_fontsize * 0.69, fontweight='bold')
 
@@ -92,22 +101,25 @@ def plot_nmf_result(nmf_results, k, title='NMF Result', title_fontsize=20,
     plt.show()
 
 
-def plot_nmf_scores(scores, title='NMF Clustering Score vs. k', title_fontsize=20, output_filename=None,
-                    figure_size=(10, 10), dpi=DPI):
+def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score vs. k', title_fontsize=20,
+                    output_filename=None, dpi=DPI):
     """
     Plot NMF `scores`.
-    :param scores: dict, NMF score per k (key: k; value: score)
-    :param figure_size: tuple, figure size (width, height)
-    :param title: str, figure title
-    :param title_fontsize: int, title-font size
-    :param output_filename: str, file path to save the figure
-    :param dpi: int, dots-per-inch for the output figure
+    :param scores: dict; {k: score}
+    :param figure_size: tuple;
+    :param title: str;
+    :param title_fontsize: int;
+    :param output_filename: str;
+    :param dpi: int;
     :return: None
     """
-    plt.figure(figure_size=figure_size)
-    ax = pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
+    figure = plt.figure(figsize=figure_size)
+
     if title:
-        ax.set_title(title, fontsize=title_fontsize, fontweight='bold')
+        figure.suptitle(title, fontsize=title_fontsize, fontweight='bold')
+
+    ax = pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
+
     ax.set_xlabel('k', fontsize=title_fontsize * 0.81, fontweight='bold')
     ax.set_ylabel('Score', fontsize=title_fontsize * 0.81, fontweight='bold')
 
@@ -148,13 +160,13 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
         ref = (ref - ref.mean()) / ref.std()
         ref = normalize_pandas_object(ref)
 
-    fig = plt.figure(figure_size=(min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9)))
+    fig = plt.figure(figsize=(min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9)))
     horizontal_text_margin = math.pow(features.shape[1], 0.39)
     gridspec = plt.GridSpec(features.shape[0] + 1, features.shape[1] + 1)
 
     # Plot ref, ref label, and title,
     ref_ax = plt.subplot(gridspec.new_subplotspec((0, 0), colspan=features.shape[1]))
-    heatmap(pd.DataFrame(ref).T, vmin=ref_min, vmax=ref_max, cmap=ref_cmap, xticklabels=False, cbar=False)
+    heatmap(DataFrame(ref).T, vmin=ref_min, vmax=ref_max, cmap=ref_cmap, xticklabels=False, cbar=False)
     plt.setp(ref_ax.get_yticklabels(), rotation=0)
     plt.setp(ref_ax.get_yticklabels(), weight='bold')
 
@@ -175,8 +187,8 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
         for b in boundaries[1:]:
             label_horizontal_positions.append(b - (b - prev_b) / 2)
             prev_b = b
-        # TODO: implement get_unique_in_order
-        unique_ref_labels = np.unique(ref.values)[::-1]
+        unique_ref_labels = get_unique_in_order(ref.values)
+
         for i, pos in enumerate(label_horizontal_positions):
             ref_ax.text(pos, 1, unique_ref_labels[i], horizontalalignment='center', weight='bold')
 
@@ -208,7 +220,6 @@ def plot_features_against_reference(features, ref, annotations, features_type='c
     if figure_filename:
         establish_path(os.path.split(figure_filename)[0])
         fig.savefig(figure_filename, dpi=dpi, bbox_inches='tight')
-        print_log('Saved the figure as {}.'.format(figure_filename))
 
 
 def _setup_cmap(pandas_obj, data_type, std_max=3):
@@ -230,8 +241,8 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   mds_is_metric=True, mds_seed=SEED,
-                  component_markersize=13, component_markerfacecolor='#000726',
-                  component_markeredgewidth=1.69, component_markeredgecolor='#FFFFFF', component_fontsize=16,
+                  component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
+                  component_markeredgecolor='#FFFFFF', component_fontsize=16, component_text_position='auto',
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   kde_bandwidths_factor=1, n_respective_component='all', sample_stretch_factor=2,
                   sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
@@ -260,6 +271,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     :param component_markeredgewidth: number;
     :param component_markeredgecolor: matplotlib compatible color;
     :param component_fontsize: number;
+    :param component_text_position: str; {'auto', 'top', 'bottom'}
     :param delaunay_linewidth: int or flaot;
     :param delaunay_linecolor: matplotlib compatible color;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
@@ -292,13 +304,13 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     print_log('Creating Onco-GPS with {} samples, {} components, and {} states {} ...'.format(*reversed(h.shape),
                                                                                               len(unique_states),
                                                                                               unique_states))
-    samples = pd.DataFrame(index=h.columns, columns=['state', 'annotation', 'x', 'y'])
+    samples = DataFrame(index=h.columns, columns=['state', 'annotation', 'x', 'y'])
 
     # Get sample states
     samples.ix[:, 'state'] = states
 
     # Get sample annotations (if any)
-    if isinstance(annotations, pd.Series):
+    if isinstance(annotations, Series):
         if annotation_type == 'continuous':
             samples.ix[:, 'annotation'] = np.array(normalize_pandas_object(annotations))
             samples.ix[:, 'annotation'] = samples.ix[:, 'annotation'].clip(-max_std, max_std)
@@ -350,15 +362,16 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
             grid_probabilities[i, j] = max(kdes[:, j, i])
             grid_states[i, j] = np.argmax(kdes[:, i, j])
 
-    # Set up figure
+    # Set up figure and axes
     figure = plt.figure(figsize=figure_size)
-
-    # Set up axes
-    gridspec = mpl.gridspec.GridSpec(10, 16)
-    ax_title = plt.subplot(gridspec[0, :])
+    gridspec = GridSpec(10, 16)
+    ax_title = plt.subplot(gridspec[0, :7])
     ax_title.axis([0, 1, 0, 1])
     ax_title.axis('off')
-    ax_map = plt.subplot(gridspec[2:, :12])
+    ax_colorbar = plt.subplot(gridspec[0, 7:12])
+    ax_colorbar.axis([0, 1, 0, 1])
+    ax_colorbar.axis('off')
+    ax_map = plt.subplot(gridspec[1:, :12])
     ax_map.axis([0, 1, 0, 1])
     ax_map.axis('off')
     ax_legend = plt.subplot(gridspec[1:, 14:])
@@ -382,15 +395,20 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                 aa=True, zorder=6)
     # Compute convexhull
     convexhull = ConvexHull(components_coordinates)
-    convexhull_region = mpl.path.Path(convexhull.points[convexhull.vertices])
+    convexhull_region = Path(convexhull.points[convexhull.vertices])
     # Put labels on top or bottom of the component markers
-    component_text_verticalshift = 0.03
+    component_text_verticalshift = -0.03
     for i in range(h.shape[0]):
-        if convexhull_region.contains_point(
-                (components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift)):
-            x, y = components_coordinates[i, 0], components_coordinates[i, 1] + component_text_verticalshift
-        else:
-            x, y = components_coordinates[i, 0], components_coordinates[i, 1] - component_text_verticalshift
+        if component_text_position == 'auto':
+            if convexhull_region.contains_point((components_coordinates[i, 0],
+                                                 components_coordinates[i, 1] + component_text_verticalshift)):
+                component_text_verticalshift *= -1
+        elif component_text_position == 'top':
+            component_text_verticalshift *= -1
+        elif component_text_position == 'bottom':
+            pass
+        x, y = components_coordinates[i, 0], components_coordinates[i, 1] + component_text_verticalshift
+
         ax_map.text(x, y, normalized_clipped_h.index[i],
                     fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
                     horizontalalignment='center', verticalalignment='center', zorder=6)
@@ -401,10 +419,11 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, zorder=4)
 
     # Plot samples
-    if isinstance(annotations, pd.Series):
+    cmap = cmap_min = cmap_max = None
+    if isinstance(annotations, Series):
         cmap, cmap_min, cmap_max, = _setup_cmap(annotations, annotation_type)
     for idx, s in samples.iterrows():
-        if isinstance(annotations, pd.Series):
+        if isinstance(annotations, Series):
             c = cmap(s.ix['annotation'])
         else:
             c = states_color[s.ix['state']]
@@ -434,7 +453,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                                 markerfacecolor='w', aa=True, zorder=3)
 
     # Plot legends
-    if isinstance(annotations, pd.Series):
+    if isinstance(annotations, Series):
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
 
@@ -475,6 +494,10 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
         ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in unique_states],
                                   fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
+
+        cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16, cmap='bwr',
+                            ticks=[annotations.min(), annotations.mean(), annotations.max()])
+        ColorbarBase(cax, **kw)
 
     else:
         for i, s in enumerate(unique_states):

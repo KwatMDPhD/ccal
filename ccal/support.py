@@ -161,6 +161,19 @@ def write_gct(pandas_object, filename, index_column_name=None, descriptions=None
 # ======================================================================================================================#
 # Data analysis functions
 # ======================================================================================================================#
+def get_unique_in_order(iterable):
+    """
+    Get unique elements in order.
+    :param iterable: iterable;
+    :return: list;
+    """
+    unique_in_order = []
+    for x in iterable:
+        if x not in unique_in_order:
+            unique_in_order.append(x)
+    return unique_in_order
+
+
 def make_random_features(n_row, n_col, n_category=None):
     """
     Make simulation features DataFrame (1D or 2D).
