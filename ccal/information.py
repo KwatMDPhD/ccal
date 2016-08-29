@@ -29,11 +29,13 @@ from scipy.stats import pearsonr
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
 from scipy.stats import binom_test
 
-from .support import drop_nan_columns, add_jitter
+from .support import drop_nan_columns
 
 
 def information_coefficient(x, y, ngrid=25):
-    x, y = add_jitter(drop_nan_columns([x, y]))
+    x, y = drop_nan_columns([x, y])
+    x *= 1E-10
+    y *= 1E-10
 
     if len(x) <= 2:
         return 0
