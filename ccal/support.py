@@ -158,7 +158,7 @@ def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None
 
 
 # ======================================================================================================================#
-# Data analysis functions
+# Data analysis
 # ======================================================================================================================#
 def get_unique_in_order(iterable):
     """
