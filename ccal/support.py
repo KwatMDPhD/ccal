@@ -31,7 +31,7 @@ SEED = 20121020
 def print_log(string):
     """
     Print `string` together with logging information.
-    :param string: str; message to be printed
+    :param string: str; message to printed
     :return: None
     """
     from datetime import datetime
@@ -128,7 +128,7 @@ def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None
     :param pandas_object: pandas DataFrame or Serires; (n_samples, m_features)
     :param filepath: str;
     :param index_column_name: str; column to be used as the index for the .gct
-    :param descriptions: iterable; (n_rows of `pandas_object`), description column for the .gct
+    :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gct
     """
     pd_obj = pandas_object.copy()
 
@@ -161,7 +161,7 @@ def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None
 # ======================================================================================================================#
 def get_unique_in_order(iterable):
     """
-    Get unique elements in order.
+    Get unique elements in order or appearance in `iterable`.
     :param iterable: iterable;
     :return: list;
     """
