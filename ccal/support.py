@@ -14,10 +14,6 @@ Computational Cancer Analysis, UCSD Cancer Center
 James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
-
-
-Description:
-Supporting module for CCAL.
 """
 import numpy as np
 import pandas as pd
@@ -34,8 +30,8 @@ SEED = 20121020
 # ======================================================================================================================
 def print_log(string):
     """
-    Print `string` with the current time.
-    :param string: str, message to be printed
+    Print `string` together with logging information.
+    :param string: str; message to be printed
     :return: None
     """
     from datetime import datetime
@@ -47,8 +43,8 @@ def print_log(string):
 
 def install_libraries(libraries_needed):
     """
-    Check if `libraries` are installed; if not then install using pip.
-    :param libraries_needed: list of strings, library names
+    Check if `libraries_needed` are installed; if not then install using pip.
+    :param libraries_needed: iterable; library names
     :return: None
     """
     from pip import get_installed_distributions, main
@@ -66,29 +62,34 @@ def install_libraries(libraries_needed):
 
 
 def plant_seed(a_seed=SEED):
+    """
+    Set random seed.
+    :param a_seed: int;
+    :return: None
+    """
     from random import seed
     seed(a_seed)
     print_log('Planted a random seed {}.'.format(SEED))
 
 
-def establish_path(fullpath):
+def establish_path(filepath):
     """
-    Make `path` if it doesn't already exist.
-    :param fullpath: string,
+    Make directories up to `fullpath` if they don't already exist.
+    :param filepath: str;
     :return: None
     """
     from os import path, mkdir
 
-    if path.isdir(fullpath) or path.isfile(fullpath) or path.islink(fullpath):
-        print_log('{} already exists.'.format(fullpath))
+    if path.isdir(filepath) or path.isfile(filepath) or path.islink(filepath):
+        print_log('{} already exists.'.format(filepath))
     else:
-        print_log('Full path {} doesn\'t exist, creating it ...'.format(fullpath))
+        print_log('Full path {} doesn\'t exist, creating it ...'.format(filepath))
 
         dirs = []
-        prefix, suffix = path.split(fullpath)
+        prefix, suffix = path.split(filepath)
         while suffix != '':
             dirs.append(suffix)
-            prefix, suffix = fullpath.split(prefix)
+            prefix, suffix = filepath.split(prefix)
         dirs.append(prefix)
 
         partial_path = ''
@@ -98,39 +99,36 @@ def establish_path(fullpath):
                 mkdir(partial_path)
 
 
-def read_gct(filename, fill_na=None, drop_description=True):
+def read_gct(filepath, fill_na=None, drop_description=True):
     """
-    Read .gct `filename` and convert it into a pandas DataFrame.
-    :param filename: str, path to a .gct
-    :param fill_na: value to replace NaN in the dataframe generated from a `filename`
-    :param drop_description: bool, drop the .gct's Description column (#2) or not
-    :return: pandas DataFrame, (n_samples, 2 + n_features)
+    Read a .gct (`filepath`) and convert it into a pandas DataFrame.
+    :param filepath: str;
+    :param fill_na: *; value to replace NaN in the DataFrame
+    :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
+    :return: pandas DataFrame; [n_samples, n_features (or n_features + 1 if not dropping the Description column)]
     """
-    df = pd.read_csv(filename, skiprows=2, sep='\t')
+    df = pd.read_csv(filepath, skiprows=2, sep='\t')
     if fill_na:
         df.fillna(fill_na, inplace=True)
     c1, c2 = df.columns[:2]
-
     if c1 != 'Name':
         raise ValueError('Column 1 != \'Name\'')
     if c2 != 'Description':
         raise ValueError('Column 2 != \'Description\'')
-
     df.set_index('Name', inplace=True)
     df.index.name = None
     if drop_description:
         df.drop('Description', axis=1, inplace=True)
-
     return df
 
 
-def write_gct(pandas_object, filename, index_column_name=None, descriptions=None):
+def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None):
     """
-    Write a `pandas_object` to a `filename` as a .gct.
-    :param pandas_object: pandas DataFrame or Serires (n_samples, m_features),
-    :param filename: str, path to save the .gct
-    :param index_column_name: str, column to be used as the .gct index
-    :param descriptions: array-like (n_samples), description column for the .gct
+    Write a `pandas_object` to a `filepath` as a .gct.
+    :param pandas_object: pandas DataFrame or Serires; (n_samples, m_features)
+    :param filepath: str;
+    :param index_column_name: str; column to be used as the index for the .gct
+    :param descriptions: iterable; (n_rows of `pandas_object`), description column for the .gct
     """
     pd_obj = pandas_object.copy()
 
@@ -150,10 +148,10 @@ def write_gct(pandas_object, filename, index_column_name=None, descriptions=None
         pd_obj.insert(0, 'Description', pd_obj.index)
 
     # Set output filename suffix
-    if not filename.endswith('.gct'):
-        filename += '.gct'
+    if not filepath.endswith('.gct'):
+        filepath += '.gct'
 
-    with open(filename, 'w') as f:
+    with open(filepath, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(*pd_obj.shape))
         pd_obj.to_csv(f, sep='\t')
 

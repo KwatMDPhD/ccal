@@ -14,10 +14,6 @@ Computational Cancer Analysis, UCSD Cancer Center
 James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
-
-
-Description:
-Plotting module for CCAL.
 """
 import os
 import math

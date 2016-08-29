@@ -14,10 +14,6 @@ Computational Cancer Analysis, UCSD Cancer Center
 James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
-
-
-Description:
-Information computing module for CCAL.
 """
 import math
 import rpy2.robjects as ro
