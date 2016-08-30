@@ -167,11 +167,10 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
         figure_size = (min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9))
     fig = plt.figure(figsize=figure_size)
     gridspec = GridSpec(features.shape[0] + 1, features.shape[1] + 1)
-    ax_ref = plt.subplot(gridspec[0:1, 0:features.shape[1]])
-    ax_features = plt.subplot(gridspec[1:features.shape[0], 0:features.shape[1]])
-    ax_annotation_header = plt.subplot(gridspec[0:1, features.shape[1]:])
-    # TODO: ax_annotation_header.axis('off')
-    ax_annotation_header.set_axis_off()
+    ax_ref = plt.subplot(gridspec[:1, :features.shape[1]])
+    ax_features = plt.subplot(gridspec[1:, :features.shape[1]])
+    ax_annotation_header = plt.subplot(gridspec[:1, features.shape[1]:])
+    ax_annotation_header.axis('off')
     horizontal_text_margin = math.pow(features.shape[1], 0.39)
 
     # Plot ref, ref label, and title,
@@ -215,8 +214,7 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
                               verticalalignment='center', size=annotation_label_size, weight='bold')
     for i, (idx, s) in enumerate(annotations.iterrows()):
         ax = plt.subplot(gridspec[i + 1:i + 2, features.shape[1]:])
-        # TODO: ax_annotation_header.axis('off')
-        ax.set_axis_off()
+        ax.axis('off')
         a = '\t'.join(s.tolist()).expandtabs()
         ax.text(horizontal_text_margin, 0.5, a, horizontalalignment='left', verticalalignment='center',
                 size=annotation_label_size, weight='bold')

@@ -81,9 +81,7 @@ def establish_path(filepath):
     """
     from os import path, mkdir
 
-    if path.isdir(filepath) or path.isfile(filepath) or path.islink(filepath):
-        print_log('{} already exists.'.format(filepath))
-    else:
+    if not (path.isdir(filepath) and path.isfile(filepath) and path.islink(filepath)):
         print_log('Full path {} doesn\'t exist, creating it ...'.format(filepath))
 
         dirs = []
