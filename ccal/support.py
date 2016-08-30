@@ -183,7 +183,7 @@ def make_random_features(n_rows, n_cols, n_categories=None):
     indices = ['Feature {}'.format(i) for i in range(n_rows)]
     columns = ['Element {}'.format(i) for i in range(n_cols)]
     if n_categories:
-        features = DataFrame(random_integers(0, n_categories, shape), index=indices, columns=columns)
+        features = DataFrame(random_integers(0, n_categories - 1, shape), index=indices, columns=columns)
     else:
         features = DataFrame(random_sample(shape), index=indices, columns=columns)
     if n_rows == 1:
