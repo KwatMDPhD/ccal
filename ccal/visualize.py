@@ -509,7 +509,7 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
             y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
             c = states_color[s]
             ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
-            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(states == s)),
+            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(np.asarray(states) == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if output_filepath:
