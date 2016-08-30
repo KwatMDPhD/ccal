@@ -15,7 +15,7 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import asarray, sum, prod, array, sign, sqrt, exp,log, linspace, finfo, meshgrid, vstack
+from numpy import asarray, sum, prod, array, sign, sqrt, exp, log, linspace, finfo, meshgrid, vstack
 from numpy.random import random_sample, permutation
 from scipy.stats import pearsonr
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
@@ -52,8 +52,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     bandwidth_x = asarray(mass.bcv(x)[0]) * (1 + (-0.75) * abs(cor))
     bandwidth_y = asarray(mass.bcv(y)[0]) * (1 + (-0.75) * abs(cor))
 
-    fxy = asarray(mass.kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + finfo(
-        float).eps
+    fxy = asarray(mass.kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + finfo(float).eps
     dx = (x.max() - x.min()) / (n_grids - 1)
     dy = (y.max() - y.min()) / (n_grids - 1)
     pxy = fxy / (fxy.sum() * dx * dy)

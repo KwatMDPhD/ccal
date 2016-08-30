@@ -240,7 +240,7 @@ def _setup_cmap(pandas_obj, data_type, std_max=3):
     return data_cmap, data_min, data_max
 
 
-def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='continuous', n_grids=128,
+def plot_onco_gps(h, states, max_std=3, annotations=(), annotation_type='continuous', n_grids=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   mds_is_metric=True, mds_seed=SEED,
