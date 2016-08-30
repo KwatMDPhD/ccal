@@ -33,7 +33,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 from .support import SEED, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices
-from .visualize import plot_nmf_result, plot_features_against_reference
+from .visualize import DPI, plot_features_against_reference
 from .information import information_coefficient, cmi_diff, cmi_ratio
 
 
@@ -42,9 +42,9 @@ from .information import information_coefficient, cmi_diff, cmi_ratio
 # ======================================================================================================================
 def rank_features_against_reference(features, ref, features_type='continuous', ref_type='continuous',
                                     features_ascending=False, ref_ascending=False, ref_sort=True,
-                                    metric='information_coef', nfeatures=0.95, nsampling=30, confidence=0.95, nperm=30,
-                                    title=None, title_size=16, annotation_label_size=9, plot_colname=False,
-                                    result_filename=None, figure_filename=None):
+                                    metric='information_coef', n_features=0.95, n_samplings=30, confidence=0.95,
+                                    n_perms=30, title=None, title_size=16, annotation_label_size=9, plot_colname=False,
+                                    result_filename=None, figure_filename=None, figure_size='auto', dpi=DPI):
     """
     Compute features vs. `ref`.
     :param features: pandas DataFrame (nfeatures, nelements), must have indices and columns
@@ -55,33 +55,32 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
     :param ref_ascending: bool, True if ref values increase from left to right, False otherwise
     :param ref_sort: bool, sort each ref or not
     :param metric: str, {information_coef}
-    :param nsampling: int, number of sampling for confidence interval bootstrapping; must be > 2 for CI computation
+    :param n_features: int or float, number threshold if >= 1 and quantile threshold if < 1
+    :param n_samplings: int, number of sampling for confidence interval bootstrapping; must be > 2 for CI computation
     :param confidence: float, confidence interval
-    :param nperm: int, number of permutations for permutation test
-    :param nfeatures: int or float, number threshold if >= 1 and quantile threshold if < 1
+    :param n_perms: int, number of permutations for permutation test
     :param title: str, plot title
     :param title_size: int, title text size
     :param annotation_label_size: int, annotation text size
     :param plot_colname: bool, plot column names or not
     :param result_filename: str, file path to the output result
     :param figure_filename: str, file path to the output figure
+    :param figure_size: 'auto' or tuple;
+    :param dpi: int;
     :return: None
     """
-    if features.shape[0] is 1 or isinstance(features, pd.Series):
+    if isinstance(features, pd.Series):
         features = pd.DataFrame(features).T
 
     print_log('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
 
-    # TODO: preserve order
     col_intersection = set(features.columns) & set(ref.index)
     if not col_intersection:
-        raise ValueError(
-            'No intersecting columns from features and ref, which have {} and {} columns respectively'.format(
-                features.shape[1], ref.size))
+        raise ValueError('features and ref have 0 intersecting columns, having {} and {} columns respectively'.format(
+            features.shape[1], ref.size))
     else:
-        print_log(
-            'Using {} intersecting columns from features and ref, which have {} and {} columns respectively ...'.format(
-                len(col_intersection), features.shape[1], ref.size))
+        print_log('features and ref have {} intersecting columns, having {} and {} columns respectively ...'.format(
+            len(col_intersection), features.shape[1], ref.size))
         features = features.ix[:, col_intersection]
         ref = ref.ix[col_intersection]
 
@@ -89,8 +88,8 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
         ref = ref.sort_values(ascending=ref_ascending)
         features = features.reindex_axis(ref.index, axis=1)
 
-    scores = compute_against_reference(features, ref, metric=metric, nfeatures=nfeatures, ascending=features_ascending,
-                                       nsampling=nsampling, confidence=confidence, nperm=nperm)
+    scores = compute_against_reference(features, ref, metric=metric, nfeatures=n_features, ascending=features_ascending,
+                                       nsampling=n_samplings, confidence=confidence, nperm=n_perms)
     features = features.reindex(scores.index)
 
     if result_filename:
@@ -111,21 +110,22 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
     annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
 
     # Limit features to be plotted
-    if nfeatures < 1:
-        above_quantile = scores.ix[:, metric] >= scores.ix[:, metric].quantile(nfeatures)
-        print_log('Plotting {} features vs. reference > {} quantile ...'.format(sum(above_quantile), nfeatures))
-        below_quantile = scores.ix[:, metric] <= scores.ix[:, metric].quantile(1 - nfeatures)
-        print_log('Plotting {} features vs. reference < {} quantile ...'.format(sum(below_quantile), 1 - nfeatures))
+    if n_features < 1:
+        above_quantile = scores.ix[:, metric] >= scores.ix[:, metric].quantile(n_features)
+        print_log('Plotting {} features vs. reference > {} quantile ...'.format(sum(above_quantile), n_features))
+        below_quantile = scores.ix[:, metric] <= scores.ix[:, metric].quantile(1 - n_features)
+        print_log('Plotting {} features vs. reference < {} quantile ...'.format(sum(below_quantile), 1 - n_features))
         indices_to_plot = features.index[above_quantile | below_quantile].tolist()
     else:
-        indices_to_plot = features.index[:nfeatures].tolist() + features.index[-nfeatures:].tolist()
+        indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
         print_log('Plotting top & bottom {} features vs. reference ...'.format(len(indices_to_plot)))
 
     plot_features_against_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
-                                    feature_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
+                                    feature_type=features_type, ref_type=ref_type,
+                                    figure_size=figure_size, title=title, title_size=title_size,
                                     annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
-                                    annotation_label_size=annotation_label_size,
-                                    plot_colname=plot_colname, output_filepath=figure_filename)
+                                    annotation_label_size=annotation_label_size, plot_colname=plot_colname,
+                                    output_filepath=figure_filename, dpi=dpi)
 
 
 def compute_against_reference(features, ref, metric='information_coef', nfeatures=0.95, ascending=False,

@@ -32,13 +32,15 @@ from scipy.stats import binom_test
 from .support import drop_nan_columns
 
 
-def information_coefficient(x, y, ngrid=25):
+def information_coefficient(x, y, ngrid=25, jitter=1E-10):
     x, y = drop_nan_columns([x, y])
-    x *= 1E-10
-    y *= 1E-10
-
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    # TODO: should I check the length of y too?
     if len(x) <= 2:
         return 0
+    x += np.random.random_sample(x.size) * jitter
+    y += np.random.random_sample(y.size) * jitter
 
     cor, p = pearsonr(x, y)
     bandwidth_x = np.asarray(mass.bcv(x)[0]) * (1 + (-0.75) * abs(cor))
