@@ -476,18 +476,18 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
             violinplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, scale='count', inner=None,
                        orient='h', ax=ax_legend, clip_on=False)
             boxplot(x=samples.ix[:, 'annotation'], y=states, showbox=False, showmeans=True,
-                    meaops={'marker': 'o',
+                    medianprops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
                                'markeredgewidth': 0.9,
                                'markeredgecolor': effectplot_mean_markeredgecolor},
-                    mediaops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
+                    meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         elif effectplot_type == 'box':
             boxplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, showmeans=True,
-                    meaops={'marker': 'o',
+                    medianpops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
                                'markeredgewidth': 0.9,
                                'markeredgecolor': effectplot_mean_markeredgecolor},
-                    mediaops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
+                    meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
         annotation_min = samples.ix[:, 'annotation'].min()
         annotation_mean = samples.ix[:, 'annotation'].mean()
