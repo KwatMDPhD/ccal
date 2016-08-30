@@ -4,7 +4,7 @@ Computational Cancer Analysis Library v0.1
 
 Authors:
 Pablo Tamayo
-pablo.tamayo.r@gmail.com
+ptamayo@ucsd.edu
 Computational Cancer Analysis, UCSD Cancer Center
 
 Huwate (Kwat) Yeerna (Medetgul-Ernar)

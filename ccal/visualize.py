@@ -4,7 +4,7 @@ Computational Cancer Analysis Library v0.1
 
 Authors:
 Pablo Tamayo
-pablo.tamayo.r@gmail.com
+ptamayo@ucsd.edu
 Computational Cancer Analysis, UCSD Cancer Center
 
 Huwate (Kwat) Yeerna (Medetgul-Ernar)
@@ -28,7 +28,6 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
-
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
