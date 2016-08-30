@@ -18,7 +18,7 @@ Laboratory of Jill Mesirov
 import os
 import math
 
-import numpy as np
+from numpy import array, asarray, zeros, empty, argmax, linspace
 from pandas import DataFrame, Series
 from sklearn.manifold import MDS
 from scipy.spatial import Delaunay, ConvexHull
@@ -240,7 +240,7 @@ def _setup_cmap(pandas_obj, data_type, std_max=3):
     return data_cmap, data_min, data_max
 
 
-def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, annotation_type='continuous', n_grids=128,
+def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, annotation_type='continuous', n_grids=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   mds_is_metric=True, mds_seed=SEED,
@@ -258,8 +258,9 @@ def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, an
     """
     :param h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: iterable of int; (n_samples); sample states
-    :param max_std: number; threshold to clip standardized values
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
+    :param annotation_name: str;
+    :param max_std: number; threshold to clip standardized values
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param n_grids: int;
     :param title: str;
@@ -315,7 +316,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, an
         if not isinstance(annotations, Series):
             annotations = Series(annotations, name=annotation_name)
         if annotation_type == 'continuous':
-            samples.ix[:, 'annotation'] = np.array(normalize_pandas_object(annotations))
+            samples.ix[:, 'annotation'] = array(normalize_pandas_object(annotations))
             samples.ix[:, 'annotation'] = samples.ix[:, 'annotation'].clip(-max_std, max_std)
         else:
             samples.ix[:, 'annotation'] = normalize_pandas_object(annotations, method='0-1')
@@ -333,8 +334,8 @@ def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, an
     y_max = max(components_coordinates[:, 1])
     y_range = y_max - y_min
     # 0-1 normalize the coordinates
-    x_grids = np.linspace(0, 1, n_grids)
-    y_grids = np.linspace(0, 1, n_grids)
+    x_grids = linspace(0, 1, n_grids)
+    y_grids = linspace(0, 1, n_grids)
     for i, (x, y) in enumerate(components_coordinates):
         components_coordinates[i, 0] = (x - x_min) / x_range
         components_coordinates[i, 1] = (y - y_min) / y_range
@@ -349,21 +350,21 @@ def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, an
         samples.ix[sample, ['x', 'y']] = x, y
 
     # Get KDE for each state using bandwidth created from all states' x & y coordinates
-    kdes = np.zeros((len(unique_states) + 1, n_grids, n_grids))
-    bandwidths = np.array([mass.bcv(np.array(samples.ix[:, 'x'].tolist()))[0],
-                           mass.bcv(np.array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
+    kdes = zeros((len(unique_states) + 1, n_grids, n_grids))
+    bandwidths = array([mass.bcv(array(samples.ix[:, 'x'].tolist()))[0],
+                           mass.bcv(array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
     for s in unique_states:
         coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
-        kde = mass.kde2d(np.array(coordinates.ix[:, 'x'], dtype=float), np.array(coordinates.ix[:, 'y'], dtype=float),
-                         bandwidths, n=np.array([n_grids]), lims=np.array([0, 1, 0, 1]))
-        kdes[s] = np.array(kde[2])
+        kde = mass.kde2d(array(coordinates.ix[:, 'x'], dtype=float), array(coordinates.ix[:, 'y'], dtype=float),
+                         bandwidths, n=array([n_grids]), lims=array([0, 1, 0, 1]))
+        kdes[s] = array(kde[2])
     # Assign the best KDE probability and state for each grid
-    grid_probabilities = np.zeros((n_grids, n_grids))
-    grid_states = np.empty((n_grids, n_grids))
+    grid_probabilities = zeros((n_grids, n_grids))
+    grid_states = empty((n_grids, n_grids))
     for i in range(n_grids):
         for j in range(n_grids):
             grid_probabilities[i, j] = max(kdes[:, j, i])
-            grid_states[i, j] = np.argmax(kdes[:, i, j])
+            grid_states[i, j] = argmax(kdes[:, i, j])
 
     # Set up figure and axes
     figure = plt.figure(figsize=figure_size)
@@ -427,7 +428,10 @@ def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, an
         cmap, cmap_min, cmap_max, = _setup_cmap(samples.ix[:, 'annotation'], annotation_type)
     for idx, s in samples.iterrows():
         if 'annotation' in samples.columns:
-            c = cmap(s.ix['annotation'])
+            if s.ix['annotation']:
+                c = cmap(s.ix['annotation'])
+            else:
+                c = '#000000'
         else:
             c = states_color[s.ix['state']]
         ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
@@ -472,18 +476,18 @@ def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, an
             violinplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, scale='count', inner=None,
                        orient='h', ax=ax_legend, clip_on=False)
             boxplot(x=samples.ix[:, 'annotation'], y=states, showbox=False, showmeans=True,
-                    meanprops={'marker': 'o',
+                    meaops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
                                'markeredgewidth': 0.9,
                                'markeredgecolor': effectplot_mean_markeredgecolor},
-                    medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
+                    mediaops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         elif effectplot_type == 'box':
             boxplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, showmeans=True,
-                    meanprops={'marker': 'o',
+                    meaops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
                                'markeredgewidth': 0.9,
                                'markeredgecolor': effectplot_mean_markeredgecolor},
-                    medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
+                    mediaops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
         annotation_min = samples.ix[:, 'annotation'].min()
         annotation_mean = samples.ix[:, 'annotation'].mean()
@@ -498,7 +502,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, an
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
 
-        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(np.array(states) == s)) for s in unique_states],
+        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(array(states) == s)) for s in unique_states],
                                   fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
 
@@ -513,7 +517,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, an
             y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
             c = states_color[s]
             ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
-            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(np.asarray(states) == s)),
+            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(asarray(states) == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if output_filepath:
