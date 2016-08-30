@@ -305,13 +305,13 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
     print_log('Creating Onco-GPS with {} samples, {} components, and {} states {} ...'.format(*reversed(h.shape),
                                                                                               len(unique_states),
                                                                                               unique_states))
-    samples = DataFrame(index=h.columns, columns=['state', 'annotation', 'x', 'y'])
+    samples = DataFrame(index=h.columns, columns=['state', 'x', 'y'])
 
     # Get sample states
     samples.ix[:, 'state'] = states
 
     # Get sample annotations (if any)
-    if isinstance(annotations, Series):
+    if any(annotations):
         if annotation_type == 'continuous':
             samples.ix[:, 'annotation'] = np.array(normalize_pandas_object(annotations))
             samples.ix[:, 'annotation'] = samples.ix[:, 'annotation'].clip(-max_std, max_std)
@@ -421,10 +421,10 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
 
     # Plot samples
     cmap = cmap_min = cmap_max = None
-    if isinstance(annotations, Series):
+    if any(annotations):
         cmap, cmap_min, cmap_max, = _setup_cmap(annotations, annotation_type)
     for idx, s in samples.iterrows():
-        if isinstance(annotations, Series):
+        if any(annotations):
             c = cmap(s.ix['annotation'])
         else:
             c = states_color[s.ix['state']]
@@ -458,11 +458,11 @@ def plot_onco_gps(h, states, max_std=3, annotations=None, annotation_type='conti
                                 markerfacecolor='w', aa=True, zorder=3)
 
     # Plot legend
-    if isinstance(annotations, Series):
+    if any(annotations):
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
 
-        if annotations.name:
+        if isinstance(annotations, Series):
             annotation_name = annotations.name
         else:
             annotation_name = ''
