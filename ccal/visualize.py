@@ -240,7 +240,7 @@ def _setup_cmap(pandas_obj, data_type, std_max=3):
     return data_cmap, data_min, data_max
 
 
-def plot_onco_gps(h, states, max_std=3, annotations=(), annotation_type='continuous', n_grids=128,
+def plot_onco_gps(h, states, annotations=(), annotation_name=None, max_std=3, annotation_type='continuous', n_grids=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   mds_is_metric=True, mds_seed=SEED,
@@ -312,6 +312,8 @@ def plot_onco_gps(h, states, max_std=3, annotations=(), annotation_type='continu
 
     # Get sample annotations (if any)
     if any(annotations):
+        if not isinstance(annotations, Series):
+            annotations = Series(annotations, name=annotation_name)
         if annotation_type == 'continuous':
             samples.ix[:, 'annotation'] = np.array(normalize_pandas_object(annotations))
             samples.ix[:, 'annotation'] = samples.ix[:, 'annotation'].clip(-max_std, max_std)
@@ -421,10 +423,10 @@ def plot_onco_gps(h, states, max_std=3, annotations=(), annotation_type='continu
 
     # Plot samples
     cmap = cmap_min = cmap_max = None
-    if any(annotations):
-        cmap, cmap_min, cmap_max, = _setup_cmap(annotations, annotation_type)
+    if 'annotation' in samples.columns:
+        cmap, cmap_min, cmap_max, = _setup_cmap(samples.ix[:, 'annotation'], annotation_type)
     for idx, s in samples.iterrows():
-        if any(annotations):
+        if 'annotation' in samples.columns:
             c = cmap(s.ix['annotation'])
         else:
             c = states_color[s.ix['state']]
@@ -458,40 +460,40 @@ def plot_onco_gps(h, states, max_std=3, annotations=(), annotation_type='continu
                                 markerfacecolor='w', aa=True, zorder=3)
 
     # Plot legend
-    if any(annotations):
+    if 'annotation' in samples.columns:
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
 
-        if isinstance(annotations, Series):
-            annotation_name = annotations.name
-        else:
-            annotation_name = ''
         # TODO: Compute IC and get p-val
         ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
                             fontsize=legend_fontsize * 1.26, weight='bold')
 
         if effectplot_type == 'violine':
-            violinplot(x=annotations, y=states, palette=states_color, scale='count', inner=None, orient='h',
-                       ax=ax_legend, clip_on=False)
-            boxplot(x=annotations, y=states, showbox=False, showmeans=True,
+            violinplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, scale='count', inner=None,
+                       orient='h', ax=ax_legend, clip_on=False)
+            boxplot(x=samples.ix[:, 'annotation'], y=states, showbox=False, showmeans=True,
                     meanprops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
                                'markeredgewidth': 0.9,
                                'markeredgecolor': effectplot_mean_markeredgecolor},
                     medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         elif effectplot_type == 'box':
-            boxplot(x=annotations, y=states, palette=states_color, showmeans=True,
+            boxplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, showmeans=True,
                     meanprops={'marker': 'o',
                                'markerfacecolor': effectplot_mean_markerfacecolor,
                                'markeredgewidth': 0.9,
                                'markeredgecolor': effectplot_mean_markeredgecolor},
                     medianprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
-        ax_legend.axvline(np.min(annotations), color='#000000', ls='-', alpha=0.16, aa=True)
-        ax_legend.axvline(np.mean(annotations), color='#000000', ls='-', alpha=0.39, aa=True)
-        ax_legend.axvline(np.max(annotations), color='#000000', ls='-', alpha=0.16, aa=True)
+        annotation_min = samples.ix[:, 'annotation'].min()
+        annotation_mean = samples.ix[:, 'annotation'].mean()
+        annotation_max = samples.ix[:, 'annotation'].max()
 
-        ax_legend.set_xticks([np.min(annotations), np.mean(annotations), np.max(annotations)])
+        ax_legend.axvline(annotation_min, color='#000000', ls='-', alpha=0.16, aa=True)
+        ax_legend.axvline(annotation_mean, color='#000000', ls='-', alpha=0.39, aa=True)
+        ax_legend.axvline(annotation_max, color='#000000', ls='-', alpha=0.16, aa=True)
+
+        ax_legend.set_xticks([annotation_min, annotation_mean, annotation_max])
         ax_legend.set_xlabel('')
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
@@ -501,7 +503,9 @@ def plot_onco_gps(h, states, max_std=3, annotations=(), annotation_type='continu
         ax_legend.yaxis.tick_right()
 
         cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16, cmap='bwr',
-                            ticks=[annotations.min(), annotations.mean(), annotations.max()])
+                            ticks=[samples.ix[:, 'annotation'].min(),
+                                   samples.ix[:, 'annotation'].mean(),
+                                   samples.ix[:, 'annotation'].max()])
         ColorbarBase(cax, **kw)
 
     else:
