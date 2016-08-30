@@ -18,7 +18,7 @@ Laboratory of Jill Mesirov
 from numpy import asarray, sum, prod, array, sign, sqrt, exp,log, linspace, finfo, meshgrid, vstack
 from numpy.random import random_sample, permutation
 from scipy.stats import pearsonr
-from statsmodels.norametric.kernel_density import KDEMultivariate
+from statsmodels.nonparametric.kernel_density import KDEMultivariate
 from scipy.stats import binom_test
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri

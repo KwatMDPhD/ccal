@@ -34,7 +34,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 
 from .support import SEED, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices
 from .visualize import DPI, plot_features_against_reference
-from .information import information_coefficient, cmi_diff, cmi_ratio
+from .information import information_coefficient
 
 
 # ======================================================================================================================
@@ -69,11 +69,13 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
     :param dpi: int;
     :return: None
     """
+    print_log('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
+
+    # Convert features into pandas DataFrame
     if isinstance(features, pd.Series):
         features = pd.DataFrame(features).T
 
-    print_log('Computing features vs. {} using {} metric ...'.format(ref.name, metric))
-
+    # Use intersecting columns
     col_intersection = set(features.columns) & set(ref.index)
     if not col_intersection:
         raise ValueError('features and ref have 0 intersecting columns, having {} and {} columns respectively'.format(
@@ -84,10 +86,15 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
         features = features.ix[:, col_intersection]
         ref = ref.ix[col_intersection]
 
+    # Drop rows having all 0 values
+    features = features.ix[(features != 0).any(axis=1)]
+
+    # Sort reference
     if ref_sort:
         ref = ref.sort_values(ascending=ref_ascending)
         features = features.reindex_axis(ref.index, axis=1)
 
+    # Compute scores
     scores = compute_against_reference(features, ref, metric=metric, nfeatures=n_features, ascending=features_ascending,
                                        nsampling=n_samplings, confidence=confidence, nperm=n_perms)
     features = features.reindex(scores.index)
@@ -142,19 +149,17 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
     :param nperm: int, number of permutations for permutation test
     :return: pandas DataFrame (nfeatures, nscores),
     """
+    # Set computing function
     if metric is 'information_coef':
         function = information_coefficient
-    elif metric is 'information_cmi_diff':
-        function = cmi_diff
-    elif metric is 'information_cmi_ratio':
-        function = cmi_ratio
     else:
         raise ValueError('Unknown metric {}.'.format(metric))
-
     print_log('Computing scores using {} metric ...'.format(metric))
+
+    # Compute and rank
     scores = np.empty(features.shape[0])
     for i, (idx, s) in enumerate(features.iterrows()):
-        if i % 100 is 0:
+        if i % 1000 is 0:
             print_log('\t{}/{} ...'.format(i, features.shape[0]))
         scores[i] = function(s, ref)
     scores = pd.DataFrame(scores, index=features.index, columns=[metric]).sort_values(metric)
@@ -167,7 +172,7 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
         print_log('Not bootstrapping because 0.632 * number of sample < 3.')
     else:
         # Limit features to be bootstrapped
-        if nfeatures < 1:
+        if nfeatures < 1:  # limit using quantile
             above_quantile = scores.ix[:, metric] >= scores.ix[:, metric].quantile(nfeatures)
             print_log('Bootstrapping {} features vs. reference > {} quantile ...'.format(sum(above_quantile),
                                                                                          nfeatures))
@@ -175,7 +180,7 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
             print_log('Bootstrapping {} features vs. reference < {} quantile ...'.format(sum(below_quantile),
                                                                                          1 - nfeatures))
             indices_to_bootstrap = scores.index[above_quantile | below_quantile].tolist()
-        else:
+        else:  # limit using numbers
             indices_to_bootstrap = scores.index[:nfeatures].tolist() + scores.index[-nfeatures:].tolist()
             print_log('Bootstrapping top & bottom {} features vs. reference ...'.format(len(indices_to_bootstrap)))
 
@@ -191,7 +196,6 @@ def compute_against_reference(features, ref, metric='information_coef', nfeature
         # Get confidence intervals
         confidence_intervals = pd.DataFrame(index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
         z_critical = stats.norm.ppf(q=confidence)
-
         for i, s in sampled_scores.iterrows():
             std = s.std()
             moe = z_critical * (std / math.sqrt(s.size))
