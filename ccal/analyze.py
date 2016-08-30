@@ -122,10 +122,10 @@ def rank_features_against_reference(features, ref, features_type='continuous', r
         print_log('Plotting top & bottom {} features vs. reference ...'.format(len(indices_to_plot)))
 
     plot_features_against_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
-                                    features_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
+                                    feature_type=features_type, ref_type=ref_type, title=title, title_size=title_size,
                                     annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
                                     annotation_label_size=annotation_label_size,
-                                    plot_colname=plot_colname, figure_filename=figure_filename)
+                                    plot_colname=plot_colname, output_filepath=figure_filename)
 
 
 def compute_against_reference(features, ref, metric='information_coef', nfeatures=0.95, ascending=False,
