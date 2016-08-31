@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import rpy2.robjects as ro
 from matplotlib.cm import bwr, Paired
 from matplotlib.colorbar import make_axes, ColorbarBase
+from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
 from numpy import array, asarray, zeros, empty, argmax, linspace, clip
@@ -442,34 +443,39 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
                                 markerfacecolor='w', aa=True, zorder=3)
 
     if any(annotations):  # Plot samples, annotations, sample legends, and annotation legends
-        if not isinstance(annotations, Series):
-            annotations = Series(annotations)
-
         # Set up annotations
+        a = Series(annotations, index=samples.index)
         if annotation_type == 'continuous':
-            cmap = CMAP_CONTINUOUS
-            samples.ix[:, 'annotation'] = clip(normalize_pandas_object(annotations), -std_max, std_max)
-            annotation_min = -std_max
+            samples.ix[:, 'annotation'] = normalize_pandas_object(a).clip(-std_max, std_max)
+            annotation_min = max(-std_max, samples.ix[:, 'annotation'].min())
             annotation_mean = samples.ix[:, 'annotation'].mean()
-            annotation_max = std_max
+            annotation_max = min(std_max, samples.ix[:, 'annotation'].max())
+            cmap = CMAP_CONTINUOUS
         else:
+            samples.ix[:, 'annotation'] = annotations
+            annotation_min = 0
+            annotation_mean = int(samples.ix[:, 'annotation'].mean())
+            annotation_max = int(samples.ix[:, 'annotation'].max())
             if annotation_type == 'categorical':
                 cmap = CMAP_CATEGORICAL
             elif annotation_type == 'binary':
                 cmap = CMAP_BINARY
             else:
                 raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
-            samples.ix[:, 'annotation'] = normalize_pandas_object(annotations, method='0-1')
-            annotation_min = 0
-            annotation_mean = samples.ix[:, 'annotation'].mean()
-            annotation_max = len(set(samples.ix[:, 'annotation']))
+        annotation_range = annotation_max - annotation_min
+        print(annotation_min, annotation_mean, annotation_max, annotation_range)
 
         # Plot samples
         for idx, s in samples.iterrows():
             if isnull(s.ix['annotation']):
                 c = sample_without_annotation_markerfacecolor
             else:
-                c = cmap(s.ix['annotation'])
+                if annotation_type == 'continuous':
+                    c = cmap(s.ix['annotation'])
+                elif annotation_type in ('categorical', 'binary'):
+                    c = cmap((s.ix['annotation'] - annotation_min) / annotation_range)
+                else:
+                    raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
             ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
@@ -510,7 +516,8 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
 
         # Plot annotation legends
         if annotation_type == 'continuous':
-            cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16, cmap=cmap,
+            cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16,
+                                cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                                 ticks=[annotation_min, annotation_mean, annotation_max])
             ColorbarBase(cax, **kw)
 
