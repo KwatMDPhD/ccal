@@ -15,22 +15,22 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-import os
 import math
+import os
 
-from numpy import array, asarray, zeros, empty, argmax, linspace
-from pandas import DataFrame, Series
-from sklearn.manifold import MDS
-from scipy.spatial import Delaunay, ConvexHull
-from matplotlib.cm import bwr, Paired
 import matplotlib.pyplot as plt
+import rpy2.robjects as ro
+from matplotlib.cm import bwr, Paired
+from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
-from matplotlib.colorbar import make_axes, ColorbarBase
-from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
-import rpy2.robjects as ro
+from numpy import array, asarray, zeros, empty, argmax, linspace, clip
+from pandas import DataFrame, Series, isnull
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
+from scipy.spatial import Delaunay, ConvexHull
+from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
+from sklearn.manifold import MDS
 
 from .support import SEED, print_log, establish_path, get_unique_in_order, normalize_pandas_object
 
@@ -240,7 +240,7 @@ def _setup_cmap(pandas_obj, data_type, std_max=3):
     return data_cmap, data_min, data_max
 
 
-def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, annotation_type='continuous', n_grids=128,
+def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, annotation_type='continuous', n_grids=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   mds_is_metric=True, mds_seed=SEED,
@@ -248,7 +248,8 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
                   component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   kde_bandwidths_factor=1, n_influencing_components='all', sample_stretch_factor=2,
-                  sample_markersize=12, sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
+                  sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
+                  sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
                   background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.7,
                   legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
@@ -260,7 +261,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
     :param states: iterable of int; (n_samples); sample states
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
     :param annotation_name: str;
-    :param max_std: number; threshold to clip standardized values
+    :param std_max: number; threshold to clip standardized values
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param n_grids: int;
     :param title: str;
@@ -282,6 +283,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
     :param sample_stretch_factor: number; power to raise components' influence on each sample
     :param sample_markersize: number;
+    :param sample_without_annotation_markerfacecolor: matplotlib color;
     :param sample_markeredgewidth: number;
     :param sample_markeredgecolor: matplotlib color;
     :param n_contours: int; set to 0 to disable drawing contours
@@ -306,24 +308,15 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
     print_log('Creating Onco-GPS with {} samples, {} components, and {} states {} ...'.format(*reversed(h.shape),
                                                                                               len(unique_states),
                                                                                               unique_states))
+
     samples = DataFrame(index=h.columns, columns=['state', 'x', 'y'])
 
     # Get sample states
     samples.ix[:, 'state'] = states
 
-    # Get sample annotations (if any)
-    if any(annotations):
-        if not isinstance(annotations, Series):
-            annotations = Series(annotations, name=annotation_name)
-        if annotation_type == 'continuous':
-            samples.ix[:, 'annotation'] = array(normalize_pandas_object(annotations))
-            samples.ix[:, 'annotation'] = samples.ix[:, 'annotation'].clip(-max_std, max_std)
-        else:
-            samples.ix[:, 'annotation'] = normalize_pandas_object(annotations, method='0-1')
-
     # Get sample coordinates
     # Standardize H and clip values with extreme standard deviation
-    normalized_clipped_h = normalize_pandas_object(h).clip(-max_std, max_std)
+    normalized_clipped_h = normalize_pandas_object(h).clip(-std_max, std_max)
     # Project the H's components from <n_sample>D to 2D
     mds = MDS(metric=mds_is_metric, random_state=mds_seed)
     components_coordinates = mds.fit_transform(normalized_clipped_h)
@@ -352,7 +345,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
     # Get KDE for each state using bandwidth created from all states' x & y coordinates
     kdes = zeros((len(unique_states) + 1, n_grids, n_grids))
     bandwidths = array([mass.bcv(array(samples.ix[:, 'x'].tolist()))[0],
-                           mass.bcv(array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
+                        mass.bcv(array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
     for s in unique_states:
         coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
         kde = mass.kde2d(array(coordinates.ix[:, 'x'], dtype=float), array(coordinates.ix[:, 'y'], dtype=float),
@@ -381,11 +374,6 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
     ax_legend = plt.subplot(gridspec[1:, 14:])
     ax_legend.axis([0, 1, 0, 1])
     ax_legend.axis('off')
-
-    #  Assign colors to states
-    states_color = {}
-    for s in unique_states:
-        states_color[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
 
     # Plot title
     ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
@@ -422,25 +410,15 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
     ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, zorder=4)
 
-    # Plot samples
-    cmap = cmap_min = cmap_max = None
-    if 'annotation' in samples.columns:
-        cmap, cmap_min, cmap_max, = _setup_cmap(samples.ix[:, 'annotation'], annotation_type)
-    for idx, s in samples.iterrows():
-        if 'annotation' in samples.columns:
-            if s.ix['annotation']:
-                c = cmap(s.ix['annotation'])
-            else:
-                c = '#000000'
-        else:
-            c = states_color[s.ix['state']]
-        ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
-                    markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True, zorder=5)
-
     # Plot contours
     if n_contours > 0:
         ax_map.contour(x_grids, y_grids, grid_probabilities, n_contours, corner_mask=True,
                        linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, aa=True, zorder=2)
+
+    # Assign colors to states
+    states_color = {}
+    for s in unique_states:
+        states_color[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
 
     # Plot background
     if background_markersize > 0:
@@ -455,7 +433,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
                             (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range)
                     ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_markersize, markerfacecolor=c,
                                 alpha=a, aa=True, zorder=1)
-    # Plot mask
+    # Plot background mask
     if background_mask_markersize > 0:
         for i in range(n_grids):
             for j in range(n_grids):
@@ -463,56 +441,87 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', max_std=3, anno
                     ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_mask_markersize,
                                 markerfacecolor='w', aa=True, zorder=3)
 
-    # Plot legend
-    if 'annotation' in samples.columns:
+    if any(annotations):  # Plot samples, annotations, sample legends, and annotation legends
+        if not isinstance(annotations, Series):
+            annotations = Series(annotations)
+
+        # Set up annotations
+        if annotation_type == 'continuous':
+            cmap = CMAP_CONTINUOUS
+            samples.ix[:, 'annotation'] = clip(normalize_pandas_object(annotations), -std_max, std_max)
+            annotation_min = -std_max
+            annotation_mean = samples.ix[:, 'annotation'].mean()
+            annotation_max = std_max
+        else:
+            if annotation_type == 'categorical':
+                cmap = CMAP_CATEGORICAL
+            elif annotation_type == 'binary':
+                cmap = CMAP_BINARY
+            else:
+                raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
+            samples.ix[:, 'annotation'] = normalize_pandas_object(annotations, method='0-1')
+            annotation_min = 0
+            annotation_mean = samples.ix[:, 'annotation'].mean()
+            annotation_max = len(set(samples.ix[:, 'annotation']))
+
+        # Plot samples
+        for idx, s in samples.iterrows():
+            if isnull(s.ix['annotation']):
+                c = sample_without_annotation_markerfacecolor
+            else:
+                c = cmap(s.ix['annotation'])
+            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+                        markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
+                        zorder=5)
+
+        # Plot sample legends
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
-
         # TODO: Compute IC and get p-val
         ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
                             fontsize=legend_fontsize * 1.26, weight='bold')
-
         if effectplot_type == 'violine':
             violinplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, scale='count', inner=None,
                        orient='h', ax=ax_legend, clip_on=False)
             boxplot(x=samples.ix[:, 'annotation'], y=states, showbox=False, showmeans=True,
                     medianprops={'marker': 'o',
-                               'markerfacecolor': effectplot_mean_markerfacecolor,
-                               'markeredgewidth': 0.9,
-                               'markeredgecolor': effectplot_mean_markeredgecolor},
+                                 'markerfacecolor': effectplot_mean_markerfacecolor,
+                                 'markeredgewidth': 0.9,
+                                 'markeredgecolor': effectplot_mean_markeredgecolor},
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         elif effectplot_type == 'box':
             boxplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, showmeans=True,
                     medianpops={'marker': 'o',
-                               'markerfacecolor': effectplot_mean_markerfacecolor,
-                               'markeredgewidth': 0.9,
-                               'markeredgecolor': effectplot_mean_markeredgecolor},
+                                'markerfacecolor': effectplot_mean_markerfacecolor,
+                                'markeredgewidth': 0.9,
+                                'markeredgecolor': effectplot_mean_markeredgecolor},
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
-
-        annotation_min = samples.ix[:, 'annotation'].min()
-        annotation_mean = samples.ix[:, 'annotation'].mean()
-        annotation_max = samples.ix[:, 'annotation'].max()
-
         ax_legend.axvline(annotation_min, color='#000000', ls='-', alpha=0.16, aa=True)
         ax_legend.axvline(annotation_mean, color='#000000', ls='-', alpha=0.39, aa=True)
         ax_legend.axvline(annotation_max, color='#000000', ls='-', alpha=0.16, aa=True)
-
         ax_legend.set_xticks([annotation_min, annotation_mean, annotation_max])
         ax_legend.set_xlabel('')
+        # TODO: do this in the same way everywhere
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
-
         ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(array(states) == s)) for s in unique_states],
                                   fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
 
-        cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16, cmap='bwr',
-                            ticks=[samples.ix[:, 'annotation'].min(),
-                                   samples.ix[:, 'annotation'].mean(),
-                                   samples.ix[:, 'annotation'].max()])
-        ColorbarBase(cax, **kw)
+        # Plot annotation legends
+        if annotation_type == 'continuous':
+            cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16, cmap=cmap,
+                                ticks=[annotation_min, annotation_mean, annotation_max])
+            ColorbarBase(cax, **kw)
 
-    else:
+    else:  # Plot samples and sample legends
+        # Plot samples
+        for idx, s in samples.iterrows():
+            c = states_color[s.ix['state']]
+            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+                        markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
+                        zorder=5)
+        # Plot sample legends
         for i, s in enumerate(unique_states):
             y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
             c = states_color[s]
