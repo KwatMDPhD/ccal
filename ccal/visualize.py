@@ -444,7 +444,8 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
 
     if any(annotations):  # Plot samples, annotations, sample legends, and annotation legends
         # Set up annotations
-        a = Series(annotations, index=samples.index)
+        a = Series(annotations)
+        a.index = samples.index
         if annotation_type == 'continuous':
             samples.ix[:, 'annotation'] = normalize_pandas_object(a).clip(-std_max, std_max)
             annotation_min = max(-std_max, samples.ix[:, 'annotation'].min())
