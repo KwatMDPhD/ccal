@@ -324,11 +324,13 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
     # Standardize H and clip values with extreme standard deviation
     normalized_clipped_h = normalize_pandas_object(normalize_pandas_object(h).clip(-std_max, std_max), method='0-1')
     # Project the H's components from <n_sample>D to 2D
-    mds = MDS(metric=mds_is_metric, random_state=mds_seed)
     if informational_mds:
-        components_coordinates = mds.fit_transform(
-            compare_matrices(normalized_clipped_h, normalized_clipped_h, information_coefficient))
+        mds = MDS(metric=True, random_state=20121020, dissimilarity='precomputed', n_init=100, max_iter=1000)
+        components_coordinates = mds.fit_transform(compare_matrices(normalized_clipped_h,
+                                                                    normalized_clipped_h,
+                                                                    information_coefficient))
     else:
+        mds = MDS(metric=True, random_state=20121020, n_init=100, max_iter=1000)
         components_coordinates = mds.fit_transform(normalized_clipped_h)
     x_min = min(components_coordinates[:, 0])
     x_max = max(components_coordinates[:, 0])
