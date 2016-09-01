@@ -80,14 +80,16 @@ def establish_path(filepath):
     """
     from os import path, mkdir
 
-    if not (path.isdir(filepath) and path.isfile(filepath) and path.islink(filepath)):
-        print_log('Directory {} doesn\'t exist, creating it ...'.format(path.split(filepath)[0]))
+    prefix, suffix = path.split(filepath)
+    if not (path.isdir(prefix) or path.isfile(prefix) or path.islink(prefix)):
+        print_log('Directory {} doesn\'t exist, creating it ...'.format(prefix))
         dirs = []
         prefix, suffix = path.split(filepath)
         dirs.append(prefix)
-        while prefix != '/' and suffix != '':
+        while prefix != '' and suffix != '':
             prefix, suffix = path.split(prefix)
-            dirs.append(prefix)
+            if prefix:
+                dirs.append(prefix)
         for d in reversed(dirs):
             if not (path.isdir(d) or path.isfile(d) or path.islink(d)):
                 mkdir(d)
