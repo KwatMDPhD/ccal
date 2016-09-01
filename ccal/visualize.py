@@ -101,6 +101,7 @@ def plot_nmf_result(nmf_results, k, max_std=3, figure_size=FIGURE_SIZE, title=No
     ax_h.set_ylabel('Component', **label_font_properties)
 
     if output_filepath:
+        establish_path(output_filepath)
         plt.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
     plt.show()
 
@@ -129,6 +130,7 @@ def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score
     ax.set_ylabel('Score', **label_font_properties)
 
     if output_filepath:
+        establish_path(output_filepath)
         plt.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
     plt.show()
 
@@ -238,8 +240,7 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
                 size=annotation_label_size, weight='bold')
 
     if output_filepath:
-        # TODO: apply to all saving?
-        establish_path(os.path.split(output_filepath)[0])
+        establish_path(output_filepath)
         fig.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
     plt.show(fig)
 
@@ -526,7 +527,6 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
         ax_legend.axvline(annotation_max, color='#000000', ls='-', alpha=0.16, aa=True)
         ax_legend.set_xticks([annotation_min, annotation_mean, annotation_max])
         ax_legend.set_xlabel('')
-        # TODO: do this in the same way everywhere
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
         ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(array(states) == s)) for s in unique_states],
@@ -556,5 +556,6 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if output_filepath:
+        establish_path(output_filepath)
         figure.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
     plt.show()

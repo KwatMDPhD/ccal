@@ -81,20 +81,17 @@ def establish_path(filepath):
     from os import path, mkdir
 
     if not (path.isdir(filepath) and path.isfile(filepath) and path.islink(filepath)):
-        print_log('Full path {} doesn\'t exist, creating it ...'.format(filepath))
-
+        print_log('Directory {} doesn\'t exist, creating it ...'.format(path.split(filepath)[0]))
         dirs = []
         prefix, suffix = path.split(filepath)
-        while suffix != '':
-            dirs.append(suffix)
-            prefix, suffix = filepath.split(prefix)
         dirs.append(prefix)
-
-        partial_path = ''
-        for d in dirs[::-1]:
-            partial_path = path.join(partial_path, d)
-            if not (path.isdir(partial_path) or path.isfile(partial_path) or path.islink(partial_path)):
-                mkdir(partial_path)
+        while prefix != '/' and suffix != '':
+            prefix, suffix = path.split(prefix)
+            dirs.append(prefix)
+        for d in reversed(dirs):
+            if not (path.isdir(d) or path.isfile(d) or path.islink(d)):
+                mkdir(d)
+                print_log('Created directory {}.'.format(d))
 
 
 def read_gct(filepath, fill_na=None, drop_description=True):
