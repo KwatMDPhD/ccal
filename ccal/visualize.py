@@ -1,7 +1,6 @@
 """
 Computational Cancer Analysis Library v0.1
 
-
 Authors:
 Pablo Tamayo
 ptamayo@ucsd.edu
@@ -25,15 +24,18 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
-from numpy import array, asarray, zeros, empty, argmax, linspace, clip
+from numpy import array, asarray, zeros, empty, argmax, linspace
 from pandas import DataFrame, Series, isnull
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 from scipy.spatial import Delaunay, ConvexHull
+from scipy.optimize import curve_fit
 from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
 from sklearn.manifold import MDS
 
-from .support import SEED, print_log, establish_path, get_unique_in_order, normalize_pandas_object
+from .support import SEED, print_log, compare_matrices, establish_path, get_unique_in_order, normalize_pandas_object, \
+    exponential_function
+from .information import information_coefficient
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -132,7 +134,7 @@ def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score
 
 
 def plot_features_against_reference(features, ref, annotations, feature_type='continuous', ref_type='continuous',
-                                    figure_size='auto', title=None, title_size=20,
+                                    std_max=3, figure_size='auto', title=None, title_size=20,
                                     annotation_header=None, annotation_label_size=9,
                                     plot_colname=False, output_filepath=None, dpi=DPI):
     """
@@ -142,6 +144,7 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
     :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must match `features`'s
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param ref_type: str; {'continuous', 'categorical', 'binary'}
+    :param std_max: number;
     :param figure_size: 'auto' or tuple;
     :param title: str;
     :param title_size: number;
@@ -152,16 +155,32 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
     :param dpi: int;
     :return: None
     """
-    features_cmap, features_min, features_max = _setup_cmap(features, feature_type)
-    ref_cmap, ref_min, ref_max = _setup_cmap(ref, ref_type)
-
-    # Normalize
-    if feature_type is 'continuous':
+    if feature_type == 'continuous':
+        features_cmap = CMAP_CONTINUOUS
+        features_min, features_max = -std_max, std_max
         print_log('Normalizing continuous features ...')
         features = normalize_pandas_object(features)
-    if ref_type is 'continuous':
+    elif feature_type == 'categorical':
+        features_cmap = CMAP_CATEGORICAL
+        features_min, features_max = 0, len(set(features.values))
+    elif feature_type == 'binary':
+        features_cmap = CMAP_BINARY
+        features_min, features_max = 0, 1
+    else:
+        raise ValueError('Unknown feature_type {}.'.format(feature_type))
+    if ref_type == 'continuous':
+        ref_cmap = CMAP_CONTINUOUS
+        ref_min, ref_max = -std_max, std_max
         print_log('Normalizing continuous ref ...')
         ref = normalize_pandas_object(ref)
+    elif ref_type == 'categorical':
+        ref_cmap = CMAP_CATEGORICAL
+        ref_min, ref_max = 0, len(set(features.values))
+    elif ref_type == 'binary':
+        ref_cmap = CMAP_BINARY
+        ref_min, ref_max = 0, 1
+    else:
+        raise ValueError('Unknown ref_type {}.'.format(ref_type))
 
     if figure_size == 'auto':
         figure_size = (min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9))
@@ -175,9 +194,8 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
 
     # Plot ref, ref label, and title,
     heatmap(DataFrame(ref).T, ax=ax_ref, vmin=ref_min, vmax=ref_max, cmap=ref_cmap, xticklabels=False, cbar=False)
-    # TODO: unify plot-parameter-edit interface
-    plt.setp(ax_ref.get_yticklabels(), rotation=0)
-    plt.setp(ax_ref.get_yticklabels(), weight='bold')
+    for t in ax_ref.get_yticklabels():
+        t.set(rotation=0, weight='bold')
 
     if title:
         ax_ref.text(features.shape[1] / 2, 1.9, title, horizontalalignment='center', size=title_size, weight='bold')
@@ -204,8 +222,8 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
     # Plot features
     heatmap(features, ax=ax_features, vmin=features_min, vmax=features_max, cmap=features_cmap,
             xticklabels=plot_colname, cbar=False)
-    plt.setp(ax_features.get_yticklabels(), rotation=0)
-    plt.setp(ax_features.get_yticklabels(), weight='bold')
+    for t in ax_features.get_yticklabels():
+        t.set(rotation=0, weight='bold')
 
     # Plot annotations
     if not annotation_header:
@@ -226,29 +244,14 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
     plt.show(fig)
 
 
-def _setup_cmap(pandas_obj, data_type, std_max=3):
-    if data_type is 'continuous':
-        data_cmap = CMAP_CONTINUOUS
-        data_min, data_max = -std_max, std_max
-    elif data_type is 'categorical':
-        data_cmap = CMAP_CATEGORICAL
-        data_min, data_max = 0, len(set(pandas_obj.values))
-    elif data_type is 'binary':
-        data_cmap = CMAP_BINARY
-        data_min, data_max = 0, 1
-    else:
-        raise ValueError('Unknown data_type {}.'.format(data_type))
-    return data_cmap, data_min, data_max
-
-
 def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, annotation_type='continuous', n_grids=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                  mds_is_metric=True, mds_seed=SEED,
+                  informational_mds=True, mds_is_metric=True, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
                   component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
-                  kde_bandwidths_factor=1, n_influencing_components='all', sample_stretch_factor=2,
+                  kde_bandwidths_factor=1, n_influencing_components='all', sample_stretch_factor='auto',
                   n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
                   background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.7,
                   sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
@@ -270,6 +273,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
     :param title_fontcolor: matplotlib color;
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
+    :param informational_mds: bool; use informational MDS or not
     :param mds_is_metric: bool; use metric multidimensional scaling or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param component_markersize: number;
@@ -282,7 +286,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
     :param delaunay_linecolor: matplotlib color;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param sample_stretch_factor: number; power to raise components' influence on each sample
+    :param sample_stretch_factor: str or number; power to raise components' influence on each sample; 'auto' to automate
     :param n_contours: int; set to 0 to disable drawing contours
     :param contour_linewidth: number;
     :param contour_linecolor: matplotlib color;
@@ -317,10 +321,14 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
 
     # Get sample coordinates
     # Standardize H and clip values with extreme standard deviation
-    normalized_clipped_h = normalize_pandas_object(h).clip(-std_max, std_max)
+    normalized_clipped_h = normalize_pandas_object(normalize_pandas_object(h).clip(-std_max, std_max), method='0-1')
     # Project the H's components from <n_sample>D to 2D
     mds = MDS(metric=mds_is_metric, random_state=mds_seed)
-    components_coordinates = mds.fit_transform(normalized_clipped_h)
+    if informational_mds:
+        components_coordinates = mds.fit_transform(
+            compare_matrices(normalized_clipped_h, normalized_clipped_h, information_coefficient))
+    else:
+        components_coordinates = mds.fit_transform(normalized_clipped_h)
     x_min = min(components_coordinates[:, 0])
     x_max = max(components_coordinates[:, 0])
     x_range = x_max - x_min
@@ -334,6 +342,17 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
         components_coordinates[i, 0] = (x - x_min) / x_range
         components_coordinates[i, 1] = (y - y_min) / y_range
     # Compute x & y coordinates
+    if sample_stretch_factor == 'auto':
+        print_log('Computing the sample_stretch_factor ...')
+        x = array(range(normalized_clipped_h.shape[0]))
+        y = asarray(normalized_clipped_h.apply(sorted).apply(sum, axis=1)) / normalized_clipped_h.shape[1]
+        a, k, c = curve_fit(exponential_function, x, y)[0]
+        print_log('\tModeled H columns by {}e^({}x) + {}.'.format(a, k, c))
+        k_min, k_max = 0, 2
+        stretch_factor_min, stretch_factor_max = 1, 3
+        k_normalized = (k - k_min) / (k_max - k_min)
+        sample_stretch_factor = k_normalized * (stretch_factor_max - stretch_factor_min) + stretch_factor_min
+        print_log('\tsample_stretch_factor = {0:.3f}.'.format(sample_stretch_factor))
     for sample in samples.index:
         col = h.ix[:, sample]
         if n_influencing_components == 'all':
@@ -464,7 +483,6 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
             else:
                 raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
         annotation_range = annotation_max - annotation_min
-        print(annotation_min, annotation_mean, annotation_max, annotation_range)
 
         # Plot samples
         for idx, s in samples.iterrows():

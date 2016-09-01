@@ -1,7 +1,6 @@
 """
 Computational Cancer Analysis Library v0.1
 
-
 Authors:
 Pablo Tamayo
 ptamayo@ucsd.edu
@@ -15,7 +14,7 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import ones, isnan
+from numpy import ones, isnan, exp
 from numpy.random import random_integers, random_sample
 from pandas import DataFrame, Series, read_csv
 
@@ -158,6 +157,18 @@ def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None
 # ======================================================================================================================#
 # Data analysis
 # ======================================================================================================================#
+def exponential_function(x, a, k, c):
+    """
+    Apply exponential function on `x`.
+    :param x:
+    :param a:
+    :param k:
+    :param c:
+    :return:
+    """
+    return a * exp(k * x) + c
+
+
 def get_unique_in_order(iterable):
     """
     Get unique elements in order or appearance in `iterable`.
