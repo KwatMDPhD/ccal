@@ -35,9 +35,9 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     Compute the information correlation between `x` and `y`, which can be either continuous, categorical, or binary
     :param x: vector;
     :param y: vector;
-    :param n_grids:
-    :param jitter:
-    :return:
+    :param n_grids: int;
+    :param jitter: number;
+    :return: float;
     """
     x, y = drop_nan_columns([x, y])
     x = asarray(x, dtype=float)
@@ -69,6 +69,45 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     ic = sign(cor) * sqrt(1 - exp(- 2 * mi))
 
     return ic
+
+
+def information_distance(x, y, n_grids=25, jitter=1E-10):
+    """
+    Equetion 5.17 from http://link.springer.com/chapter/10.1007%2F978-0-387-84816-7_5
+    :param x: vector;
+    :param y: vector;
+    :param n_grids: int;
+    :param jitter: number;
+    :return: float;
+    """
+    x, y = drop_nan_columns([x, y])
+    x = asarray(x, dtype=float)
+    y = asarray(y, dtype=float)
+    # TODO: should I check the length of y too?
+    if len(x) <= 2:
+        return 0
+    x += random_sample(x.size) * jitter
+    y += random_sample(y.size) * jitter
+
+    cor, p = pearsonr(x, y)
+    bandwidth_x = asarray(mass.bcv(x)[0]) * (1 + (-0.75) * abs(cor))
+    bandwidth_y = asarray(mass.bcv(y)[0]) * (1 + (-0.75) * abs(cor))
+
+    fxy = asarray(mass.kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + finfo(float).eps
+    dx = (x.max() - x.min()) / (n_grids - 1)
+    dy = (y.max() - y.min()) / (n_grids - 1)
+    pxy = fxy / (fxy.sum() * dx * dy)
+    px = pxy.sum(axis=1) * dy
+    py = pxy.sum(axis=0) * dx
+
+    mi = sum(pxy * log(pxy / (array([px] * n_grids).T * array([py] * n_grids)))) * dx * dy
+    print('\nMI:', mi)
+    hxy = - sum(pxy * log(pxy)) * dx * dy
+    print('H(x,y):', hxy)
+    # hx = -sum(px * log(px)) * dx
+    # hy = -sum(py * log(py)) * dy
+    # mi = hx + hy - hxy
+    return 1 - (mi / hxy)
 
 
 def information_coefficient_james(x, y, z=None, n_grid=25, vector_data_types=None, n_perm=0, adaptive=True, alpha=0.05,
