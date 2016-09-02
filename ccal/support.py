@@ -259,7 +259,7 @@ def normalize_pandas_object(pandas_object, method='-0-', axis=0):
     return obj
 
 
-def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
+def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, report_progress=True):
     """
     Make association or distance matrix of `matrix1` and `matrix2` by row or column.
     :param matrix1: pandas DataFrame;
@@ -279,7 +279,8 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
     nrow = m1.shape[0]
     for i, (i1, r1) in enumerate(m1.iterrows()):
-        print_log('Comparing {} ({}/{}) vs. ...'.format(i1, i + 1, nrow))
+        if report_progress:
+            print_log('Comparing {} ({}/{}) vs. ...'.format(i1, i + 1, nrow))
         for i2, r2 in m2.iterrows():
             compared_matrix.ix[i1, i2] = function(r1, r2)
 
