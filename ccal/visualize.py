@@ -247,7 +247,7 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
 def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, annotation_type='continuous', n_grids=128,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                  informational_mds=True, mds_is_metric=True, mds_seed=SEED,
+                  informational_mds=True, mds_seed=SEED,
                   component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
                   component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
@@ -274,7 +274,6 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
     :param informational_mds: bool; use informational MDS or not
-    :param mds_is_metric: bool; use metric multidimensional scaling or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
@@ -324,12 +323,12 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
     normalized_clipped_h = normalize_pandas_object(normalize_pandas_object(h).clip(-std_max, std_max), method='0-1')
     # Project the H's components from <n_sample>D to 2D
     if informational_mds:
-        mds = MDS(metric=mds_is_metric, random_state=mds_seed, n_init=100, max_iter=1000, dissimilarity='precomputed')
+        mds = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=1000, max_iter=1000)
         components_coordinates = mds.fit_transform(compare_matrices(normalized_clipped_h, normalized_clipped_h,
                                                                     information_coefficient, is_distance=True,
                                                                     report_progress=False))
     else:
-        mds = MDS(metric=mds_is_metric, random_state=mds_seed, n_init=100, max_iter=1000)
+        mds = MDS(random_state=mds_seed, n_init=100, max_iter=1000)
         components_coordinates = mds.fit_transform(normalized_clipped_h)
     x_min = min(components_coordinates[:, 0])
     x_max = max(components_coordinates[:, 0])
