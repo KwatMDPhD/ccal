@@ -15,27 +15,26 @@ jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
 import math
-import os
 
-import matplotlib.pyplot as plt
+from numpy import asarray, array, zeros, empty, argmax, linspace
+from pandas import DataFrame, Series, isnull
 import rpy2.robjects as ro
-from matplotlib.cm import bwr, Paired
-from matplotlib.colorbar import make_axes, ColorbarBase
-from matplotlib.colors import Normalize
+from rpy2.robjects.packages import importr
+from rpy2.robjects.numpy2ri import numpy2ri
+from scipy.optimize import curve_fit
+from scipy.spatial import Delaunay, ConvexHull
+import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
-from numpy import array, asarray, zeros, empty, argmax, linspace
-from pandas import DataFrame, Series, isnull
-from rpy2.robjects.numpy2ri import numpy2ri
-from rpy2.robjects.packages import importr
-from scipy.spatial import Delaunay, ConvexHull
-from scipy.optimize import curve_fit
+from matplotlib.colors import Normalize
+from matplotlib.cm import bwr, Paired
+from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
 from sklearn.manifold import MDS
 
 from .support import SEED, print_log, compare_matrices, establish_path, get_unique_in_order, normalize_pandas_object, \
     exponential_function
-from .information import information_distance
+from .information import information_coefficient
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -327,7 +326,8 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
     if informational_mds:
         mds = MDS(metric=mds_is_metric, random_state=mds_seed, n_init=100, max_iter=1000, dissimilarity='precomputed')
         components_coordinates = mds.fit_transform(compare_matrices(normalized_clipped_h, normalized_clipped_h,
-                                                                    information_distance, report_progress=False))
+                                                                    information_coefficient, is_distance=True,
+                                                                    report_progress=False))
     else:
         mds = MDS(metric=mds_is_metric, random_state=mds_seed, n_init=100, max_iter=1000)
         components_coordinates = mds.fit_transform(normalized_clipped_h)
