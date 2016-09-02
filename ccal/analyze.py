@@ -1,7 +1,6 @@
 """
 Computational Cancer Analysis Library v0.1
 
-
 Authors:
 Pablo Tamayo
 ptamayo@ucsd.edu
