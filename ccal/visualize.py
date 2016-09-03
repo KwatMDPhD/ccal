@@ -328,7 +328,7 @@ def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, anno
                                                                     information_coefficient, is_distance=True,
                                                                     report_progress=False))
     else:
-        mds = MDS(random_state=mds_seed, n_init=100, max_iter=1000)
+        mds = MDS(random_state=mds_seed, n_init=1000, max_iter=1000)
         components_coordinates = mds.fit_transform(normalized_clipped_h)
     x_min = min(components_coordinates[:, 0])
     x_max = max(components_coordinates[:, 0])
