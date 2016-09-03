@@ -18,6 +18,8 @@ from . import support
 from . import information
 from . import analyze
 from . import visualize
+from . import onco_gps
+from . import onco_match
 
 print('=' * 79)
 print('=' * 20 + ' Computational Cancer Analysis Library ' + '=' * 20)

@@ -140,6 +140,10 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                   effectplot_median_markeredgecolor='#FF0082',
                   output_filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
     """
+    :param component_coordinates: pandas DataFrame; (n_components, [x, y])
+    :param samples: pandas DataFrame; (n_samples, [x, y, state, annotation])
+    :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
+    :param grid_states: numpy 2D array; (n_grids, n_grids)
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
     :param annotation_name: str;
     :param std_max: number; threshold to clip standardized values
