@@ -287,16 +287,14 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     :param n_perms: int; number of permutations for permutation test
     :return: pandas DataFrame (nfeatures, nscores),
     """
-    print_log('Computing and ranking scores using {} metric and ...'.format(function))
+    print_log('Computing scores using {} metric and ...'.format(function))
     scores = features.apply(lambda r: function(r, ref), axis=1)
     scores = DataFrame(scores, index=features.index, columns=[function])
 
     print_log('Bootstrapping to get {} confidence interval ...'.format(confidence))
     n_samples = math.ceil(0.632 * features.shape[1])
-    if n_samplings < 2:
-        print_log('Not bootstrapping because number of sampling < 3.')
-    elif n_samples < 3:
-        print_log('Not bootstrapping because 0.632 * number of sample < 3.')
+    if n_samples < 3:
+        print_log('Can\'t bootstrap with 0.632 * n_samples < 3.')
     else:
         # Limit features to be bootstrapped
         if n_features < 1:  # Limit using percentile
@@ -308,6 +306,7 @@ def compute_against_reference(features, ref, function=information_coefficient, n
         else:  # Limit using numbers
             indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
             print_log('Bootstrapping top & bottom {} features ...'.format(n_features))
+
         # Randomly sample columns and compute scores using the sampled columns
         sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
         for c in sampled_scores:
@@ -315,6 +314,7 @@ def compute_against_reference(features, ref, function=information_coefficient, n
             sampled_features = features.ix[indices_to_bootstrap, sample_indices]
             sampled_ref = ref.ix[sample_indices]
             sampled_scores.ix[:, c] = sampled_features.apply(lambda r: function(r, sampled_ref), axis=1)
+
         # Get confidence intervals
         confidence_intervals = DataFrame(index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
         z_critical = stats.norm.ppf(q=confidence)
@@ -325,13 +325,15 @@ def compute_against_reference(features, ref, function=information_coefficient, n
 
     print_log('Performing permutation test with {} permutations ...'.format(n_perms))
     permutation_pvals_and_fdrs = DataFrame(index=features.index, columns=['Local P-value', 'Global P-value', 'FDR'])
+
     # Compute scores using permuted ref
     permutation_scores = empty((features.shape[0], n_perms))
     shuffled_ref = array(ref)
     for i in range(n_perms):
         shuffle(shuffled_ref)
         permutation_scores[:, i] = features.apply(lambda r: function(r, shuffled_ref), axis=1)
-    # Compute permutation P-values and FDRs
+
+    # Compute local and global permutation P-values
     all_permutation_scores = permutation_scores.flatten()
     for i, (idx, f) in enumerate(scores.iterrows()):
         # Compute local p-value
@@ -344,8 +346,11 @@ def compute_against_reference(features, ref, function=information_coefficient, n
         if not global_pval:
             global_pval = float(1 / (n_perms * features.shape[0]))
         permutation_pvals_and_fdrs.ix[idx, 'Global P-value'] = global_pval
+
+    # Compute global permutation FDRs
     permutation_pvals_and_fdrs.ix[:, 'FDR'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-value'],
                                                             method='fdr_bh')[1]
+
     # Merge
     scores = merge(scores, permutation_pvals_and_fdrs, left_index=True, right_index=True)
 
