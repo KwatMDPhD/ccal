@@ -111,18 +111,20 @@ def nmf(matrix, ks,
     return nmf_results
 
 
-def get_states_from_h(h, n_states, nclustering=50, filename_prefix=None):
+def get_states_from_h(h, n_states, max_std=3, n_clusterings=50, filename_prefix=None):
     """
     Cluster H matrix's samples into k clusters.
-    :param h: pandas DataFrame (n_component, n_sample), H matrix from NMF
-    :param n_states: array-like, list of ks used for clustering states
-    :param nclustering: int, number of consensus clustering to perform
-    :param filename_prefix: str; file path to save the assignment matrix (n_k, n_samples)
-    :return: pandas DataFrame (n_k, n_samples), array-like (n_k), assignment matrix and the cophenetic correlations
+    :param h: pandas DataFrame; (n_components, n_samples), H matrix from NMF
+    :param n_states: iterable; list of ks used for clustering states
+    :param max_std: number; threshold to clip standardized values
+    :param n_clusterings: int; number of consensus clusterings
+    :param filename_prefix: str; file path to save the assignment matrix
+    :return: pandas DataFrame, Series, and DataFrame; assignment matrix (n_ks, n_samples),
+                                                      the cophenetic correlations (n_ks), and
+                                                      membership matrix (n_ks, n_samples)
     """
-    # Standardize H and clip values less than -3 and more than 3
-    standardized_h = normalize_pandas_object(h)
-    standardized_clipped_h = standardized_h.clip(-3, 3)
+    # Standardize H and clip extreme values
+    standardized_clipped_h = normalize_pandas_object(h).clip(-max_std, max_std)
 
     # Get association between samples
     sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, information_coefficient,
@@ -133,47 +135,44 @@ def get_states_from_h(h, n_states, nclustering=50, filename_prefix=None):
     labels.index.name = 'state'
     if any(n_states):
         for k in n_states:
-            # For nclustering times, cluster sample associations and assign labels using this k
-            nclustering_labels = pd.DataFrame(index=range(nclustering), columns=sample_associations.index)
-            for i in range(nclustering):
-                print_log(
-                    'Clustering sample associations and assigning labels with k = {} ({}/{}) ...'.format(k, i,
-                                                                                                         nclustering))
+            # For n_clusterings times, cluster sample associations and assign labels using this k
+            n_clusterings_labels = pd.DataFrame(index=range(n_clusterings), columns=sample_associations.index)
+            for i in range(n_clusterings):
+                print_log('Clustering sample associations with k = {} ({}/{}) ...'.format(k, i, n_clusterings))
                 ward = AgglomerativeClustering(n_clusters=k)
                 ward.fit(sample_associations)
-                nclustering_labels.iloc[i, :] = ward.labels_
+                n_clusterings_labels.iloc[i, :] = ward.labels_
 
             # Count co-clustering between samples
-            ncoclusterings = pd.DataFrame(index=nclustering_labels.columns, columns=nclustering_labels.columns)
-            ncoclusterings.fillna(0, inplace=True)
-            for i, s in nclustering_labels.iterrows():
-                print_log('Counting co-clustering between samples with k = {} ({}/{}) ...'.format(k, i, nclustering))
+            n_coclusterings = pd.DataFrame(index=n_clusterings_labels.columns, columns=n_clusterings_labels.columns)
+            n_coclusterings.fillna(0, inplace=True)
+            for r, s in n_clusterings_labels.iterrows():
+                print_log('Counting co-clustering between samples with k = {} ({}/{}) ...'.format(k, r, n_clusterings))
                 for i in s.index:
                     for j in s.index:
                         if i == j or s.ix[i] == s.ix[j]:
-                            ncoclusterings.ix[i, j] += 1
-
+                            n_coclusterings.ix[i, j] += 1
             # Normalize by the nclustering and convert to distances
-            distances = 1 - ncoclusterings / nclustering
+            distances = 1 - n_coclusterings / n_clusterings
 
             # Cluster the distances and assign the final label using this k
             ward = linkage(distances, method='ward')
             labels_ = fcluster(ward, k, criterion='maxclust')
             labels.ix[k, sample_associations.index] = labels_
 
-            # Compute the cophenetic correlation, the correlation between cophenetic and Euclidian distances between samples
+            # Compute the correlation between cophenetic and Euclidian distances between samples
             labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
 
         # Compute membership matrix
-        memberships = labels.iloc[:, :-1].apply(lambda s: s == int(s.name), axis=1).astype(int)
+        memberships = labels.iloc[:, :-1].apply(lambda label: label == int(label.name), axis=1).astype(int)
 
         if filename_prefix:
             labels.to_csv(filename_prefix + '_labels.txt', sep='\t')
             write_gct(memberships, filename_prefix + '_memberships.gct')
     else:
-        raise ValueError('No number of clusters passed.')
+        raise ValueError('Invalid value passed to n_states.')
 
-    return labels.iloc[:, :-1], memberships, labels.iloc[:, -1:]
+    return labels.iloc[:, :-1], labels.iloc[:, -1:], memberships
 
 
 def rank_features_against_reference(features, ref, features_type='continuous', ref_type='continuous',
