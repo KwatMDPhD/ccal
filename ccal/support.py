@@ -219,46 +219,37 @@ def drop_nan_columns(arrays):
     return [v[not_nan_filter] for v in arrays]
 
 
-def normalize_pandas_object(pandas_object, method='-0-', axis=0):
+def normalize_pandas_object(pandas_object, method='-0-', axis='all'):
     """
     Normalize a pandas object.
     :param pandas_object: pandas DataFrame or Series;
     :param method: str; normalization type; {'-0-', '0-1'}
-    :param axis: int; 0 for by-row and 1 for by-column
+    :param axis: str or int; 'all' for global, 0 for by-column, and 1 for by-row normalization
     :return: pandas DataFrame or Series;
     """
-    if isinstance(pandas_object, DataFrame):
-        if axis == 0:
-            obj = pandas_object.copy()
-        elif axis == 1:
-            obj = pandas_object.T
-        else:
-            raise ValueError('Axis is not either 0 or 1.')
-    elif isinstance(pandas_object, Series):
-        obj = pandas_object.copy()
-    else:
-        raise ValueError('Not a pandas DataFrame or Series.')
-
+    obj = pandas_object.copy()
+    print_log('\'{}\' normalizing pandas object with axis={} ...'.format(method, axis))
     if method == '-0-':
-        if isinstance(obj, DataFrame):
-            for i, (idx, s) in enumerate(obj.iterrows()):
-                ax_mean = s.mean()
-                ax_std = s.std()
-                for j, v in enumerate(s):
-                    obj.ix[i, j] = (v - ax_mean) / ax_std
+        if axis == 'all':
+            obj_mean = obj.unstack().mean()
+            obj_std = obj.unstack().std()
+            obj = obj.applymap(lambda v: (v - obj_mean) / obj_std)
         else:
-            obj = (obj - obj.mean()) / obj.std()
-
+            if isinstance(obj, DataFrame):
+                obj = obj.apply(lambda r: (r - r.mean()) / r.std(), axis=axis)
+            else:
+                obj = (obj - obj.mean()) / obj.std()
     elif method == '0-1':
-        if isinstance(obj, DataFrame):
-            for i, (idx, s) in enumerate(obj.iterrows()):
-                ax_min = s.min()
-                ax_max = s.max()
-                ax_range = ax_max - ax_min
-                for j, v in enumerate(s):
-                    obj.ix[i, j] = (v - ax_min) / ax_range
+        if axis == 'all':
+            obj_min = obj.unstack().min()
+            obj_max = obj.unstack().max()
+            obj_range = obj_max - obj_min
+            obj = obj.applymap(lambda v: (v - obj_min) / obj_range)
         else:
-            obj = (obj - obj.min()) / (obj.max() - obj.min())
+            if isinstance(obj, DataFrame):
+                obj = obj.apply(lambda r: (r - r.min()) / (r.max() - r.min()), axis=axis)
+            else:
+                obj = (obj - obj.min()) / (obj.max() - obj.min())
     else:
         raise ValueError('\'method\' is not one of {\'-0-\', \'0-1\'}')
     return obj

@@ -34,52 +34,58 @@ from rpy2.robjects.numpy2ri import numpy2ri
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
 
-from .support import SEED, print_log, write_gct, normalize_pandas_object, compare_matrices, \
-    exponential_function
+from .support import SEED, print_log, write_gct, normalize_pandas_object, compare_matrices, exponential_function
 from .information import information_coefficient
 
 
-def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_assignments=30):
+def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
+                  initialization='random', max_iteration=200, seed=SEED, regularizer=0,
+                  randomize_coordinate_order=False):
     """
-    Perform NMF with k from `ks` and score each computation.
+    Perform NMF with k from `ks` and score each NMF result.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param method: str; {'cophenetic_correlation'}
-    :param n_assignments: int; number of assignments used to make `assigment_matrix` when using 'cophenetic_correlation'
+    :param n_clusterings: int; number of NMF clusterings
+    :param initialization: str; {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
+    :param max_iteration: int; number of NMF iterations
+    :param seed: int;
+    :param randomize_coordinate_order: bool;
+    :param regularizer: int, NMF's alpha
     :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
     """
+    nmf_results = {}
     scores = {}
     if method == 'cophenetic_correlation':
-        nmf_results = {}
         for k in ks:
-            print_log('Computing clustering score for k={} using method {} ...'.format(k, method))
+            print_log('Computing NMF score for k={} using cophenetic correlation ...'.format(k))
 
             # Make assignment matrix
-            assignment_matrix = empty((n_assignments, matrix.shape[1]))
-            for i in range(n_assignments):
-                print_log('Running NMF ({}/{}) ...'.format(i, n_assignments))
-                nmf_result = nmf(matrix, k)[k]
-                # Save the 1st NMF result for each k
+            clusterings = empty((n_clusterings, matrix.shape[1]))
+            for i in range(n_clusterings):
+                print_log('NMF clustering ({}/{}) ...'.format(i, n_clusterings))
+                nmf_result = nmf(matrix, k, initialization=initialization, max_iteration=max_iteration,
+                                 seed=seed, regularizer=regularizer,
+                                 randomize_coordinate_order=randomize_coordinate_order)[k]
+                # Save 1 NMF result for eack k
                 if i == 0:
                     nmf_results[k] = nmf_result
-                # Assignment a col with the highest index value
-                assignment_matrix[i, :] = argmax(asarray(nmf_result['H']), axis=0)
+                    print_log('\tSaved the 1st NMF decomposition for k={}.'.format(k))
+                # Assigning each col with the row index with the highest value
+                clusterings[i, :] = argmax(asarray(nmf_result['H']), axis=0)
 
-            # Make assignment distance matrix (n_cols, n_cols)
-            assignment_distance_matrix = zeros((matrix.shape[1], matrix.shape[1]))
+            # Make coassignment matrix (n_cols, n_cols)
+            print_log('Counting NMF coclusterings ...')
+            coclusterigns = zeros((matrix.shape[1], matrix.shape[1]))
             for i in range(matrix.shape[1]):
                 for j in range(matrix.shape[1])[i:]:
-                    for a in range(n_assignments):
-                        if assignment_matrix[a, i] == assignment_matrix[a, j]:
-                            assignment_distance_matrix[i, j] += 1
-            normalized_assignment_distance_matrix = assignment_distance_matrix / n_assignments
+                    for r in range(n_clusterings):
+                        if clusterings[r, i] == clusterings[r, j]:
+                            coclusterigns[i, j] += 1
+            normalized_coclusterings = coclusterigns / n_clusterings
 
-            # Compute the cophenetic correlation coefficient of the hierarchically clustered distances and
-            # the normalized assignment distances
-            print_log('Computing the cophenetic correlation coefficient ...')
-            score = cophenet(linkage(normalized_assignment_distance_matrix, 'average'),
-                             pdist(normalized_assignment_distance_matrix))[0]
-            scores[k] = score
+            scores[k] = cophenet(linkage(normalized_coclusterings, 'average'), pdist(normalized_coclusterings))[0]
+            print_log('Computed the cophenetic correlation coefficient.')
     else:
         raise ValueError('Unknown method {}.'.format(method))
 
@@ -87,7 +93,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_assignments=30)
 
 
 def nmf(matrix, ks,
-        initialization='random', max_iteration=200, seed=SEED, randomize_coordinate_order=False, regularizer=0):
+        initialization='random', max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
@@ -103,16 +109,16 @@ def nmf(matrix, ks,
     if isinstance(ks, int):
         ks = [ks]
     for k in ks:
-        print_log('Performing NMF with k={} ...'.format(k))
+        print_log('NMF with k={} ...'.format(k))
         model = NMF(n_components=k, init=initialization, max_iter=max_iteration, random_state=seed, alpha=regularizer,
                     shuffle=randomize_coordinate_order)
 
         # Compute W, H, and reconstruction error
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
         if isinstance(matrix, DataFrame):
-            c = ['C{}'.format(i + 1) for i in range(k)]
-            w = DataFrame(w, index=matrix.index, columns=c)
-            h = DataFrame(h, index=c, columns=matrix.columns)
+            # Return pandas DataFrame if the input matrix is also a DataFrame
+            w = DataFrame(w, index=matrix.index, columns=[i + 1 for i in range(k)])
+            h = DataFrame(h, index=[i + 1 for i in range(k)], columns=matrix.columns)
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
     return nmf_results

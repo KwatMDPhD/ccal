@@ -75,16 +75,15 @@ def plot_nmf_result(nmf_results, k, max_std=3, figure_size=FIGURE_SIZE, title=No
     label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
 
     # Plot W
-    heatmap(normalize_pandas_object(nmf_results[k]['W'].clip(-max_std, max_std)),
-            cmap=CMAP_CONTINUOUS, yticklabels=False, ax=ax_w)
+    heatmap(normalize_pandas_object(nmf_results[k]['W'], axis=0).clip(-max_std, max_std), cmap=CMAP_CONTINUOUS,
+            yticklabels=False, ax=ax_w)
     ax_w.set_title('W'.format(k), **axtitle_font_properties)
     ax_w.set_xlabel('Component', **label_font_properties)
     ax_w.set_ylabel('Feature', **label_font_properties)
 
     # Plot H
-    heatmap(normalize_pandas_object(nmf_results[k]['H'].clip(-max_std, max_std)), cmap=CMAP_CONTINUOUS,
-            xticklabels=False, ax=ax_h,
-            cbar_kws={"orientation": "horizontal"})
+    heatmap(normalize_pandas_object(nmf_results[k]['H'], axis=1).clip(-max_std, max_std), cmap=CMAP_CONTINUOUS,
+            xticklabels=False, cbar_kws={'orientation': 'horizontal'}, ax=ax_h)
     ax_h.set_title('H'.format(k), **axtitle_font_properties)
     ax_h.set_xlabel('Sample', **label_font_properties)
     ax_h.set_ylabel('Component', **label_font_properties)
