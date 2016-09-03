@@ -50,12 +50,16 @@ def install_libraries(libraries_needed):
     from pip import get_installed_distributions, main
 
     print_log('Checking library dependencies ...')
+
+    # Get currently installed libraries
     libraries_installed = [lib.key for lib in get_installed_distributions()]
+    # Install missing libraries from `libraries_needed`
     for lib in libraries_needed:
         if lib not in libraries_installed:
             print_log('{} not found! Installing {} using pip ...'.format(lib, lib))
             main(['install', lib])
-    print_log('Using the following libraries:')
+    # Print versions of `libraries_needed`
+    print_log('Using the following libraries (in addition to the Anaconda libraries):')
     for lib in get_installed_distributions():
         if lib.key in libraries_needed:
             print_log('\t{} (v{})'.format(lib.key, lib.version))
@@ -188,15 +192,14 @@ def make_random_features(n_rows, n_cols, n_categories=None):
     :param n_rows: int;
     :param n_cols: int;
     :param n_categories: None or int; continuous if None and categorical if int
-    :return: pandas DataFrame; (`n_rows`, `n_cols`)
+    :return: pandas DataFrame or Series; (`n_rows`, `n_cols`) or (1, `n_cols`)
     """
-    shape = (n_rows, n_cols)
     indices = ['Feature {}'.format(i) for i in range(n_rows)]
     columns = ['Element {}'.format(i) for i in range(n_cols)]
     if n_categories:
-        features = DataFrame(random_integers(0, n_categories - 1, shape), index=indices, columns=columns)
+        features = DataFrame(random_integers(0, n_categories - 1, (n_rows, n_cols)), index=indices, columns=columns)
     else:
-        features = DataFrame(random_sample(shape), index=indices, columns=columns)
+        features = DataFrame(random_sample((n_rows, n_cols)), index=indices, columns=columns)
     if n_rows == 1:
         # Return series
         return features.iloc[0, :]
@@ -224,12 +227,17 @@ def normalize_pandas_object(pandas_object, method='-0-', axis=0):
     :param axis: int; 0 for by-row and 1 for by-column
     :return: pandas DataFrame or Series;
     """
-    if isinstance(pandas_object, Series) or axis == 0:
+    if isinstance(pandas_object, DataFrame):
+        if axis == 0:
+            obj = pandas_object.copy()
+        elif axis == 1:
+            obj = pandas_object.T
+        else:
+            raise ValueError('Axis is not either 0 or 1.')
+    elif isinstance(pandas_object, Series):
         obj = pandas_object.copy()
-    elif axis == 1:
-        obj = pandas_object.T
     else:
-        raise ValueError('Axis is not either 0 or 1.')
+        raise ValueError('Not a pandas DataFrame or Series.')
 
     if method == '-0-':
         if isinstance(obj, DataFrame):
@@ -238,10 +246,8 @@ def normalize_pandas_object(pandas_object, method='-0-', axis=0):
                 ax_std = s.std()
                 for j, v in enumerate(s):
                     obj.ix[i, j] = (v - ax_mean) / ax_std
-        elif isinstance(obj, Series):
-            obj = (obj - obj.mean()) / obj.std()
         else:
-            raise ValueError('Not a pandas DataFrame or Series.')
+            obj = (obj - obj.mean()) / obj.std()
 
     elif method == '0-1':
         if isinstance(obj, DataFrame):
@@ -251,16 +257,14 @@ def normalize_pandas_object(pandas_object, method='-0-', axis=0):
                 ax_range = ax_max - ax_min
                 for j, v in enumerate(s):
                     obj.ix[i, j] = (v - ax_min) / ax_range
-        elif isinstance(obj, Series):
-            obj = (obj - obj.min()) / (obj.max() - obj.min())
         else:
-            raise ValueError('Not a pandas DataFrame or Series.')
+            obj = (obj - obj.min()) / (obj.max() - obj.min())
     else:
         raise ValueError('\'method\' is not one of {\'-0-\', \'0-1\'}')
     return obj
 
 
-def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, report_progress=True):
+def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     """
     Make association or distance matrix of `matrix1` and `matrix2` by row or column.
     :param matrix1: pandas DataFrame;
@@ -268,7 +272,6 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, repo
     :param function: function; function used to compute association or dissociation
     :param axis: int; 0 for by-row and 1 for by-column
     :param is_distance: bool; True for distance and False for association
-    :param report_progress: bool; print out progress or not
     :return: pandas DataFrame;
     """
     if axis == 0:
@@ -279,10 +282,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, repo
         m2 = matrix2.T
 
     compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
-    nrow = m1.shape[0]
     for i, (i1, r1) in enumerate(m1.iterrows()):
-        if report_progress:
-            print_log('Comparing {} ({}/{}) vs. ...'.format(i1, i + 1, nrow))
         for i2, r2 in m2.iterrows():
             compared_matrix.ix[i1, i2] = function(r1, r2)
 

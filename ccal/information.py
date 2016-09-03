@@ -25,6 +25,9 @@ from .support import drop_nan_columns
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
+bcv = mass.bcv
+kde2d = mass.kde2d
+eps = finfo(float).eps
 
 
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
@@ -44,33 +47,27 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     x += random_sample(x.size) * jitter
     y += random_sample(y.size) * jitter
 
+    # Get bandwidths
     cor, p = pearsonr(x, y)
-    bandwidth_x = asarray(mass.bcv(x)[0]) * (1 + (-0.75) * abs(cor))
-    bandwidth_y = asarray(mass.bcv(y)[0]) * (1 + (-0.75) * abs(cor))
+    bandwidth_x = asarray(bcv(x)[0]) * (1 + (-0.75) * abs(cor))
+    bandwidth_y = asarray(bcv(y)[0]) * (1 + (-0.75) * abs(cor))
 
-    fxy = asarray(mass.kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + finfo(float).eps
+    # Get P(x, y), P(x), P(y)
+    fxy = asarray(kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + eps
     dx = (x.max() - x.min()) / (n_grids - 1)
     dy = (y.max() - y.min()) / (n_grids - 1)
     pxy = fxy / (fxy.sum() * dx * dy)
     px = pxy.sum(axis=1) * dy
     py = pxy.sum(axis=0) * dx
 
+    # Get mutual information
     mi = sum(pxy * log(pxy / (asarray([px] * n_grids).T * asarray([py] * n_grids)))) * dx * dy
 
+    # # Get H(x, y), H(x), and H(y)
     # hxy = - sum(pxy * log(pxy)) * dx * dy
     # hx = -sum(px * log(px)) * dx
     # hy = -sum(py * log(py)) * dy
     # mi = hx + hy - hxy
 
-    ic = sign(cor) * sqrt(1 - exp(- 2 * mi))
-
-    return ic
-
-
-def rbcv(x):
-    """
-    :param x: vector;
-    :return: float; bandwidth
-    """
-    bandwidth = asarray(mass.bcv(x))[0]
-    return bandwidth
+    # Get information coefficient
+    return sign(cor) * sqrt(1 - exp(- 2 * mi))
