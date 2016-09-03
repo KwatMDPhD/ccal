@@ -45,6 +45,64 @@ def nmf_bcv(x, nmf, nfold=2, nrepeat=1):
     return mean_error
 
 
+def nmf_and_score(matrix, ks, method='cophenetic_correlation'):
+    """
+    Perform NMF with k from `ks` and score each computation.
+    :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
+    :param ks: iterable; list of ks to be used in the NMF
+    :param method: str; {'intra_inter_ratio', 'cophenetic_correlation'}
+    :param n_assignments: int; number of assignments used to make `assigment_matrix` when using 'cophenetic_correlation'
+    :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
+    """
+    n_rows, n_cols = matrix.shape
+    scores = {}
+
+    if method == 'intra_inter_ratio':
+        nmf_results = nmf(matrix, ks)
+        for k, nmf_result in nmf_results.items():
+            print_log('Computing clustering score for k={} using method {} ...'.format(k, method))
+
+            assignments = {}  # dict (key: assignment index; value: samples)
+            # Cluster of a sample is the index with the highest value in corresponding H column
+            for assigned_sample in zip(np.argmax(nmf_result['H'], axis=0), matrix):
+                if assigned_sample[0] not in assignments:
+                    assignments[assigned_sample[0]] = set()
+                    assignments[assigned_sample[0]].add(assigned_sample[1])
+                else:
+                    assignments[assigned_sample[0]].add(assigned_sample[1])
+
+            # Compute intra vs. inter clustering distances
+            assignment_scores_per_k = np.zeros(nmf_result['H'].shape[1])
+            for sidx, (a, samples) in enumerate(assignments.items()):
+                for s in samples:
+                    # Compute the distance to samples with the same assignment
+                    intra_distance = []
+                    for other_s in samples:
+                        if other_s == s:
+                            continue
+                        else:
+                            intra_distance.append(distance.euclidean(matrix.ix[:, s], matrix.ix[:, other_s]))
+                    # Compute the distance to samples with different assignment
+                    inter_distance = []
+                    for other_a in assignments.keys():
+                        if other_a == a:
+                            continue
+                        else:
+                            for other_s in assignments[other_a]:
+                                inter_distance.append(distance.euclidean((matrix.ix[:, s]), matrix.ix[:, other_s]))
+                    # Compute assignment score
+                    score = np.mean(intra_distance) / np.mean(inter_distance)
+                    if not np.isnan(score):
+                        assignment_scores_per_k[sidx] = score
+
+            scores[k] = assignment_scores_per_k.mean()
+            print_log('Score for k={}: {}'.format(k, assignment_scores_per_k.mean()))
+    else:
+        raise ValueError('Unknown method {}.'.format(method))
+
+    return nmf_results, scores
+
+
 # ======================================================================================================================
 # GSEA functions
 # ======================================================================================================================
