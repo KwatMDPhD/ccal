@@ -33,6 +33,8 @@ from rpy2.robjects.numpy2ri import numpy2ri
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
+bcv = mass.bcv
+kde2d = mass.kde2d
 
 from .support import SEED, print_log, write_gct, normalize_pandas_object, compare_matrices, exponential_function, \
     establish_path, consensus_cluster
@@ -202,35 +204,34 @@ def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds
                                                                                               len(unique_states),
                                                                                               unique_states))
 
-    samples = DataFrame(index=h.columns, columns=['state', 'x', 'y'])
-
-    # Get sample states
-    samples.ix[:, 'state'] = states
-
-    # Get component coordinates
+    # Compute component coordinates
     # Standardize H and clip values with extreme standard deviation
-    normalized_clipped_h = normalize_pandas_object(normalize_pandas_object(h).clip(-std_max, std_max), method='0-1')
+    normalized_clipped_h = normalize_pandas_object(normalize_pandas_object(h, axis=1).clip(-std_max, std_max),
+                                                   method='0-1', axis=1)
     # Project the H's components from <n_sample>D to 2D
     if informational_mds:
         mds = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=1000, max_iter=1000)
         components_coordinates = mds.fit_transform(compare_matrices(normalized_clipped_h, normalized_clipped_h,
-                                                                    information_coefficient, is_distance=True,
-                                                                    report_progress=False))
+                                                                    information_coefficient, is_distance=True))
     else:
         mds = MDS(random_state=mds_seed, n_init=1000, max_iter=1000)
         components_coordinates = mds.fit_transform(normalized_clipped_h)
+    # 0-1 normalize the coordinates
     x_min = min(components_coordinates[:, 0])
     x_max = max(components_coordinates[:, 0])
     x_range = x_max - x_min
     y_min = min(components_coordinates[:, 1])
     y_max = max(components_coordinates[:, 1])
     y_range = y_max - y_min
-    # 0-1 normalize the coordinates
     for i, (x, y) in enumerate(components_coordinates):
         components_coordinates[i, 0] = (x - x_min) / x_range
         components_coordinates[i, 1] = (y - y_min) / y_range
 
-    # Get sample coordinates
+    # Get sample states and compute coordinates
+    samples = DataFrame(index=h.columns, columns=['state', 'x', 'y'])
+    # Get sample states
+    samples.ix[:, 'state'] = states
+    # Compute sample coordinates
     if sample_stretch_factor == 'auto':
         print_log('Computing the sample_stretch_factor ...')
         x = array(range(normalized_clipped_h.shape[0]))
@@ -251,18 +252,19 @@ def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds
         y = sum(col ** sample_stretch_factor * components_coordinates[:, 1]) / sum(col ** sample_stretch_factor)
         samples.ix[sample, ['x', 'y']] = x, y
 
-    # Get KDE for each state using bandwidth created from all states' x & y coordinates
-    kdes = zeros((len(unique_states) + 1, n_grids, n_grids))
-    bandwidths = array([mass.bcv(array(samples.ix[:, 'x'].tolist()))[0],
-                        mass.bcv(array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
-    for s in unique_states:
-        coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
-        kde = mass.kde2d(array(coordinates.ix[:, 'x'], dtype=float), array(coordinates.ix[:, 'y'], dtype=float),
-                         bandwidths, n=array([n_grids]), lims=array([0, 1, 0, 1]))
-        kdes[s] = array(kde[2])
-    # Assign the best KDE probability and state for each grid
+    # Compute grid probabilities and states
     grid_probabilities = zeros((n_grids, n_grids))
     grid_states = empty((n_grids, n_grids))
+    # Get KDE for each state using bandwidth created from all states' x & y coordinates
+    kdes = zeros((len(unique_states) + 1, n_grids, n_grids))
+    bandwidths = asarray([bcv(asarray(samples.ix[:, 'x'].tolist()))[0],
+                          bcv(asarray(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
+    for s in unique_states:
+        coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
+        kde = kde2d(asarray(coordinates.ix[:, 'x'], dtype=float), asarray(coordinates.ix[:, 'y'], dtype=float),
+                    bandwidths, n=asarray([n_grids]), lims=asarray([0, 1, 0, 1]))
+        kdes[s] = asarray(kde[2])
+    # Assign the best KDE probability and state for each grid
     for i in range(n_grids):
         for j in range(n_grids):
             grid_probabilities[i, j] = max(kdes[:, j, i])
@@ -285,15 +287,11 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     :param n_perms: int; number of permutations for permutation test
     :return: pandas DataFrame (nfeatures, nscores),
     """
-    # Set computing function
-    print_log('Computing scores using {} metric ...'.format(function))
-    # Compute and rank
+    print_log('Computing and ranking scores using {} metric and ...'.format(function))
     scores = empty(features.shape[0])
     for i, (idx, s) in enumerate(features.iterrows()):
-        if i % 1000 is 0:
-            print_log('\t{}/{} ...'.format(i, features.shape[0]))
         scores[i] = function(s, ref)
-    scores = DataFrame(scores, index=features.index, columns=[function]).sort_values(function)
+    scores = DataFrame(scores, index=features.index, columns=[function])
 
     print_log('Bootstrapping to get {} confidence interval ...'.format(confidence))
     n_samples = math.ceil(0.632 * features.shape[1])
@@ -303,7 +301,7 @@ def compute_against_reference(features, ref, function=information_coefficient, n
         print_log('Not bootstrapping because 0.632 * number of sample < 3.')
     else:
         # Limit features to be bootstrapped
-        if n_features < 1:  # limit using percentile
+        if n_features < 1:  # Limit using percentile
             above_quantile = scores.ix[:, function] >= scores.ix[:, function].quantile(n_features)
             print_log('Bootstrapping {} features vs. reference > {} percentile ...'.format(sum(above_quantile),
                                                                                            n_features))
@@ -311,11 +309,10 @@ def compute_against_reference(features, ref, function=information_coefficient, n
             print_log('Bootstrapping {} features vs. reference < {} percentile ...'.format(sum(below_quantile),
                                                                                            1 - n_features))
             indices_to_bootstrap = scores.index[above_quantile | below_quantile].tolist()
-        else:  # limit using numbers
+        else:  # Limit using numbers
             indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
             print_log('Bootstrapping top & bottom {} features vs. reference ...'.format(len(indices_to_bootstrap)))
-
-        # Random sample columns and compute scores using the sampled columns
+        # Randomly sample columns and compute scores using the sampled columns
         sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
         for c in sampled_scores:
             sample_indices = choice(features.columns.tolist(), int(n_samples)).tolist()
@@ -323,7 +320,6 @@ def compute_against_reference(features, ref, function=information_coefficient, n
             sampled_ref = ref.ix[sample_indices]
             for idx, s in sampled_features.iterrows():
                 sampled_scores.ix[idx, c] = function(s, sampled_ref)
-
         # Get confidence intervals
         confidence_intervals = DataFrame(index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
         z_critical = stats.norm.ppf(q=confidence)
@@ -356,8 +352,8 @@ def compute_against_reference(features, ref, function=information_coefficient, n
             global_pval = float(1 / (n_perms * features.shape[0]))
         permutation_pvals_and_fdrs.ix[idx, 'Global P-value'] = global_pval
 
-    permutation_pvals_and_fdrs.ix[:, 'FDR (BH)'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-value'],
-                                                                 method='fdr_bh')[1]
+    permutation_pvals_and_fdrs.ix[:, 'FDR'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-value'],
+                                                            method='fdr_bh')[1]
     scores = merge(scores, permutation_pvals_and_fdrs, left_index=True, right_index=True)
 
     return scores.sort_values(function, ascending=ascending)
