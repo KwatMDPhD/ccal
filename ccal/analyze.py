@@ -182,9 +182,8 @@ def define_states(h, n_states, max_std=3, n_clusterings=50, filename_prefix=None
     return labels.iloc[:, :-1], labels.iloc[:, -1:], memberships
 
 
-def make_onco_gps(h, states, std_max=3, n_grids=128,
-                  informational_mds=True, mds_seed=SEED,
-                  kde_bandwidths_factor=1, n_influencing_components='all', sample_stretch_factor='auto'):
+def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED, kde_bandwidths_factor=1,
+                  n_influencing_components='all', sample_stretch_factor='auto'):
     """
     :param h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: iterable of int; (n_samples); sample states

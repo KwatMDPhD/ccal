@@ -3,9 +3,8 @@ from .analyze import make_onco_gps
 from .visualize import FIGURE_SIZE, DPI, plot_onco_gps
 
 
-def make_map(h, states, std_max=3, n_grids=128,
-             informational_mds=True, mds_seed=SEED,
-             kde_bandwidths_factor=1, n_influencing_components='all', sample_stretch_factor='auto',
+def make_map(h, states, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED, kde_bandwidths_factor=1,
+             n_influencing_components='all', sample_stretch_factor='auto',
              annotations=(), annotation_name='', annotation_type='continuous',
              title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
              subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
@@ -70,10 +69,8 @@ def make_map(h, states, std_max=3, n_grids=128,
     :param dpi: int;
     :return: None
     """
-    cc, s, gp, gs = make_onco_gps(h, states, std_max=std_max,
-                                  n_grids=n_grids,
-                                  informational_mds=informational_mds,
-                                  mds_seed=mds_seed,
+    cc, s, gp, gs = make_onco_gps(h, states, std_max=std_max, n_grids=n_grids,
+                                  informational_mds=informational_mds, mds_seed=mds_seed,
                                   kde_bandwidths_factor=kde_bandwidths_factor,
                                   n_influencing_components=n_influencing_components,
                                   sample_stretch_factor=sample_stretch_factor)
