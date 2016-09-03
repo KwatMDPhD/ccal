@@ -14,7 +14,7 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import ones, isnan, exp
+from numpy import zeros, ones, isnan, exp
 from numpy.random import random_integers, random_sample
 from pandas import DataFrame, Series, read_csv
 
@@ -251,7 +251,7 @@ def normalize_pandas_object(pandas_object, method='-0-', axis='all'):
             else:
                 obj = (obj - obj.min()) / (obj.max() - obj.min())
     else:
-        raise ValueError('\'method\' is not one of {\'-0-\', \'0-1\'}')
+        raise ValueError('\'method\' is not either of {\'-0-\', \'0-1\'}')
     return obj
 
 
@@ -265,7 +265,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     :param is_distance: bool; True for distance and False for association
     :return: pandas DataFrame;
     """
-    if axis == 0:
+    if axis == 1:
         m1 = matrix1.copy()
         m2 = matrix2.copy()
     else:
@@ -282,3 +282,21 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
         compared_matrix = 1 - compared_matrix
 
     return compared_matrix
+
+
+def consensus_cluster(clustering_labels):
+    """
+    Consenssu cluster `clustering_labels`, a distance matrix.
+    :param clustering_labels: numpy array;
+    :return: numpy array;
+    """
+    n_rows, n_cols = clustering_labels.shape
+    consensus_clusterings = zeros((n_cols, n_cols))
+    for i in range(n_cols):
+        print_log('Consensus clustering ({}/{}) ...'.format(i, n_cols))
+        for j in range(n_cols)[i:]:
+            for r in range(n_rows):
+                if clustering_labels[r, i] == clustering_labels[r, j]:
+                    consensus_clusterings[i, j] += 1
+    # Return normalized consensus clustering
+    return consensus_clusterings / n_rows

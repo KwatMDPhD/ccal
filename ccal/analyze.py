@@ -34,7 +34,8 @@ from rpy2.robjects.numpy2ri import numpy2ri
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
 
-from .support import SEED, print_log, write_gct, normalize_pandas_object, compare_matrices, exponential_function
+from .support import SEED, print_log, write_gct, normalize_pandas_object, compare_matrices, exponential_function, \
+    establish_path, consensus_cluster
 from .information import information_coefficient
 
 
@@ -58,33 +59,28 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     scores = {}
     if method == 'cophenetic_correlation':
         for k in ks:
-            print_log('Computing NMF score for k={} using cophenetic correlation ...'.format(k))
+            print_log('Computing NMF score using cophenetic correlation for k={} ...'.format(k))
 
-            # Make assignment matrix
-            clusterings = empty((n_clusterings, matrix.shape[1]))
+            # NMF cluster
+            clustering_labels = empty((n_clusterings, matrix.shape[1]))
             for i in range(n_clusterings):
-                print_log('NMF clustering ({}/{}) ...'.format(i, n_clusterings))
+                print_log('NMF clustering (k={} @ {}/{}) ...'.format(k, i, n_clusterings))
                 nmf_result = nmf(matrix, k, initialization=initialization, max_iteration=max_iteration,
                                  seed=seed, regularizer=regularizer,
                                  randomize_coordinate_order=randomize_coordinate_order)[k]
                 # Save 1 NMF result for eack k
                 if i == 0:
                     nmf_results[k] = nmf_result
-                    print_log('\tSaved the 1st NMF decomposition for k={}.'.format(k))
-                # Assigning each col with the row index with the highest value
-                clusterings[i, :] = argmax(asarray(nmf_result['H']), axis=0)
+                    print_log('\tSaved the 1st NMF decomposition.')
+                # Assigning column labels, the row index holding the highest value
+                clustering_labels[i, :] = argmax(asarray(nmf_result['H']), axis=0)
 
-            # Make coassignment matrix (n_cols, n_cols)
-            print_log('Counting NMF coclusterings ...')
-            coclusterigns = zeros((matrix.shape[1], matrix.shape[1]))
-            for i in range(matrix.shape[1]):
-                for j in range(matrix.shape[1])[i:]:
-                    for r in range(n_clusterings):
-                        if clusterings[r, i] == clusterings[r, j]:
-                            coclusterigns[i, j] += 1
-            normalized_coclusterings = coclusterigns / n_clusterings
+            # Consensus cluster NMF clustering labels
+            print_log('Consensus clustering NMF clustering labels ...')
+            consensus_clusterings = consensus_cluster(clustering_labels)
 
-            scores[k] = cophenet(linkage(normalized_coclusterings, 'average'), pdist(normalized_coclusterings))[0]
+            # Compute clustering scores, the correlation between cophenetic and Euclidian distances
+            scores[k] = cophenet(linkage(consensus_clusterings, 'average'), pdist(consensus_clusterings))[0]
             print_log('Computed the cophenetic correlation coefficient.')
     else:
         raise ValueError('Unknown method {}.'.format(method))
@@ -109,7 +105,7 @@ def nmf(matrix, ks,
     if isinstance(ks, int):
         ks = [ks]
     for k in ks:
-        print_log('NMF with k={} ...'.format(k))
+        print_log('NMF (k={} & max_iteration={}) ...'.format(k, max_iteration))
         model = NMF(n_components=k, init=initialization, max_iter=max_iteration, random_state=seed, alpha=regularizer,
                     shuffle=randomize_coordinate_order)
 
@@ -124,68 +120,67 @@ def nmf(matrix, ks,
     return nmf_results
 
 
-def define_states(h, n_states, max_std=3, n_clusterings=50, filename_prefix=None):
+def define_states(h, ks, max_std=3, n_clusterings=50, filename_prefix=None):
     """
-    Cluster H matrix's samples into k clusters.
-    :param h: pandas DataFrame; (n_components, n_samples), H matrix from NMF
-    :param n_states: iterable; list of ks used for clustering states
+    Consensus cluster H matrix's samples into k clusters.
+    :param h: pandas DataFrame; H matrix (n_components, n_samples) from NMF
+    :param ks: iterable; list of ks used for clustering states
     :param max_std: number; threshold to clip standardized values
-    :param n_clusterings: int; number of consensus clusterings
-    :param filename_prefix: str; file path to save the assignment matrix
+    :param n_clusterings: int; number of clusterings for the consenssu clustering
+    :param filename_prefix: str; `filename_prefix`_labels.txt and `filename_prefix`_memberships.gct will be saved
     :return: pandas DataFrame, Series, and DataFrame; assignment matrix (n_ks, n_samples),
                                                       the cophenetic correlations (n_ks), and
                                                       membership matrix (n_ks, n_samples)
     """
     # Standardize H and clip extreme values
-    standardized_clipped_h = normalize_pandas_object(h).clip(-max_std, max_std)
+    standardized_clipped_h = normalize_pandas_object(h, axis=1).clip(-max_std, max_std)
 
     # Get association between samples
     sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, information_coefficient,
                                            axis=1)
 
-    # Assign labels using each k
-    labels = DataFrame(index=n_states, columns=list(sample_associations.index) + ['cophenetic_correlation'])
-    labels.index.name = 'state'
-    if any(n_states):
-        for k in n_states:
-            # For n_clusterings times, cluster sample associations and assign labels using this k
-            n_clusterings_labels = DataFrame(index=range(n_clusterings), columns=sample_associations.index)
+    consensus_clustering_labels = DataFrame(index=ks, columns=list(h.columns) + ['cophenetic_correlation'])
+    consensus_clustering_labels.index.name = 'state'
+    if any(ks):
+        for k in ks:
+            print_log('Defining states by consensus clustering for k={} ...'.format(k))
+
+            # Hierarchical cluster
+            clustering_labels = empty((n_clusterings, h.shape[1]))
             for i in range(n_clusterings):
-                print_log('Clustering sample associations with k = {} ({}/{}) ...'.format(k, i, n_clusterings))
+                print_log('Hierarchical clustering sample associations (k={} @ {}/{}) ...'.format(k, i, n_clusterings))
                 ward = AgglomerativeClustering(n_clusters=k)
                 ward.fit(sample_associations)
-                n_clusterings_labels.iloc[i, :] = ward.labels_
+                # Assign column labels
+                clustering_labels[i, :] = ward.labels_
 
-            # Count co-clustering between samples
-            n_coclusterings = DataFrame(index=n_clusterings_labels.columns, columns=n_clusterings_labels.columns)
-            n_coclusterings.fillna(0, inplace=True)
-            for r, s in n_clusterings_labels.iterrows():
-                print_log('Counting co-clustering between samples with k = {} ({}/{}) ...'.format(k, r, n_clusterings))
-                for i in s.index:
-                    for j in s.index:
-                        if i == j or s.ix[i] == s.ix[j]:
-                            n_coclusterings.ix[i, j] += 1
-            # Normalize by the nclustering and convert to distances
-            distances = 1 - n_coclusterings / n_clusterings
+            # Consensus cluster hierarchical clustering labels
+            print_log('Consensus hierarchical clustering labels ...')
+            consensus_clusterings = consensus_cluster(clustering_labels)
 
-            # Cluster the distances and assign the final label using this k
+            # Convert to distances
+            distances = 1 - consensus_clusterings
+
+            # Hierarchical cluster the consensus clusterings to assign the final label
             ward = linkage(distances, method='ward')
-            labels_ = fcluster(ward, k, criterion='maxclust')
-            labels.ix[k, sample_associations.index] = labels_
+            consensus_clustering_labels.ix[k, sample_associations.index] = fcluster(ward, k, criterion='maxclust')
 
-            # Compute the correlation between cophenetic and Euclidian distances between samples
-            labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
+            # Compute clustering scores, the correlation between cophenetic and Euclidian distances
+            consensus_clustering_labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
+            print_log('Computed the cophenetic correlation coefficient.')
 
         # Compute membership matrix
-        memberships = labels.iloc[:, :-1].apply(lambda label: label == int(label.name), axis=1).astype(int)
+        memberships = consensus_clustering_labels.iloc[:, :-1].apply(lambda label: label == int(label.name),
+                                                                     axis=1).astype(int)
 
         if filename_prefix:
-            labels.to_csv(filename_prefix + '_labels.txt', sep='\t')
+            establish_path(filename_prefix)
+            consensus_clustering_labels.to_csv(filename_prefix + '_labels.txt', sep='\t')
             write_gct(memberships, filename_prefix + '_memberships.gct')
     else:
-        raise ValueError('Invalid value passed to n_states.')
+        raise ValueError('Invalid value passed to ks.')
 
-    return labels.iloc[:, :-1], labels.iloc[:, -1:], memberships
+    return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:], memberships
 
 
 def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED, kde_bandwidths_factor=1,
