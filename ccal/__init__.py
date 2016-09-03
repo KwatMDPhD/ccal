@@ -15,9 +15,9 @@ jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
 from . import support
-from . import visualize
 from . import information
 from . import analyze
+from . import visualize
 
 print('=' * 79)
 print('=' * 20 + ' Computational Cancer Analysis Library ' + '=' * 20)

@@ -267,6 +267,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, repo
     :param function: function; function used to compute association or dissociation
     :param axis: int; 0 for by-row and 1 for by-column
     :param is_distance: bool; True for distance and False for association
+    :param report_progress: bool; print out progress or not
     :return: pandas DataFrame;
     """
     if axis == 0:
