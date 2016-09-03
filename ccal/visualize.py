@@ -125,7 +125,7 @@ def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score
 
 
 def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states,
-                  annotations=(), annotation_name='', std_max=3, annotation_type='continuous',
+                  annotations=(), annotation_name='', annotation_type='continuous', std_max=3,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                   component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
@@ -135,9 +135,9 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                   background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.7,
                   sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
                   sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                  legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
-                  effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
-                  effectplot_median_markeredgecolor='#FF0082',
+                  legend_markersize=10, legend_fontsize=11,
+                  effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
+                  effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
                   output_filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
     """
     :param component_coordinates: pandas DataFrame; (n_components, [x, y])
@@ -146,8 +146,8 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     :param grid_states: numpy 2D array; (n_grids, n_grids)
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
     :param annotation_name: str;
-    :param std_max: number; threshold to clip standardized values
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+    :param std_max: number; threshold to clip standardized values
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
