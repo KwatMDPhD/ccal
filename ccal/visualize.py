@@ -16,12 +16,8 @@ Laboratory of Jill Mesirov
 """
 import math
 
-from numpy import asarray, array, zeros, empty, argmax, linspace
+from numpy import asarray, array, linspace
 from pandas import DataFrame, Series, isnull
-import rpy2.robjects as ro
-from rpy2.robjects.packages import importr
-from rpy2.robjects.numpy2ri import numpy2ri
-from scipy.optimize import curve_fit
 from scipy.spatial import Delaunay, ConvexHull
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -30,14 +26,8 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import bwr, Paired
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
-from sklearn.manifold import MDS
 
-from .support import SEED, print_log, compare_matrices, establish_path, get_unique_in_order, normalize_pandas_object, \
-    exponential_function
-from .information import information_coefficient
-
-ro.conversion.py2ri = numpy2ri
-mass = importr('MASS')
+from .support import print_log, establish_path, get_unique_in_order, normalize_pandas_object
 
 # ======================================================================================================================
 # Parameters
@@ -131,6 +121,250 @@ def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score
     if output_filepath:
         establish_path(output_filepath)
         plt.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
+    plt.show()
+
+
+def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states,
+                  annotations=(), annotation_name='', std_max=3, annotation_type='continuous',
+                  title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
+                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
+                  component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
+                  component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
+                  delaunay_linewidth=1, delaunay_linecolor='#000000',
+                  n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
+                  background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.7,
+                  sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
+                  sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
+                  legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
+                  effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
+                  effectplot_median_markeredgecolor='#FF0082',
+                  output_filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
+    """
+    :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
+    :param annotation_name: str;
+    :param std_max: number; threshold to clip standardized values
+    :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+    :param title: str;
+    :param title_fontsize: number;
+    :param title_fontcolor: matplotlib color;
+    :param subtitle_fontsize: number;
+    :param subtitle_fontcolor: matplotlib color;
+    :param component_markersize: number;
+    :param component_markerfacecolor: matplotlib color;
+    :param component_markeredgewidth: number;
+    :param component_markeredgecolor: matplotlib color;
+    :param component_text_position: str; {'auto', 'top', 'bottom'}
+    :param component_fontsize: number;
+    :param delaunay_linewidth: number;
+    :param delaunay_linecolor: matplotlib color;
+    :param n_contours: int; set to 0 to disable drawing contours
+    :param contour_linewidth: number;
+    :param contour_linecolor: matplotlib color;
+    :param contour_alpha: float; [0, 1]
+    :param background_markersize: number; set to 0 to disable drawing backgrounds
+    :param background_mask_markersize: number; set to 0 to disable masking
+    :param background_max_alpha: float; [0, 1]; the maximum background alpha (transparency)
+    :param sample_markersize: number;
+    :param sample_without_annotation_markerfacecolor: matplotlib color;
+    :param sample_markeredgewidth: number;
+    :param sample_markeredgecolor: matplotlib color;
+    :param legend_markersize: number;
+    :param legend_fontsize: number;
+    :param effectplot_type: str; {'violine', 'box'}
+    :param effectplot_mean_markerfacecolor: matplotlib color;
+    :param effectplot_mean_markeredgecolor: matplotlib color;
+    :param effectplot_median_markeredgecolor: matplotlib color;
+    :param output_filepath: str;
+    :param figure_size: tuple;
+    :param dpi: int;
+    :return: None
+    """
+    states = samples.ix[:, 'state']
+    unique_states = sorted(set(states))
+
+    x_grids = linspace(0, 1, grid_probabilities.shape[0])
+    y_grids = linspace(0, 1, grid_probabilities.shape[1])
+
+    # Set up figure and axes
+    figure = plt.figure(figsize=figure_size)
+    gridspec = GridSpec(10, 16)
+    ax_title = plt.subplot(gridspec[0, :7])
+    ax_title.axis([0, 1, 0, 1])
+    ax_title.axis('off')
+    ax_colorbar = plt.subplot(gridspec[0, 7:12])
+    ax_colorbar.axis([0, 1, 0, 1])
+    ax_colorbar.axis('off')
+    ax_map = plt.subplot(gridspec[1:, :12])
+    ax_map.axis([0, 1, 0, 1])
+    ax_map.axis('off')
+    ax_legend = plt.subplot(gridspec[1:, 14:])
+    ax_legend.axis([0, 1, 0, 1])
+    ax_legend.axis('off')
+
+    # Plot title
+    ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
+    ax_title.text(0, 0.39,
+                  '{} samples, {} components, and {} states'.format(samples.shape[0], component_coordinates.shape[0],
+                                                                    len(unique_states)),
+                  fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
+
+    # Plot components and their labels
+    ax_map.plot(component_coordinates.iloc[:, 0], component_coordinates.iloc[:, 1], marker='D', linestyle='',
+                markersize=component_markersize, markerfacecolor=component_markerfacecolor,
+                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, clip_on=False,
+                aa=True, zorder=6)
+    # Compute convexhull
+    convexhull = ConvexHull(component_coordinates)
+    convexhull_region = Path(convexhull.points[convexhull.vertices])
+    # Put labels on top or bottom of the component markers
+    component_text_verticalshift = -0.03
+    for i in range(component_coordinates.shape[0]):
+        if component_text_position == 'auto':
+            if convexhull_region.contains_point((component_coordinates.iloc[i, 0],
+                                                 component_coordinates.iloc[i, 1] + component_text_verticalshift)):
+                component_text_verticalshift *= -1
+        elif component_text_position == 'top':
+            component_text_verticalshift *= -1
+        elif component_text_position == 'bottom':
+            pass
+        x, y = component_coordinates.iloc[i, 0], component_coordinates.iloc[i, 1] + component_text_verticalshift
+
+        ax_map.text(x, y, component_coordinates.index[i],
+                    fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
+                    horizontalalignment='center', verticalalignment='center', zorder=6)
+
+    # Plot Delaunay triangulation
+    delaunay = Delaunay(component_coordinates)
+    ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
+                   linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, zorder=4)
+
+    # Plot contours
+    if n_contours > 0:
+        ax_map.contour(x_grids, y_grids, grid_probabilities, n_contours, corner_mask=True,
+                       linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, aa=True, zorder=2)
+
+    # Assign colors to states
+    states_color = {}
+    for s in unique_states:
+        states_color[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
+
+    # Plot background
+    if background_markersize > 0:
+        grid_probabilities_min = grid_probabilities.min()
+        grid_probabilities_max = grid_probabilities.max()
+        grid_probabilities_range = grid_probabilities_max - grid_probabilities_min
+        for i in range(grid_probabilities.shape[0]):
+            for j in range(grid_probabilities.shape[1]):
+                if convexhull_region.contains_point((x_grids[i], y_grids[j])):
+                    c = states_color[grid_states[i, j]]
+                    a = min(background_max_alpha,
+                            (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range)
+                    ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_markersize, markerfacecolor=c,
+                                alpha=a, aa=True, zorder=1)
+    # Plot background mask
+    if background_mask_markersize > 0:
+        for i in range(grid_probabilities.shape[0]):
+            for j in range(grid_probabilities.shape[1]):
+                if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
+                    ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_mask_markersize,
+                                markerfacecolor='w', aa=True, zorder=3)
+
+    if any(annotations):  # Plot samples, annotations, sample legends, and annotation legends
+        # Set up annotations
+        a = Series(annotations)
+        a.index = samples.index
+        if annotation_type == 'continuous':
+            samples.ix[:, 'annotation'] = normalize_pandas_object(a).clip(-std_max, std_max)
+            annotation_min = max(-std_max, samples.ix[:, 'annotation'].min())
+            annotation_mean = samples.ix[:, 'annotation'].mean()
+            annotation_max = min(std_max, samples.ix[:, 'annotation'].max())
+            cmap = CMAP_CONTINUOUS
+        else:
+            samples.ix[:, 'annotation'] = annotations
+            annotation_min = 0
+            annotation_mean = int(samples.ix[:, 'annotation'].mean())
+            annotation_max = int(samples.ix[:, 'annotation'].max())
+            if annotation_type == 'categorical':
+                cmap = CMAP_CATEGORICAL
+            elif annotation_type == 'binary':
+                cmap = CMAP_BINARY
+            else:
+                raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
+        annotation_range = annotation_max - annotation_min
+
+        # Plot samples
+        for idx, s in samples.iterrows():
+            if isnull(s.ix['annotation']):
+                c = sample_without_annotation_markerfacecolor
+            else:
+                if annotation_type == 'continuous':
+                    c = cmap(s.ix['annotation'])
+                elif annotation_type in ('categorical', 'binary'):
+                    c = cmap((s.ix['annotation'] - annotation_min) / annotation_range)
+                else:
+                    raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
+            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+                        markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
+                        zorder=5)
+
+        # Plot sample legends
+        ax_legend.axis('on')
+        ax_legend.patch.set_visible(False)
+        # TODO: Compute IC and get p-val
+        ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
+                            fontsize=legend_fontsize * 1.26, weight='bold')
+        if effectplot_type == 'violine':
+            violinplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, scale='count', inner=None,
+                       orient='h', ax=ax_legend, clip_on=False)
+            boxplot(x=samples.ix[:, 'annotation'], y=states, showbox=False, showmeans=True,
+                    medianprops={'marker': 'o',
+                                 'markerfacecolor': effectplot_mean_markerfacecolor,
+                                 'markeredgewidth': 0.9,
+                                 'markeredgecolor': effectplot_mean_markeredgecolor},
+                    meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
+        elif effectplot_type == 'box':
+            boxplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, showmeans=True,
+                    medianpops={'marker': 'o',
+                                'markerfacecolor': effectplot_mean_markerfacecolor,
+                                'markeredgewidth': 0.9,
+                                'markeredgecolor': effectplot_mean_markeredgecolor},
+                    meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
+        ax_legend.axvline(annotation_min, color='#000000', ls='-', alpha=0.16, aa=True)
+        ax_legend.axvline(annotation_mean, color='#000000', ls='-', alpha=0.39, aa=True)
+        ax_legend.axvline(annotation_max, color='#000000', ls='-', alpha=0.16, aa=True)
+        ax_legend.set_xticks([annotation_min, annotation_mean, annotation_max])
+        ax_legend.set_xlabel('')
+        for t in ax_legend.get_xticklabels():
+            t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
+        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(array(states) == s)) for s in unique_states],
+                                  fontsize=legend_fontsize, weight='bold')
+        ax_legend.yaxis.tick_right()
+
+        # Plot annotation legends
+        if annotation_type == 'continuous':
+            cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16,
+                                cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
+                                ticks=[annotation_min, annotation_mean, annotation_max])
+            ColorbarBase(cax, **kw)
+
+    else:  # Plot samples and sample legends
+        # Plot samples
+        for idx, s in samples.iterrows():
+            c = states_color[s.ix['state']]
+            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+                        markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
+                        zorder=5)
+        # Plot sample legends
+        for i, s in enumerate(unique_states):
+            y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
+            c = states_color[s]
+            ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
+            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(asarray(states) == s)),
+                           fontsize=legend_fontsize, weight='bold', verticalalignment='center')
+
+    if output_filepath:
+        establish_path(output_filepath)
+        figure.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
     plt.show()
 
 
@@ -242,320 +476,3 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
         establish_path(output_filepath)
         fig.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
     plt.show(fig)
-
-
-def plot_onco_gps(h, states, annotations=(), annotation_name='', std_max=3, annotation_type='continuous', n_grids=128,
-                  title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                  informational_mds=True, mds_seed=SEED,
-                  component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
-                  component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
-                  delaunay_linewidth=1, delaunay_linecolor='#000000',
-                  kde_bandwidths_factor=1, n_influencing_components='all', sample_stretch_factor='auto',
-                  n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                  background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.7,
-                  sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
-                  sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                  legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
-                  effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
-                  effectplot_median_markeredgecolor='#FF0082',
-                  output_filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
-    """
-    :param h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param states: iterable of int; (n_samples); sample states
-    :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
-    :param annotation_name: str;
-    :param std_max: number; threshold to clip standardized values
-    :param annotation_type: str; {'continuous', 'categorical', 'binary'}
-    :param n_grids: int;
-    :param title: str;
-    :param title_fontsize: number;
-    :param title_fontcolor: matplotlib color;
-    :param subtitle_fontsize: number;
-    :param subtitle_fontcolor: matplotlib color;
-    :param informational_mds: bool; use informational MDS or not
-    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
-    :param component_markersize: number;
-    :param component_markerfacecolor: matplotlib color;
-    :param component_markeredgewidth: number;
-    :param component_markeredgecolor: matplotlib color;
-    :param component_text_position: str; {'auto', 'top', 'bottom'}
-    :param component_fontsize: number;
-    :param delaunay_linewidth: number;
-    :param delaunay_linecolor: matplotlib color;
-    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
-    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param sample_stretch_factor: str or number; power to raise components' influence on each sample; 'auto' to automate
-    :param n_contours: int; set to 0 to disable drawing contours
-    :param contour_linewidth: number;
-    :param contour_linecolor: matplotlib color;
-    :param contour_alpha: float; [0, 1]
-    :param background_markersize: number; set to 0 to disable drawing backgrounds
-    :param background_mask_markersize: number; set to 0 to disable masking
-    :param background_max_alpha: float; [0, 1]; the maximum background alpha (transparency)
-    :param sample_markersize: number;
-    :param sample_without_annotation_markerfacecolor: matplotlib color;
-    :param sample_markeredgewidth: number;
-    :param sample_markeredgecolor: matplotlib color;
-    :param legend_markersize: number;
-    :param legend_fontsize: number;
-    :param effectplot_type: str; {'violine', 'box'}
-    :param effectplot_mean_markerfacecolor: matplotlib color;
-    :param effectplot_mean_markeredgecolor: matplotlib color;
-    :param effectplot_median_markeredgecolor: matplotlib color;
-    :param output_filepath: str;
-    :param figure_size: tuple;
-    :param dpi: int;
-    :return: None
-    """
-    unique_states = sorted(set(states))
-    print_log('Creating Onco-GPS with {} samples, {} components, and {} states {} ...'.format(*reversed(h.shape),
-                                                                                              len(unique_states),
-                                                                                              unique_states))
-
-    samples = DataFrame(index=h.columns, columns=['state', 'x', 'y'])
-
-    # Get sample states
-    samples.ix[:, 'state'] = states
-
-    # Get sample coordinates
-    # Standardize H and clip values with extreme standard deviation
-    normalized_clipped_h = normalize_pandas_object(normalize_pandas_object(h).clip(-std_max, std_max), method='0-1')
-    # Project the H's components from <n_sample>D to 2D
-    if informational_mds:
-        mds = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=1000, max_iter=1000)
-        components_coordinates = mds.fit_transform(compare_matrices(normalized_clipped_h, normalized_clipped_h,
-                                                                    information_coefficient, is_distance=True,
-                                                                    report_progress=False))
-    else:
-        mds = MDS(random_state=mds_seed, n_init=1000, max_iter=1000)
-        components_coordinates = mds.fit_transform(normalized_clipped_h)
-    x_min = min(components_coordinates[:, 0])
-    x_max = max(components_coordinates[:, 0])
-    x_range = x_max - x_min
-    y_min = min(components_coordinates[:, 1])
-    y_max = max(components_coordinates[:, 1])
-    y_range = y_max - y_min
-    # 0-1 normalize the coordinates
-    x_grids = linspace(0, 1, n_grids)
-    y_grids = linspace(0, 1, n_grids)
-    for i, (x, y) in enumerate(components_coordinates):
-        components_coordinates[i, 0] = (x - x_min) / x_range
-        components_coordinates[i, 1] = (y - y_min) / y_range
-    # Compute x & y coordinates
-    if sample_stretch_factor == 'auto':
-        print_log('Computing the sample_stretch_factor ...')
-        x = array(range(normalized_clipped_h.shape[0]))
-        y = asarray(normalized_clipped_h.apply(sorted).apply(sum, axis=1)) / normalized_clipped_h.shape[1]
-        a, k, c = curve_fit(exponential_function, x, y)[0]
-        print_log('\tModeled H columns by {}e^({}x) + {}.'.format(a, k, c))
-        k_min, k_max = 0, 2
-        stretch_factor_min, stretch_factor_max = 1, 3
-        k_normalized = (k - k_min) / (k_max - k_min)
-        sample_stretch_factor = k_normalized * (stretch_factor_max - stretch_factor_min) + stretch_factor_min
-        print_log('\tsample_stretch_factor = {0:.3f}.'.format(sample_stretch_factor))
-    for sample in samples.index:
-        col = h.ix[:, sample]
-        if n_influencing_components == 'all':
-            n_influencing_components = h.shape[0]
-        col = col.mask(col < col.sort_values()[-n_influencing_components], other=0)
-        x = sum(col ** sample_stretch_factor * components_coordinates[:, 0]) / sum(col ** sample_stretch_factor)
-        y = sum(col ** sample_stretch_factor * components_coordinates[:, 1]) / sum(col ** sample_stretch_factor)
-        samples.ix[sample, ['x', 'y']] = x, y
-
-    # Get KDE for each state using bandwidth created from all states' x & y coordinates
-    kdes = zeros((len(unique_states) + 1, n_grids, n_grids))
-    bandwidths = array([mass.bcv(array(samples.ix[:, 'x'].tolist()))[0],
-                        mass.bcv(array(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
-    for s in unique_states:
-        coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
-        kde = mass.kde2d(array(coordinates.ix[:, 'x'], dtype=float), array(coordinates.ix[:, 'y'], dtype=float),
-                         bandwidths, n=array([n_grids]), lims=array([0, 1, 0, 1]))
-        kdes[s] = array(kde[2])
-    # Assign the best KDE probability and state for each grid
-    grid_probabilities = zeros((n_grids, n_grids))
-    grid_states = empty((n_grids, n_grids))
-    for i in range(n_grids):
-        for j in range(n_grids):
-            grid_probabilities[i, j] = max(kdes[:, j, i])
-            grid_states[i, j] = argmax(kdes[:, i, j])
-
-    # Set up figure and axes
-    figure = plt.figure(figsize=figure_size)
-    gridspec = GridSpec(10, 16)
-    ax_title = plt.subplot(gridspec[0, :7])
-    ax_title.axis([0, 1, 0, 1])
-    ax_title.axis('off')
-    ax_colorbar = plt.subplot(gridspec[0, 7:12])
-    ax_colorbar.axis([0, 1, 0, 1])
-    ax_colorbar.axis('off')
-    ax_map = plt.subplot(gridspec[1:, :12])
-    ax_map.axis([0, 1, 0, 1])
-    ax_map.axis('off')
-    ax_legend = plt.subplot(gridspec[1:, 14:])
-    ax_legend.axis([0, 1, 0, 1])
-    ax_legend.axis('off')
-
-    # Plot title
-    ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
-    ax_title.text(0, 0.39, '{} samples, {} components, and {} states'.format(*reversed(h.shape), len(unique_states)),
-                  fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
-
-    # Plot components and their labels
-    ax_map.plot(components_coordinates[:, 0], components_coordinates[:, 1], marker='D', linestyle='',
-                markersize=component_markersize, markerfacecolor=component_markerfacecolor,
-                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, clip_on=False,
-                aa=True, zorder=6)
-    # Compute convexhull
-    convexhull = ConvexHull(components_coordinates)
-    convexhull_region = Path(convexhull.points[convexhull.vertices])
-    # Put labels on top or bottom of the component markers
-    component_text_verticalshift = -0.03
-    for i in range(h.shape[0]):
-        if component_text_position == 'auto':
-            if convexhull_region.contains_point((components_coordinates[i, 0],
-                                                 components_coordinates[i, 1] + component_text_verticalshift)):
-                component_text_verticalshift *= -1
-        elif component_text_position == 'top':
-            component_text_verticalshift *= -1
-        elif component_text_position == 'bottom':
-            pass
-        x, y = components_coordinates[i, 0], components_coordinates[i, 1] + component_text_verticalshift
-
-        ax_map.text(x, y, normalized_clipped_h.index[i],
-                    fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
-                    horizontalalignment='center', verticalalignment='center', zorder=6)
-
-    # Plot Delaunay triangulation
-    delaunay = Delaunay(components_coordinates)
-    ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
-                   linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, zorder=4)
-
-    # Plot contours
-    if n_contours > 0:
-        ax_map.contour(x_grids, y_grids, grid_probabilities, n_contours, corner_mask=True,
-                       linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, aa=True, zorder=2)
-
-    # Assign colors to states
-    states_color = {}
-    for s in unique_states:
-        states_color[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
-
-    # Plot background
-    if background_markersize > 0:
-        grid_probabilities_min = grid_probabilities.min()
-        grid_probabilities_max = grid_probabilities.max()
-        grid_probabilities_range = grid_probabilities_max - grid_probabilities_min
-        for i in range(n_grids):
-            for j in range(n_grids):
-                if convexhull_region.contains_point((x_grids[i], y_grids[j])):
-                    c = states_color[grid_states[i, j]]
-                    a = min(background_max_alpha,
-                            (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range)
-                    ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_markersize, markerfacecolor=c,
-                                alpha=a, aa=True, zorder=1)
-    # Plot background mask
-    if background_mask_markersize > 0:
-        for i in range(n_grids):
-            for j in range(n_grids):
-                if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
-                    ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_mask_markersize,
-                                markerfacecolor='w', aa=True, zorder=3)
-
-    if any(annotations):  # Plot samples, annotations, sample legends, and annotation legends
-        # Set up annotations
-        a = Series(annotations)
-        a.index = samples.index
-        if annotation_type == 'continuous':
-            samples.ix[:, 'annotation'] = normalize_pandas_object(a).clip(-std_max, std_max)
-            annotation_min = max(-std_max, samples.ix[:, 'annotation'].min())
-            annotation_mean = samples.ix[:, 'annotation'].mean()
-            annotation_max = min(std_max, samples.ix[:, 'annotation'].max())
-            cmap = CMAP_CONTINUOUS
-        else:
-            samples.ix[:, 'annotation'] = annotations
-            annotation_min = 0
-            annotation_mean = int(samples.ix[:, 'annotation'].mean())
-            annotation_max = int(samples.ix[:, 'annotation'].max())
-            if annotation_type == 'categorical':
-                cmap = CMAP_CATEGORICAL
-            elif annotation_type == 'binary':
-                cmap = CMAP_BINARY
-            else:
-                raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
-        annotation_range = annotation_max - annotation_min
-
-        # Plot samples
-        for idx, s in samples.iterrows():
-            if isnull(s.ix['annotation']):
-                c = sample_without_annotation_markerfacecolor
-            else:
-                if annotation_type == 'continuous':
-                    c = cmap(s.ix['annotation'])
-                elif annotation_type in ('categorical', 'binary'):
-                    c = cmap((s.ix['annotation'] - annotation_min) / annotation_range)
-                else:
-                    raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
-            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
-                        markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
-                        zorder=5)
-
-        # Plot sample legends
-        ax_legend.axis('on')
-        ax_legend.patch.set_visible(False)
-        # TODO: Compute IC and get p-val
-        ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
-                            fontsize=legend_fontsize * 1.26, weight='bold')
-        if effectplot_type == 'violine':
-            violinplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, scale='count', inner=None,
-                       orient='h', ax=ax_legend, clip_on=False)
-            boxplot(x=samples.ix[:, 'annotation'], y=states, showbox=False, showmeans=True,
-                    medianprops={'marker': 'o',
-                                 'markerfacecolor': effectplot_mean_markerfacecolor,
-                                 'markeredgewidth': 0.9,
-                                 'markeredgecolor': effectplot_mean_markeredgecolor},
-                    meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
-        elif effectplot_type == 'box':
-            boxplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, showmeans=True,
-                    medianpops={'marker': 'o',
-                                'markerfacecolor': effectplot_mean_markerfacecolor,
-                                'markeredgewidth': 0.9,
-                                'markeredgecolor': effectplot_mean_markeredgecolor},
-                    meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
-        ax_legend.axvline(annotation_min, color='#000000', ls='-', alpha=0.16, aa=True)
-        ax_legend.axvline(annotation_mean, color='#000000', ls='-', alpha=0.39, aa=True)
-        ax_legend.axvline(annotation_max, color='#000000', ls='-', alpha=0.16, aa=True)
-        ax_legend.set_xticks([annotation_min, annotation_mean, annotation_max])
-        ax_legend.set_xlabel('')
-        for t in ax_legend.get_xticklabels():
-            t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
-        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(array(states) == s)) for s in unique_states],
-                                  fontsize=legend_fontsize, weight='bold')
-        ax_legend.yaxis.tick_right()
-
-        # Plot annotation legends
-        if annotation_type == 'continuous':
-            cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16,
-                                cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
-                                ticks=[annotation_min, annotation_mean, annotation_max])
-            ColorbarBase(cax, **kw)
-
-    else:  # Plot samples and sample legends
-        # Plot samples
-        for idx, s in samples.iterrows():
-            c = states_color[s.ix['state']]
-            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
-                        markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
-                        zorder=5)
-        # Plot sample legends
-        for i, s in enumerate(unique_states):
-            y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
-            c = states_color[s]
-            ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
-            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(asarray(states) == s)),
-                           fontsize=legend_fontsize, weight='bold', verticalalignment='center')
-
-    if output_filepath:
-        establish_path(output_filepath)
-        figure.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
-    plt.show()

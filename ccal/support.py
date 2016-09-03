@@ -126,6 +126,7 @@ def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None
     :param filepath: str;
     :param index_column_name: str; column to be used as the index for the .gct
     :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gct
+    :return: None
     """
     obj = pandas_object.copy()
 
