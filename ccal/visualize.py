@@ -90,7 +90,7 @@ def plot_nmf_result(nmf_results, k, max_std=3, figure_size=FIGURE_SIZE, title=No
 
     if output_filepath:
         establish_path(output_filepath)
-        plt.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
+        figure.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
     plt.show()
 
 
@@ -119,7 +119,7 @@ def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score
 
     if output_filepath:
         establish_path(output_filepath)
-        plt.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
+        figure.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
     plt.show()
 
 
@@ -422,7 +422,7 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
 
     if figure_size == 'auto':
         figure_size = (min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9))
-    fig = plt.figure(figsize=figure_size)
+    figure = plt.figure(figsize=figure_size)
     gridspec = GridSpec(features.shape[0] + 1, features.shape[1] + 1)
     ax_ref = plt.subplot(gridspec[:1, :features.shape[1]])
     ax_features = plt.subplot(gridspec[1:, :features.shape[1]])
@@ -477,5 +477,5 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
 
     if output_filepath:
         establish_path(output_filepath)
-        fig.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
-    plt.show(fig)
+        figure.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
+    plt.show(figure)
