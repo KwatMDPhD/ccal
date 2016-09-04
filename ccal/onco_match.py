@@ -54,6 +54,7 @@ def match(features, ref, feature_type='continuous', ref_type='continuous',
             features.shape[1], ref.size))
 
     # Drop rows having all 0 values
+    # TODO: add threshold
     features = features.ix[(features != 0).any(axis=1)]
 
     # Sort reference
@@ -84,15 +85,15 @@ def match(features, ref, feature_type='continuous', ref_type='continuous',
     annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
 
     # Limit features to be plotted
-    if n_features < 1:
+    if n_features < 1:  # Limit using percentile
         above_quantile = scores.ix[:, function] >= scores.ix[:, function].quantile(n_features)
-        print_log('Plotting {} features vs. reference > {} quantile ...'.format(sum(above_quantile), n_features))
+        print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
         below_quantile = scores.ix[:, function] <= scores.ix[:, function].quantile(1 - n_features)
-        print_log('Plotting {} features vs. reference < {} quantile ...'.format(sum(below_quantile), 1 - n_features))
-        indices_to_plot = features.index[above_quantile | below_quantile].tolist()
-    else:
-        indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
-        print_log('Plotting top & bottom {} features vs. reference ...'.format(len(indices_to_plot)))
+        print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
+        indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
+    else:  # Limit using numbers
+        indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
+        print_log('Plotting top & bottom {} features ...'.format(n_features))
 
     plot_features_against_reference(features.ix[indices_to_plot, :], ref, annotations.ix[indices_to_plot, :],
                                     feature_type=feature_type, ref_type=ref_type,
