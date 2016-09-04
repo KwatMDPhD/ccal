@@ -16,7 +16,7 @@ Laboratory of Jill Mesirov
 """
 import math
 
-from numpy import asarray, array, linspace
+from numpy import asarray, array, unique, linspace
 from pandas import DataFrame, Series, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import matplotlib.pyplot as plt
@@ -397,10 +397,10 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
         features_cmap = CMAP_CONTINUOUS
         features_min, features_max = -std_max, std_max
         print_log('Normalizing continuous features ...')
-        features = normalize_pandas_object(features)
+        features = normalize_pandas_object(features, axis=1)
     elif feature_type == 'categorical':
         features_cmap = CMAP_CATEGORICAL
-        features_min, features_max = 0, len(set(features.values))
+        features_min, features_max = 0, len(unique(features))
     elif feature_type == 'binary':
         features_cmap = CMAP_BINARY
         features_min, features_max = 0, 1
@@ -413,7 +413,7 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
         ref = normalize_pandas_object(ref)
     elif ref_type == 'categorical':
         ref_cmap = CMAP_CATEGORICAL
-        ref_min, ref_max = 0, len(set(ref.values))
+        ref_min, ref_max = 0, len(unique(ref))
     elif ref_type == 'binary':
         ref_cmap = CMAP_BINARY
         ref_min, ref_max = 0, 1
