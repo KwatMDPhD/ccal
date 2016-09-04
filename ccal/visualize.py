@@ -212,7 +212,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
 
     # Plot components and their labels
-    ax_map.plot(component_coordinates.iloc[:, 0], component_coordinates.iloc[:, 1], marker='D', linestyle='',
+    ax_map.plot(component_coordinates.ix[:, 'x'], component_coordinates.ix[:, 'y'], marker='D', linestyle='',
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
                 markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, clip_on=False,
                 aa=True, zorder=6)
@@ -223,14 +223,14 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     component_text_verticalshift = -0.03
     for i in range(component_coordinates.shape[0]):
         if component_text_position == 'auto':
-            if convexhull_region.contains_point((component_coordinates.iloc[i, 0],
-                                                 component_coordinates.iloc[i, 1] + component_text_verticalshift)):
+            if convexhull_region.contains_point((component_coordinates.ix[i, 'x'],
+                                                 component_coordinates.ix[i, 'y'] + component_text_verticalshift)):
                 component_text_verticalshift *= -1
         elif component_text_position == 'top':
             component_text_verticalshift *= -1
         elif component_text_position == 'bottom':
             pass
-        x, y = component_coordinates.iloc[i, 0], component_coordinates.iloc[i, 1] + component_text_verticalshift
+        x, y = component_coordinates.ix[i, 'x'], component_coordinates.ix[i, 'y'] + component_text_verticalshift
 
         ax_map.text(x, y, component_coordinates.index[i],
                     fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',

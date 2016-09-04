@@ -159,8 +159,7 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     standardized_clipped_h = normalize_pandas_object(h, axis=1).clip(-max_std, max_std)
 
     # Get association between samples
-    sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, information_coefficient,
-                                           axis=1)
+    sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, information_coefficient)
 
     consensus_clustering_labels = DataFrame(index=ks, columns=list(h.columns) + ['cophenetic_correlation'])
     consensus_clustering_labels.index.name = 'state'
@@ -235,20 +234,14 @@ def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds
     if informational_mds:
         mds = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=1000, max_iter=1000)
         components_coordinates = mds.fit_transform(compare_matrices(normalized_clipped_h, normalized_clipped_h,
-                                                                    information_coefficient, is_distance=True))
+                                                                    information_coefficient, is_distance=True,
+                                                                    axis=1))
     else:
         mds = MDS(random_state=mds_seed, n_init=1000, max_iter=1000)
         components_coordinates = mds.fit_transform(normalized_clipped_h)
+    components_coordinates = DataFrame(components_coordinates, index=h.index, columns=['x', 'y'])
     # 0-1 normalize the coordinates
-    x_min = min(components_coordinates[:, 0])
-    x_max = max(components_coordinates[:, 0])
-    x_range = x_max - x_min
-    y_min = min(components_coordinates[:, 1])
-    y_max = max(components_coordinates[:, 1])
-    y_range = y_max - y_min
-    for i, (x, y) in enumerate(components_coordinates):
-        components_coordinates[i, 0] = (x - x_min) / x_range
-        components_coordinates[i, 1] = (y - y_min) / y_range
+    components_coordinates = normalize_pandas_object(components_coordinates, method='0-1', axis=0)
 
     # Get sample states and compute coordinates
     samples = DataFrame(index=h.columns, columns=['x', 'y', 'state'])
@@ -259,7 +252,7 @@ def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds
         print_log('Computing the sample_stretch_factor ...')
         x = array(range(normalized_clipped_h.shape[0]))
         y = asarray(normalized_clipped_h.apply(sorted).apply(sum, axis=1)) / normalized_clipped_h.shape[1]
-        a, k, c = curve_fit(exponential_function, x, y)[0]
+        a, k, c = curve_fit(exponential_function, x, y, maxfev=1000)[0]
         print_log('\tModeled H columns by {}e^({}x) + {}.'.format(a, k, c))
         k_min, k_max = 0, 2
         stretch_factor_min, stretch_factor_max = 1, 3
@@ -271,8 +264,8 @@ def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds
         if n_influencing_components == 'all':
             n_influencing_components = h.shape[0]
         col = col.mask(col < col.sort_values()[-n_influencing_components], other=0)
-        x = sum(col ** sample_stretch_factor * components_coordinates[:, 0]) / sum(col ** sample_stretch_factor)
-        y = sum(col ** sample_stretch_factor * components_coordinates[:, 1]) / sum(col ** sample_stretch_factor)
+        x = sum(col ** sample_stretch_factor * components_coordinates.ix[:, 'x']) / sum(col ** sample_stretch_factor)
+        y = sum(col ** sample_stretch_factor * components_coordinates.ix[:, 'y']) / sum(col ** sample_stretch_factor)
         samples.ix[sample, ['x', 'y']] = x, y
 
     # Compute grid probabilities and states

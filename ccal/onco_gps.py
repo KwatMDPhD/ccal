@@ -3,9 +3,9 @@ from .analyze import make_onco_gps
 from .visualize import FIGURE_SIZE, DPI, plot_onco_gps
 
 
-def make_map(h, states, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED, kde_bandwidths_factor=1,
-             n_influencing_components='all', sample_stretch_factor='auto',
-             annotations=(), annotation_name='', annotation_type='continuous',
+def make_map(h_train, states, h_test=None, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED,
+             kde_bandwidths_factor=1, n_influencing_components='all', sample_stretch_factor='auto',
+             annotations_train=(), annotations_test=(), annotation_name='', annotation_type='continuous',
              title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
              subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
              component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
@@ -20,8 +20,9 @@ def make_map(h, states, std_max=3, n_grids=128, informational_mds=True, mds_seed
              effectplot_median_markeredgecolor='#FF0082',
              output_filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
     """
-    :param h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: iterable of int; (n_samples); sample states
+    :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param std_max: number; threshold to clip standardized values
     :param n_grids: int;
     :param informational_mds: bool; use informational MDS or not
@@ -29,7 +30,8 @@ def make_map(h, states, std_max=3, n_grids=128, informational_mds=True, mds_seed
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
     :param sample_stretch_factor: str or number; power to raise components' influence on each sample; 'auto' to automate
-    :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
+    :param annotations_train: pandas Series; (n_samples); sample annotations; will color samples based on annotations
+    :param annotations_test: pandas Series; (n_samples); sample annotations; will color samples based on annotations
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number; threshold to clip standardized values
@@ -69,13 +71,13 @@ def make_map(h, states, std_max=3, n_grids=128, informational_mds=True, mds_seed
     :param dpi: int;
     :return: None
     """
-    cc, s, gp, gs = make_onco_gps(h, states, std_max=std_max, n_grids=n_grids,
+    cc, s, gp, gs = make_onco_gps(h_train, states, std_max=std_max, n_grids=n_grids,
                                   informational_mds=informational_mds, mds_seed=mds_seed,
                                   kde_bandwidths_factor=kde_bandwidths_factor,
                                   n_influencing_components=n_influencing_components,
                                   sample_stretch_factor=sample_stretch_factor)
     plot_onco_gps(cc, s, gp, gs,
-                  annotations=annotations, annotation_name=annotation_name, annotation_type=annotation_type,
+                  annotations=annotations_train, annotation_name=annotation_name, annotation_type=annotation_type,
                   std_max=std_max,
                   title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
                   subtitle_fontsize=subtitle_fontsize, subtitle_fontcolor=subtitle_fontcolor,

@@ -293,7 +293,8 @@ def consensus_cluster(clustering_labels):
     n_rows, n_cols = clustering_labels.shape
     consensus_clusterings = zeros((n_cols, n_cols))
     for i in range(n_cols):
-        print_log('Consensus clustering ({}/{}) ...'.format(i, n_cols))
+        if i % 30 == 0:
+            print_log('Consensus clustering ({}/{}) ...'.format(i, n_cols))
         for j in range(n_cols)[i:]:
             for r in range(n_rows):
                 if clustering_labels[r, i] == clustering_labels[r, j]:
