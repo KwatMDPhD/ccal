@@ -42,7 +42,7 @@ from .information import information_coefficient
 
 
 def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30, initialization='random',
-                  max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False, filename_prefix=None):
+                  max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False, filepath_prefix=None):
     """
     Perform NMF with k from `ks` and score each NMF result.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
@@ -54,7 +54,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     :param seed: int;
     :param randomize_coordinate_order: bool;
     :param regularizer: int, NMF's alpha
-    :param filename_prefix: str; `filename_prefix`_k{k}_{w, h}.gct and  will be saved
+    :param filepath_prefix: str; `filepath_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
     """
     nmf_results = {}
@@ -87,15 +87,15 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     else:
         raise ValueError('Unknown method {}.'.format(method))
 
-    if filename_prefix:
-        _save_nmf_results(nmf_results, filename_prefix)
+    if filepath_prefix:
+        _save_nmf_results(nmf_results, filepath_prefix)
 
     return nmf_results, scores
 
 
 def nmf(matrix, ks,
         initialization='random', max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False,
-        filename_prefix=None):
+        filepath_prefix=None):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
@@ -105,7 +105,7 @@ def nmf(matrix, ks,
     :param seed: int;
     :param randomize_coordinate_order: bool;
     :param regularizer: int, NMF's alpha
-    :param filename_prefix: str; `filename_prefix`_k{k}_{w, h}.gct and  will be saved
+    :param filepath_prefix: str; `filepath_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: dict; {k: {W:w, H:h, ERROR:error}}
     """
     nmf_results = {}
@@ -124,33 +124,33 @@ def nmf(matrix, ks,
             h = DataFrame(h, index=[i + 1 for i in range(k)], columns=matrix.columns)
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
-    if filename_prefix:
-        _save_nmf_results(nmf_results, filename_prefix)
+    if filepath_prefix:
+        _save_nmf_results(nmf_results, filepath_prefix)
 
     return nmf_results
 
 
-def _save_nmf_results(nmf_results, filename_prefix):
+def _save_nmf_results(nmf_results, filepath_prefix):
     """
     Save `nmf_results` dictionary.
     :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
-    :param filename_prefix: str; `filename_prefix`_k{k}_{w, h}.gct and  will be saved
+    :param filepath_prefix: str; `filepath_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: None
     """
-    establish_path(filename_prefix)
+    establish_path(filepath_prefix)
     for k, v in nmf_results.items():
-        write_gct(v['W'], filename_prefix + '_k{}_w.gct')
-        write_gct(v['H'], filename_prefix + '_k{}_h.gct')
+        write_gct(v['W'], filepath_prefix + '_k{}_w.gct')
+        write_gct(v['H'], filepath_prefix + '_k{}_h.gct')
 
 
-def define_states(h, ks, max_std=3, n_clusterings=50, filename_prefix=None):
+def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     """
     Consensus cluster H matrix's samples into k clusters.
     :param h: pandas DataFrame; H matrix (n_components, n_samples) from NMF
     :param ks: iterable; list of ks used for clustering states
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for the consenssu clustering
-    :param filename_prefix: str; `filename_prefix`_labels.txt and `filename_prefix`_memberships.gct will be saved
+    :param filepath_prefix: str; `filepath_prefix`_labels.txt and `filepath_prefix`_memberships.gct will be saved
     :return: pandas DataFrame, Series, and DataFrame; assignment matrix (n_ks, n_samples),
                                                       the cophenetic correlations (n_ks), and
                                                       membership matrix (n_ks, n_samples)
@@ -196,10 +196,10 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filename_prefix=None):
         memberships = consensus_clustering_labels.iloc[:, :-1].apply(lambda label: label == int(label.name),
                                                                      axis=1).astype(int)
 
-        if filename_prefix:
-            establish_path(filename_prefix)
-            consensus_clustering_labels.to_csv(filename_prefix + '_labels.txt', sep='\t')
-            write_gct(memberships, filename_prefix + '_memberships.gct')
+        if filepath_prefix:
+            establish_path(filepath_prefix)
+            consensus_clustering_labels.to_csv(filepath_prefix + '_labels.txt', sep='\t')
+            write_gct(memberships, filepath_prefix + '_memberships.gct')
     else:
         raise ValueError('Invalid value passed to ks.')
 
