@@ -31,14 +31,14 @@ import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
 from rpy2.robjects.numpy2ri import numpy2ri
 
+from .support import SEED, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices, \
+    consensus_cluster, exponential_function
+from .information import information_coefficient
+
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
 bcv = mass.bcv
 kde2d = mass.kde2d
-
-from .support import SEED, print_log, write_gct, normalize_pandas_object, compare_matrices, exponential_function, \
-    establish_path, consensus_cluster
-from .information import information_coefficient
 
 
 def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30, initialization='random',
