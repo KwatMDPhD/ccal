@@ -41,9 +41,8 @@ from .support import SEED, print_log, write_gct, normalize_pandas_object, compar
 from .information import information_coefficient
 
 
-def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
-                  initialization='random', max_iteration=200, seed=SEED, regularizer=0,
-                  randomize_coordinate_order=False):
+def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30, initialization='random',
+                  max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False, filename_prefix=None):
     """
     Perform NMF with k from `ks` and score each NMF result.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
@@ -55,6 +54,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     :param seed: int;
     :param randomize_coordinate_order: bool;
     :param regularizer: int, NMF's alpha
+    :param filename_prefix: str; `filename_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
     """
     nmf_results = {}
@@ -87,11 +87,15 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     else:
         raise ValueError('Unknown method {}.'.format(method))
 
+    if filename_prefix:
+        _save_nmf_results(nmf_results, filename_prefix)
+
     return nmf_results, scores
 
 
 def nmf(matrix, ks,
-        initialization='random', max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False):
+        initialization='random', max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False,
+        filename_prefix=None):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
@@ -101,6 +105,7 @@ def nmf(matrix, ks,
     :param seed: int;
     :param randomize_coordinate_order: bool;
     :param regularizer: int, NMF's alpha
+    :param filename_prefix: str; `filename_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: dict; {k: {W:w, H:h, ERROR:error}}
     """
     nmf_results = {}
@@ -119,7 +124,23 @@ def nmf(matrix, ks,
             h = DataFrame(h, index=[i + 1 for i in range(k)], columns=matrix.columns)
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
+    if filename_prefix:
+        _save_nmf_results(nmf_results, filename_prefix)
+
     return nmf_results
+
+
+def _save_nmf_results(nmf_results, filename_prefix):
+    """
+    Save `nmf_results` dictionary.
+    :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
+    :param filename_prefix: str; `filename_prefix`_k{k}_{w, h}.gct and  will be saved
+    :return: None
+    """
+    establish_path(filename_prefix)
+    for k, v in nmf_results.items():
+        write_gct(v['W'], filename_prefix + '_k{}_w.gct')
+        write_gct(v['H'], filename_prefix + '_k{}_h.gct')
 
 
 def define_states(h, ks, max_std=3, n_clusterings=50, filename_prefix=None):
