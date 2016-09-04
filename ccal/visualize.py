@@ -413,7 +413,7 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
         ref = normalize_pandas_object(ref)
     elif ref_type == 'categorical':
         ref_cmap = CMAP_CATEGORICAL
-        ref_min, ref_max = 0, len(set(features.values))
+        ref_min, ref_max = 0, len(set(ref.values))
     elif ref_type == 'binary':
         ref_cmap = CMAP_BINARY
         ref_min, ref_max = 0, 1

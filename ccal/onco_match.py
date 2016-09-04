@@ -6,10 +6,10 @@ from .visualize import DPI, plot_features_against_reference
 from .analyze import compute_against_reference
 
 
-def match(features, ref, feature_type='continuous', ref_type='continuous',
+def match(features, ref, feature_type='continuous', ref_type='continuous', min_n_feature_values=0,
           feature_ascending=False, ref_ascending=False, ref_sort=True,
           function=information_coefficient, n_features=0.95, n_samplings=30, confidence=0.95,
-          n_perms=30, title=None, title_size=16, annotation_label_size=9, plot_colname=False,
+          n_permutations=30, title=None, title_size=16, annotation_label_size=9, plot_colname=False,
           result_filename=None, figure_filename=None, figure_size='auto', dpi=DPI):
     """
     Compute 'features' vs. `ref`.
@@ -17,6 +17,7 @@ def match(features, ref, feature_type='continuous', ref_type='continuous',
     :param ref: pandas Series; (n_samples); must have name and columns, which must match `features`'s
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param ref_type: str; {'continuous', 'categorical', 'binary'}
+    :param min_n_feature_values: int; minimum number of non-0 values in a feature to be matched
     :param feature_ascending: bool; True if features score increase from top to bottom, and False otherwise
     :param ref_ascending: bool; True if ref values increase from left to right, and False otherwise
     :param ref_sort: bool; sort `ref` or not
@@ -24,7 +25,7 @@ def match(features, ref, feature_type='continuous', ref_type='continuous',
     :param n_features: int or float; number threshold if >= 1 and percentile threshold if < 1
     :param n_samplings: int; number of sampling for confidence interval bootstrapping; must be > 2 to compute CI
     :param confidence: float; confidence interval
-    :param n_perms: int; number of permutations for permutation test
+    :param n_permutations: int; number of permutations for permutation test
     :param title: str; plot title
     :param title_size: int; title text size
     :param annotation_label_size: int; annotation text size
@@ -35,7 +36,7 @@ def match(features, ref, feature_type='continuous', ref_type='continuous',
     :param dpi: int; dots per square inch of pixel in the output figure
     :return: None
     """
-    print_log('Computing features vs. {} using {} ...'.format(ref.name, function))
+    print_log('Matching features against {} ...'.format(ref.name))
 
     # Convert features into pandas DataFrame
     if isinstance(features, Series):
@@ -55,7 +56,10 @@ def match(features, ref, feature_type='continuous', ref_type='continuous',
 
     # Drop rows having all 0 values
     # TODO: add threshold
-    features = features.ix[(features != 0).any(axis=1)]
+    features = features.ix[(features != 0).sum(axis=1) >= min_n_feature_values]
+
+    if features.empty:
+        raise ValueError('No features with at least {} non-0 values.'.format(min_n_feature_values))
 
     # Sort reference
     if ref_sort:
@@ -65,7 +69,7 @@ def match(features, ref, feature_type='continuous', ref_type='continuous',
     # Compute scores
     scores = compute_against_reference(features, ref, function=function,
                                        n_features=n_features, ascending=feature_ascending,
-                                       n_samplings=n_samplings, confidence=confidence, n_perms=n_perms)
+                                       n_samplings=n_samplings, confidence=confidence, n_perms=n_permutations)
     features = features.reindex(scores.index)
 
     if result_filename:
@@ -76,19 +80,19 @@ def match(features, ref, feature_type='continuous', ref_type='continuous',
     annotations = DataFrame(index=features.index)
     for idx, s in features.iterrows():
         if '{} MoE'.format(confidence) in scores.columns:
-            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, function]) \
+            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, 'score']) \
                                                 + '({0:.3f})'.format(scores.ix[idx, '{} MoE'.format(confidence)])
         else:
-            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}(x.xxx)'.format(scores.ix[idx, function])
+            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}(x.xxx)'.format(scores.ix[idx, 'score'])
 
     annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global P-value']]
-    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR (BH)']]
+    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
 
     # Limit features to be plotted
     if n_features < 1:  # Limit using percentile
-        above_quantile = scores.ix[:, function] >= scores.ix[:, function].quantile(n_features)
+        above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
         print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
-        below_quantile = scores.ix[:, function] <= scores.ix[:, function].quantile(1 - n_features)
+        below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
         print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
         indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
     else:  # Limit using numbers

@@ -310,9 +310,9 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     :param n_perms: int; number of permutations for permutation test
     :return: pandas DataFrame (n_features, n_scores),
     """
-    print_log('Computing scores using {} metric and ...'.format(function))
+    print_log('Computing scores using {} ...'.format(function))
     scores = features.apply(lambda r: function(r, ref), axis=1)
-    scores = DataFrame(scores, index=features.index, columns=[function])
+    scores = DataFrame(scores, index=features.index, columns=['score'])
 
     print_log('Bootstrapping to get {} confidence interval ...'.format(confidence))
     n_samples = math.ceil(0.632 * features.shape[1])
@@ -321,9 +321,9 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     else:
         # Limit features to be bootstrapped
         if n_features < 1:  # Limit using percentile
-            above_quantile = scores.ix[:, function] >= scores.ix[:, function].quantile(n_features)
+            above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
             print_log('Bootstrapping {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
-            below_quantile = scores.ix[:, function] <= scores.ix[:, function].quantile(1 - n_features)
+            below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
             print_log('Bootstrapping {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
             indices_to_bootstrap = scores.index[above_quantile | below_quantile].tolist()
         else:  # Limit using numbers
@@ -360,12 +360,12 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     all_permutation_scores = permutation_scores.flatten()
     for i, (idx, f) in enumerate(scores.iterrows()):
         # Compute local p-value
-        local_pval = float(sum(permutation_scores[i, :] > float(f.ix[function])) / n_perms)
+        local_pval = float(sum(permutation_scores[i, :] > float(f.ix['score'])) / n_perms)
         if not local_pval:
             local_pval = float(1 / n_perms)
         permutation_pvals_and_fdrs.ix[idx, 'Local P-value'] = local_pval
         # Compute global p-value
-        global_pval = float(sum(all_permutation_scores > float(f.ix[function])) / (n_perms * features.shape[0]))
+        global_pval = float(sum(all_permutation_scores > float(f.ix['score'])) / (n_perms * features.shape[0]))
         if not global_pval:
             global_pval = float(1 / (n_perms * features.shape[0]))
         permutation_pvals_and_fdrs.ix[idx, 'Global P-value'] = global_pval
@@ -377,4 +377,4 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     # Merge
     scores = merge(scores, permutation_pvals_and_fdrs, left_index=True, right_index=True)
 
-    return scores.sort_values(function, ascending=ascending)
+    return scores.sort_values('score', ascending=ascending)
