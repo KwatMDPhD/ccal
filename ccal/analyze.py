@@ -218,7 +218,9 @@ def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
     :param sample_stretch_factor: str or number; power to raise components' influence on each sample; 'auto' to automate
-    :return: None
+    :return: pandas DataFrame, DataFrame, numpy array, and numpy array;
+             component_coordinates (n_components, [x, y]), samples (n_samples, [x, y, state, annotation]),
+             grid_probabilities (n_grids, n_grids), and grid_states (n_grids, n_grids)
     """
     unique_states = sorted(set(states))
     print_log('Creating Onco-GPS with {} samples, {} components, and {} states {} ...'.format(*reversed(h.shape),
@@ -249,7 +251,7 @@ def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds
         components_coordinates[i, 1] = (y - y_min) / y_range
 
     # Get sample states and compute coordinates
-    samples = DataFrame(index=h.columns, columns=['state', 'x', 'y'])
+    samples = DataFrame(index=h.columns, columns=['x', 'y', 'state'])
     # Get sample states
     samples.ix[:, 'state'] = states
     # Compute sample coordinates
@@ -306,7 +308,7 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     :param n_samplings: int; number of sampling for confidence interval bootstrapping; must be > 2 to compute CI
     :param confidence: float; confidence interval
     :param n_perms: int; number of permutations for permutation test
-    :return: pandas DataFrame (nfeatures, nscores),
+    :return: pandas DataFrame (n_features, n_scores),
     """
     print_log('Computing scores using {} metric and ...'.format(function))
     scores = features.apply(lambda r: function(r, ref), axis=1)
