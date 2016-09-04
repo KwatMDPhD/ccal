@@ -339,9 +339,10 @@ def compute_against_reference(features, ref, function=information_coefficient, n
             sampled_scores.ix[:, c] = sampled_features.apply(lambda r: function(r, sampled_ref), axis=1)
 
         # Get confidence intervals
-        confidence_intervals = DataFrame(index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
         z_critical = stats.norm.ppf(q=confidence)
-        sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)), axis=1)
+        confidence_intervals = sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)), axis=1)
+        confidence_intervals = DataFrame(confidence_intervals,
+                                         index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
 
         # Merge
         scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
