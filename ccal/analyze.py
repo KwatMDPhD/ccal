@@ -205,26 +205,27 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:], memberships
 
 
-def make_onco_gps(h_train, states, std_max=3, h_test=None,
+def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization='a',
                   informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
                   function_to_fit=exponential_function, fit_maxfev=1000,
-                  fit_exponent_min=0, fit_exponent_max=2, stretch_factor_min=1, stretch_factor_max=3,
+                  fit_min=0, fit_max=2, polling_power_min=1, pulling_power_max=3,
                   n_influencing_components='all', component_pulling_power='auto', n_grids=128, kde_bandwidths_factor=1):
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
     :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param h_test_normalization: str; {}
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param mds_n_init: int;
     :param mds_max_iter: int;
     :param function_to_fit: function;
     :param fit_maxfev: int;
-    :param fit_exponent_min: number;
-    :param fit_exponent_max: number;
-    :param stretch_factor_min: number;
-    :param stretch_factor_max: number;
+    :param fit_min: number;
+    :param fit_max: number;
+    :param polling_power_min: number;
+    :param pulling_power_max: number;
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
     :param component_pulling_power: str or number; power to raise components' influence on each sample
     :param n_grids: int;
@@ -239,40 +240,40 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None,
                                                                                              unique_states))
 
     # clip and 0-1 normalize the data
-    normalized_h_train = normalize_pandas_object(normalize_pandas_object(h_train, axis=1).clip(-std_max, std_max),
-                                                 method='0-1', axis=1)
+    training_h = normalize_pandas_object(normalize_pandas_object(h_train, axis=1).clip(-std_max, std_max),
+                                         method='0-1', axis=1)
 
     # Compute component coordinates
-    component_coordinates = _mds(normalized_h_train, informational_mds=informational_mds,
+    component_coordinates = _mds(training_h, informational_mds=informational_mds,
                                  mds_seed=mds_seed, n_init=mds_n_init, max_iter=mds_max_iter, standardize=True)
 
     # Compute component pulling power
     if component_pulling_power == 'auto':
-        fit_parameters = _fit_columns(normalized_h_train, function_to_fit=function_to_fit, maxfev=fit_maxfev)
+        fit_parameters = _fit_columns(training_h, function_to_fit=function_to_fit, maxfev=fit_maxfev)
         print_log('Modeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
         k = fit_parameters[1]
         # Linear transform
-        k_normalized = (k - fit_exponent_min) / (fit_exponent_max - fit_exponent_min)
-        component_pulling_power = k_normalized * (stretch_factor_max - stretch_factor_min) + stretch_factor_min
+        k_normalized = (k - fit_min) / (fit_max - fit_min)
+        component_pulling_power = k_normalized * (pulling_power_max - polling_power_min) + polling_power_min
         print_log('component_pulling_power = {0:.3f}.'.format(component_pulling_power))
 
     # Compute sample coordinates
-    samples = _get_sample_coordinates(component_coordinates, normalized_h_train,
-                                      n_influencing_components=n_influencing_components,
-                                      component_pulling_power=component_pulling_power)
+    training_samples = _get_sample_coordinates(component_coordinates, training_h,
+                                               n_influencing_components=n_influencing_components,
+                                               component_pulling_power=component_pulling_power)
 
     # Load sample states
-    samples.ix[:, 'state'] = states
+    training_samples.ix[:, 'state'] = states
 
     # Compute grid probabilities and states
     grid_probabilities = zeros((n_grids, n_grids))
     grid_states = empty((n_grids, n_grids))
     # Get KDE for each state using bandwidth created from all states' x & y coordinates
     kdes = zeros((len(unique_states) + 1, n_grids, n_grids))
-    bandwidths = asarray([bcv(asarray(samples.ix[:, 'x'].tolist()))[0],
-                          bcv(asarray(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
+    bandwidths = asarray([bcv(asarray(training_samples.ix[:, 'x'].tolist()))[0],
+                          bcv(asarray(training_samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
     for s in unique_states:
-        coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
+        coordinates = training_samples.ix[training_samples.ix[:, 'state'] == s, ['x', 'y']]
         kde = kde2d(asarray(coordinates.ix[:, 'x'], dtype=float), asarray(coordinates.ix[:, 'y'], dtype=float),
                     bandwidths, n=asarray([n_grids]), lims=asarray([0, 1, 0, 1]))
         kdes[s] = asarray(kde[2])
@@ -282,7 +283,23 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None,
             grid_probabilities[i, j] = max(kdes[:, j, i])
             grid_states[i, j] = argmax(kdes[:, i, j])
 
-    return component_coordinates, samples, grid_probabilities, grid_states
+    if h_test:
+        # Normalize testing H
+        if h_test_normalization == 'a':
+            testing_h = h_test
+        elif h_test_normalization == 'b':
+            testing_h = normalize_pandas_object(normalize_pandas_object(h_test, axis=1).clip(-std_max, std_max),
+                                                method='0-1', axis=1)
+        elif h_test_normalization == 'c':
+            testing_h = h_test
+
+        # Compute testing-sample coordinates
+        testing_samples = _get_sample_coordinates(component_coordinates, testing_h,
+                                                  n_influencing_components=n_influencing_components,
+                                                  component_pulling_power=component_pulling_power)
+        return component_coordinates, testing_samples, grid_probabilities, grid_states
+    else:
+        return component_coordinates, training_samples, grid_probabilities, grid_states
 
 
 def _mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):

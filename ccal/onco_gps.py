@@ -1,10 +1,13 @@
-from .support import print_log, SEED
+from .support import SEED, exponential_function
 from .analyze import make_onco_gps
 from .visualize import FIGURE_SIZE, DPI, plot_onco_gps
 
 
-def make_map(h_train, states, h_test=None, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED,
-             kde_bandwidths_factor=1, n_influencing_components='all', sample_stretch_factor='auto',
+def make_map(h_train, states, std_max=3, h_test=None, h_test_normalization='a'
+    informational_mds = True, mds_seed = SEED, mds_n_init = 1000, mds_max_iter = 1000,
+                                                                                 function_to_fit = exponential_function, fit_maxfev = 1000,
+                                                                                                                                      fit_min = 0, fit_max = 2, pulling_power_min = 1, pulling_power_max = 3,
+                                                                                                                                                                                                           n_influencing_components = 'all', component_pulling_power = 'auto', n_grids = 128, kde_bandwidths_factor = 1,
              annotations=(), annotation_name='', annotation_type='continuous',
              title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
              subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
@@ -22,19 +25,26 @@ def make_map(h_train, states, h_test=None, std_max=3, n_grids=128, informational
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: iterable of int; (n_samples); sample states
-    :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param std_max: number; threshold to clip standardized values
-    :param n_grids: int;
+    :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param h_test_normalization: str; {}
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
-    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
+    :param mds_n_init: int;
+    :param mds_max_iter: int;
+    :param function_to_fit: function;
+    :param fit_maxfev: int;
+    :param fit_min: number;
+    :param fit_max: number;
+    :param pulling_power_min: number;
+    :param pulling_power_max: number;
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param sample_stretch_factor: str or number; power to raise components' influence on each sample; 'auto' to automate
+    :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :param n_grids: int;
+    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
-    :param std_max: number; threshold to clip standardized values
-    :param n_grids: int;
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
@@ -70,11 +80,14 @@ def make_map(h_train, states, h_test=None, std_max=3, n_grids=128, informational
     :param dpi: int;
     :return: None
     """
-    cc, s, gp, gs = make_onco_gps(h_train, states, h_test=h_test, std_max=std_max, n_grids=n_grids,
-                                  informational_mds=informational_mds, mds_seed=mds_seed,
-                                  kde_bandwidths_factor=kde_bandwidths_factor,
-                                  n_influencing_components=n_influencing_components,
-                                  component_pulling_power=sample_stretch_factor)
+cc, s, gp, gs = make_onco_gps(h_train, states, std_max=std_max, h_test=h_test,
+                              informational_mds=informational_mds, mds_seed=mds_seed,
+                              mds_n_init=mds_n_init, mds_max_iter=mds_max_iter, function_to_fit=function_to_fit,
+                              fit_maxfev=fit_maxfev, fit_min=fit_min, fit_max=fit_max,
+                              polling_power_min=pulling_power_min, pulling_power_max=pulling_power_max,
+                              n_influencing_components=n_influencing_components,
+                              component_pulling_power=component_pulling_power,
+                              n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
     plot_onco_gps(cc, s, gp, gs,
                   annotations=annotations, annotation_name=annotation_name, annotation_type=annotation_type,
                   std_max=std_max,
