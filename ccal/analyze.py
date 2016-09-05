@@ -205,21 +205,30 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:], memberships
 
 
-def make_onco_gps(h_train, states, h_test=None, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED,
-                  kde_bandwidths_factor=1, n_influencing_components='all', component_pulling_power='auto',
-                  mds_n_init=1000, mds_max_iter=1000,
-                  fit_exponent_min=0, fit_exponent_max=2, stretch_factor_min=1, stretch_factor_max=3):
+def make_onco_gps(h_train, states, std_max=3, h_test=None,
+                  informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
+                  function_to_fit=exponential_function, fit_maxfev=1000,
+                  fit_exponent_min=0, fit_exponent_max=2, stretch_factor_min=1, stretch_factor_max=3,
+                  n_influencing_components='all', component_pulling_power='auto', n_grids=128, kde_bandwidths_factor=1):
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
     :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param n_grids: int;
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
-    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
+    :param mds_n_init: int;
+    :param mds_max_iter: int;
+    :param function_to_fit: function;
+    :param fit_maxfev: int;
+    :param fit_exponent_min: number;
+    :param fit_exponent_max: number;
+    :param stretch_factor_min: number;
+    :param stretch_factor_max: number;
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
     :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :param n_grids: int;
+    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :return: pandas DataFrame, DataFrame, numpy array, and numpy array;
              component_coordinates (n_components, [x, y]), samples (n_samples, [x, y, state, annotation]),
              grid_probabilities (n_grids, n_grids), and grid_states (n_grids, n_grids)
@@ -239,7 +248,7 @@ def make_onco_gps(h_train, states, h_test=None, std_max=3, n_grids=128, informat
 
     # Compute component pulling power
     if component_pulling_power == 'auto':
-        fit_parameters = _fit_columns(normalized_h_train)
+        fit_parameters = _fit_columns(normalized_h_train, function_to_fit=function_to_fit, maxfev=fit_maxfev)
         print_log('Modeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
         k = fit_parameters[1]
         # Linear transform
@@ -282,6 +291,9 @@ def _mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter
     :param dataframe: pandas DataFrame; (n_points, n_dimentions)
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :param n_init: int;
+    :param max_iter: int;
+    :param standardize: bool;
     :return: pandas DataFrame; (n_points, [x, y])
     """
     if informational_mds:
@@ -301,8 +313,10 @@ def _mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter
 
 def _fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
     """
+    Fit columsn of `dataframe` to `function_to_fit`.
     :param dataframe: pandas DataFrame;
     :param function_to_fit: function;
+    :param maxfev: int;
     :return: list; fit parameters
     """
     x = array(range(dataframe.shape[0]))
@@ -314,6 +328,7 @@ def _fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
 def _get_sample_coordinates(component_x_coordinates, component_x_samples,
                             n_influencing_components='all', component_pulling_power=1):
     """
+    Compute sample coordinates based on component coordinates, which pull samples.
     :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
     :param component_x_samples: pandas DataFrame; (n_points, n_samples)
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
