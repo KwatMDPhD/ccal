@@ -3,11 +3,11 @@ from .analyze import make_onco_gps
 from .visualize import FIGURE_SIZE, DPI, plot_onco_gps
 
 
-def make_map(h_train, states, std_max=3, h_test=None, h_test_normalization='a'
-    informational_mds = True, mds_seed = SEED, mds_n_init = 1000, mds_max_iter = 1000,
-                                                                                 function_to_fit = exponential_function, fit_maxfev = 1000,
-                                                                                                                                      fit_min = 0, fit_max = 2, pulling_power_min = 1, pulling_power_max = 3,
-                                                                                                                                                                                                           n_influencing_components = 'all', component_pulling_power = 'auto', n_grids = 128, kde_bandwidths_factor = 1,
+def make_map(h_train, states, std_max=3, h_test=None, h_test_normalization='a',
+             informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
+             function_to_fit=exponential_function, fit_maxfev=1000,
+             fit_min=0, fit_max=2, pulling_power_min=1, pulling_power_max=3,
+             n_influencing_components='all', component_pulling_power='auto', n_grids=128, kde_bandwidths_factor=1,
              annotations=(), annotation_name='', annotation_type='continuous',
              title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
              subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
@@ -80,14 +80,15 @@ def make_map(h_train, states, std_max=3, h_test=None, h_test_normalization='a'
     :param dpi: int;
     :return: None
     """
-cc, s, gp, gs = make_onco_gps(h_train, states, std_max=std_max, h_test=h_test,
-                              informational_mds=informational_mds, mds_seed=mds_seed,
-                              mds_n_init=mds_n_init, mds_max_iter=mds_max_iter, function_to_fit=function_to_fit,
-                              fit_maxfev=fit_maxfev, fit_min=fit_min, fit_max=fit_max,
-                              polling_power_min=pulling_power_min, pulling_power_max=pulling_power_max,
-                              n_influencing_components=n_influencing_components,
-                              component_pulling_power=component_pulling_power,
-                              n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
+    cc, s, gp, gs = make_onco_gps(h_train, states, std_max=std_max,
+                                  h_test=h_test, h_test_normalization=h_test_normalization,
+                                  informational_mds=informational_mds, mds_seed=mds_seed,
+                                  mds_n_init=mds_n_init, mds_max_iter=mds_max_iter, function_to_fit=function_to_fit,
+                                  fit_maxfev=fit_maxfev, fit_min=fit_min, fit_max=fit_max,
+                                  polling_power_min=pulling_power_min, pulling_power_max=pulling_power_max,
+                                  n_influencing_components=n_influencing_components,
+                                  component_pulling_power=component_pulling_power,
+                                  n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
     plot_onco_gps(cc, s, gp, gs,
                   annotations=annotations, annotation_name=annotation_name, annotation_type=annotation_type,
                   std_max=std_max,
