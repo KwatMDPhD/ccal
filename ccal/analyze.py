@@ -205,68 +205,55 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:], memberships
 
 
-def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED, kde_bandwidths_factor=1,
-                  n_influencing_components='all', sample_stretch_factor='auto'):
+def make_onco_gps(h_train, states, h_test=None, std_max=3, n_grids=128, informational_mds=True, mds_seed=SEED,
+                  kde_bandwidths_factor=1, n_influencing_components='all', component_pulling_power='auto',
+                  mds_n_init=1000, mds_max_iter=1000,
+                  fit_exponent_min=0, fit_exponent_max=2, stretch_factor_min=1, stretch_factor_max=3):
     """
-    :param h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
+    :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param n_grids: int;
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param sample_stretch_factor: str or number; power to raise components' influence on each sample; 'auto' to automate
+    :param component_pulling_power: str or number; power to raise components' influence on each sample
     :return: pandas DataFrame, DataFrame, numpy array, and numpy array;
              component_coordinates (n_components, [x, y]), samples (n_samples, [x, y, state, annotation]),
              grid_probabilities (n_grids, n_grids), and grid_states (n_grids, n_grids)
     """
     unique_states = sorted(set(states))
-    print_log('Creating Onco-GPS with {} samples, {} components, and {} states {} ...'.format(*reversed(h.shape),
-                                                                                              len(unique_states),
-                                                                                              unique_states))
+    print_log('Making Onco-GPS with {} components, {} samples, and {} states: {} ...'.format(*h_train.shape,
+                                                                                             len(unique_states),
+                                                                                             unique_states))
+
+    # clip and 0-1 normalize the data
+    normalized_h_train = normalize_pandas_object(normalize_pandas_object(h_train, axis=1).clip(-std_max, std_max),
+                                                 method='0-1', axis=1)
 
     # Compute component coordinates
-    # Standardize H and clip values with extreme standard deviation
-    normalized_clipped_h = normalize_pandas_object(normalize_pandas_object(h, axis=1).clip(-std_max, std_max),
-                                                   method='0-1', axis=1)
-    # Project the H's components from <n_sample>D to 2D
-    if informational_mds:
-        mds = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=1000, max_iter=1000)
-        components_coordinates = mds.fit_transform(compare_matrices(normalized_clipped_h, normalized_clipped_h,
-                                                                    information_coefficient, is_distance=True,
-                                                                    axis=1))
-    else:
-        mds = MDS(random_state=mds_seed, n_init=1000, max_iter=1000)
-        components_coordinates = mds.fit_transform(normalized_clipped_h)
-    components_coordinates = DataFrame(components_coordinates, index=h.index, columns=['x', 'y'])
-    # 0-1 normalize the coordinates
-    components_coordinates = normalize_pandas_object(components_coordinates, method='0-1', axis=0)
+    component_coordinates = _mds(normalized_h_train, informational_mds=informational_mds,
+                                 mds_seed=mds_seed, n_init=mds_n_init, max_iter=mds_max_iter, standardize=True)
 
-    # Get sample states and compute coordinates
-    samples = DataFrame(index=h.columns, columns=['x', 'y', 'state'])
-    # Get sample states
-    samples.ix[:, 'state'] = states
+    # Compute component pulling power
+    if component_pulling_power == 'auto':
+        fit_parameters = _fit_columns(normalized_h_train)
+        print_log('Modeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
+        k = fit_parameters[1]
+        # Linear transform
+        k_normalized = (k - fit_exponent_min) / (fit_exponent_max - fit_exponent_min)
+        component_pulling_power = k_normalized * (stretch_factor_max - stretch_factor_min) + stretch_factor_min
+        print_log('component_pulling_power = {0:.3f}.'.format(component_pulling_power))
+
     # Compute sample coordinates
-    if sample_stretch_factor == 'auto':
-        print_log('Computing the sample_stretch_factor ...')
-        x = array(range(normalized_clipped_h.shape[0]))
-        y = asarray(normalized_clipped_h.apply(sorted).apply(sum, axis=1)) / normalized_clipped_h.shape[1]
-        a, k, c = curve_fit(exponential_function, x, y, maxfev=1000)[0]
-        print_log('\tModeled H columns by {}e^({}x) + {}.'.format(a, k, c))
-        k_min, k_max = 0, 2
-        stretch_factor_min, stretch_factor_max = 1, 3
-        k_normalized = (k - k_min) / (k_max - k_min)
-        sample_stretch_factor = k_normalized * (stretch_factor_max - stretch_factor_min) + stretch_factor_min
-        print_log('\tsample_stretch_factor = {0:.3f}.'.format(sample_stretch_factor))
-    for sample in samples.index:
-        col = h.ix[:, sample]
-        if n_influencing_components == 'all':
-            n_influencing_components = h.shape[0]
-        col = col.mask(col < col.sort_values()[-n_influencing_components], other=0)
-        x = sum(col ** sample_stretch_factor * components_coordinates.ix[:, 'x']) / sum(col ** sample_stretch_factor)
-        y = sum(col ** sample_stretch_factor * components_coordinates.ix[:, 'y']) / sum(col ** sample_stretch_factor)
-        samples.ix[sample, ['x', 'y']] = x, y
+    samples = _get_sample_coordinates(component_coordinates, normalized_h_train,
+                                      n_influencing_components=n_influencing_components,
+                                      component_pulling_power=component_pulling_power)
+
+    # Load sample states
+    samples.ix[:, 'state'] = states
 
     # Compute grid probabilities and states
     grid_probabilities = zeros((n_grids, n_grids))
@@ -286,7 +273,63 @@ def make_onco_gps(h, states, std_max=3, n_grids=128, informational_mds=True, mds
             grid_probabilities[i, j] = max(kdes[:, j, i])
             grid_states[i, j] = argmax(kdes[:, i, j])
 
-    return components_coordinates, samples, grid_probabilities, grid_states
+    return component_coordinates, samples, grid_probabilities, grid_states
+
+
+def _mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
+    """
+    Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.
+    :param dataframe: pandas DataFrame; (n_points, n_dimentions)
+    :param informational_mds: bool; use informational MDS or not
+    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :return: pandas DataFrame; (n_points, [x, y])
+    """
+    if informational_mds:
+        mds = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
+        coordinates = mds.fit_transform(
+            compare_matrices(dataframe, dataframe, information_coefficient, is_distance=True, axis=1))
+    else:
+        mds = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
+        coordinates = mds.fit_transform(dataframe)
+    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
+
+    if standardize:
+        coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
+
+    return coordinates
+
+
+def _fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
+    """
+    :param dataframe: pandas DataFrame;
+    :param function_to_fit: function;
+    :return: list; fit parameters
+    """
+    x = array(range(dataframe.shape[0]))
+    y = asarray(dataframe.apply(sorted).apply(sum, axis=1)) / dataframe.shape[1]
+    fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
+    return fit_parameters
+
+
+def _get_sample_coordinates(component_x_coordinates, component_x_samples,
+                            n_influencing_components='all', component_pulling_power=1):
+    """
+    :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
+    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
+    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :return: pandas DataFrame; (n_samples, [x, y])
+    """
+    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
+    for sample in sample_coordinates.index:
+        c = component_x_samples.ix[:, sample]
+        if n_influencing_components == 'all':
+            n_influencing_components = component_x_samples.shape[0]
+        c = c.mask(c < c.sort_values()[-n_influencing_components], other=0)
+        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(c ** component_pulling_power)
+        y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
+        sample_coordinates.ix[sample, ['x', 'y']] = x, y
+    return sample_coordinates
 
 
 def compute_against_reference(features, ref, function=information_coefficient, n_features=0.95, ascending=False,
