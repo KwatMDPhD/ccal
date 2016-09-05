@@ -20,19 +20,17 @@ from numpy import asarray, array, zeros, empty, argmax
 from numpy.random import choice, shuffle
 from pandas import DataFrame, merge
 import scipy.stats as stats
-from scipy.optimize import curve_fit
 from scipy.cluster.hierarchy import linkage, fcluster, cophenet
 from scipy.spatial.distance import pdist
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import NMF
-from sklearn.manifold import MDS
 from statsmodels.sandbox.stats.multicomp import multipletests
 import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
 from rpy2.robjects.numpy2ri import numpy2ri
 
 from .support import SEED, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices, \
-    consensus_cluster, exponential_function
+    consensus_cluster, mds, fit_columns, exponential_function, get_sample_coordinates_via_pulling
 from .information import information_coefficient
 
 ro.conversion.py2ri = numpy2ri
@@ -244,12 +242,12 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
                                          method='0-1', axis=1)
 
     # Compute component coordinates
-    component_coordinates = _mds(training_h, informational_mds=informational_mds,
-                                 mds_seed=mds_seed, n_init=mds_n_init, max_iter=mds_max_iter, standardize=True)
+    component_coordinates = mds(training_h, informational_mds=informational_mds,
+                                mds_seed=mds_seed, n_init=mds_n_init, max_iter=mds_max_iter, standardize=True)
 
     # Compute component pulling power
     if component_pulling_power == 'auto':
-        fit_parameters = _fit_columns(training_h, function_to_fit=function_to_fit, maxfev=fit_maxfev)
+        fit_parameters = fit_columns(training_h, function_to_fit=function_to_fit, maxfev=fit_maxfev)
         print_log('Modeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
         k = fit_parameters[1]
         # Linear transform
@@ -258,9 +256,9 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
         print_log('component_pulling_power = {0:.3f}.'.format(component_pulling_power))
 
     # Compute sample coordinates
-    training_samples = _get_sample_coordinates(component_coordinates, training_h,
-                                               n_influencing_components=n_influencing_components,
-                                               component_pulling_power=component_pulling_power)
+    training_samples = get_sample_coordinates_via_pulling(component_coordinates, training_h,
+                                                          n_influencing_components=n_influencing_components,
+                                                          component_pulling_power=component_pulling_power)
 
     # Load sample states
     training_samples.ix[:, 'state'] = states
@@ -292,76 +290,16 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
                                                 method='0-1', axis=1)
         elif h_test_normalization == 'c':
             testing_h = h_test
+        else:
+            raise ValueError('Unknown normalization method for testing H {}.'.format(h_test_normalization))
 
         # Compute testing-sample coordinates
-        testing_samples = _get_sample_coordinates(component_coordinates, testing_h,
-                                                  n_influencing_components=n_influencing_components,
-                                                  component_pulling_power=component_pulling_power)
+        testing_samples = get_sample_coordinates_via_pulling(component_coordinates, testing_h,
+                                                             n_influencing_components=n_influencing_components,
+                                                             component_pulling_power=component_pulling_power)
         return component_coordinates, testing_samples, grid_probabilities, grid_states
     else:
         return component_coordinates, training_samples, grid_probabilities, grid_states
-
-
-def _mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
-    """
-    Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.
-    :param dataframe: pandas DataFrame; (n_points, n_dimentions)
-    :param informational_mds: bool; use informational MDS or not
-    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
-    :param n_init: int;
-    :param max_iter: int;
-    :param standardize: bool;
-    :return: pandas DataFrame; (n_points, [x, y])
-    """
-    if informational_mds:
-        mds = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds.fit_transform(
-            compare_matrices(dataframe, dataframe, information_coefficient, is_distance=True, axis=1))
-    else:
-        mds = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds.fit_transform(dataframe)
-    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
-
-    if standardize:
-        coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
-
-    return coordinates
-
-
-def _fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
-    """
-    Fit columsn of `dataframe` to `function_to_fit`.
-    :param dataframe: pandas DataFrame;
-    :param function_to_fit: function;
-    :param maxfev: int;
-    :return: list; fit parameters
-    """
-    x = array(range(dataframe.shape[0]))
-    y = asarray(dataframe.apply(sorted).apply(sum, axis=1)) / dataframe.shape[1]
-    fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
-    return fit_parameters
-
-
-def _get_sample_coordinates(component_x_coordinates, component_x_samples,
-                            n_influencing_components='all', component_pulling_power=1):
-    """
-    Compute sample coordinates based on component coordinates, which pull samples.
-    :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
-    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
-    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param component_pulling_power: str or number; power to raise components' influence on each sample
-    :return: pandas DataFrame; (n_samples, [x, y])
-    """
-    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
-    for sample in sample_coordinates.index:
-        c = component_x_samples.ix[:, sample]
-        if n_influencing_components == 'all':
-            n_influencing_components = component_x_samples.shape[0]
-        c = c.mask(c < c.sort_values()[-n_influencing_components], other=0)
-        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(c ** component_pulling_power)
-        y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
-        sample_coordinates.ix[sample, ['x', 'y']] = x, y
-    return sample_coordinates
 
 
 def compute_against_reference(features, ref, function=information_coefficient, n_features=0.95, ascending=False,

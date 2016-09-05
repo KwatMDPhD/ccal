@@ -14,9 +14,11 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import zeros, ones, isnan, exp
+from numpy import array, asarray, zeros, ones, isnan, exp
 from numpy.random import random_integers, random_sample
 from pandas import DataFrame, Series, read_csv
+from scipy.optimize import curve_fit
+from sklearn.manifold import MDS
 
 # ======================================================================================================================
 # Parameters
@@ -301,3 +303,66 @@ def consensus_cluster(clustering_labels):
                     consensus_clusterings[i, j] += 1
     # Return normalized consensus clustering
     return consensus_clusterings / n_rows
+
+
+def mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
+    """
+    Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.
+    :param dataframe: pandas DataFrame; (n_points, n_dimentions)
+    :param informational_mds: bool; use informational MDS or not
+    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :param n_init: int;
+    :param max_iter: int;
+    :param standardize: bool;
+    :return: pandas DataFrame; (n_points, [x, y])
+    """
+    if informational_mds:
+        from .information import information_coefficient
+        mds_obj = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
+        coordinates = mds_obj.fit_transform(
+            compare_matrices(dataframe, dataframe, information_coefficient, is_distance=True, axis=1))
+    else:
+        mds_obj = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
+        coordinates = mds_obj.fit_transform(dataframe)
+    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
+
+    if standardize:
+        coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
+
+    return coordinates
+
+
+def fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
+    """
+    Fit columsn of `dataframe` to `function_to_fit`.
+    :param dataframe: pandas DataFrame;
+    :param function_to_fit: function;
+    :param maxfev: int;
+    :return: list; fit parameters
+    """
+    x = array(range(dataframe.shape[0]))
+    y = asarray(dataframe.apply(sorted).apply(sum, axis=1)) / dataframe.shape[1]
+    fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
+    return fit_parameters
+
+
+def get_sample_coordinates_via_pulling(component_x_coordinates, component_x_samples,
+                                       n_influencing_components='all', component_pulling_power=1):
+    """
+    Compute sample coordinates based on component coordinates, which pull samples.
+    :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
+    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
+    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :return: pandas DataFrame; (n_samples, [x, y])
+    """
+    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
+    for sample in sample_coordinates.index:
+        c = component_x_samples.ix[:, sample]
+        if n_influencing_components == 'all':
+            n_influencing_components = component_x_samples.shape[0]
+        c = c.mask(c < c.sort_values()[-n_influencing_components], other=0)
+        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(c ** component_pulling_power)
+        y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
+        sample_coordinates.ix[sample, ['x', 'y']] = x, y
+    return sample_coordinates
