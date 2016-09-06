@@ -22,9 +22,9 @@ from scipy.spatial import Delaunay, ConvexHull
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, ListedColormap
 from matplotlib.cm import bwr, Paired
-from matplotlib.colorbar import make_axes, ColorbarBase
+from matplotlib.colorbar import make_axes, ColorbarBase 
 from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
 
 from .support import print_log, establish_path, get_unique_in_order, normalize_pandas_object
@@ -33,6 +33,35 @@ from .support import print_log, establish_path, get_unique_in_order, normalize_p
 # Parameters
 # ======================================================================================================================
 # Color maps
+onco_colors_all = ['#E52339',
+ '#4682B4',
+ '#BAFF51',
+ '#614C82',
+ '#FF8C00',
+ '#FFFF00',
+ '#DB7093',
+ '#B0E0E6',
+ '#09DCFF',
+ '#5F9EA0',
+ '#008000',
+ '#A479E7',
+ '#FFC0CB',
+ '#FFFFCC',
+ '#EF97EA',
+ '#DFCBFF',
+ '#FF00FF',
+ '#FB5200',
+ '#FFD700',
+ '#FF0000',
+ '#FF7F50',
+ '#8B0000',
+ '#6B8E23',
+ '#5F51FF',
+ '#B27E3C',
+ '#644824',
+ '#A0522D']
+onco_color_map = ListedColormap(onco_colors_all)
+
 BAD_COLOR = 'wheat'
 CMAP_CONTINUOUS = bwr
 CMAP_CONTINUOUS.set_bad(BAD_COLOR)
