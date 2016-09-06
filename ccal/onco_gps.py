@@ -3,7 +3,7 @@ from .analyze import make_onco_gps
 from .visualize import FIGURE_SIZE, DPI, plot_onco_gps
 
 
-def make_map(h_train, states, std_max=3, h_test=None, h_test_normalization='a',
+def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='a', states_test=None,
              informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
              function_to_fit=exponential_function, fit_maxfev=1000,
              fit_min=0, fit_max=2, pulling_power_min=1, pulling_power_max=3,
@@ -24,10 +24,11 @@ def make_map(h_train, states, std_max=3, h_test=None, h_test_normalization='a',
              output_filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param states: iterable of int; (n_samples); sample states
+    :param states_train: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
     :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param h_test_normalization: str; {}
+    :param states_test: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param mds_n_init: int;
@@ -80,8 +81,8 @@ def make_map(h_train, states, std_max=3, h_test=None, h_test_normalization='a',
     :param dpi: int;
     :return: None
     """
-    cc, s, gp, gs = make_onco_gps(h_train, states, std_max=std_max,
-                                  h_test=h_test, h_test_normalization=h_test_normalization,
+    cc, s, gp, gs = make_onco_gps(h_train, states_train, std_max=std_max,
+                                  h_test=h_test, h_test_normalization=h_test_normalization, states_test=states_test,
                                   informational_mds=informational_mds, mds_seed=mds_seed,
                                   mds_n_init=mds_n_init, mds_max_iter=mds_max_iter, function_to_fit=function_to_fit,
                                   fit_maxfev=fit_maxfev, fit_min=fit_min, fit_max=fit_max,

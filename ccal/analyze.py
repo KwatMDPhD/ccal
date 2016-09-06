@@ -203,17 +203,19 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:], memberships
 
 
-def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization='a',
+def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normalization='a', states_test=None,
                   informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
                   function_to_fit=exponential_function, fit_maxfev=1000,
                   fit_min=0, fit_max=2, polling_power_min=1, pulling_power_max=3,
                   n_influencing_components='all', component_pulling_power='auto', n_grids=128, kde_bandwidths_factor=1):
     """
+    Compute component and sample coordinates. And compute grid probabilities and states.
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param states: iterable of int; (n_samples); sample states
+    :param states_train: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
     :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param h_test_normalization: str; {}
+    :param states_test: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param mds_n_init: int;
@@ -232,7 +234,7 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
              component_coordinates (n_components, [x, y]), samples (n_samples, [x, y, state, annotation]),
              grid_probabilities (n_grids, n_grids), and grid_states (n_grids, n_grids)
     """
-    unique_states = sorted(set(states))
+    unique_states = sorted(set(states_train))
     print_log('Making Onco-GPS with {} components, {} samples, and {} states: {} ...'.format(*h_train.shape,
                                                                                              len(unique_states),
                                                                                              unique_states))
@@ -261,7 +263,7 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
                                                           component_pulling_power=component_pulling_power)
 
     # Load sample states
-    training_samples.ix[:, 'state'] = states
+    training_samples.ix[:, 'state'] = states_train
 
     # Compute grid probabilities and states
     grid_probabilities = zeros((n_grids, n_grids))
@@ -281,7 +283,8 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
             grid_probabilities[i, j] = max(kdes[:, j, i])
             grid_states[i, j] = argmax(kdes[:, i, j])
 
-    if h_test:
+    if isinstance(h_test, DataFrame):
+        print_log('Using samples from testing H matrix ...')
         # Normalize testing H
         if h_test_normalization == 'a':
             testing_h = h_test
@@ -297,6 +300,7 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
         testing_samples = get_sample_coordinates_via_pulling(component_coordinates, testing_h,
                                                              n_influencing_components=n_influencing_components,
                                                              component_pulling_power=component_pulling_power)
+        testing_samples.ix[:, 'state'] = states_test
         return component_coordinates, testing_samples, grid_probabilities, grid_states
     else:
         return component_coordinates, training_samples, grid_probabilities, grid_states
