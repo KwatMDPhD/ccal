@@ -282,7 +282,8 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
             grid_probabilities[i, j] = max(kdes[:, j, i])
             grid_states[i, j] = argmax(kdes[:, i, j])
 
-    if h_test:
+    if isinstance(h_test, DataFrame):
+        print_log('Using samples from testing H matrix ...')
         # Normalize testing H
         if h_test_normalization == 'a':
             testing_h = h_test
@@ -298,6 +299,7 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
         testing_samples = get_sample_coordinates_via_pulling(component_coordinates, testing_h,
                                                              n_influencing_components=n_influencing_components,
                                                              component_pulling_power=component_pulling_power)
+        testing_samples.ix[:, 'state'] = states
         return component_coordinates, testing_samples, grid_probabilities, grid_states
     else:
         return component_coordinates, training_samples, grid_probabilities, grid_states
