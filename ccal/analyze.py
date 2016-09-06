@@ -209,6 +209,7 @@ def make_onco_gps(h_train, states, std_max=3, h_test=None, h_test_normalization=
                   fit_min=0, fit_max=2, polling_power_min=1, pulling_power_max=3,
                   n_influencing_components='all', component_pulling_power='auto', n_grids=128, kde_bandwidths_factor=1):
     """
+    Compute component and sample coordinates. And compute grid probabilities and states.
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
