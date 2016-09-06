@@ -249,7 +249,6 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     # Assign colors to states
     states_color = {}
     for s in unique_states:
-        print(s)
         states_color[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
 
     # Plot background
