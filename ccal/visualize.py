@@ -362,7 +362,6 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         ax_legend.axvline(annotation_min, color='#000000', ls='-', alpha=0.16, aa=True)
         ax_legend.axvline(annotation_mean, color='#000000', ls='-', alpha=0.39, aa=True)
         ax_legend.axvline(annotation_max, color='#000000', ls='-', alpha=0.16, aa=True)
-        ax_legend.set_xticks([annotation_min, annotation_mean, annotation_max])
         ax_legend.set_xlabel('')
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
