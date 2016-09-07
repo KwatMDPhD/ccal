@@ -298,6 +298,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                 if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
                     ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_mask_markersize,
                                 markerfacecolor='w', aa=True, zorder=3)
+
     if any(annotations):  # Plot samples, annotations, sample legends, and annotation legends
         # Set up annotations
         a = Series(annotations)
@@ -366,12 +367,12 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
         ax_legend.set_yticklabels(
-            ['State {} (n={})'.format(s, sum(array(sample_states) == s)) for s in background_states],
+            ['State {} (n={})'.format(int(s), sum(array(sample_states) == s)) for s in background_states],
             fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
 
         # Plot annotation legends
-        if annotation_type == 'continuous' and annotation_min < annotation_max:
+        if annotation_type == 'continuous':
             cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16,
                                 cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                                 ticks=[annotation_min, annotation_mean, annotation_max])

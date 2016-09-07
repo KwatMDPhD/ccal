@@ -231,30 +231,58 @@ def normalize_pandas_object(pandas_object, method='-0-', axis='all'):
     """
     obj = pandas_object.copy()
     print_log('\'{}\' normalizing pandas object with axis={} ...'.format(method, axis))
-    if method == '-0-':
-        if isinstance(obj, DataFrame):
+    if isinstance(obj, DataFrame):
+        if method == '-0-':
             if axis == 'all':
                 obj_mean = obj.values.mean()
                 obj_std = obj.values.std()
-                obj = obj.applymap(lambda v: (v - obj_mean) / obj_std)
+                if obj_std == 0:
+                    print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
+                    obj = obj / obj.size
+                else:
+                    obj = obj.applymap(lambda v: (v - obj_mean) / obj_std)
             else:
                 obj = obj.apply(lambda r: (r - r.mean()) / r.std(), axis=axis)
-        elif isinstance(obj, Series):
-            obj = (obj - obj.mean()) / obj.std()
-    elif method == '0-1':
-        if isinstance(obj, DataFrame):
+        elif method == '0-1':
             if axis == 'all':
                 obj_min = obj.values.min()
                 obj_max = obj.values.max()
                 obj_range = obj_max - obj_min
-                obj = obj.applymap(lambda v: (v - obj_min) / obj_range)
+                if obj_range == 0:
+                    print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
+                    obj = obj / obj.size
+                else:
+                    obj = obj.applymap(lambda v: (v - obj_min) / obj_range)
             else:
                 obj = obj.apply(lambda r: (r - r.min()) / (r.max() - r.min()), axis=axis)
-        elif isinstance(obj, Series):
-            obj = (obj - obj.min()) / (obj.max() - obj.min())
-    else:
-        raise ValueError('\'method\' is not either of {\'-0-\', \'0-1\'}')
+    elif isinstance(obj, Series):
+        obj = normalize_series(obj, method=method)
     return obj
+
+
+def normalize_series(series, method='-0-'):
+    """
+     Normalize a pandas `series`.
+    :param series: pandas Series;
+    :param method: str; normalization type; {'-0-', '0-1'}
+    :return: pandas Series;
+    """
+    if method == '-0-':
+        mean = series.mean()
+        std = series.std()
+        if std == 0:
+            print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
+            return series / series.size
+        else:
+            return (series - mean) / std
+    elif method == '0-1':
+        smin = series.min()
+        smax = series.max()
+        if smax - smin == 0:
+            print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
+            return series / series.size
+        else:
+            return (series - smin) / (smax - smin)
 
 
 def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
