@@ -16,9 +16,11 @@ Laboratory of Jill Mesirov
 """
 import math
 
-from numpy import asarray, array, zeros, empty, argmax
+from numpy import asarray, array, zeros, empty, argmax, dot
 from numpy.random import choice, shuffle
+from numpy.linalg import pinv
 from pandas import DataFrame, merge
+from scipy.optimize import nnls
 import scipy.stats as stats
 from scipy.cluster.hierarchy import linkage, fcluster, cophenet
 from scipy.spatial.distance import pdist
@@ -126,6 +128,28 @@ def nmf(matrix, ks,
         _save_nmf_results(nmf_results, filepath_prefix)
 
     return nmf_results
+
+
+def nnls_matrix(a, b, method='nnls'):
+    """
+    Solve `a`x = `b`. (n, k) * (k, m) = (n, m)
+    :param a: numpy array; (n, k)
+    :param b: numpy array; (n, m)
+    :param method: str; {'nnls', 'pinv'}
+    :return: numpy array; (k, m)
+    """
+    if method == 'nnls':
+        x = DataFrame(index=a.columns, columns=b.columns)
+        for i in range(b.shape[1]):
+            x.iloc[:, i] = nnls(a, b.iloc[:, i])[0]
+    elif method == 'pinv':
+        a_pinv = pinv(a)
+        x = dot(a_pinv, b)
+        x[x < 0] = 0
+        x = DataFrame(x, index=a.columns, columns=b.columns)
+    else:
+        raise ValueError('Unknown method {}. Choose from [\'nnls\', \'pinv\']'.format(method))
+    return x
 
 
 def _save_nmf_results(nmf_results, filepath_prefix):
