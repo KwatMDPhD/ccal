@@ -209,8 +209,8 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     :param dpi: int;
     :return: None
     """
-    states = samples.ix[:, 'state']
-    unique_states = sorted(set(states))
+    sample_states = samples.ix[:, 'state']
+    background_states = unique(grid_states)
 
     x_grids = linspace(0, 1, grid_probabilities.shape[0])
     y_grids = linspace(0, 1, grid_probabilities.shape[1])
@@ -235,7 +235,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
     ax_title.text(0, 0.39,
                   '{} samples, {} components, and {} states'.format(samples.shape[0], component_coordinates.shape[0],
-                                                                    len(unique_states)),
+                                                                    len(background_states)),
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
 
     # Plot components and their labels
@@ -275,8 +275,8 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
 
     # Assign colors to states
     states_color = {}
-    for s in unique_states:
-        states_color[s] = CMAP_CATEGORICAL(int(s / len(unique_states) * CMAP_CATEGORICAL.N))
+    for s in background_states:
+        states_color[s] = CMAP_CATEGORICAL(int(s / len(background_states) * CMAP_CATEGORICAL.N))
 
     # Plot background
     if background_markersize > 0:
@@ -298,7 +298,6 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                 if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
                     ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_mask_markersize,
                                 markerfacecolor='w', aa=True, zorder=3)
-
     if any(annotations):  # Plot samples, annotations, sample legends, and annotation legends
         # Set up annotations
         a = Series(annotations)
@@ -344,16 +343,16 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
                             fontsize=legend_fontsize * 1.26, weight='bold')
         if effectplot_type == 'violine':
-            violinplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, scale='count', inner=None,
+            violinplot(x=samples.ix[:, 'annotation'], y=sample_states, palette=states_color, scale='count', inner=None,
                        orient='h', ax=ax_legend, clip_on=False)
-            boxplot(x=samples.ix[:, 'annotation'], y=states, showbox=False, showmeans=True,
+            boxplot(x=samples.ix[:, 'annotation'], y=sample_states, showbox=False, showmeans=True,
                     medianprops={'marker': 'o',
                                  'markerfacecolor': effectplot_mean_markerfacecolor,
                                  'markeredgewidth': 0.9,
                                  'markeredgecolor': effectplot_mean_markeredgecolor},
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         elif effectplot_type == 'box':
-            boxplot(x=samples.ix[:, 'annotation'], y=states, palette=states_color, showmeans=True,
+            boxplot(x=samples.ix[:, 'annotation'], y=sample_states, palette=states_color, showmeans=True,
                     medianpops={'marker': 'o',
                                 'markerfacecolor': effectplot_mean_markerfacecolor,
                                 'markeredgewidth': 0.9,
@@ -366,12 +365,13 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         ax_legend.set_xlabel('')
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
-        ax_legend.set_yticklabels(['State {} (n={})'.format(s, sum(array(states) == s)) for s in unique_states],
-                                  fontsize=legend_fontsize, weight='bold')
+        ax_legend.set_yticklabels(
+            ['State {} (n={})'.format(s, sum(array(sample_states) == s)) for s in background_states],
+            fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
 
         # Plot annotation legends
-        if annotation_type == 'continuous':
+        if annotation_type == 'continuous' and annotation_min < annotation_max:
             cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16,
                                 cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                                 ticks=[annotation_min, annotation_mean, annotation_max])
@@ -385,11 +385,11 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
         # Plot sample legends
-        for i, s in enumerate(unique_states):
-            y = 1 - float(1 / (len(unique_states) + 1)) * (i + 1)
+        for i, s in enumerate(background_states):
+            y = 1 - float(1 / (len(background_states) + 1)) * (i + 1)
             c = states_color[s]
             ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
-            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(asarray(states) == s)),
+            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(asarray(sample_states) == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if output_filepath:
