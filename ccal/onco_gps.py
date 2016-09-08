@@ -3,7 +3,7 @@ from .analyze import make_onco_gps
 from .visualize import FIGURE_SIZE, DPI, plot_onco_gps
 
 
-def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='a', states_test=None,
+def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
              informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
              function_to_fit=exponential_function, fit_maxfev=1000,
              fit_min=0, fit_max=2, pulling_power_min=1, pulling_power_max=5,
@@ -15,7 +15,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
              component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
              delaunay_linewidth=1, delaunay_linecolor='#000000',
              n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-             background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.7,
+             background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.9,
              sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
              sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
              legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
@@ -27,7 +27,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :param states_train: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
     :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param h_test_normalization: str; {}
+    :param h_test_normalization: str or None; {'as_train', 'clip_and_0-1', None}
     :param states_test: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
@@ -81,6 +81,11 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :param dpi: int;
     :return: None
     """
+    if isinstance(states_train[0], str):
+        raise ValueError('states_train is an iterable (list) of int with values from [1, ..., <n_states_train>].')
+    if 0 in states_train:
+        raise ValueError('Can\'t have \'0\' in states_train, whose values range from [1, ..., <n_states_train>].')
+
     cc, s, gp, gs = make_onco_gps(h_train, states_train, std_max=std_max,
                                   h_test=h_test, h_test_normalization=h_test_normalization, states_test=states_test,
                                   informational_mds=informational_mds, mds_seed=mds_seed,
@@ -90,7 +95,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                                   n_influencing_components=n_influencing_components,
                                   component_pulling_power=component_pulling_power,
                                   n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
-    plot_onco_gps(cc, s, gp, gs,
+    plot_onco_gps(cc, s, gp, gs, len(set(states_train)),
                   annotations=annotations, annotation_name=annotation_name, annotation_type=annotation_type,
                   std_max=std_max,
                   title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,

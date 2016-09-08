@@ -150,7 +150,7 @@ def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score
     plt.show()
 
 
-def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states,
+def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states, n_states_train,
                   annotations=(), annotation_name='', annotation_type='continuous', std_max=3,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
@@ -158,7 +158,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                   component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
                   n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                  background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.7,
+                  background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.9,
                   sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
                   sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                   legend_markersize=10, legend_fontsize=11,
@@ -170,6 +170,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     :param samples: pandas DataFrame; (n_samples, [x, y, state, annotation])
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
+    :param n_states_train: int; number of states used to create Onco-GPS
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
@@ -209,9 +210,6 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     :param dpi: int;
     :return: None
     """
-    sample_states = samples.ix[:, 'state']
-    background_states = unique(grid_states)
-
     x_grids = linspace(0, 1, grid_probabilities.shape[0])
     y_grids = linspace(0, 1, grid_probabilities.shape[1])
 
@@ -235,7 +233,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
     ax_title.text(0, 0.39,
                   '{} samples, {} components, and {} states'.format(samples.shape[0], component_coordinates.shape[0],
-                                                                    len(background_states)),
+                                                                    n_states_train),
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
 
     # Plot components and their labels
@@ -275,8 +273,8 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
 
     # Assign colors to states
     states_color = {}
-    for s in background_states:
-        states_color[s] = CMAP_CATEGORICAL(int(s / len(background_states) * CMAP_CATEGORICAL.N))
+    for s in range(1, n_states_train + 1):
+        states_color[s] = CMAP_CATEGORICAL(int(s / n_states_train * CMAP_CATEGORICAL.N))
 
     # Plot background
     if background_markersize > 0:
@@ -344,16 +342,16 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
                             fontsize=legend_fontsize * 1.26, weight='bold')
         if effectplot_type == 'violine':
-            violinplot(x=samples.ix[:, 'annotation'], y=sample_states, palette=states_color, scale='count', inner=None,
-                       orient='h', ax=ax_legend, clip_on=False)
-            boxplot(x=samples.ix[:, 'annotation'], y=sample_states, showbox=False, showmeans=True,
+            violinplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=states_color, scale='count',
+                       inner=None, orient='h', ax=ax_legend, clip_on=False)
+            boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], showbox=False, showmeans=True,
                     medianprops={'marker': 'o',
                                  'markerfacecolor': effectplot_mean_markerfacecolor,
                                  'markeredgewidth': 0.9,
                                  'markeredgecolor': effectplot_mean_markeredgecolor},
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         elif effectplot_type == 'box':
-            boxplot(x=samples.ix[:, 'annotation'], y=sample_states, palette=states_color, showmeans=True,
+            boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=states_color, showmeans=True,
                     medianpops={'marker': 'o',
                                 'markerfacecolor': effectplot_mean_markerfacecolor,
                                 'markeredgewidth': 0.9,
@@ -366,7 +364,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
         ax_legend.set_yticklabels(
-            ['State {} (n={})'.format(int(s), sum(array(sample_states) == s)) for s in background_states],
+            ['State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)) for s in range(1, n_states_train + 1)],
             fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
 
@@ -385,11 +383,11 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
         # Plot sample legends
-        for i, s in enumerate(background_states):
-            y = 1 - float(1 / (len(background_states) + 1)) * (i + 1)
+        for i, s in enumerate(range(1, n_states_train + 1)):
+            y = 1 - float(1 / (n_states_train + 1)) * (i + 1)
             c = states_color[s]
             ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
-            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(asarray(sample_states) == s)),
+            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if output_filepath:

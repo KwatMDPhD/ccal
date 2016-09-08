@@ -227,7 +227,7 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:], memberships
 
 
-def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normalization='a', states_test=None,
+def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train', states_test=None,
                   informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
                   function_to_fit=exponential_function, fit_maxfev=1000,
                   fit_min=0, fit_max=2, polling_power_min=1, pulling_power_max=3,
@@ -238,7 +238,7 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
     :param states_train: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
     :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param h_test_normalization: str; {}
+    :param h_test_normalization: str or None; {'as_train', 'clip_and_0-1', None}
     :param states_test: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
@@ -258,10 +258,11 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
              component_coordinates (n_components, [x, y]), samples (n_samples, [x, y, state, annotation]),
              grid_probabilities (n_grids, n_grids), and grid_states (n_grids, n_grids)
     """
-    unique_states = sorted(set(states_train))
-    print_log('Making Onco-GPS with {} components, {} samples, and {} states: {} ...'.format(*h_train.shape,
-                                                                                             len(unique_states),
-                                                                                             unique_states))
+    print_log('Making Onco-GPS with {} components, {} samples, and {} states {} ...'.format(*h_train.shape,
+                                                                                            len(set(states_train)),
+                                                                                            set(states_train)))
+
+    # training_samples = DataFrame(index=h_train.columns, columns=['x', 'y', 'state'])
 
     # clip and 0-1 normalize the data
     training_h = normalize_pandas_object(normalize_pandas_object(h_train, axis=1).clip(-std_max, std_max),
@@ -291,12 +292,12 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
 
     # Compute grid probabilities and states
     grid_probabilities = zeros((n_grids, n_grids))
-    grid_states = empty((n_grids, n_grids))
-    # Get KDE for each state using bandwidth created from all states' x & y coordinates
-    kdes = zeros((len(unique_states) + 1, n_grids, n_grids))
+    grid_states = empty((n_grids, n_grids), dtype=int)
+    # Get KDE for each state using bandwidth created from all states' x & y coordinates; states starts from 1, not 0
+    kdes = zeros((training_samples.ix[:, 'state'].unique().size + 1, n_grids, n_grids))
     bandwidths = asarray([bcv(asarray(training_samples.ix[:, 'x'].tolist()))[0],
                           bcv(asarray(training_samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
-    for s in unique_states:
+    for s in sorted(training_samples.ix[:, 'state'].unique()):
         coordinates = training_samples.ix[training_samples.ix[:, 'state'] == s, ['x', 'y']]
         kde = kde2d(asarray(coordinates.ix[:, 'x'], dtype=float), asarray(coordinates.ix[:, 'y'], dtype=float),
                     bandwidths, n=asarray([n_grids]), lims=asarray([0, 1, 0, 1]))
@@ -308,14 +309,18 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
             grid_states[i, j] = argmax(kdes[:, i, j])
 
     if isinstance(h_test, DataFrame):
-        print_log('Using samples from testing H matrix ...')
+        print_log('Focusing on samples from testing H matrix ...')
         # Normalize testing H
-        if h_test_normalization == 'a':
-            testing_h = h_test
-        elif h_test_normalization == 'b':
+        if h_test_normalization == 'as_train':
+            for r_idx, r in h_test.iterrows():
+                if r.std() == 0:
+                    h_test.ix[r_idx, :] = h_test.ix[r_idx, :] / r.size()
+                else:
+                    h_test.ix[r_idx, :] = (h_test.ix[r_idx, :] - r.mean()) / r.std()
+        elif h_test_normalization == 'clip_and_0-1':
             testing_h = normalize_pandas_object(normalize_pandas_object(h_test, axis=1).clip(-std_max, std_max),
                                                 method='0-1', axis=1)
-        elif h_test_normalization == 'c':
+        elif not h_test_normalization:
             testing_h = h_test
         else:
             raise ValueError('Unknown normalization method for testing H {}.'.format(h_test_normalization))
