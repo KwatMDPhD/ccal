@@ -3,6 +3,14 @@ from .analyze import make_onco_gps
 from .visualize import FIGURE_SIZE, DPI, plot_onco_gps
 
 
+def define_components():
+    pass
+
+
+def define_states():
+    pass
+
+
 def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
              informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
              function_to_fit=exponential_function, fit_maxfev=1000,

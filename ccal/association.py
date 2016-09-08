@@ -6,6 +6,10 @@ from .visualize import DPI, plot_features_against_reference
 from .analyze import compute_against_reference
 
 
+def compare(matrix_1, matrix_2):
+    pass
+
+
 def match(features, ref, feature_type='continuous', ref_type='continuous', min_n_feature_values=0,
           feature_ascending=False, ref_ascending=False, ref_sort=True,
           function=information_coefficient, n_features=0.95, n_samplings=30, confidence=0.95,

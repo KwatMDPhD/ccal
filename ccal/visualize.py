@@ -16,7 +16,7 @@ Laboratory of Jill Mesirov
 """
 import math
 
-from numpy import asarray, array, unique, linspace
+from numpy import unique, linspace
 from pandas import DataFrame, Series, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import matplotlib.pyplot as plt
