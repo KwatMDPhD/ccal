@@ -330,9 +330,17 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                     c = cmap((s.ix['annotation'] - annotation_min) / annotation_range)
                 else:
                     raise ValueError('Unknown annotation_type {}.'.format(annotation_type))
-            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+            if 'pullratio' in samples.columns:
+                a = samples.ix[idx, 'pullratio']
+            else:
+                a = 1
+            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c, alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
+            if a < 1:
+                ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor='none',
+                            markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
+                            zorder=5)
         # Plot sample legends
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
@@ -390,9 +398,17 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         # Plot samples
         for idx, s in samples.iterrows():
             c = states_color[s.ix['state']]
-            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+            if 'pullratio' in samples.columns:
+                a = samples.ix[idx, 'pullratio']
+            else:
+                a = 1
+            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c, alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
+            if a < 1:
+                ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor='none',
+                            markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
+                            zorder=5)
         # Plot sample legends
         for i, s in enumerate(range(1, n_states_train + 1)):
             y = 1 - float(1 / (n_states_train + 1)) * (i + 1)

@@ -14,8 +14,9 @@ def define_states():
 def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
              informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
              function_to_fit=exponential_function, fit_maxfev=1000,
-             fit_min=0, fit_max=2, pulling_power_min=1, pulling_power_max=5,
-             n_influencing_components='all', component_pulling_power='auto', n_grids=128, kde_bandwidths_factor=1,
+             fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=5,
+             n_pulling_components='all', component_pull_power='auto', n_pullratio_components=3, pullratio_factor=5,
+             n_grids=128, kde_bandwidths_factor=1,
              annotations=(), annotation_name='', annotation_type='continuous',
              title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
              subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
@@ -45,10 +46,12 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :param fit_maxfev: int;
     :param fit_min: number;
     :param fit_max: number;
-    :param pulling_power_min: number;
-    :param pulling_power_max: number;
-    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :param pull_power_min: number;
+    :param pull_power_max: number;
+    :param n_pulling_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param component_pull_power: str or number; power to raise components' influence on each sample
+    :param n_pullratio_components: number; number if int; percentile if float & < 1
+    :param pullratio_factor: number;
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
@@ -99,9 +102,11 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                                   informational_mds=informational_mds, mds_seed=mds_seed,
                                   mds_n_init=mds_n_init, mds_max_iter=mds_max_iter, function_to_fit=function_to_fit,
                                   fit_maxfev=fit_maxfev, fit_min=fit_min, fit_max=fit_max,
-                                  polling_power_min=pulling_power_min, pulling_power_max=pulling_power_max,
-                                  n_influencing_components=n_influencing_components,
-                                  component_pulling_power=component_pulling_power,
+                                  pull_power_min=pull_power_min, pull_power_max=pull_power_max,
+                                  n_pulling_components=n_pulling_components,
+                                  component_pull_power=component_pull_power,
+                                  n_pullratio_components=n_pullratio_components,
+                                  pullratio_factor=pullratio_factor,
                                   n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
     plot_onco_gps(cc, s, gp, gs, len(set(states_train)),
                   annotations=annotations, annotation_name=annotation_name, annotation_type=annotation_type,

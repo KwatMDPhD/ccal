@@ -232,8 +232,9 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
 def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train', states_test=None,
                   informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
                   function_to_fit=exponential_function, fit_maxfev=1000,
-                  fit_min=0, fit_max=2, polling_power_min=1, pulling_power_max=3,
-                  n_influencing_components='all', component_pulling_power='auto', n_grids=128, kde_bandwidths_factor=1):
+                  fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
+                  n_pulling_components='all', component_pull_power='auto', n_pullratio_components=0, pullratio_factor=5,
+                  n_grids=128, kde_bandwidths_factor=1):
     """
     Compute component and sample coordinates. And compute grid probabilities and states.
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
@@ -250,10 +251,12 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
     :param fit_maxfev: int;
     :param fit_min: number;
     :param fit_max: number;
-    :param polling_power_min: number;
-    :param pulling_power_max: number;
-    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :param pull_power_min: number;
+    :param pull_power_max: number;
+    :param n_pulling_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param component_pull_power: str or number; power to raise components' influence on each sample
+    :param n_pullratio_components: number; number if int; percentile if float & < 1
+    :param pullratio_factor: number;
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :return: pandas DataFrame, DataFrame, numpy array, and numpy array;
@@ -275,19 +278,31 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
                                 mds_seed=mds_seed, n_init=mds_n_init, max_iter=mds_max_iter, standardize=True)
 
     # Compute component pulling power
-    if component_pulling_power == 'auto':
+    if component_pull_power == 'auto':
         fit_parameters = fit_columns(training_h, function_to_fit=function_to_fit, maxfev=fit_maxfev)
         print_log('Modeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
         k = fit_parameters[1]
         # Linear transform
         k_normalized = (k - fit_min) / (fit_max - fit_min)
-        component_pulling_power = k_normalized * (pulling_power_max - polling_power_min) + polling_power_min
-        print_log('component_pulling_power = {0:.3f}.'.format(component_pulling_power))
+        component_pull_power = k_normalized * (pull_power_max - pull_power_min) + pull_power_min
+        print_log('component_pulling_power = {0:.3f}.'.format(component_pull_power))
 
     # Compute sample coordinates
     training_samples = get_sample_coordinates_via_pulling(component_coordinates, training_h,
-                                                          n_influencing_components=n_influencing_components,
-                                                          component_pulling_power=component_pulling_power)
+                                                          n_influencing_components=n_pulling_components,
+                                                          component_pulling_power=component_pull_power)
+
+    # Compute pulling ratios
+    ratios = empty(training_h.shape[1])
+    if 0 < n_pullratio_components:
+        if n_pullratio_components < 1:
+            n_pullratio_components = training_h.shape[0] * n_pullratio_components
+        for i, (c_idx, c) in enumerate(training_h.iteritems()):
+            c_sorted = c.sort_values(ascending=False)
+            ratio = float(c_sorted[:n_pullratio_components].sum() / c_sorted[n_pullratio_components:].sum()) * c.sum()
+            ratios[i] = ratio
+        normalized_ratios = (ratios - ratios.min()) / (ratios.max() - ratios.min()) * pullratio_factor
+        training_samples.ix[:, 'pullratio'] = normalized_ratios.clip(0, 1)
 
     # Load sample states
     training_samples.ix[:, 'state'] = states_train
@@ -329,8 +344,8 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
 
         # Compute testing-sample coordinates
         testing_samples = get_sample_coordinates_via_pulling(component_coordinates, testing_h,
-                                                             n_influencing_components=n_influencing_components,
-                                                             component_pulling_power=component_pulling_power)
+                                                             n_influencing_components=n_pulling_components,
+                                                             component_pulling_power=component_pull_power)
         testing_samples.ix[:, 'state'] = states_test
         return component_coordinates, testing_samples, grid_probabilities, grid_states
     else:
