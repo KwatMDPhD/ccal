@@ -22,7 +22,7 @@ from scipy.spatial import Delaunay, ConvexHull
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
-from matplotlib.colors import Normalize, ListedColormap
+from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap
 from matplotlib.cm import bwr, Paired
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
@@ -33,7 +33,7 @@ from .support import print_log, establish_path, get_unique_in_order, normalize_p
 # Parameters
 # ======================================================================================================================
 # Color maps
-custom_categorical_cmap = ListedColormap(['#E52339',
+CMAP_CATEGORICAL_CUSTOM = ListedColormap(['#E52339',
                                           '#4682B4',
                                           '#BAFF51',
                                           '#614C82',
@@ -153,7 +153,7 @@ def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score
 def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states, n_states_train,
                   annotations=(), annotation_name='', annotation_type='continuous', std_max=3,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
+                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039', custom_colormap=None,
                   component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
                   component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
@@ -271,9 +271,15 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                        linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, aa=True, zorder=2)
 
     # Assign colors to states
+    if custom_colormap:
+        if not (isinstance(custom_colormap, ListedColormap) and isinstance(custom_colormap, LinearSegmentedColormap)):
+            custom_colormap = ListedColormap(custom_colormap)
     states_color = {}
     for s in range(1, n_states_train + 1):
-        states_color[s] = CMAP_CATEGORICAL(int(s / n_states_train * CMAP_CATEGORICAL.N))
+        if custom_colormap:
+            states_color[s] = custom_colormap[s]
+        else:
+            states_color[s] = CMAP_CATEGORICAL(int(s / n_states_train * CMAP_CATEGORICAL.N))
 
     # Plot background
     if background_markersize > 0:
