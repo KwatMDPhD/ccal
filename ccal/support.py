@@ -14,7 +14,7 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import array, asarray, zeros, ones, isnan, exp
+from numpy import array, asarray, zeros, ones, isnan, exp, finfo
 from numpy.random import random_integers, random_sample
 from pandas import DataFrame, Series, read_csv
 from scipy.optimize import curve_fit
@@ -25,6 +25,7 @@ from sklearn.manifold import MDS
 # ======================================================================================================================
 VERBOSE = True
 SEED = 20121020
+EPS = finfo(float).eps
 
 
 # ======================================================================================================================

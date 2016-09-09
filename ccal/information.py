@@ -14,20 +14,19 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import asarray, sign, sum, sqrt, exp, log, finfo, isnan
+from numpy import asarray, sign, sum, sqrt, exp, log, isnan
 from numpy.random import random_sample
 from scipy.stats import pearsonr
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 
-from .support import drop_nan_columns
+from .support import EPS, drop_nan_columns
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
 bcv = mass.bcv
 kde2d = mass.kde2d
-eps = finfo(float).eps
 
 
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
@@ -53,7 +52,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     bandwidth_y = asarray(bcv(y)[0]) * (1 + (-0.75) * abs(cor))
 
     # Get P(x, y), P(x), P(y)
-    fxy = asarray(kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + eps
+    fxy = asarray(kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + EPS
     dx = (x.max() - x.min()) / (n_grids - 1)
     dy = (y.max() - y.min()) / (n_grids - 1)
     pxy = fxy / (fxy.sum() * dx * dy)

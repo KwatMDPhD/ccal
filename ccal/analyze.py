@@ -31,7 +31,7 @@ import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
 from rpy2.robjects.numpy2ri import numpy2ri
 
-from .support import SEED, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices, \
+from .support import SEED, EPS, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices, \
     consensus_cluster, mds, fit_columns, exponential_function, get_sample_coordinates_via_pulling
 from .information import information_coefficient
 
@@ -299,7 +299,8 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
             n_pullratio_components = training_h.shape[0] * n_pullratio_components
         for i, (c_idx, c) in enumerate(training_h.iteritems()):
             c_sorted = c.sort_values(ascending=False)
-            ratio = float(c_sorted[:n_pullratio_components].sum() / c_sorted[n_pullratio_components:].sum()) * c.sum()
+            ratio = float(
+                c_sorted[:n_pullratio_components].sum() / max(c_sorted[n_pullratio_components:].sum(), EPS)) * c.sum()
             ratios[i] = ratio
         normalized_ratios = (ratios - ratios.min()) / (ratios.max() - ratios.min()) * pullratio_factor
         training_samples.ix[:, 'pullratio'] = normalized_ratios.clip(0, 1)
