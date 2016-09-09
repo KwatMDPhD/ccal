@@ -352,11 +352,14 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         elif effectplot_type == 'box':
             boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=states_color, showmeans=True,
-                    medianpops={'marker': 'o',
-                                'markerfacecolor': effectplot_mean_markerfacecolor,
-                                'markeredgewidth': 0.9,
-                                'markeredgecolor': effectplot_mean_markeredgecolor},
+                    medianprops={'marker': 'o',
+                                 'markerfacecolor': effectplot_mean_markerfacecolor,
+                                 'markeredgewidth': 0.9,
+                                 'markeredgecolor': effectplot_mean_markeredgecolor},
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
+        else:
+            raise ValueError('Unknown effectplot_type {}. effectplot_type = [\'violine\', \'box\'].')
+        # Plot min, mean, and max lines
         ax_legend.axvline(annotation_min, color='#000000', ls='-', alpha=0.16, aa=True)
         ax_legend.axvline(annotation_mean, color='#000000', ls='-', alpha=0.39, aa=True)
         ax_legend.axvline(annotation_max, color='#000000', ls='-', alpha=0.16, aa=True)
@@ -367,8 +370,11 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
             ['State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)) for s in range(1, n_states_train + 1)],
             fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
-
-        # Plot annotation legends
+        # Plot sample markers
+        for i, s in enumerate(range(1, n_states_train + 1)):
+            c = states_color[s]
+            ax_legend.plot(-0.3, i, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
+        # Plot colorbar
         if annotation_type == 'continuous':
             cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16,
                                 cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
