@@ -19,8 +19,8 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
              n_grids=128, kde_bandwidths_factor=1,
              annotations=(), annotation_name='', annotation_type='continuous',
              title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-             subtitle_fontsize=16, subtitle_fontcolor='#FF0039', custom_colormap=None,
-             component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
+             subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
+             colors=None, component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
              component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
              delaunay_linewidth=1, delaunay_linecolor='#000000',
              n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
@@ -62,6 +62,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :param title_fontcolor: matplotlib color;
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
+    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or list;
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
@@ -113,7 +114,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                   std_max=std_max,
                   title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
                   subtitle_fontsize=subtitle_fontsize, subtitle_fontcolor=subtitle_fontcolor,
-                  custom_colormap=custom_colormap,
+                  colors=colors,
                   component_markersize=component_markersize, component_markerfacecolor=component_markerfacecolor,
                   component_markeredgewidth=component_markeredgewidth,
                   component_markeredgecolor=component_markeredgecolor,

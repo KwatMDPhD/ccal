@@ -127,7 +127,7 @@ def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score
 def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states, n_states_train,
                   annotations=(), annotation_name='', annotation_type='continuous', std_max=3,
                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039', custom_colormap=None,
+                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=None,
                   component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
                   component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
                   delaunay_linewidth=1, delaunay_linecolor='#000000',
@@ -154,6 +154,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     :param title_fontcolor: matplotlib color;
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
+    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or list;
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
@@ -245,13 +246,13 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                        linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, aa=True, zorder=2)
 
     # Assign colors to states
-    if custom_colormap:
-        if not (isinstance(custom_colormap, ListedColormap) and isinstance(custom_colormap, LinearSegmentedColormap)):
-            custom_colormap = ListedColormap(custom_colormap)
+    if colors:
+        if not (isinstance(colors, ListedColormap) and isinstance(colors, LinearSegmentedColormap)):
+            colors = ListedColormap(colors)
     states_color = {}
     for s in range(1, n_states_train + 1):
-        if custom_colormap:
-            states_color[s] = custom_colormap(s)
+        if colors:
+            states_color[s] = colors(s)
         else:
             states_color[s] = CMAP_CATEGORICAL(int(s / n_states_train * CMAP_CATEGORICAL.N))
 
