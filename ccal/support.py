@@ -156,7 +156,7 @@ def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None
         filepath += '.gct'
 
     with open(filepath, 'w') as f:
-        f.writelines('#1.2\n{}\t{}\n'.format(*obj.shape))
+        f.writelines('#1.2\n{}\t{}\n'.format(obj.shape[0], obj.shape[1] - 1))
         obj.to_csv(f, sep='\t')
 
 
@@ -226,7 +226,7 @@ def normalize_pandas_object(pandas_object, method='-0-', axis='all'):
     Normalize a pandas object.
     :param pandas_object: pandas DataFrame or Series;
     :param method: str; normalization type; {'-0-', '0-1'}
-    :param axis: str or int; 'all' for global, 0 for by-column, and 1 for by-row normalization
+    :param axis: int or str; 'all' for global, 0 for by-column, and 1 for by-row normalization
     :return: pandas DataFrame or Series;
     """
     obj = pandas_object.copy()

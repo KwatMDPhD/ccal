@@ -60,6 +60,8 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     nmf_results = {}
     scores = {}
     if method == 'cophenetic_correlation':
+        if isinstance(ks, int):
+            ks = [ks]
         for k in ks:
             print_log('Computing NMF score using cophenetic correlation for k={} ...'.format(k))
 
@@ -88,7 +90,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
         raise ValueError('Unknown method {}.'.format(method))
 
     if filepath_prefix:
-        _save_nmf_results(nmf_results, filepath_prefix)
+        save_nmf_results(nmf_results, filepath_prefix)
 
     return nmf_results, scores
 
@@ -125,7 +127,7 @@ def nmf(matrix, ks,
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
     if filepath_prefix:
-        _save_nmf_results(nmf_results, filepath_prefix)
+        save_nmf_results(nmf_results, filepath_prefix)
 
     return nmf_results
 
@@ -152,7 +154,7 @@ def nnls_matrix(a, b, method='nnls'):
     return x
 
 
-def _save_nmf_results(nmf_results, filepath_prefix):
+def save_nmf_results(nmf_results, filepath_prefix):
     """
     Save `nmf_results` dictionary.
     :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
@@ -161,8 +163,8 @@ def _save_nmf_results(nmf_results, filepath_prefix):
     """
     establish_path(filepath_prefix)
     for k, v in nmf_results.items():
-        write_gct(v['W'], filepath_prefix + '_k{}_w.gct')
-        write_gct(v['H'], filepath_prefix + '_k{}_h.gct')
+        write_gct(v['W'], filepath_prefix + '_nmf_k{}w.gct'.format(k))
+        write_gct(v['H'], filepath_prefix + '_nmf_k{}h.gct'.format(k))
 
 
 def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
