@@ -33,33 +33,7 @@ from .support import print_log, establish_path, get_unique_in_order, normalize_p
 # Parameters
 # ======================================================================================================================
 # Color maps
-CMAP_CATEGORICAL_CUSTOM = ListedColormap(['#E52339',
-                                          '#4682B4',
-                                          '#BAFF51',
-                                          '#614C82',
-                                          '#FF8C00',
-                                          '#FFFF00',
-                                          '#DB7093',
-                                          '#B0E0E6',
-                                          '#09DCFF',
-                                          '#5F9EA0',
-                                          '#008000',
-                                          '#A479E7',
-                                          '#FFC0CB',
-                                          '#FFFFCC',
-                                          '#EF97EA',
-                                          '#DFCBFF',
-                                          '#FF00FF',
-                                          '#FB5200',
-                                          '#FFD700',
-                                          '#FF0000',
-                                          '#FF7F50',
-                                          '#8B0000',
-                                          '#6B8E23',
-                                          '#5F51FF',
-                                          '#B27E3C',
-                                          '#644824',
-                                          '#A0522D'])
+
 BAD_COLOR = 'wheat'
 CMAP_CONTINUOUS = bwr
 CMAP_CONTINUOUS.set_bad(BAD_COLOR)
@@ -277,7 +251,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     states_color = {}
     for s in range(1, n_states_train + 1):
         if custom_colormap:
-            states_color[s] = custom_colormap[s]
+            states_color[s] = custom_colormap(s)
         else:
             states_color[s] = CMAP_CATEGORICAL(int(s / n_states_train * CMAP_CATEGORICAL.N))
 
