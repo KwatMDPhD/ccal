@@ -329,11 +329,12 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
         print_log('Focusing on samples from testing H matrix ...')
         # Normalize testing H
         if h_test_normalization == 'as_train':
-            for r_idx, r in h_test.iterrows():
+            testing_h = h_test
+            for r_idx, r in h_train.iterrows():
                 if r.std() == 0:
-                    h_test.ix[r_idx, :] = h_test.ix[r_idx, :] / r.size()
+                    testing_h.ix[r_idx, :] = testing_h.ix[r_idx, :] / r.size()
                 else:
-                    h_test.ix[r_idx, :] = (h_test.ix[r_idx, :] - r.mean()) / r.std()
+                    testing_h.ix[r_idx, :] = (testing_h.ix[r_idx, :] - r.mean()) / r.std()
         elif h_test_normalization == 'clip_and_0-1':
             testing_h = normalize_pandas_object(normalize_pandas_object(h_test, axis=1).clip(-std_max, std_max),
                                                 method='0-1', axis=1)
