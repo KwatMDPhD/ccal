@@ -116,9 +116,15 @@ def read_gct(filepath, fill_na=None, drop_description=True):
         df.fillna(fill_na, inplace=True)
     c1, c2 = df.columns[:2]
     if c1 != 'Name':
-        raise ValueError('Column 1 != \'Name\'')
+        if c1.strip() != 'Name':
+            raise ValueError('Column 1 != \'Name\'.')
+        else:
+            raise ValueError('Column 1 has more than 1 extra space around \'Name\'. Please strip it.')
     if c2 != 'Description':
-        raise ValueError('Column 2 != \'Description\'')
+        if c2.strip() != 'Description':
+            raise ValueError('Column 2 != \'Description\'')
+        else:
+            raise ValueError('Column 2 has more than 1 extra space around \'Description\'. Please strip it.')
     df.set_index('Name', inplace=True)
     df.index.name = None
     if drop_description:
