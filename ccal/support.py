@@ -340,6 +340,23 @@ def consensus_cluster(clustering_labels):
     return consensus_clusterings / n_rows
 
 
+def make_label_x_sample_matrix(series, filepath=None):
+    """
+    Make a label-x-sample binary matrix from a Series.
+    :param series: pandas Series;
+    :param filepath: str;
+    :return: pandas DataFrame;
+    """
+    label_x_sample = DataFrame(index=sorted(set(series)), columns=series.index)
+    for i in label_x_sample.index:
+        label_x_sample.ix[i, :] = (series == i).astype(int)
+    if filepath:
+        establish_path(filepath)
+        write_gct(label_x_sample, filepath)
+
+    return label_x_sample
+
+
 def mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
     """
     Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.

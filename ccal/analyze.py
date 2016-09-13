@@ -223,23 +223,6 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath=None):
     return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:]
 
 
-def make_label_x_sample_matrix(series, filepath=None):
-    """
-    Make a label-x-sample binary matrix from a Series.
-    :param series: pandas Series;
-    :param filepath: str;
-    :return: pandas DataFrame;
-    """
-    label_x_sample = DataFrame(index=sorted(set(series)), columns=series.index)
-    for i in label_x_sample.index:
-        label_x_sample.ix[i, :] = (series == i).astype(int)
-    if filepath:
-        establish_path(filepath)
-        write_gct(label_x_sample, filepath)
-
-    return label_x_sample
-
-
 def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train', states_test=None,
                   informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
                   function_to_fit=exponential_function, fit_maxfev=1000,
