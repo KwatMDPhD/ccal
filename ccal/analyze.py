@@ -174,10 +174,8 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     :param ks: iterable; list of ks used for clustering states
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for the consenssu clustering
-    :param filepath_prefix: str; `filepath_prefix`_labels.txt and `filepath_prefix`_memberships.gct will be saved
-    :return: pandas DataFrame, Series, and DataFrame; assignment matrix (n_ks, n_samples),
-                                                      the cophenetic correlations (n_ks), and
-                                                      membership matrix (n_ks, n_samples)
+    :param filepath_prefix: str; `filepath_prefix`_labels.gct will be saved
+    :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
     # Standardize H and clip extreme values
     standardized_clipped_h = normalize_pandas_object(h, axis=1).clip(-max_std, max_std)
@@ -215,18 +213,30 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
             consensus_clustering_labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
             print_log('Computed the cophenetic correlation coefficient.')
 
-        # Compute membership matrix
-        memberships = consensus_clustering_labels.iloc[:, :-1].apply(lambda label: label == int(label.name),
-                                                                     axis=1).astype(int)
-
         if filepath_prefix:
             establish_path(filepath_prefix)
-            consensus_clustering_labels.to_csv(filepath_prefix + '_labels.txt', sep='\t')
-            write_gct(memberships, filepath_prefix + '_memberships.gct')
+            write_gct(consensus_clustering_labels, filepath_prefix + '_labels.gct')
     else:
         raise ValueError('Invalid value passed to ks.')
 
-    return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:], memberships
+    return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:]
+
+
+def make_label_x_sample_matrix(series, filepath=None):
+    """
+    TODO
+    :param series: pandas Series;
+    :param filepath: str;
+    :return: pandas DataFrame;
+    """
+    label_x_sample = DataFrame(index=series.unique.sorted, columns=series.index)
+    for i in label_x_sample.index:
+        label_x_sample.ix[i, :] = series.apply(lambda labels: labels == labels.name, axis=1)
+    if filepath:
+        establish_path(filepath)
+        write_gct(label_x_sample, filepath)
+
+    return label_x_sample
 
 
 def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train', states_test=None,
