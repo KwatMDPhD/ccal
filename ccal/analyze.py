@@ -167,20 +167,21 @@ def save_nmf_results(nmf_results, filepath_prefix):
         write_gct(v['H'], filepath_prefix + '_nmf_k{}h.gct'.format(k))
 
 
-def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
+def define_states(h, ks, max_std=3, n_clusterings=50, filepath=None):
     """
     Consensus cluster H matrix's samples into k clusters.
     :param h: pandas DataFrame; H matrix (n_components, n_samples) from NMF
     :param ks: iterable; list of ks used for clustering states
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for the consenssu clustering
-    :param filepath_prefix: str; `filepath_prefix`_labels.gct will be saved
+    :param filepath: str;
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
     # Standardize H and clip extreme values
     standardized_clipped_h = normalize_pandas_object(h, axis=1).clip(-max_std, max_std)
 
     # Get association between samples
+    print_log('Computing distances between samples ...')
     sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, information_coefficient)
 
     consensus_clustering_labels = DataFrame(index=ks, columns=list(h.columns) + ['cophenetic_correlation'])
@@ -213,9 +214,9 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
             consensus_clustering_labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
             print_log('Computed the cophenetic correlation coefficient.')
 
-        if filepath_prefix:
-            establish_path(filepath_prefix)
-            write_gct(consensus_clustering_labels, filepath_prefix + '_labels.gct')
+        if filepath:
+            establish_path(filepath)
+            write_gct(consensus_clustering_labels, filepath)
     else:
         raise ValueError('Invalid value passed to ks.')
 
@@ -224,14 +225,14 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
 
 def make_label_x_sample_matrix(series, filepath=None):
     """
-    TODO
+    Make a label-x-sample binary matrix from a Series.
     :param series: pandas Series;
     :param filepath: str;
     :return: pandas DataFrame;
     """
-    label_x_sample = DataFrame(index=series.unique.sorted, columns=series.index)
+    label_x_sample = DataFrame(index=sorted(set(series)), columns=series.index)
     for i in label_x_sample.index:
-        label_x_sample.ix[i, :] = series.apply(lambda labels: labels == labels.name, axis=1)
+        label_x_sample.ix[i, :] = (series == i).astype(int)
     if filepath:
         establish_path(filepath)
         write_gct(label_x_sample, filepath)
