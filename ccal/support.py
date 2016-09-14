@@ -14,6 +14,7 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
+import datetime
 from numpy import array, asarray, zeros, ones, isnan, exp, finfo
 from numpy.random import random_integers, random_sample
 from pandas import DataFrame, Series, read_csv
@@ -31,6 +32,14 @@ EPS = finfo(float).eps
 # ======================================================================================================================
 # Utilities
 # ======================================================================================================================
+def now():
+    """
+     Get the current time stamp.
+    :return: str;
+    """
+    return datetime.datetime.now().strftime("%Y%m%d-%H%M")
+
+
 def print_log(string):
     """
     Print `string` together with logging information.
