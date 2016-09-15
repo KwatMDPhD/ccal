@@ -14,7 +14,6 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-import datetime
 from numpy import array, asarray, zeros, ones, isnan, exp, finfo
 from numpy.random import random_integers, random_sample
 from pandas import DataFrame, Series, read_csv
@@ -32,12 +31,19 @@ EPS = finfo(float).eps
 # ======================================================================================================================
 # Utilities
 # ======================================================================================================================
-def now():
+def timestamp(time_only=False):
     """
-     Get the current time stamp.
+    Get the current time stamp.
+    :param time_only: bool;
     :return: str;
     """
-    return datetime.datetime.now().strftime("%Y%m%d-%H%M")
+    from datetime import datetime
+
+    if time_only:
+        formatter = '%H%M%S'
+    else:
+        formatter = '%Y%m%d-%H%M%S'
+    return datetime.now().strftime(formatter)
 
 
 def print_log(string):
@@ -46,11 +52,9 @@ def print_log(string):
     :param string: str; message to printed
     :return: None
     """
-    from datetime import datetime
-
     global VERBOSE
     if VERBOSE:
-        print('<{}> {}'.format(datetime.now().strftime('%H:%M:%S'), string))
+        print('<{}> {}'.format(timestamp(time_only=True), string))
 
 
 def install_libraries(libraries_needed):
