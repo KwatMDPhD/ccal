@@ -41,22 +41,34 @@ bcv = mass.bcv
 kde2d = mass.kde2d
 
 
-def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30, initialization='random',
-                  max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False, filepath_prefix=None):
+def nmf_and_score(matrix, ks, rank_normalize=True, method='cophenetic_correlation', n_clusterings=30,
+                  init='random', solver='cd', tol=1e-4, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
+                  shuffle=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1, filepath_prefix=None):
     """
     Perform NMF with k from `ks` and score each NMF result.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
+    :param rank_normalize: bool; rank normalize `matrix` or not
     :param method: str; {'cophenetic_correlation'}
-    :param n_clusterings: int; number of NMF clusterings
-    :param initialization: str; {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
-    :param max_iteration: int; number of NMF iterations
-    :param seed: int;
-    :param randomize_coordinate_order: bool;
-    :param regularizer: int, NMF's alpha
+    :param n_clusterings:
+    :param init:
+    :param solver:
+    :param tol:
+    :param max_iter:
+    :param random_state:
+    :param alpha:
+    :param l1_ratio:
+    :param shuffle:
+    :param nls_max_iter:
+    :param sparseness:
+    :param beta:
+    :param eta:
     :param filepath_prefix: str; `filepath_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
     """
+    if rank_normalize:
+        matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
+
     nmf_results = {}
     scores = {}
     if method == 'cophenetic_correlation':
@@ -68,10 +80,12 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
             # NMF cluster
             clustering_labels = empty((n_clusterings, matrix.shape[1]))
             for i in range(n_clusterings):
-                print_log('NMF clustering (k={} @ {}/{}) ...'.format(k, i, n_clusterings))
-                nmf_result = nmf(matrix, k, initialization=initialization, max_iteration=max_iteration,
-                                 seed=seed, regularizer=regularizer,
-                                 randomize_coordinate_order=randomize_coordinate_order)[k]
+                if i % 10 == 0:
+                    print_log('NMF clustering (k={} @ {}/{}) ...'.format(k, i, n_clusterings))
+                nmf_result = nmf(matrix, k, rank_normalize=False,
+                                 init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
+                                 alpha=alpha, l1_ratio=l1_ratio, shuffle=shuffle, nls_max_iter=nls_max_iter,
+                                 sparseness=sparseness, beta=beta, eta=eta)[k]
                 # Save 1 NMF result for eack k
                 if i == 0:
                     nmf_results[k] = nmf_result
@@ -95,28 +109,38 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     return nmf_results, scores
 
 
-def nmf(matrix, ks,
-        initialization='random', max_iteration=200, seed=SEED, regularizer=0, randomize_coordinate_order=False,
-        filepath_prefix=None):
+def nmf(matrix, ks, rank_normalize=True, init='random', solver='cd', tol=1e-4, max_iter=1000, random_state=SEED,
+        alpha=0, l1_ratio=0, shuffle=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1, filepath_prefix=None):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
-    :param ks: int or iterable; k or ks to be used in the NMF
-    :param initialization: str; {'random', 'nndsvd', 'nndsvda', 'nndsvdar'}
-    :param max_iteration: int; number of NMF iterations
-    :param seed: int;
-    :param randomize_coordinate_order: bool;
-    :param regularizer: int, NMF's alpha
+    :param ks: iterable; list of ks to be used in the NMF
+    :param rank_normalize: bool; rank normalize `matrix` or not
+    :param init:
+    :param solver:
+    :param tol:
+    :param max_iter:
+    :param random_state:
+    :param alpha:
+    :param l1_ratio:
+    :param shuffle:
+    :param nls_max_iter:
+    :param sparseness:
+    :param beta:
+    :param eta:
     :param filepath_prefix: str; `filepath_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: dict; {k: {W:w, H:h, ERROR:error}}
     """
+    if rank_normalize:
+        matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
+
     nmf_results = {}
     if isinstance(ks, int):
         ks = [ks]
     for k in ks:
-        print_log('NMF (k={} & max_iteration={}) ...'.format(k, max_iteration))
-        model = NMF(n_components=k, init=initialization, max_iter=max_iteration, random_state=seed, alpha=regularizer,
-                    shuffle=randomize_coordinate_order)
+        model = NMF(n_components=k, init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
+                    alpha=alpha, l1_ratio=l1_ratio, shuffle=shuffle, nls_max_iter=nls_max_iter, sparseness=sparseness,
+                    beta=beta, eta=eta)
 
         # Compute W, H, and reconstruction error
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
@@ -167,22 +191,23 @@ def save_nmf_results(nmf_results, filepath_prefix):
         write_gct(v['H'], filepath_prefix + '_nmf_k{}h.gct'.format(k))
 
 
-def define_states(h, ks, max_std=3, n_clusterings=50, filepath=None):
+def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     """
     Consensus cluster H matrix's samples into k clusters.
     :param h: pandas DataFrame; H matrix (n_components, n_samples) from NMF
     :param ks: iterable; list of ks used for clustering states
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for the consenssu clustering
-    :param filepath: str;
+    :param filepath_prefix: str;
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
     # Standardize H and clip extreme values
-    standardized_clipped_h = normalize_pandas_object(h, axis=1).clip(-max_std, max_std)
+    clipped_h = normalize_pandas_object(h, method='-0-', axis=1).clip(-max_std, max_std)
+    normalized_h = normalize_pandas_object(clipped_h, method='-0-', axis=1)
 
     # Get association between samples
     print_log('Computing distances between samples ...')
-    sample_associations = compare_matrices(standardized_clipped_h, standardized_clipped_h, information_coefficient)
+    sample_associations = compare_matrices(normalized_h, normalized_h, information_coefficient, verbose=True)
 
     consensus_clustering_labels = DataFrame(index=ks, columns=list(h.columns) + ['cophenetic_correlation'])
     consensus_clustering_labels.index.name = 'state'
@@ -214,9 +239,10 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath=None):
             consensus_clustering_labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
             print_log('Computed the cophenetic correlation coefficient.')
 
-        if filepath:
-            establish_path(filepath)
-            write_gct(consensus_clustering_labels, filepath)
+        if filepath_prefix:
+            establish_path(filepath_prefix)
+            write_gct(consensus_clustering_labels.iloc[:, :-1], filepath_prefix + '_labels.gct')
+            consensus_clustering_labels.iloc[:, -1:].to_csv(filepath_prefix + '_cophenetic_scores.txt', sep='\t')
     else:
         raise ValueError('Invalid value passed to ks.')
 
@@ -264,7 +290,7 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
     # training_samples = DataFrame(index=h_train.columns, columns=['x', 'y', 'state'])
 
     # clip and 0-1 normalize the data
-    training_h = normalize_pandas_object(normalize_pandas_object(h_train, axis=1).clip(-std_max, std_max),
+    training_h = normalize_pandas_object(normalize_pandas_object(h_train, method='-0-', axis=1).clip(-std_max, std_max),
                                          method='0-1', axis=1)
 
     # Compute component coordinates
@@ -331,8 +357,9 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
                 else:
                     testing_h.ix[r_idx, :] = (testing_h.ix[r_idx, :] - r.mean()) / r.std()
         elif h_test_normalization == 'clip_and_0-1':
-            testing_h = normalize_pandas_object(normalize_pandas_object(h_test, axis=1).clip(-std_max, std_max),
-                                                method='0-1', axis=1)
+            testing_h = normalize_pandas_object(
+                normalize_pandas_object(h_test, method='-0-', axis=1).clip(-std_max, std_max),
+                method='0-1', axis=1)
         elif not h_test_normalization:
             testing_h = h_test
         else:

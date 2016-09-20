@@ -241,30 +241,31 @@ def drop_nan_columns(arrays):
     return [v[not_nan_filter] for v in arrays]
 
 
-def normalize_pandas_object(pandas_object, method='-0-', axis='all'):
+def normalize_pandas_object(pandas_object, method, n_ranks=10000, axis='all'):
     """
     Normalize a pandas object.
     :param pandas_object: pandas DataFrame or Series;
-    :param method: str; normalization type; {'-0-', '0-1'}
+    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
+    :param n_ranks: int;
     :param axis: int or str; 'all' for global, 0 for by-column, and 1 for by-row normalization
     :return: pandas DataFrame or Series;
     """
     obj = pandas_object.copy()
-    print_log('\'{}\' normalizing pandas object with axis={} ...'.format(method, axis))
-    if isinstance(obj, DataFrame):
-        if method == '-0-':
-            if axis == 'all':
+    print_log('\'{}\' normalizing pandas object on axis={} ...'.format(method, axis))
+
+    if isinstance(obj, Series):
+        obj = normalize_series(obj, method=method, n_ranks=n_ranks)
+    elif isinstance(obj, DataFrame):
+        if axis == 'all':
+            if method == '-0-':
                 obj_mean = obj.values.mean()
                 obj_std = obj.values.std()
                 if obj_std == 0:
                     print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
                     obj = obj / obj.size
                 else:
-                    obj = obj.applymap(lambda v: (v - obj_mean) / obj_std)
-            else:
-                obj = obj.apply(lambda r: (r - r.mean()) / r.std(), axis=axis)
-        elif method == '0-1':
-            if axis == 'all':
+                    obj = (obj - obj_mean) / obj_std
+            elif method == '0-1':
                 obj_min = obj.values.min()
                 obj_max = obj.values.max()
                 obj_range = obj_max - obj_min
@@ -272,19 +273,20 @@ def normalize_pandas_object(pandas_object, method='-0-', axis='all'):
                     print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
                     obj = obj / obj.size
                 else:
-                    obj = obj.applymap(lambda v: (v - obj_min) / obj_range)
-            else:
-                obj = obj.apply(lambda r: (r - r.min()) / (r.max() - r.min()), axis=axis)
-    elif isinstance(obj, Series):
-        obj = normalize_series(obj, method=method)
+                    obj = (obj - obj_min) / obj_range
+            elif method == 'rank':
+                raise ValueError('mehtod=\'rank\' & axix=\'all\' combination has not been implemented yet.')
+        else:
+            obj = obj.apply(normalize_series, **{'method': method, 'n_ranks': n_ranks}, axis=axis)
     return obj
 
 
-def normalize_series(series, method='-0-'):
+def normalize_series(series, method='-0-', n_ranks=10000):
     """
      Normalize a pandas `series`.
     :param series: pandas Series;
-    :param method: str; normalization type; {'-0-', '0-1'}
+    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
+    :param n_ranks: int;
     :return: pandas Series;
     """
     if method == '-0-':
@@ -303,9 +305,11 @@ def normalize_series(series, method='-0-'):
             return series / series.size
         else:
             return (series - smin) / (smax - smin)
+    elif method == 'rank':
+        return series.rank() / series.size * n_ranks
 
 
-def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
+def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, verbose=False):
     """
     Make association or distance matrix of `matrix1` and `matrix2` by row or column.
     :param matrix1: pandas DataFrame;
@@ -313,6 +317,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     :param function: function; function used to compute association or dissociation
     :param axis: int; 0 for by-row and 1 for by-column
     :param is_distance: bool; True for distance and False for association
+    :param verbose: bool;
     :return: pandas DataFrame;
     """
     if axis == 1:
@@ -323,7 +328,10 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
         m2 = matrix2.T
 
     compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
+    n = m1.shape[0]
     for i, (i1, r1) in enumerate(m1.iterrows()):
+        if verbose and i % 10 == 0:
+            print_log('Comparing {} ({}/{}) ...'.format(i1, i, n))
         for i2, r2 in m2.iterrows():
             compared_matrix.ix[i1, i2] = function(r1, r2)
 
@@ -342,9 +350,8 @@ def consensus_cluster(clustering_labels):
     """
     n_rows, n_cols = clustering_labels.shape
     consensus_clusterings = zeros((n_cols, n_cols))
+    print_log('Consensus clustering {} columns ...'.format(n_cols))
     for i in range(n_cols):
-        if i % 30 == 0:
-            print_log('Consensus clustering ({}/{}) ...'.format(i, n_cols))
         for j in range(n_cols)[i:]:
             for r in range(n_rows):
                 if clustering_labels[r, i] == clustering_labels[r, j]:
@@ -426,7 +433,7 @@ def get_sample_coordinates_via_pulling(component_x_coordinates, component_x_samp
         c = component_x_samples.ix[:, sample]
         if n_influencing_components == 'all':
             n_influencing_components = component_x_samples.shape[0]
-        c = c.mask(c < c.sort_values()[-n_influencing_components], other=0)
+        c = c.mask(c < c.sort_values().tolist()[-n_influencing_components], other=0)
         x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(c ** component_pulling_power)
         y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
         sample_coordinates.ix[sample, ['x', 'y']] = x, y
