@@ -203,7 +203,7 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     """
     # Standardize H and clip extreme values
     clipped_h = normalize_pandas_object(h, method='-0-', axis=1).clip(-max_std, max_std)
-    normalized_h = normalize_pandas_object(clipped_h, method='-0-', axis=1)
+    normalized_h = normalize_pandas_object(clipped_h, method='0-1', axis=1)
 
     # Get association between samples
     print_log('Computing distances between samples ...')
