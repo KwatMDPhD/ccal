@@ -105,8 +105,15 @@ def nmf_and_score(matrix, ks, rank_normalize=True, method='cophenetic_correlatio
 
     if filepath_prefix:
         save_nmf_results(nmf_results, filepath_prefix)
-
+        write_dictionary(scores, filepath_prefix + '_nmf_scores.txt')
     return nmf_results, scores
+
+
+def write_dictionary(dictionary, filepath):
+    with open(filepath, 'w') as f:
+        f.write('k\tnmf_score\n')
+        for k, v in sorted(dictionary.items()):
+            f.writelines('{}\t{}\n'.format(k, v))
 
 
 def nmf(matrix, ks, rank_normalize=True, init='random', solver='cd', tol=1e-4, max_iter=1000, random_state=SEED,
@@ -187,8 +194,8 @@ def save_nmf_results(nmf_results, filepath_prefix):
     """
     establish_path(filepath_prefix)
     for k, v in nmf_results.items():
-        write_gct(v['W'], filepath_prefix + '_nmf_k{}w.gct'.format(k))
-        write_gct(v['H'], filepath_prefix + '_nmf_k{}h.gct'.format(k))
+        write_gct(v['W'], filepath_prefix + '_nmf_k{}_w.gct'.format(k))
+        write_gct(v['H'], filepath_prefix + '_nmf_k{}_h.gct'.format(k))
 
 
 def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):

@@ -25,7 +25,8 @@ from matplotlib.path import Path
 from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap
 from matplotlib.cm import bwr, Paired
 from matplotlib.colorbar import make_axes, ColorbarBase
-from seaborn import light_palette, heatmap, pointplot, violinplot, boxplot
+from matplotlib.backends.backend_pdf import PdfPages
+from seaborn import light_palette, heatmap, clustermap, pointplot, violinplot, boxplot
 
 from .support import print_log, establish_path, get_unique_in_order, normalize_pandas_object
 
@@ -72,38 +73,67 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
     elif not (isinstance(w_matrix, DataFrame) and isinstance(h_matrix, DataFrame)):
         raise ValueError('Need either: 1) NMF result ({k: {W:w, H:h, ERROR:error}) and k; or 2) W and H matrices.')
 
+    if output_filepath:
+        establish_path(output_filepath)
+        if not output_filepath.endswith('.pdf'):
+            output_filepath += '.pdf'
+        pdf = PdfPages(output_filepath)
+
+    figuretitle_font_properties = {'fontsize': title_fontsize, 'fontweight': 'bold'}
+    axtitle_font_properties = {'fontsize': title_fontsize * 0.9, 'fontweight': 'bold'}
+    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
+
+    # Plot W and H
     figure = plt.figure(figsize=figure_size)
     gridspec = GridSpec(10, 16)
     ax_w = plt.subplot(gridspec[1:, :5])
     ax_h = plt.subplot(gridspec[3:8, 7:])
-
     if not title:
-        title = 'NMF Result for k={}'.format(k)
-    figure.suptitle(title, fontsize=title_fontsize, fontweight='bold')
-
-    axtitle_font_properties = {'fontsize': title_fontsize * 0.9, 'fontweight': 'bold'}
-    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
-
+        title = 'NMF Result for k={}'.format(w_matrix.shape[1])
+    figure.suptitle(title, **figuretitle_font_properties)
     # Plot W
     if normalize:
         w_matrix = normalize_pandas_object(w_matrix, method='-0-', axis=0).clip(-max_std, max_std)
     heatmap(w_matrix, cmap=CMAP_CONTINUOUS, yticklabels=False, ax=ax_w)
-    ax_w.set_title('W', **axtitle_font_properties)
+    ax_w.set_title('W Matrix', **axtitle_font_properties)
     ax_w.set_xlabel('Component', **label_font_properties)
     ax_w.set_ylabel('Feature', **label_font_properties)
-
     # Plot H
     if normalize:
         h_matrix = normalize_pandas_object(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
     heatmap(h_matrix, cmap=CMAP_CONTINUOUS, xticklabels=False, cbar_kws={'orientation': 'horizontal'}, ax=ax_h)
-    ax_h.set_title('H', **axtitle_font_properties)
+    ax_h.set_title('H Matrix', **axtitle_font_properties)
     ax_h.set_xlabel('Sample', **label_font_properties)
     ax_h.set_ylabel('Component', **label_font_properties)
-
     if output_filepath:
-        establish_path(output_filepath)
-        figure.savefig(output_filepath, dpi=dpi, bbox_inches='tight')
-    plt.show()
+        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+
+    # Plot cluster map for W
+    cluster_grid = clustermap(w_matrix, standard_scale=0, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
+    plt.suptitle('W Matrix', **figuretitle_font_properties)
+    cluster_grid.ax_heatmap.set_xlabel('Component', **label_font_properties)
+    cluster_grid.ax_heatmap.set_ylabel('Feature', **label_font_properties)
+    for t in cluster_grid.ax_heatmap.get_xticklabels():
+        t.set_fontweight('bold')
+    for t in cluster_grid.ax_heatmap.get_yticklabels():
+        t.set_visible(False)
+    if output_filepath:
+        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+
+    # Plot cluster map for H
+    cluster_grid = clustermap(h_matrix, standard_scale=1, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
+    plt.suptitle('H Matrix', **figuretitle_font_properties)
+    cluster_grid.ax_heatmap.set_xlabel('Sample', **label_font_properties)
+    cluster_grid.ax_heatmap.set_ylabel('Component', **label_font_properties)
+    for t in cluster_grid.ax_heatmap.get_xticklabels():
+        t.set_visible(False)
+    for t in cluster_grid.ax_heatmap.get_yticklabels():
+        t.set_fontweight('bold')
+        t.set_rotation(0)
+    if output_filepath:
+        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+
+    pdf.close()
 
 
 def plot_nmf_scores(scores, figure_size=FIGURE_SIZE, title='NMF Clustering Score vs. k', title_fontsize=20,
