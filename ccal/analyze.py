@@ -17,7 +17,7 @@ Laboratory of Jill Mesirov
 import math
 
 from numpy import asarray, array, zeros, empty, argmax, dot
-from numpy.random import choice, shuffle
+from numpy.random import choice, random_integers, shuffle
 from numpy.linalg import pinv
 from pandas import DataFrame, merge
 from scipy.optimize import nnls
@@ -31,8 +31,8 @@ import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
 from rpy2.robjects.numpy2ri import numpy2ri
 
-from .support import SEED, EPS, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices, \
-    consensus_cluster, mds, fit_columns, exponential_function, get_sample_coordinates_via_pulling
+from .support import SEED, EPS, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices, mds, \
+    fit_columns, exponential_function, get_sample_coordinates_via_pulling
 from .information import information_coefficient
 
 ro.conversion.py2ri = numpy2ri
@@ -201,52 +201,74 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     :param filepath_prefix: str;
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
-    # Standardize H and clip extreme values
+    # '-0-' normalize H and clip values `max_std` standard deviation away; then '0-1' normalize the output
     clipped_h = normalize_pandas_object(h, method='-0-', axis=1).clip(-max_std, max_std)
     normalized_h = normalize_pandas_object(clipped_h, method='0-1', axis=1)
 
-    # Get association between samples
-    print_log('Computing distances between samples ...')
-    sample_associations = compare_matrices(normalized_h, normalized_h, information_coefficient, verbose=True)
+    # Get distance between samples
+    print_log('Computing distances between samples (columns) ...')
+    sample_distances = compare_matrices(normalized_h, normalized_h, information_coefficient, is_distance=True,
+                                        verbose=True)
 
+    # TODO: decouple cophenetic correlation
     consensus_clustering_labels = DataFrame(index=ks, columns=list(h.columns) + ['cophenetic_correlation'])
-    consensus_clustering_labels.index.name = 'state'
-    if any(ks):
-        for k in ks:
-            print_log('Defining states by consensus clustering for k={} ...'.format(k))
+    consensus_clustering_labels.index.name = 'n_states'
 
-            # Hierarchical cluster
-            clustering_labels = empty((n_clusterings, h.shape[1]))
-            for i in range(n_clusterings):
+    if isinstance(ks, int):
+        ks = [ks]
+    for k in ks:
+        print_log('Defining states by consensus clustering with k={} ...'.format(k))
+
+        # Hierarchical cluster
+        clustering_labels = empty((n_clusterings, h.shape[1]))
+        for i in range(n_clusterings):
+            if i % 10 == 0:
                 print_log('Hierarchical clustering sample associations (k={} @ {}/{}) ...'.format(k, i, n_clusterings))
-                ward = AgglomerativeClustering(n_clusters=k)
-                ward.fit(sample_associations)
-                # Assign column labels
-                clustering_labels[i, :] = ward.labels_
+            randomized_column_indices = random_integers(0, sample_distances.shape[1] - 1, sample_distances.shape[1])
+            ward = AgglomerativeClustering(n_clusters=k)
+            ward.fit(sample_distances.iloc[randomized_column_indices, randomized_column_indices])
+            # Assign column labels
+            clustering_labels[i, randomized_column_indices] = ward.labels_
 
-            # Consensus cluster hierarchical clustering labels
-            print_log('Consensus hierarchical clustering labels ...')
-            consensus_clusterings = consensus_cluster(clustering_labels)
+        # Consensus cluster hierarchical clustering labels
+        print_log('Consensus hierarchical clustering labels ...')
+        consensus_clusterings = consensus_cluster(clustering_labels)
 
-            # Convert to distances
-            distances = 1 - consensus_clusterings
+        # Convert to distances
+        distances = 1 - consensus_clusterings
 
-            # Hierarchical cluster the consensus clusterings to assign the final label
-            ward = linkage(distances, method='ward')
-            consensus_clustering_labels.ix[k, sample_associations.index] = fcluster(ward, k, criterion='maxclust')
+        # Hierarchical cluster the consensus clusterings to assign the final label
+        ward = linkage(distances, method='ward')
+        consensus_clustering_labels.ix[k, sample_distances.index] = fcluster(ward, k, criterion='maxclust')
 
-            # Compute clustering scores, the correlation between cophenetic and Euclidian distances
-            consensus_clustering_labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
-            print_log('Computed the cophenetic correlation coefficient.')
+        # Compute clustering scores, the correlation between cophenetic and Euclidian distances
+        consensus_clustering_labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
+        print_log('Computed the cophenetic correlation coefficient.')
 
-        if filepath_prefix:
-            establish_path(filepath_prefix)
-            write_gct(consensus_clustering_labels.iloc[:, :-1], filepath_prefix + '_labels.gct')
-            consensus_clustering_labels.iloc[:, -1:].to_csv(filepath_prefix + '_cophenetic_scores.txt', sep='\t')
-    else:
-        raise ValueError('Invalid value passed to ks.')
+    if filepath_prefix:
+        establish_path(filepath_prefix)
+        write_gct(consensus_clustering_labels.iloc[:, :-1], filepath_prefix + '_labels.gct')
+        consensus_clustering_labels.iloc[:, -1:].to_csv(filepath_prefix + '_cophenetic_scores.txt', sep='\t')
 
     return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:]
+
+
+def consensus_cluster(clustering_labels):
+    """
+    Consensus cluster `clustering_labels`, a distance matrix.
+    :param clustering_labels: numpy array;
+    :return: numpy array;
+    """
+    n_rows, n_cols = clustering_labels.shape
+    consensus_clusterings = zeros((n_cols, n_cols))
+    print_log('Consensus clustering {} columns ...'.format(n_cols))
+    for i in range(n_cols):
+        for j in range(n_cols):
+            for r in range(n_rows):
+                if clustering_labels[r, i] == clustering_labels[r, j]:
+                    consensus_clusterings[i, j] += 1
+    # Return normalized consensus clustering
+    return consensus_clusterings / n_rows
 
 
 def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train', states_test=None,

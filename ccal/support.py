@@ -14,7 +14,7 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import array, asarray, zeros, ones, isnan, exp, finfo
+from numpy import array, asarray, ones, isnan, exp, finfo
 from numpy.random import random_integers, random_sample
 from pandas import DataFrame, Series, read_csv
 from scipy.optimize import curve_fit
@@ -330,7 +330,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, verb
     compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
     n = m1.shape[0]
     for i, (i1, r1) in enumerate(m1.iterrows()):
-        if verbose and i % 10 == 0:
+        if verbose and i % 50 == 0:
             print_log('Comparing {} ({}/{}) ...'.format(i1, i, n))
         for i2, r2 in m2.iterrows():
             compared_matrix.ix[i1, i2] = function(r1, r2)
@@ -340,24 +340,6 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, verb
         compared_matrix = 1 - compared_matrix
 
     return compared_matrix
-
-
-def consensus_cluster(clustering_labels):
-    """
-    Consenssu cluster `clustering_labels`, a distance matrix.
-    :param clustering_labels: numpy array;
-    :return: numpy array;
-    """
-    n_rows, n_cols = clustering_labels.shape
-    consensus_clusterings = zeros((n_cols, n_cols))
-    print_log('Consensus clustering {} columns ...'.format(n_cols))
-    for i in range(n_cols):
-        for j in range(n_cols)[i:]:
-            for r in range(n_rows):
-                if clustering_labels[r, i] == clustering_labels[r, j]:
-                    consensus_clusterings[i, j] += 1
-    # Return normalized consensus clustering
-    return consensus_clusterings / n_rows
 
 
 def make_label_x_sample_matrix(series, filepath=None):

@@ -295,7 +295,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         a.index = samples.index
         # Set up annotation min, mean, max, and colormap.
         if annotation_type == 'continuous':
-            samples.ix[:, 'annotation'] = normalize_pandas_object(a).clip(-std_max, std_max)
+            samples.ix[:, 'annotation'] = normalize_pandas_object(a, method='-0-').clip(-std_max, std_max)
             annotation_min = max(-std_max, samples.ix[:, 'annotation'].min())
             annotation_mean = samples.ix[:, 'annotation'].mean()
             annotation_max = min(std_max, samples.ix[:, 'annotation'].max())
