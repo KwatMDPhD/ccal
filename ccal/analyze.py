@@ -16,23 +16,22 @@ Laboratory of Jill Mesirov
 """
 import math
 
-from numpy import asarray, array, zeros, empty, argmax, dot
+from numpy import asarray, array, zeros, empty, exp, argmax
 from numpy.random import choice, random_integers, shuffle
-from numpy.linalg import pinv
-from pandas import DataFrame, merge
-from scipy.optimize import nnls
+from pandas import DataFrame, Series, merge
 import scipy.stats as stats
 from scipy.cluster.hierarchy import linkage, fcluster, cophenet
 from scipy.spatial.distance import pdist
-from sklearn.cluster import AgglomerativeClustering
+from scipy.optimize import curve_fit
 from sklearn.decomposition import NMF
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.manifold import MDS
 from statsmodels.sandbox.stats.multicomp import multipletests
 import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
 from rpy2.robjects.numpy2ri import numpy2ri
 
-from .support import SEED, EPS, print_log, establish_path, write_gct, normalize_pandas_object, compare_matrices, mds, \
-    fit_columns, exponential_function, get_sample_coordinates_via_pulling
+from .support import SEED, EPS, print_log, establish_path, write_gct, write_dictionary
 from .information import information_coefficient
 
 ro.conversion.py2ri = numpy2ri
@@ -41,14 +40,16 @@ bcv = mass.bcv
 kde2d = mass.kde2d
 
 
-def nmf_and_score(matrix, ks, rank_normalize=True, method='cophenetic_correlation', n_clusterings=30,
-                  init='random', solver='cd', tol=1e-4, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
-                  shuffle=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1, filepath_prefix=None):
+# ======================================================================================================================
+# NMF
+# ======================================================================================================================
+def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
+                  init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
+                  shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
-    Perform NMF with k from `ks` and score each NMF result.
+    Perform NMF with k from `ks` and score each NMF decomposition.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
-    :param rank_normalize: bool; rank normalize `matrix` or not
     :param method: str; {'cophenetic_correlation'}
     :param n_clusterings:
     :param init:
@@ -58,71 +59,62 @@ def nmf_and_score(matrix, ks, rank_normalize=True, method='cophenetic_correlatio
     :param random_state:
     :param alpha:
     :param l1_ratio:
-    :param shuffle:
+    :param shuffle_:
     :param nls_max_iter:
     :param sparseness:
     :param beta:
     :param eta:
-    :param filepath_prefix: str; `filepath_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
     """
-    if rank_normalize:
-        matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
+    if isinstance(ks, int):
+        ks = [ks]
 
     nmf_results = {}
     scores = {}
     if method == 'cophenetic_correlation':
-        if isinstance(ks, int):
-            ks = [ks]
+        print_log(
+            'Scoring NMF with consensus-clustering ({} clusterings) cophenetic correlation ...'.format(n_clusterings))
         for k in ks:
-            print_log('Computing NMF score using cophenetic correlation for k={} ...'.format(k))
+            print_log('k={} ...'.format(k))
 
             # NMF cluster
-            clustering_labels = empty((n_clusterings, matrix.shape[1]))
+            clustering_labels = zeros((n_clusterings, matrix.shape[1]), dtype=int)
             for i in range(n_clusterings):
                 if i % 10 == 0:
-                    print_log('NMF clustering (k={} @ {}/{}) ...'.format(k, i, n_clusterings))
-                nmf_result = nmf(matrix, k, rank_normalize=False,
+                    print_log('\tNMF ({}/{}) ...'.format(i, n_clusterings))
+                nmf_result = nmf(matrix, k,
                                  init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
-                                 alpha=alpha, l1_ratio=l1_ratio, shuffle=shuffle, nls_max_iter=nls_max_iter,
+                                 alpha=alpha, l1_ratio=l1_ratio, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
                                  sparseness=sparseness, beta=beta, eta=eta)[k]
+
                 # Save 1 NMF result for eack k
                 if i == 0:
                     nmf_results[k] = nmf_result
-                    print_log('\tSaved the 1st NMF decomposition.')
+                    print_log('\t\tSaved the 1st NMF decomposition.')
+
                 # Assigning column labels, the row index holding the highest value
                 clustering_labels[i, :] = argmax(asarray(nmf_result['H']), axis=0)
 
             # Consensus cluster NMF clustering labels
-            print_log('Consensus clustering NMF clustering labels ...')
-            consensus_clusterings = consensus_cluster(clustering_labels)
+            print_log('\tConsensus clustering ...')
+            consensus_clusterings = get_consensus(clustering_labels)
 
             # Compute clustering scores, the correlation between cophenetic and Euclidian distances
             scores[k] = cophenet(linkage(consensus_clusterings, 'average'), pdist(consensus_clusterings))[0]
-            print_log('Computed the cophenetic correlation coefficient.')
+            print_log('\tComputed the cophenetic correlations.')
+
     else:
         raise ValueError('Unknown method {}.'.format(method))
 
-    if filepath_prefix:
-        save_nmf_results(nmf_results, filepath_prefix)
-        write_dictionary(scores, filepath_prefix + '_nmf_scores.txt')
     return nmf_results, scores
 
 
-def write_dictionary(dictionary, filepath):
-    with open(filepath, 'w') as f:
-        f.write('k\tnmf_score\n')
-        for k, v in sorted(dictionary.items()):
-            f.writelines('{}\t{}\n'.format(k, v))
-
-
-def nmf(matrix, ks, rank_normalize=True, init='random', solver='cd', tol=1e-4, max_iter=1000, random_state=SEED,
-        alpha=0, l1_ratio=0, shuffle=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1, filepath_prefix=None):
+def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED,
+        alpha=0, l1_ratio=0, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
     Nonenegative matrix factorize `matrix` with k from `ks`.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
-    :param rank_normalize: bool; rank normalize `matrix` or not
     :param init:
     :param solver:
     :param tol:
@@ -130,75 +122,61 @@ def nmf(matrix, ks, rank_normalize=True, init='random', solver='cd', tol=1e-4, m
     :param random_state:
     :param alpha:
     :param l1_ratio:
-    :param shuffle:
+    :param shuffle_:
     :param nls_max_iter:
     :param sparseness:
     :param beta:
     :param eta:
-    :param filepath_prefix: str; `filepath_prefix`_k{k}_{w, h}.gct and  will be saved
     :return: dict; {k: {W:w, H:h, ERROR:error}}
     """
-    if rank_normalize:
-        matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
-
-    nmf_results = {}
     if isinstance(ks, int):
         ks = [ks]
+
+    nmf_results = {}
     for k in ks:
-        model = NMF(n_components=k, init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
-                    alpha=alpha, l1_ratio=l1_ratio, shuffle=shuffle, nls_max_iter=nls_max_iter, sparseness=sparseness,
-                    beta=beta, eta=eta)
 
         # Compute W, H, and reconstruction error
+        model = NMF(n_components=k, init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
+                    alpha=alpha, l1_ratio=l1_ratio, shuffle=shuffle_, nls_max_iter=nls_max_iter, sparseness=sparseness,
+                    beta=beta, eta=eta)
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
+
+        # Return pandas DataFrame if the input matrix is also a DataFrame
         if isinstance(matrix, DataFrame):
-            # Return pandas DataFrame if the input matrix is also a DataFrame
             w = DataFrame(w, index=matrix.index, columns=[i + 1 for i in range(k)])
             h = DataFrame(h, index=[i + 1 for i in range(k)], columns=matrix.columns)
-        nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
-    if filepath_prefix:
-        save_nmf_results(nmf_results, filepath_prefix)
+        # Save NMF results
+        nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
     return nmf_results
 
 
-def nnls_matrix(a, b, method='nnls'):
+def get_consensus(clustering_x_sample):
     """
-    Solve `a`x = `b`. (n, k) * (k, m) = (n, m)
-    :param a: numpy array; (n, k)
-    :param b: numpy array; (n, m)
-    :param method: str; {'nnls', 'pinv'}
-    :return: numpy array; (k, m)
+    Count number of co-clusterings.
+    :param clustering_x_sample: numpy array; (n_clusterings, n_samples)
+    :return: numpy array; (n_samples, n_samples)
     """
-    if method == 'nnls':
-        x = DataFrame(index=a.columns, columns=b.columns)
-        for i in range(b.shape[1]):
-            x.iloc[:, i] = nnls(a, b.iloc[:, i])[0]
-    elif method == 'pinv':
-        a_pinv = pinv(a)
-        x = dot(a_pinv, b)
-        x[x < 0] = 0
-        x = DataFrame(x, index=a.columns, columns=b.columns)
-    else:
-        raise ValueError('Unknown method {}. Choose from [\'nnls\', \'pinv\']'.format(method))
-    return x
+    n_clusterings, n_samples = clustering_x_sample.shape
+
+    consensus_clusterings = zeros((n_samples, n_samples))
+
+    for c_i in range(n_clusterings):
+        for i in range(n_samples):
+            for j in range(n_samples):
+                v1 = clustering_x_sample[c_i, i]
+                v2 = clustering_x_sample[c_i, j]
+                if v1 and v2 and (v1 == v2):
+                    consensus_clusterings[i, j] += 1
+    # Return normalized consensus clustering
+    return consensus_clusterings / n_clusterings
 
 
-def save_nmf_results(nmf_results, filepath_prefix):
-    """
-    Save `nmf_results` dictionary.
-    :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
-    :param filepath_prefix: str; `filepath_prefix`_k{k}_{w, h}.gct and  will be saved
-    :return: None
-    """
-    establish_path(filepath_prefix)
-    for k, v in nmf_results.items():
-        write_gct(v['W'], filepath_prefix + '_nmf_k{}_w.gct'.format(k))
-        write_gct(v['H'], filepath_prefix + '_nmf_k{}_h.gct'.format(k))
-
-
-def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
+# ======================================================================================================================
+# Cluster
+# ======================================================================================================================
+def consensus_cluster(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     """
     Consensus cluster H matrix's samples into k clusters.
     :param h: pandas DataFrame; H matrix (n_components, n_samples) from NMF
@@ -217,20 +195,19 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     sample_distances = compare_matrices(normalized_h, normalized_h, information_coefficient, is_distance=True,
                                         verbose=True)
 
-    # TODO: decouple cophenetic correlation
-    consensus_clustering_labels = DataFrame(index=ks, columns=list(h.columns) + ['cophenetic_correlation'])
-    consensus_clustering_labels.index.name = 'n_states'
-
+    print_log('Consensus clustering with {} clusterings ...'.format(n_clusterings))
+    consensus_clustering_labels = DataFrame(index=ks, columns=list(h.columns))
+    consensus_clustering_labels.index.name = 'k'
+    cophenetic_correlations = {}
     if isinstance(ks, int):
         ks = [ks]
     for k in ks:
-        print_log('Defining states by consensus clustering with k={} ...'.format(k))
-
+        print_log('k={} ...'.format(k))
         # Hierarchical cluster
         clustering_labels = empty((n_clusterings, h.shape[1]))
         for i in range(n_clusterings):
             if i % 10 == 0:
-                print_log('Hierarchical clustering sample associations (k={} @ {}/{}) ...'.format(k, i, n_clusterings))
+                print_log('\tClustering sample distances ({}/{}) ...'.format(i, n_clusterings))
             randomized_column_indices = random_integers(0, sample_distances.shape[1] - 1, sample_distances.shape[1])
             ward = AgglomerativeClustering(n_clusters=k)
             ward.fit(sample_distances.iloc[randomized_column_indices, randomized_column_indices])
@@ -238,52 +215,50 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
             clustering_labels[i, randomized_column_indices] = ward.labels_
 
         # Consensus cluster hierarchical clustering labels
-        print_log('Consensus hierarchical clustering labels ...')
-        consensus_clusterings = consensus_cluster(clustering_labels)
-
+        print_log('\tConsensus clustering ...')
+        consensus_clusterings = get_consensus(clustering_labels)
         # Convert to distances
         distances = 1 - consensus_clusterings
 
         # Hierarchical cluster the consensus clusterings to assign the final label
         ward = linkage(distances, method='ward')
-        consensus_clustering_labels.ix[k, sample_distances.index] = fcluster(ward, k, criterion='maxclust')
-
+        consensus_clustering_labels.ix[k, :] = fcluster(ward, k, criterion='maxclust')
         # Compute clustering scores, the correlation between cophenetic and Euclidian distances
-        consensus_clustering_labels.ix[k, 'cophenetic_correlation'] = cophenet(ward, pdist(distances))[0]
-        print_log('Computed the cophenetic correlation coefficient.')
+        cophenetic_correlations[k] = cophenet(ward, pdist(distances))[0]
+        print_log('Computed cophenetic correlations.')
 
     if filepath_prefix:
         establish_path(filepath_prefix)
-        write_gct(consensus_clustering_labels.iloc[:, :-1], filepath_prefix + '_labels.gct')
-        consensus_clustering_labels.iloc[:, -1:].to_csv(filepath_prefix + '_clustering_scores.txt', sep='\t')
+        write_gct(consensus_clustering_labels, filepath_prefix + '_labels.gct')
+        write_dictionary(cophenetic_correlations, filepath_prefix + '_clustering_scores.txt',
+                         key_name='k', value_name='cophenetic_correlation')
 
-    return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:]
+    return consensus_clustering_labels, cophenetic_correlations
 
 
-def consensus_cluster(clustering_labels):
+# ======================================================================================================================
+# Make Onco-GPS
+# ======================================================================================================================
+def exponential_function(x, a, k, c):
     """
-    Consensus cluster `clustering_labels`, a distance matrix.
-    :param clustering_labels: numpy array;
-    :return: numpy array;
+    Apply exponential function on `x`.
+    :param x:
+    :param a:
+    :param k:
+    :param c:
+    :return:
     """
-    n_rows, n_cols = clustering_labels.shape
-    consensus_clusterings = zeros((n_cols, n_cols))
-    print_log('Consensus clustering {} columns ...'.format(n_cols))
-    for i in range(n_cols):
-        for j in range(n_cols):
-            for r in range(n_rows):
-                if clustering_labels[r, i] == clustering_labels[r, j]:
-                    consensus_clusterings[i, j] += 1
-    # Return normalized consensus clustering
-    return consensus_clusterings / n_rows
+    return a * exp(k * x) + c
 
 
-def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train', states_test=None,
-                  informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
-                  function_to_fit=exponential_function, fit_maxfev=1000,
-                  fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
-                  n_pulling_components='all', component_pull_power='auto', n_pullratio_components=0, pullratio_factor=5,
-                  n_grids=128, kde_bandwidths_factor=1):
+def make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train',
+                           states_test=None,
+                           informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
+                           function_to_fit=exponential_function, fit_maxfev=1000,
+                           fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
+                           n_pulling_components='all', component_pull_power='auto', n_pullratio_components=0,
+                           pullratio_factor=5,
+                           n_grids=128, kde_bandwidths_factor=1):
     """
     Compute component and sample coordinates. And compute grid probabilities and states.
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
@@ -404,6 +379,72 @@ def make_onco_gps(h_train, states_train, std_max=3, h_test=None, h_test_normaliz
         return component_coordinates, training_samples, grid_probabilities, grid_states
 
 
+def mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
+    """
+    Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.
+    :param dataframe: pandas DataFrame; (n_points, n_dimentions)
+    :param informational_mds: bool; use informational MDS or not
+    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :param n_init: int;
+    :param max_iter: int;
+    :param standardize: bool;
+    :return: pandas DataFrame; (n_points, [x, y])
+    """
+    if informational_mds:
+        from .information import information_coefficient
+        mds_obj = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
+        coordinates = mds_obj.fit_transform(
+            compare_matrices(dataframe, dataframe, information_coefficient, is_distance=True, axis=1))
+    else:
+        mds_obj = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
+        coordinates = mds_obj.fit_transform(dataframe)
+    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
+
+    if standardize:
+        coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
+
+    return coordinates
+
+
+def fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
+    """
+    Fit columsn of `dataframe` to `function_to_fit`.
+    :param dataframe: pandas DataFrame;
+    :param function_to_fit: function;
+    :param maxfev: int;
+    :return: list; fit parameters
+    """
+    x = array(range(dataframe.shape[0]))
+    y = asarray(dataframe.apply(sorted).apply(sum, axis=1)) / dataframe.shape[1]
+    fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
+    return fit_parameters
+
+
+def get_sample_coordinates_via_pulling(component_x_coordinates, component_x_samples,
+                                       n_influencing_components='all', component_pulling_power=1):
+    """
+    Compute sample coordinates based on component coordinates, which pull samples.
+    :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
+    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
+    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :return: pandas DataFrame; (n_samples, [x, y])
+    """
+    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
+    for sample in sample_coordinates.index:
+        c = component_x_samples.ix[:, sample]
+        if n_influencing_components == 'all':
+            n_influencing_components = component_x_samples.shape[0]
+        c = c.mask(c < c.sort_values().tolist()[-n_influencing_components], other=0)
+        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(c ** component_pulling_power)
+        y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
+        sample_coordinates.ix[sample, ['x', 'y']] = x, y
+    return sample_coordinates
+
+
+# ======================================================================================================================
+# Association
+# ======================================================================================================================
 def compute_against_reference(features, ref, function=information_coefficient, n_features=0.95, ascending=False,
                               n_samplings=30, confidence=0.95, n_perms=30):
     """
@@ -487,3 +528,107 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     scores = merge(scores, permutation_pvals_and_fdrs, left_index=True, right_index=True)
 
     return scores.sort_values('score', ascending=ascending)
+
+
+def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, verbose=False):
+    """
+    Make association or distance matrix of `matrix1` and `matrix2` by row or column.
+    :param matrix1: pandas DataFrame;
+    :param matrix2: pandas DataFrame;
+    :param function: function; function used to compute association or dissociation
+    :param axis: int; 0 for by-row and 1 for by-column
+    :param is_distance: bool; True for distance and False for association
+    :param verbose: bool;
+    :return: pandas DataFrame;
+    """
+    if axis == 1:
+        m1 = matrix1.copy()
+        m2 = matrix2.copy()
+    else:
+        m1 = matrix1.T
+        m2 = matrix2.T
+
+    compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
+    n = m1.shape[0]
+    for i, (i1, r1) in enumerate(m1.iterrows()):
+        if verbose and i % 50 == 0:
+            print_log('Comparing {} ({}/{}) ...'.format(i1, i, n))
+        for i2, r2 in m2.iterrows():
+            compared_matrix.ix[i1, i2] = function(r1, r2)
+
+    if is_distance:
+        print_log('Converting association to distance (1 - association) ...')
+        compared_matrix = 1 - compared_matrix
+
+    return compared_matrix
+
+
+# ======================================================================================================================#
+# Normalize
+# ======================================================================================================================#
+def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
+    """
+    Normalize a pandas object.
+    :param pandas_object: pandas DataFrame or Series;
+    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
+    :param n_ranks: int;
+    :param axis: int; None for global, 0 for by-column, and 1 for by-row normalization
+    :return: pandas DataFrame or Series;
+    """
+    obj = pandas_object.copy()
+    print_log('\'{}\' normalizing pandas object on axis={} ...'.format(method, axis))
+
+    if isinstance(obj, Series):
+        obj = normalize_series(obj, method=method, n_ranks=n_ranks)
+    elif isinstance(obj, DataFrame):
+        if not (axis == 0 or axis == 1):  # Normalize globally
+            if method == '-0-':
+                obj_mean = obj.values.mean()
+                obj_std = obj.values.std()
+                if obj_std == 0:
+                    print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
+                    obj = obj / obj.size
+                else:
+                    obj = (obj - obj_mean) / obj_std
+            elif method == '0-1':
+                obj_min = obj.values.min()
+                obj_max = obj.values.max()
+                obj_range = obj_max - obj_min
+                if obj_range == 0:
+                    print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
+                    obj = obj / obj.size
+                else:
+                    obj = (obj - obj_min) / obj_range
+            elif method == 'rank':
+                raise ValueError('mehtod=\'rank\' & axix=\'all\' combination has not been implemented yet.')
+        else:  # Normalize by row or by column
+            obj = obj.apply(normalize_series, **{'method': method, 'n_ranks': n_ranks}, axis=axis)
+    return obj
+
+
+def normalize_series(series, method='-0-', n_ranks=10000):
+    """
+     Normalize a pandas `series`.
+    :param series: pandas Series;
+    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
+    :param n_ranks: int;
+    :return: pandas Series;
+    """
+    if method == '-0-':
+        mean = series.mean()
+        std = series.std()
+        if std == 0:
+            print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
+            return series / series.size
+        else:
+            return (series - mean) / std
+    elif method == '0-1':
+        smin = series.min()
+        smax = series.max()
+        if smax - smin == 0:
+            print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
+            return series / series.size
+        else:
+            return (series - smin) / (smax - smin)
+    elif method == 'rank':
+        return series.rank() / series.size * n_ranks

@@ -2,12 +2,14 @@ from pandas import DataFrame, Series, merge
 
 from .support import print_log, establish_path
 from .information import information_coefficient
-from .visualize import DPI, plot_features_against_reference
-from .analyze import compute_against_reference
+from .visualize import DPI, plot_clustermap, plot_features_against_reference
+from .analyze import compare_matrices, compute_against_reference
 
 
-def compare(matrix_1, matrix_2):
-    pass
+def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, verbose=False, title=None):
+    compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance, verbose=verbose)
+    plot_clustermap(compared_matrix, title=title)
+    return compared_matrix
 
 
 def match(features, ref, feature_type='continuous', ref_type='continuous', min_n_feature_values=0,
@@ -108,4 +110,4 @@ def match(features, ref, feature_type='continuous', ref_type='continuous', min_n
                                     figure_size=figure_size, title=title, title_size=title_size,
                                     annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
                                     annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                    output_filepath=figure_filename, dpi=dpi)
+                                    filepath=figure_filename, dpi=dpi)

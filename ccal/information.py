@@ -71,7 +71,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     # Get information coefficient
     ic = sign(cor) * sqrt(1 - exp(- 2 * mi))
 
-    # TODO: debug when mi < 0 and |mi|  ~ 0 resulting in ic = nan
+    # TODO: debug when MI < 0 and |MI|  ~ 0 resulting in IC = nan
     if isnan(ic):
         ic = 0
 

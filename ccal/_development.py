@@ -45,6 +45,28 @@ def nmf_bcv(x, nmf, nfold=2, nrepeat=1):
     return mean_error
 
 
+def nnls_matrix(a, b, method='nnls'):
+    """
+    Solve `a`x = `b`. (n, k) * (k, m) = (n, m)
+    :param a: numpy array; (n, k)
+    :param b: numpy array; (n, m)
+    :param method: str; {'nnls', 'pinv'}
+    :return: numpy array; (k, m)
+    """
+    if method == 'nnls':
+        x = DataFrame(index=a.columns, columns=b.columns)
+        for i in range(b.shape[1]):
+            x.iloc[:, i] = nnls(a, b.iloc[:, i])[0]
+    elif method == 'pinv':
+        a_pinv = pinv(a)
+        x = dot(a_pinv, b)
+        x[x < 0] = 0
+        x = DataFrame(x, index=a.columns, columns=b.columns)
+    else:
+        raise ValueError('Unknown method {}. Choose from [\'nnls\', \'pinv\']'.format(method))
+    return x
+
+
 def nmf_and_score(matrix, ks, method='cophenetic_correlation'):
     """
     Perform NMF with k from `ks` and score each computation.

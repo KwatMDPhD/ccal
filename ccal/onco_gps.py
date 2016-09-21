@@ -1,16 +1,72 @@
-from .support import SEED, exponential_function
-from .analyze import make_onco_gps
-from .visualize import FIGURE_SIZE, DPI, plot_onco_gps
+from pandas import read_csv
+
+from .support import SEED, print_log, write_dictionary, read_gct, save_nmf_results
+from .analyze import nmf_and_score, normalize_pandas_object, consensus_cluster, exponential_function, \
+    make_onco_gps_elements
+from .visualize import FIGURE_SIZE, DPI, plot_clustermap, plot_clusterings, plot_nmf_result, plot_clustering_scores, \
+    plot_onco_gps
 
 
-def define_components():
-    pass
+def preprocess_matrix():
+    return None
 
 
-def define_states():
-    pass
+def define_components(matrix, ks, filepath_prefix, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE,
+                      dpi=DPI):
+    """
+    Define components.
+    :param matrix:
+    :param ks:
+    :param n_clusterings:
+    :param random_state:
+    :param filepath_prefix:
+    :param figure_size:
+    :param dpi:
+    :param filepath_prefix: str; `filepath_prefix`_nmf_k{k}_{w, h}.gct and  will be saved
+    :return:
+    """
+    # Rank normalize the input matrix by column
+    matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
+    plot_clustermap(matrix, figure_size=figure_size, title='A Matrix', xticklabels=False, yticklabels=False)
+
+    # NMF and score, while saving a NMF result for each k
+    nmf_results, nmf_scores = nmf_and_score(matrix=matrix, ks=ks, n_clusterings=n_clusterings,
+                                            random_state=random_state)
+    save_nmf_results(nmf_results, filepath_prefix)
+    write_dictionary(nmf_scores, filepath_prefix + '_nmf_scores.txt', key_name='k', value_name='cophenetic_correlation')
+
+    print_log('Plotting NMF scores ...')
+    plot_clustering_scores(nmf_scores, figure_size=figure_size, filepath=filepath_prefix + '_nmf_scores.pdf', dpi=dpi)
+    for k in ks:
+        print_log('Plotting NMF result for k={} ...'.format(k))
+        plot_nmf_result(nmf_results, k, figure_size=figure_size, filepath=filepath_prefix + '_nmf_k{}.pdf'.format(k),
+                        dpi=dpi)
+
+    return nmf_results, nmf_scores
 
 
+def define_states(h, ks, filepath_prefix, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE,
+                  title='Clustering Labels', dpi=DPI):
+    """
+    Define states.
+    :param h:
+    :param ks:
+    :param max_std:
+    :param n_clusterings:
+    :param filepath_prefix:
+    :param figure_size:
+    :param dpi:
+    :return:
+    """
+    labels, scores = consensus_cluster(h, ks, max_std=max_std, n_clusterings=n_clusterings,
+                                       filepath_prefix=filepath_prefix)
+    plot_clusterings(labels, title=title, filepath=filepath_prefix + '_labels.pdf')
+    plot_clustering_scores(scores, figure_size=figure_size, filepath=filepath_prefix + '_clustering_scores.pdf',
+                           dpi=dpi)
+    return labels, scores
+
+
+# TODO: Simplify
 def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
              informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
              function_to_fit=exponential_function, fit_maxfev=1000,
@@ -98,17 +154,19 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     if 0 in states_train:
         raise ValueError('Can\'t have \'0\' in states_train, whose values range from [1, ..., <n_states_train>].')
 
-    cc, s, gp, gs = make_onco_gps(h_train, states_train, std_max=std_max,
-                                  h_test=h_test, h_test_normalization=h_test_normalization, states_test=states_test,
-                                  informational_mds=informational_mds, mds_seed=mds_seed,
-                                  mds_n_init=mds_n_init, mds_max_iter=mds_max_iter, function_to_fit=function_to_fit,
-                                  fit_maxfev=fit_maxfev, fit_min=fit_min, fit_max=fit_max,
-                                  pull_power_min=pull_power_min, pull_power_max=pull_power_max,
-                                  n_pulling_components=n_pulling_components,
-                                  component_pull_power=component_pull_power,
-                                  n_pullratio_components=n_pullratio_components,
-                                  pullratio_factor=pullratio_factor,
-                                  n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
+    cc, s, gp, gs = make_onco_gps_elements(h_train, states_train, std_max=std_max,
+                                           h_test=h_test, h_test_normalization=h_test_normalization,
+                                           states_test=states_test,
+                                           informational_mds=informational_mds, mds_seed=mds_seed,
+                                           mds_n_init=mds_n_init, mds_max_iter=mds_max_iter,
+                                           function_to_fit=function_to_fit,
+                                           fit_maxfev=fit_maxfev, fit_min=fit_min, fit_max=fit_max,
+                                           pull_power_min=pull_power_min, pull_power_max=pull_power_max,
+                                           n_pulling_components=n_pulling_components,
+                                           component_pull_power=component_pull_power,
+                                           n_pullratio_components=n_pullratio_components,
+                                           pullratio_factor=pullratio_factor,
+                                           n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
     plot_onco_gps(cc, s, gp, gs, len(set(states_train)),
                   annotations=annotations, annotation_name=annotation_name, annotation_type=annotation_type,
                   std_max=std_max,
@@ -131,4 +189,4 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                   effectplot_type=effectplot_type, effectplot_mean_markerfacecolor=effectplot_mean_markerfacecolor,
                   effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                   effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
-                  output_filepath=output_filepath, figure_size=figure_size, dpi=dpi)
+                  filepath=output_filepath, figure_size=figure_size, dpi=dpi)

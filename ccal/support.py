@@ -14,14 +14,11 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import array, asarray, ones, isnan, exp, finfo
-from numpy.random import random_integers, random_sample
+from numpy import finfo, ones, isnan
 from pandas import DataFrame, Series, read_csv
-from scipy.optimize import curve_fit
-from sklearn.manifold import MDS
 
 # ======================================================================================================================
-# Parameters
+# Set up global parameters
 # ======================================================================================================================
 VERBOSE = True
 SEED = 20121020
@@ -29,8 +26,59 @@ EPS = finfo(float).eps
 
 
 # ======================================================================================================================
-# Utilities
+# Set up system
 # ======================================================================================================================
+def install_libraries(libraries_needed):
+    """
+    Check if `libraries_needed` are installed; if not then install using pip.
+    :param libraries_needed: iterable; library names
+    :return: None
+    """
+    from pip import get_installed_distributions, main
+
+    print_log('Checking library dependencies ...')
+    # Get currently installed libraries
+    libraries_installed = [lib.key for lib in get_installed_distributions()]
+    # Install missing libraries from `libraries_needed`
+    for lib in libraries_needed:
+        if lib not in libraries_installed:
+            print_log('{} not found! Installing {} using pip ...'.format(lib, lib))
+            main(['install', lib])
+    # Print versions of `libraries_needed`
+    print_log('Using the following libraries (plus libraries from the Anaconda distribution):')
+    for lib in get_installed_distributions():
+        if lib.key in libraries_needed:
+            print_log('\t{} (v{})'.format(lib.key, lib.version))
+
+
+# TODO: seed globally
+def plant_seed(a_seed=SEED):
+    """
+    Set random seed.
+    :param a_seed: int;
+    :return: None
+    """
+    from random import seed
+
+    seed(a_seed)
+    print_log('Planted a random seed {}.'.format(SEED))
+
+
+# ======================================================================================================================
+# Log
+# ======================================================================================================================
+# TODO: use logging
+def print_log(string):
+    """
+    Print `string` together with logging information.
+    :param string: str; message to printed
+    :return: None
+    """
+    global VERBOSE
+    if VERBOSE:
+        print('<{}> {}'.format(timestamp(time_only=True), string))
+
+
 def timestamp(time_only=False):
     """
     Get the current time stamp.
@@ -46,52 +94,9 @@ def timestamp(time_only=False):
     return datetime.now().strftime(formatter)
 
 
-def print_log(string):
-    """
-    Print `string` together with logging information.
-    :param string: str; message to printed
-    :return: None
-    """
-    global VERBOSE
-    if VERBOSE:
-        print('<{}> {}'.format(timestamp(time_only=True), string))
-
-
-def install_libraries(libraries_needed):
-    """
-    Check if `libraries_needed` are installed; if not then install using pip.
-    :param libraries_needed: iterable; library names
-    :return: None
-    """
-    from pip import get_installed_distributions, main
-
-    print_log('Checking library dependencies ...')
-
-    # Get currently installed libraries
-    libraries_installed = [lib.key for lib in get_installed_distributions()]
-    # Install missing libraries from `libraries_needed`
-    for lib in libraries_needed:
-        if lib not in libraries_installed:
-            print_log('{} not found! Installing {} using pip ...'.format(lib, lib))
-            main(['install', lib])
-    # Print versions of `libraries_needed`
-    print_log('Using the following libraries (in addition to the Anaconda libraries):')
-    for lib in get_installed_distributions():
-        if lib.key in libraries_needed:
-            print_log('\t{} (v{})'.format(lib.key, lib.version))
-
-
-def plant_seed(a_seed=SEED):
-    """
-    Set random seed.
-    :param a_seed: int;
-    :return: None
-    """
-    from random import seed
-    seed(a_seed)
-    print_log('Planted a random seed {}.'.format(SEED))
-
-
+# ======================================================================================================================
+# Operate on files
+# ======================================================================================================================
 def establish_path(filepath):
     """
     Make directories up to `fullpath` if they don't already exist.
@@ -114,6 +119,21 @@ def establish_path(filepath):
             if not (path.isdir(d) or path.isfile(d) or path.islink(d)):
                 mkdir(d)
                 print_log('Created directory {}.'.format(d))
+
+
+def write_dictionary(dictionary, filepath, key_name, value_name):
+    """
+    Write a dictionary as a tab-separated file.
+    :param dictionary: dict;
+    :param filepath: str;
+    :param key_name; str;
+    :param value_name; str;
+    :return: None
+    """
+    with open(filepath, 'w') as f:
+        f.write('{}\t{}\n'.format(key_name, value_name))
+        for k, v in sorted(dictionary.items()):
+            f.writelines('{}\t{}\n'.format(k, v))
 
 
 def read_gct(filepath, fill_na=None, drop_description=True):
@@ -145,12 +165,11 @@ def read_gct(filepath, fill_na=None, drop_description=True):
     return df
 
 
-def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None):
+def write_gct(pandas_object, filepath, descriptions=None):
     """
     Write a `pandas_object` to a `filepath` as a .gct.
     :param pandas_object: pandas DataFrame or Serires; (n_samples, m_features)
     :param filepath: str;
-    :param index_column_name: str; column to be used as the index for the .gct
     :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gct
     :return: None
     """
@@ -160,39 +179,98 @@ def write_gct(pandas_object, filepath, index_column_name=None, descriptions=None
     if isinstance(obj, Series):
         obj = DataFrame(obj).T
 
-    # Set index (Name)
-    if index_column_name:
-        obj.set_index(index_column_name, inplace=True)
     obj.index.name = 'Name'
-
-    # Set Description
     if descriptions:
         obj.insert(0, 'Description', descriptions)
     else:
         obj.insert(0, 'Description', obj.index)
-
-    # Set output filename suffix
     if not filepath.endswith('.gct'):
         filepath += '.gct'
-
     with open(filepath, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(obj.shape[0], obj.shape[1] - 1))
         obj.to_csv(f, sep='\t')
 
 
-# ======================================================================================================================#
-# Data analysis
-# ======================================================================================================================#
-def exponential_function(x, a, k, c):
+def read_gmt(filepath):
     """
-    Apply exponential function on `x`.
-    :param x:
-    :param a:
-    :param k:
-    :param c:
+    Read a .gmt file.
+    :param filepath:
     :return:
     """
-    return a * exp(k * x) + c
+    return read_csv(filepath, sep='\t', index_col=0)
+
+
+def write_gmt(pandas_object, filepath, descriptions=None):
+    """
+    Write a `pandas_object` to a `filepath` as a .gmt.
+    :param pandas_object: pandas DataFrame or Serires; (n_samples, m_features)
+    :param filepath: str;
+    :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gmt
+    :return: None
+    """
+    obj = pandas_object.copy()
+    obj.index.name = 'Name'
+    if descriptions:
+        obj.insert(0, 'Description', descriptions)
+    else:
+        obj.insert(0, 'Description', obj.index)
+    if not filepath.endswith('.gmt'):
+        filepath += '.gmt'
+    obj.to_csv(filepath, sep='\t')
+
+
+def save_nmf_results(nmf_results, filepath_prefix):
+    """
+    Save `nmf_results` dictionary.
+    :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
+    :param filepath_prefix: str; `filepath_prefix`_nmf_k{k}_{w, h}.gct and  will be saved
+    :return: None
+    """
+    establish_path(filepath_prefix)
+    for k, v in nmf_results.items():
+        write_gct(v['W'], filepath_prefix + '_nmf_k{}_w.gct'.format(k))
+        write_gct(v['H'], filepath_prefix + '_nmf_k{}_h.gct'.format(k))
+
+
+# ======================================================================================================================
+# Simulate
+# ======================================================================================================================
+def make_random_features(n_rows, n_cols, n_categories=None):
+    """
+    Simulate DataFrame (2D) or Series (1D).
+    :param n_rows: int;
+    :param n_cols: int;
+    :param n_categories: None or int; continuous if None and categorical if int
+    :return: pandas DataFrame or Series; (`n_rows`, `n_cols`) or (1, `n_cols`)
+    """
+    from numpy.random import random_integers, random_sample
+
+    indices = ['Feature {}'.format(i) for i in range(n_rows)]
+    columns = ['Element {}'.format(i) for i in range(n_cols)]
+    if n_categories:
+        features = DataFrame(random_integers(0, n_categories - 1, (n_rows, n_cols)), index=indices, columns=columns)
+    else:
+        features = DataFrame(random_sample((n_rows, n_cols)), index=indices, columns=columns)
+    if n_rows == 1:
+        # Return series
+        return features.iloc[0, :]
+    else:
+        return features
+
+
+# ======================================================================================================================#
+# Help
+# ======================================================================================================================#
+def drop_nan_columns(arrays):
+    """
+    Keep only not-NaN column positions in all `arrays`.
+    :param arrays: iterable of numpy arrays; must have the same length
+    :return: list of numpy arrays; none of the arrays contains NaN
+    """
+    not_nan_filter = ones(len(arrays[0]), dtype=bool)
+    for v in arrays:
+        not_nan_filter &= ~isnan(v)
+    return [v[not_nan_filter] for v in arrays]
 
 
 def get_unique_in_order(iterable):
@@ -208,141 +286,7 @@ def get_unique_in_order(iterable):
     return unique_in_order
 
 
-def make_random_features(n_rows, n_cols, n_categories=None):
-    """
-    Simulate DataFrame (2D) or Series (1D).
-    :param n_rows: int;
-    :param n_cols: int;
-    :param n_categories: None or int; continuous if None and categorical if int
-    :return: pandas DataFrame or Series; (`n_rows`, `n_cols`) or (1, `n_cols`)
-    """
-    indices = ['Feature {}'.format(i) for i in range(n_rows)]
-    columns = ['Element {}'.format(i) for i in range(n_cols)]
-    if n_categories:
-        features = DataFrame(random_integers(0, n_categories - 1, (n_rows, n_cols)), index=indices, columns=columns)
-    else:
-        features = DataFrame(random_sample((n_rows, n_cols)), index=indices, columns=columns)
-    if n_rows == 1:
-        # Return series
-        return features.iloc[0, :]
-    else:
-        return features
-
-
-def drop_nan_columns(arrays):
-    """
-    Keep only not-NaN column positions in all `arrays`.
-    :param arrays: iterable of numpy arrays; must have the same length
-    :return: list of numpy arrays; none of the arrays contains NaN
-    """
-    not_nan_filter = ones(len(arrays[0]), dtype=bool)
-    for v in arrays:
-        not_nan_filter &= ~isnan(v)
-    return [v[not_nan_filter] for v in arrays]
-
-
-def normalize_pandas_object(pandas_object, method, n_ranks=10000, axis='all'):
-    """
-    Normalize a pandas object.
-    :param pandas_object: pandas DataFrame or Series;
-    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
-    :param n_ranks: int;
-    :param axis: int or str; 'all' for global, 0 for by-column, and 1 for by-row normalization
-    :return: pandas DataFrame or Series;
-    """
-    obj = pandas_object.copy()
-    print_log('\'{}\' normalizing pandas object on axis={} ...'.format(method, axis))
-
-    if isinstance(obj, Series):
-        obj = normalize_series(obj, method=method, n_ranks=n_ranks)
-    elif isinstance(obj, DataFrame):
-        if axis == 'all':
-            if method == '-0-':
-                obj_mean = obj.values.mean()
-                obj_std = obj.values.std()
-                if obj_std == 0:
-                    print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
-                    obj = obj / obj.size
-                else:
-                    obj = (obj - obj_mean) / obj_std
-            elif method == '0-1':
-                obj_min = obj.values.min()
-                obj_max = obj.values.max()
-                obj_range = obj_max - obj_min
-                if obj_range == 0:
-                    print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
-                    obj = obj / obj.size
-                else:
-                    obj = (obj - obj_min) / obj_range
-            elif method == 'rank':
-                raise ValueError('mehtod=\'rank\' & axix=\'all\' combination has not been implemented yet.')
-        else:
-            obj = obj.apply(normalize_series, **{'method': method, 'n_ranks': n_ranks}, axis=axis)
-    return obj
-
-
-def normalize_series(series, method='-0-', n_ranks=10000):
-    """
-     Normalize a pandas `series`.
-    :param series: pandas Series;
-    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
-    :param n_ranks: int;
-    :return: pandas Series;
-    """
-    if method == '-0-':
-        mean = series.mean()
-        std = series.std()
-        if std == 0:
-            print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
-            return series / series.size
-        else:
-            return (series - mean) / std
-    elif method == '0-1':
-        smin = series.min()
-        smax = series.max()
-        if smax - smin == 0:
-            print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
-            return series / series.size
-        else:
-            return (series - smin) / (smax - smin)
-    elif method == 'rank':
-        return series.rank() / series.size * n_ranks
-
-
-def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, verbose=False):
-    """
-    Make association or distance matrix of `matrix1` and `matrix2` by row or column.
-    :param matrix1: pandas DataFrame;
-    :param matrix2: pandas DataFrame;
-    :param function: function; function used to compute association or dissociation
-    :param axis: int; 0 for by-row and 1 for by-column
-    :param is_distance: bool; True for distance and False for association
-    :param verbose: bool;
-    :return: pandas DataFrame;
-    """
-    if axis == 1:
-        m1 = matrix1.copy()
-        m2 = matrix2.copy()
-    else:
-        m1 = matrix1.T
-        m2 = matrix2.T
-
-    compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
-    n = m1.shape[0]
-    for i, (i1, r1) in enumerate(m1.iterrows()):
-        if verbose and i % 50 == 0:
-            print_log('Comparing {} ({}/{}) ...'.format(i1, i, n))
-        for i2, r2 in m2.iterrows():
-            compared_matrix.ix[i1, i2] = function(r1, r2)
-
-    if is_distance:
-        print_log('Converting association to distance (1 - association) ...')
-        compared_matrix = 1 - compared_matrix
-
-    return compared_matrix
-
-
-def make_label_x_sample_matrix(series, filepath=None):
+def explode(series, filepath=None):
     """
     Make a label-x-sample binary matrix from a Series.
     :param series: pandas Series;
@@ -357,66 +301,3 @@ def make_label_x_sample_matrix(series, filepath=None):
         write_gct(label_x_sample, filepath)
 
     return label_x_sample
-
-
-def mds(dataframe, informational_mds=True, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
-    """
-    Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.
-    :param dataframe: pandas DataFrame; (n_points, n_dimentions)
-    :param informational_mds: bool; use informational MDS or not
-    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
-    :param n_init: int;
-    :param max_iter: int;
-    :param standardize: bool;
-    :return: pandas DataFrame; (n_points, [x, y])
-    """
-    if informational_mds:
-        from .information import information_coefficient
-        mds_obj = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds_obj.fit_transform(
-            compare_matrices(dataframe, dataframe, information_coefficient, is_distance=True, axis=1))
-    else:
-        mds_obj = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds_obj.fit_transform(dataframe)
-    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
-
-    if standardize:
-        coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
-
-    return coordinates
-
-
-def fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
-    """
-    Fit columsn of `dataframe` to `function_to_fit`.
-    :param dataframe: pandas DataFrame;
-    :param function_to_fit: function;
-    :param maxfev: int;
-    :return: list; fit parameters
-    """
-    x = array(range(dataframe.shape[0]))
-    y = asarray(dataframe.apply(sorted).apply(sum, axis=1)) / dataframe.shape[1]
-    fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
-    return fit_parameters
-
-
-def get_sample_coordinates_via_pulling(component_x_coordinates, component_x_samples,
-                                       n_influencing_components='all', component_pulling_power=1):
-    """
-    Compute sample coordinates based on component coordinates, which pull samples.
-    :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
-    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
-    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param component_pulling_power: str or number; power to raise components' influence on each sample
-    :return: pandas DataFrame; (n_samples, [x, y])
-    """
-    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
-    for sample in sample_coordinates.index:
-        c = component_x_samples.ix[:, sample]
-        if n_influencing_components == 'all':
-            n_influencing_components = component_x_samples.shape[0]
-        c = c.mask(c < c.sort_values().tolist()[-n_influencing_components], other=0)
-        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(c ** component_pulling_power)
-        y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
-        sample_coordinates.ix[sample, ['x', 'y']] = x, y
-    return sample_coordinates

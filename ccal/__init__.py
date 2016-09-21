@@ -25,5 +25,6 @@ print('=' * 79)
 print('=' * 20 + ' Computational Cancer Analysis Library ' + '=' * 20)
 print('=' * 79)
 
-support.install_libraries(['rpy2', 'numpy', 'pandas', 'scipy', 'statsmodels', 'scikit-learn', 'matplotlib', 'seaborn'])
+# Install libraries not in Anaconda3 distribution
+support.install_libraries(['rpy2', 'seaborn'])
 support.plant_seed()
