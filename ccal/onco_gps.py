@@ -86,7 +86,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
              legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
              effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
              effectplot_median_markeredgecolor='#FF0082',
-             output_filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
+             filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states_train: iterable of int; (n_samples); sample states
@@ -144,7 +144,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :param effectplot_mean_markerfacecolor: matplotlib color;
     :param effectplot_mean_markeredgecolor: matplotlib color;
     :param effectplot_median_markeredgecolor: matplotlib color;
-    :param output_filepath: str;
+    :param filepath: str;
     :param figure_size: tuple;
     :param dpi: int;
     :return: None
@@ -189,4 +189,4 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                   effectplot_type=effectplot_type, effectplot_mean_markerfacecolor=effectplot_mean_markerfacecolor,
                   effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                   effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
-                  filepath=output_filepath, figure_size=figure_size, dpi=dpi)
+                  filepath=filepath, figure_size=figure_size, dpi=dpi)
