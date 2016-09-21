@@ -255,7 +255,7 @@ def define_states(h, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
     if filepath_prefix:
         establish_path(filepath_prefix)
         write_gct(consensus_clustering_labels.iloc[:, :-1], filepath_prefix + '_labels.gct')
-        consensus_clustering_labels.iloc[:, -1:].to_csv(filepath_prefix + '_cophenetic_scores.txt', sep='\t')
+        consensus_clustering_labels.iloc[:, -1:].to_csv(filepath_prefix + '_clustering_scores.txt', sep='\t')
 
     return consensus_clustering_labels.iloc[:, :-1], consensus_clustering_labels.iloc[:, -1:]
 

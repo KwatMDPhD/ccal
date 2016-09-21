@@ -109,25 +109,25 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
         plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
 
     # Plot cluster map for W
-    cluster_grid = clustermap(w_matrix, standard_scale=0, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
+    clustergrid = clustermap(w_matrix, standard_scale=0, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
     plt.suptitle('W Matrix', **figuretitle_font_properties)
-    cluster_grid.ax_heatmap.set_xlabel('Component', **label_font_properties)
-    cluster_grid.ax_heatmap.set_ylabel('Feature', **label_font_properties)
-    for t in cluster_grid.ax_heatmap.get_xticklabels():
+    clustergrid.ax_heatmap.set_xlabel('Component', **label_font_properties)
+    clustergrid.ax_heatmap.set_ylabel('Feature', **label_font_properties)
+    for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set_fontweight('bold')
-    for t in cluster_grid.ax_heatmap.get_yticklabels():
+    for t in clustergrid.ax_heatmap.get_yticklabels():
         t.set_visible(False)
     if output_filepath:
         plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
 
     # Plot cluster map for H
-    cluster_grid = clustermap(h_matrix, standard_scale=1, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
+    clustergrid = clustermap(h_matrix, standard_scale=1, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
     plt.suptitle('H Matrix', **figuretitle_font_properties)
-    cluster_grid.ax_heatmap.set_xlabel('Sample', **label_font_properties)
-    cluster_grid.ax_heatmap.set_ylabel('Component', **label_font_properties)
-    for t in cluster_grid.ax_heatmap.get_xticklabels():
+    clustergrid.ax_heatmap.set_xlabel('Sample', **label_font_properties)
+    clustergrid.ax_heatmap.set_ylabel('Component', **label_font_properties)
+    for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set_visible(False)
-    for t in cluster_grid.ax_heatmap.get_yticklabels():
+    for t in clustergrid.ax_heatmap.get_yticklabels():
         t.set_fontweight('bold')
         t.set_rotation(0)
     if output_filepath:
