@@ -16,7 +16,7 @@ def match(features, ref, feature_type='continuous', ref_type='continuous', min_n
           feature_ascending=False, ref_ascending=False, ref_sort=True,
           function=information_coefficient, n_features=0.95, n_samplings=30, confidence=0.95,
           n_permutations=30, title=None, title_size=16, annotation_label_size=9, plot_colname=False,
-          result_filename=None, figure_filename=None, figure_size='auto', dpi=DPI):
+          filepath_prefix=None, figure_size='auto', dpi=DPI):
     """
     Compute 'features' vs. `ref`.
     :param features: pandas DataFrame; (n_features, n_samples); must have indices and columns
@@ -36,8 +36,7 @@ def match(features, ref, feature_type='continuous', ref_type='continuous', min_n
     :param title_size: int; title text size
     :param annotation_label_size: int; annotation text size
     :param plot_colname: bool; plot column names or not
-    :param result_filename: str; file path to the output result
-    :param figure_filename: str; file path to the output figure
+    :param filepath_prefix: str;
     :param figure_size: 'auto' or tuple;
     :param dpi: int; dots per square inch of pixel in the output figure
     :return: None
@@ -78,9 +77,9 @@ def match(features, ref, feature_type='continuous', ref_type='continuous', min_n
                                        n_samplings=n_samplings, confidence=confidence, n_perms=n_permutations)
     features = features.reindex(scores.index)
 
-    if result_filename:
-        establish_path(result_filename)
-        merge(features, scores, left_index=True, right_index=True).to_csv(result_filename, sep='\t')
+    if filepath_prefix:
+        establish_path(filepath_prefix)
+        merge(features, scores, left_index=True, right_index=True).to_csv(filepath_prefix + '.txt', sep='\t')
 
     # Make annotations
     annotations = DataFrame(index=features.index)
@@ -110,4 +109,4 @@ def match(features, ref, feature_type='continuous', ref_type='continuous', min_n
                                     figure_size=figure_size, title=title, title_size=title_size,
                                     annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
                                     annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                    filepath=figure_filename, dpi=dpi)
+                                    filepath=filepath_prefix + '.pdf', dpi=dpi)
