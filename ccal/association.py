@@ -1,26 +1,89 @@
 from pandas import DataFrame, Series, merge
 
-from .support import print_log, establish_path
+from .support import print_log, establish_path, read_gct
 from .information import information_coefficient
 from .visualize import DPI, plot_clustermap, plot_features_against_reference
 from .analyze import compare_matrices, compute_against_reference
 
 
-def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, verbose=False, title=None):
-    compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance, verbose=verbose)
-    plot_clustermap(compared_matrix, title=title)
-    return compared_matrix
+def make_match_panel(annotations, filename_prefix,
+                     target_series=None,
+                     target_gct=None, target_df=None, target_name=None, target_axis=1,
+                     feature_type='continuous', ref_type='continuous', feature_ascending=False, ref_ascending=False):
+    """
+
+    :param annotations:
+    :param filename_prefix:
+    :param target_series:
+    :param target_gct:
+    :param target_df:
+    :param target_name:
+    :param target_axis:
+    :param feature_type:
+    :param ref_type:
+    :param feature_ascending: bool; True if features score increase from top to bottom, and False otherwise
+    :param ref_ascending: bool; True if ref values increase from left to right, and False otherwise
+    :return:
+    """
+    # Load target
+    if not target_series:
+        print_log('Loading the annotation target ...')
+        # Load and check target_df
+        if target_gct:
+            target_df = read_gct(target_gct)
+        if not isinstance(target_df, DataFrame):
+            raise ValueError('No target_df {} ({}).'.format(target_df, type(target_df)))
+
+        # Check target_name
+        if not target_name:
+            raise ValueError('No target_name {} ({}).'.format(target_name, type(target_name)))
+
+        # Load target_series
+        if target_axis == 0:
+            target_series = target_df.ix[:, target_name]
+        elif target_axis == 1:
+            target_series = target_df.ix[target_name, :]
+        else:
+            raise ValueError('Unknown target_axis {}.'.format(target_axis))
+
+    # Load annotations
+    annotation_dfs = read_annotations(annotations)
+
+    # Make match panel
+    for a_name, a_df in annotation_dfs.items():
+        match(a_df, target_series, filename_prefix + '_vs_{}'.format(a_name),
+              feature_type=feature_type, ref_type=ref_type,
+              feature_ascending=feature_ascending, ref_ascending=ref_ascending)
 
 
-def match(features, ref, feature_type='continuous', ref_type='continuous', min_n_feature_values=0,
+def read_annotations(annotations):
+    """
+
+    :param annotations:
+    :return:
+    """
+    annotation_dfs = {}
+    for a in annotations:
+        print_log('Reading: {} ...'.format(' ~ '.join([str(x) for x in a])))
+        try:  # Filter with features
+            a_name, a_file, a_features = a
+            annotation_dfs[a_name] = read_gct(a_file).ix[a_features, :]
+        except ValueError:  # Use all features
+            a_name, a_file = a
+            annotation_dfs[a_name] = read_gct(a_file)
+    return annotation_dfs
+
+
+def match(features, ref, filepath_prefix, feature_type='continuous', ref_type='continuous', min_n_feature_values=0,
           feature_ascending=False, ref_ascending=False, ref_sort=True,
           function=information_coefficient, n_features=0.95, n_samplings=30, confidence=0.95,
           n_permutations=30, title=None, title_size=16, annotation_label_size=9, plot_colname=False,
-          filepath_prefix=None, figure_size='auto', dpi=DPI):
+          figure_size='auto', dpi=DPI):
     """
     Compute 'features' vs. `ref`.
     :param features: pandas DataFrame; (n_features, n_samples); must have indices and columns
     :param ref: pandas Series; (n_samples); must have name and columns, which must match `features`'s
+    :param filepath_prefix: str; `filepath_prefix`.txt and `filepath_prefix`. will be saved
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param ref_type: str; {'continuous', 'categorical', 'binary'}
     :param min_n_feature_values: int; minimum number of non-0 values in a feature to be matched
@@ -36,7 +99,6 @@ def match(features, ref, feature_type='continuous', ref_type='continuous', min_n
     :param title_size: int; title text size
     :param annotation_label_size: int; annotation text size
     :param plot_colname: bool; plot column names or not
-    :param filepath_prefix: str;
     :param figure_size: 'auto' or tuple;
     :param dpi: int; dots per square inch of pixel in the output figure
     :return: None
@@ -77,9 +139,8 @@ def match(features, ref, feature_type='continuous', ref_type='continuous', min_n
                                        n_samplings=n_samplings, confidence=confidence, n_perms=n_permutations)
     features = features.reindex(scores.index)
 
-    if filepath_prefix:
-        establish_path(filepath_prefix)
-        merge(features, scores, left_index=True, right_index=True).to_csv(filepath_prefix + '.txt', sep='\t')
+    establish_path(filepath_prefix)
+    merge(features, scores, left_index=True, right_index=True).to_csv(filepath_prefix + '.txt', sep='\t')
 
     # Make annotations
     annotations = DataFrame(index=features.index)
@@ -109,4 +170,10 @@ def match(features, ref, feature_type='continuous', ref_type='continuous', min_n
                                     figure_size=figure_size, title=title, title_size=title_size,
                                     annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
                                     annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                    filepath=filepath_prefix + '.pdf', dpi=dpi)
+                                    filepath=filepath_prefix + '.', dpi=dpi)
+
+
+def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, verbose=False, title=None):
+    compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance, verbose=verbose)
+    plot_clustermap(compared_matrix, title=title)
+    return compared_matrix

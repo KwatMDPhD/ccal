@@ -94,6 +94,30 @@ def timestamp(time_only=False):
     return datetime.now().strftime(formatter)
 
 
+# =====================================================================================================================
+# Operate on strings
+# =====================================================================================================================
+def title_string(string):
+    """
+    Title a string.
+    :param string:
+    :return:
+    """
+    string = string.title().replace('_', ' ').replace('\n', '')
+    for article in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of']:
+        string = string.replace(' ' + article.title() + ' ', ' ' + article + ' ')
+    return string
+
+
+def untitle_string(string):
+    """
+    Untitle a string.
+    :param string:
+    :return:
+    """
+    return string.lower().replace(' ', '_')
+
+
 # ======================================================================================================================
 # Operate on files
 # ======================================================================================================================
