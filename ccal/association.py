@@ -170,7 +170,7 @@ def match(features, ref, filepath_prefix, feature_type='continuous', ref_type='c
                                     figure_size=figure_size, title=title, title_size=title_size,
                                     annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
                                     annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                    filepath=filepath_prefix + '.', dpi=dpi)
+                                    filepath=filepath_prefix + '.pdf', dpi=dpi)
 
 
 def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, verbose=False, title=None):
