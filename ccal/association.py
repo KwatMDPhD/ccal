@@ -1,19 +1,19 @@
 from pandas import DataFrame, Series, merge
 
-from .support import print_log, establish_path, read_gct
+from .support import print_log, establish_path, read_gct, untitle_string
 from .information import information_coefficient
 from .visualize import DPI, plot_clustermap, plot_features_against_reference
 from .analyze import compare_matrices, compute_against_reference
 
 
-def make_match_panel(annotations, filename_prefix,
+def make_match_panel(annotations, filepath_prefix,
                      target_series=None,
                      target_gct=None, target_df=None, target_name=None, target_axis=1,
                      feature_type='continuous', ref_type='continuous', feature_ascending=False, ref_ascending=False):
     """
 
     :param annotations:
-    :param filename_prefix:
+    :param filepath_prefix:
     :param target_series:
     :param target_gct:
     :param target_df:
@@ -51,7 +51,7 @@ def make_match_panel(annotations, filename_prefix,
 
     # Make match panel
     for a_name, a_df in annotation_dfs.items():
-        match(a_df, target_series, filename_prefix + '_vs_{}'.format(a_name),
+        match(a_df, target_series, filepath_prefix + '_vs_{}'.format(untitle_string(a_name)),
               feature_type=feature_type, ref_type=ref_type,
               feature_ascending=feature_ascending, ref_ascending=ref_ascending)
 
@@ -64,7 +64,7 @@ def read_annotations(annotations):
     """
     annotation_dfs = {}
     for a in annotations:
-        print_log('Reading: {} ...'.format(' ~ '.join([str(x) for x in a])))
+        print_log('Reading annotation: {} ...'.format(' ~ '.join([str(x) for x in a])))
         try:  # Filter with features
             a_name, a_file, a_features = a
             annotation_dfs[a_name] = read_gct(a_file).ix[a_features, :]
