@@ -1,3 +1,19 @@
+"""
+Computational Cancer Analysis Library
+
+Authors:
+Pablo Tamayo
+ptamayo@ucsd.edu
+Computational Cancer Analysis Laboratory, UCSD Cancer Center
+
+Huwate (Kwat) Yeerna (Medetgul-Ernar)
+kwat.medetgul.ernar@gmail.com
+Computational Cancer Analysis Laboratory, UCSD Cancer Center
+
+James Jensen
+jdjensen@eng.ucsd.edu
+Laboratory of Jill Mesirov
+"""
 from pandas import DataFrame, Series, merge
 
 from .support import print_log, establish_path, read_gct, untitle_string

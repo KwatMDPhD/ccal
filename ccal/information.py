@@ -1,14 +1,14 @@
 """
-Computational Cancer Analysis Library v0.1
+Computational Cancer Analysis Library
 
 Authors:
 Pablo Tamayo
 ptamayo@ucsd.edu
-Computational Cancer Analysis, UCSD Cancer Center
+Computational Cancer Analysis Laboratory, UCSD Cancer Center
 
 Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
-Computational Cancer Analysis, UCSD Cancer Center
+Computational Cancer Analysis Laboratory, UCSD Cancer Center
 
 James Jensen
 jdjensen@eng.ucsd.edu
@@ -31,7 +31,7 @@ kde2d = mass.kde2d
 
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     """
-    Compute the information correlation between `x` and `y`, which can be either continuous, categorical, or binary
+    Compute the information coefficient between `x` and `y`, which can be either continuous, categorical, or binary
     :param x: vector;
     :param y: vector;
     :param n_grids: int;

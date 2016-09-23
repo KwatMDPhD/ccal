@@ -1,21 +1,20 @@
 """
-Computational Cancer Analysis Library v0.1
+Computational Cancer Analysis Library
 
 Authors:
 Pablo Tamayo
 ptamayo@ucsd.edu
-Computational Cancer Analysis, UCSD Cancer Center
+Computational Cancer Analysis Laboratory, UCSD Cancer Center
 
 Huwate (Kwat) Yeerna (Medetgul-Ernar)
 kwat.medetgul.ernar@gmail.com
-Computational Cancer Analysis, UCSD Cancer Center
+Computational Cancer Analysis Laboratory, UCSD Cancer Center
 
 James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from numpy import finfo, ones, isnan
-from pandas import DataFrame, Series, read_csv
+from numpy import finfo
 
 # ======================================================================================================================
 # Set up global parameters
@@ -51,13 +50,14 @@ def install_libraries(libraries_needed):
             print_log('\t{} (v{})'.format(lib.key, lib.version))
 
 
-# TODO: seed globally
 def plant_seed(a_seed=SEED):
     """
     Set random seed.
     :param a_seed: int;
     :return: None
     """
+    # TODO: seed globally
+
     from random import seed
 
     seed(a_seed)
@@ -168,6 +168,8 @@ def read_gct(filepath, fill_na=None, drop_description=True):
     :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
     :return: pandas DataFrame; [n_samples, n_features (or n_features + 1 if not dropping the Description column)]
     """
+    from pandas import read_csv
+
     df = read_csv(filepath, skiprows=2, sep='\t')
     if fill_na:
         df.fillna(fill_na, inplace=True)
@@ -197,6 +199,8 @@ def write_gct(pandas_object, filepath, descriptions=None):
     :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gct
     :return: None
     """
+    from pandas import Series, DataFrame
+
     obj = pandas_object.copy()
 
     # Convert Series to DataFrame
@@ -221,6 +225,10 @@ def read_gmt(filepath):
     :param filepath:
     :return:
     """
+    # TODO: test
+
+    from pandas import read_csv
+
     return read_csv(filepath, sep='\t', index_col=0)
 
 
@@ -232,6 +240,8 @@ def write_gmt(pandas_object, filepath, descriptions=None):
     :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gmt
     :return: None
     """
+    # TODO: test
+
     obj = pandas_object.copy()
     obj.index.name = 'Name'
     if descriptions:
@@ -268,6 +278,7 @@ def make_random_features(n_rows, n_cols, n_categories=None):
     :return: pandas DataFrame or Series; (`n_rows`, `n_cols`) or (1, `n_cols`)
     """
     from numpy.random import random_integers, random_sample
+    from pandas import DataFrame
 
     indices = ['Feature {}'.format(i) for i in range(n_rows)]
     columns = ['Element {}'.format(i) for i in range(n_cols)]
@@ -291,6 +302,8 @@ def drop_nan_columns(arrays):
     :param arrays: iterable of numpy arrays; must have the same length
     :return: list of numpy arrays; none of the arrays contains NaN
     """
+    from numpy import ones, isnan
+
     not_nan_filter = ones(len(arrays[0]), dtype=bool)
     for v in arrays:
         not_nan_filter &= ~isnan(v)
@@ -317,6 +330,8 @@ def explode(series, filepath=None):
     :param filepath: str;
     :return: pandas DataFrame;
     """
+    from pandas import DataFrame
+
     label_x_sample = DataFrame(index=sorted(set(series)), columns=series.index)
     for i in label_x_sample.index:
         label_x_sample.ix[i, :] = (series == i).astype(int)

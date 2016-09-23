@@ -1,6 +1,20 @@
-from pandas import read_csv
+"""
+Computational Cancer Analysis Library
 
-from .support import SEED, print_log, write_dictionary, read_gct, save_nmf_results
+Authors:
+Pablo Tamayo
+ptamayo@ucsd.edu
+Computational Cancer Analysis Laboratory, UCSD Cancer Center
+
+Huwate (Kwat) Yeerna (Medetgul-Ernar)
+kwat.medetgul.ernar@gmail.com
+Computational Cancer Analysis Laboratory, UCSD Cancer Center
+
+James Jensen
+jdjensen@eng.ucsd.edu
+Laboratory of Jill Mesirov
+"""
+from .support import SEED, print_log, write_dictionary, save_nmf_results
 from .analyze import nmf_and_score, normalize_pandas_object, consensus_cluster, exponential_function, \
     make_onco_gps_elements
 from .visualize import FIGURE_SIZE, DPI, plot_clustermap, plot_clusterings, plot_nmf_result, plot_clustering_scores, \
