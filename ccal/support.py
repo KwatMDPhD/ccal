@@ -14,6 +14,8 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
+# TODO: optimize return
+
 from numpy import finfo
 
 # ======================================================================================================================
@@ -141,12 +143,14 @@ def establish_path(filepath):
         print_log('Created directory {}.'.format(d))
 
 
-def read_gct(filepath, fill_na=None, drop_description=True):
+def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, column_name=None):
     """
     Read a .gct (`filepath`) and convert it into a pandas DataFrame.
     :param filepath: str;
     :param fill_na: *; value to replace NaN in the DataFrame
     :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
+    :param row_name: str;
+    :param column_name: str;
     :return: pandas DataFrame; [n_samples, n_features (or n_features + 1 if not dropping the Description column)]
     """
     from pandas import read_csv
@@ -154,21 +158,22 @@ def read_gct(filepath, fill_na=None, drop_description=True):
     # Read .gct
     df = read_csv(filepath, skiprows=2, sep='\t')
 
+    # Fix missing values
     if fill_na:
         df.fillna(fill_na, inplace=True)
 
+    # Get 'Name' and 'Description' columns
     c1, c2 = df.columns[:2]
 
-    # Check if the 1st column is 'Name' and set it as the index of the dataframe
+    # Check if the 1st column is 'Name'; if so set it as the index
     if c1 != 'Name':
         if c1.strip() != 'Name':
             raise ValueError('Column 1 != \'Name\'.')
         else:
             raise ValueError('Column 1 has more than 1 extra space around \'Name\'. Please strip it.')
     df.set_index('Name', inplace=True)
-    df.index.name = None
 
-    # Check if the 2nd column is 'Description' and drop it as necessary
+    # Check if the 2nd column is 'Description'; is so drop it as necessary
     if c2 != 'Description':
         if c2.strip() != 'Description':
             raise ValueError('Column 2 != \'Description\'')
@@ -176,6 +181,10 @@ def read_gct(filepath, fill_na=None, drop_description=True):
             raise ValueError('Column 2 has more than 1 extra space around \'Description\'. Please strip it.')
     if drop_description:
         df.drop('Description', axis=1, inplace=True)
+
+    # Set row and column name
+    df.index.name = row_name
+    df.column.name = column_name
 
     return df
 
@@ -190,17 +199,25 @@ def write_gct(pandas_object, filepath, descriptions=None):
     """
     from pandas import Series, DataFrame
 
+    # Copy
     obj = pandas_object.copy()
 
-    # Convert Series to DataFrame
+    # Work with only DataFrame
     if isinstance(obj, Series):
         obj = DataFrame(obj).T
 
+    # Add description column if missing
+    if obj.columns[0] != 'Description':
+        if descriptions:
+            obj.insert(0, 'Description', descriptions)
+        else:
+            obj.insert(0, 'Description', obj.index)
+
+    # Set row and column name
     obj.index.name = 'Name'
-    if descriptions:
-        obj.insert(0, 'Description', descriptions)
-    else:
-        obj.insert(0, 'Description', obj.index)
+    obj.column.name = None
+
+    # Save as .gct
     if not filepath.endswith('.gct'):
         filepath += '.gct'
     with open(filepath, 'w') as f:
@@ -208,17 +225,44 @@ def write_gct(pandas_object, filepath, descriptions=None):
         obj.to_csv(f, sep='\t')
 
 
-def read_gmt(filepath):
+def read_gmt(filepath, drop_description=True):
     """
     Read a .gmt file.
     :param filepath:
-    :return:
+    :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
+    :return: pandas DataFrame
     """
     # TODO: test
 
     from pandas import read_csv
 
-    return read_csv(filepath, sep='\t', index_col=0)
+    # Read .gct
+    df = read_csv(filepath, sep='\t')
+
+    # Get 'Name' and 'Description' columns
+    c1, c2 = df.columns[:2]
+
+    # Check if the 1st column is 'Name'; if so set it as the index
+    if c1 != 'Name':
+        if c1.strip() != 'Name':
+            raise ValueError('Column 1 != \'Name\'.')
+        else:
+            raise ValueError('Column 1 has more than 1 extra space around \'Name\'. Please strip it.')
+    df.set_index('Name', inplace=True)
+
+    # Check if the 2nd column is 'Description'; is so drop it as necessary
+    if c2 != 'Description':
+        if c2.strip() != 'Description':
+            raise ValueError('Column 2 != \'Description\'')
+        else:
+            raise ValueError('Column 2 has more than 1 extra space around \'Description\'. Please strip it.')
+    if drop_description:
+        df.drop('Description', axis=1, inplace=True)
+
+    # Set row name (column name is None when read)
+    df.index.name = 'Gene Set'
+
+    return df
 
 
 def write_gmt(pandas_object, filepath, descriptions=None):
@@ -232,11 +276,19 @@ def write_gmt(pandas_object, filepath, descriptions=None):
     # TODO: test
 
     obj = pandas_object.copy()
+
+    # Add description column if missing
+    if obj.columns[0] != 'Description':
+        if descriptions:
+            obj.insert(0, 'Description', descriptions)
+        else:
+            obj.insert(0, 'Description', obj.index)
+
+    # Set row and column name
     obj.index.name = 'Name'
-    if descriptions:
-        obj.insert(0, 'Description', descriptions)
-    else:
-        obj.insert(0, 'Description', obj.index)
+    obj.column.name = None
+
+    # Save as .gmt
     if not filepath.endswith('.gmt'):
         filepath += '.gmt'
     obj.to_csv(filepath, sep='\t')
@@ -271,16 +323,19 @@ def make_random_dataframe_or_series(n_rows, n_cols, n_categories=None):
     from numpy.random import random_integers, random_sample
     from pandas import DataFrame
 
+    # Set up indices and column names
     indices = ['Feature {}'.format(i) for i in range(n_rows)]
-    columns = ['Element {}'.format(i) for i in range(n_cols)]
+    columns = ['Sample {}'.format(i) for i in range(n_cols)]
+
+    # Set up data type: continuous, categorical, or binary
     if n_categories:
         features = DataFrame(random_integers(0, n_categories - 1, (n_rows, n_cols)), index=indices, columns=columns)
     else:
         features = DataFrame(random_sample((n_rows, n_cols)), index=indices, columns=columns)
-    if n_rows == 1:
-        # Return series
+
+    if n_rows == 1:  # Return series if there is only 1 row
         return features.iloc[0, :]
-    else:
+    else:  # Return dataframe if there is more than 1 row
         return features
 
 
@@ -302,7 +357,7 @@ def exponential_function(x, a, k, c):
 
 
 # ======================================================================================================================#
-# Work on array-like
+# Compute
 # ======================================================================================================================#
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     """
@@ -313,32 +368,38 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     :param jitter: number;
     :return: float;
     """
+    # TODO: optimize import
     from numpy import asarray, sign, sum, sqrt, exp, log, isnan
     from numpy.random import random_sample
     from scipy.stats import pearsonr
     import rpy2.robjects as ro
     from rpy2.robjects.numpy2ri import numpy2ri
     from rpy2.robjects.packages import importr
-
     ro.conversion.py2ri = numpy2ri
     mass = importr('MASS')
     bcv = mass.bcv
     kde2d = mass.kde2d
 
+    # Can't work with missing any value
     x, y = drop_nan_columns([x, y])
+
+    # Need at least 3 values to compute bandwidth
     if len(x) < 3 or len(y) < 3:
         return 0
+
     x = asarray(x, dtype=float)
     y = asarray(y, dtype=float)
+
+    # Add jitter
     x += random_sample(x.size) * jitter
     y += random_sample(y.size) * jitter
 
-    # Get bandwidths
+    # Compute bandwidths
     cor, p = pearsonr(x, y)
     bandwidth_x = asarray(bcv(x)[0]) * (1 + (-0.75) * abs(cor))
     bandwidth_y = asarray(bcv(y)[0]) * (1 + (-0.75) * abs(cor))
 
-    # Get P(x, y), P(x), P(y)
+    # Compute P(x, y), P(x), P(y)
     fxy = asarray(kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + EPS
     dx = (x.max() - x.min()) / (n_grids - 1)
     dy = (y.max() - y.min()) / (n_grids - 1)
@@ -346,7 +407,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     px = pxy.sum(axis=1) * dy
     py = pxy.sum(axis=0) * dx
 
-    # Get mutual information;
+    # Compute mutual information;
     mi = sum(pxy * log(pxy / (asarray([px] * n_grids).T * asarray([py] * n_grids)))) * dx * dy
 
     # # Get H(x, y), H(x), and H(y)
@@ -355,7 +416,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     # hy = -sum(py * log(py)) * dy
     # mi = hx + hy - hxy
 
-    # Get information coefficient
+    # Compute information coefficient
     ic = sign(cor) * sqrt(1 - exp(- 2 * mi))
 
     # TODO: debug when MI < 0 and |MI|  ~ 0 resulting in IC = nan
@@ -365,9 +426,13 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     return ic
 
 
+# ======================================================================================================================#
+# Work on array-like
+# ======================================================================================================================#
+# TODO: make sure the normalization when size == 0 or range == 0 is correct
 def normalize_series(series, method='-0-', n_ranks=10000):
     """
-     Normalize a pandas `series`.
+    Normalize a pandas `series`.
     :param series: pandas Series;
     :param method: str; normalization type; {'-0-', '0-1', 'rank'}
     :param n_ranks: int;
@@ -377,18 +442,18 @@ def normalize_series(series, method='-0-', n_ranks=10000):
         mean = series.mean()
         std = series.std()
         if std == 0:
-            print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
+            print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
             return series / series.size
         else:
             return (series - mean) / std
     elif method == '0-1':
-        smin = series.min()
-        smax = series.max()
-        if smax - smin == 0:
-            print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
+        series_min = series.min()
+        series_max = series.max()
+        if series_max - series_min == 0:
+            print_log('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing.')
             return series / series.size
         else:
-            return (series - smin) / (smax - smin)
+            return (series - series_min) / (series_max - series_min)
     elif method == 'rank':
         return series.rank() / series.size * n_ranks
 
@@ -406,21 +471,20 @@ def get_unique_in_order(iterable):
     return unique_in_order
 
 
-def explode(series, filepath=None):
+def explode(series):
     """
     Make a label-x-sample binary matrix from a Series.
     :param series: pandas Series;
-    :param filepath: str;
     :return: pandas DataFrame;
     """
     from pandas import DataFrame
 
+    # Make an empty DataFrame (n_unique_labels, n_samples)
     label_x_sample = DataFrame(index=sorted(set(series)), columns=series.index)
+
+    # Binarize each unique label
     for i in label_x_sample.index:
         label_x_sample.ix[i, :] = (series == i).astype(int)
-    if filepath:
-        establish_path(filepath)
-        write_gct(label_x_sample, filepath)
 
     return label_x_sample
 
@@ -439,35 +503,37 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
     """
     from pandas import Series, DataFrame
 
-    obj = pandas_object.copy()
     print_log('\'{}\' normalizing pandas object on axis={} ...'.format(method, axis))
 
-    if isinstance(obj, Series):
-        obj = normalize_series(obj, method=method, n_ranks=n_ranks)
-    elif isinstance(obj, DataFrame):
-        if not (axis == 0 or axis == 1):  # Normalize globally
+    if isinstance(pandas_object, Series):  # Series
+        return normalize_series(pandas_object, method=method, n_ranks=n_ranks)
+
+    elif isinstance(pandas_object, DataFrame):  # DataFrame
+        if axis == 0 or axis == 1:  # Normalize by axis (Series)
+            return pandas_object.apply(normalize_series, **{'method': method, 'n_ranks': n_ranks}, axis=axis)
+
+        else:  # Normalize globally
             if method == '-0-':
-                obj_mean = obj.values.mean()
-                obj_std = obj.values.std()
+                obj_mean = pandas_object.values.mean()
+                obj_std = pandas_object.values.std()
                 if obj_std == 0:
-                    print_log('Warning: tried to \'-0-\' normalize but the standard deviation is 0.')
-                    obj = obj / obj.size
+                    print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
+                    return pandas_object / pandas_object.size
                 else:
-                    obj = (obj - obj_mean) / obj_std
+                    return (pandas_object - obj_mean) / obj_std
+
             elif method == '0-1':
-                obj_min = obj.values.min()
-                obj_max = obj.values.max()
-                obj_range = obj_max - obj_min
-                if obj_range == 0:
-                    print_log('Warning: tried to \'0-1\' normalize but the range is 0.')
-                    obj = obj / obj.size
+                obj_min = pandas_object.values.min()
+                obj_max = pandas_object.values.max()
+                if obj_max - obj_min == 0:
+                    print_log('Not \'0-1\' normalizing (data range is 0), but \'/ size\' normalizing.')
+                    return pandas_object / pandas_object.size
                 else:
-                    obj = (obj - obj_min) / obj_range
+                    return (pandas_object - obj_min) / (obj_max - obj_min)
+
             elif method == 'rank':
-                raise ValueError('mehtod=\'rank\' & axix=\'all\' combination has not been implemented yet.')
-        else:  # Normalize by row or by column
-            obj = obj.apply(normalize_series, **{'method': method, 'n_ranks': n_ranks}, axis=axis)
-    return obj
+                # TODO: implement
+                raise ValueError('Normalizing combination of \'rank\' & axix=\'all\' has not been implemented yet.')
 
 
 def drop_nan_columns(arrays):
@@ -478,10 +544,14 @@ def drop_nan_columns(arrays):
     """
     from numpy import ones, isnan
 
+    # Keep all column indices
     not_nan_filter = ones(len(arrays[0]), dtype=bool)
-    for v in arrays:
-        not_nan_filter &= ~isnan(v)
-    return [v[not_nan_filter] for v in arrays]
+
+    # Keep column indices without missing value in all arrays
+    for a in arrays:
+        not_nan_filter &= ~isnan(a)
+
+    return [a[not_nan_filter] for a in arrays]
 
 
 def get_consensus(clustering_x_sample):
@@ -490,21 +560,25 @@ def get_consensus(clustering_x_sample):
     :param clustering_x_sample: numpy array; (n_clusterings, n_samples)
     :return: numpy array; (n_samples, n_samples)
     """
+    # TODO: enable flexible axis
+
     from numpy import zeros
 
     n_clusterings, n_samples = clustering_x_sample.shape
 
+    # Make an empty co-occurence matrix (n_samples, n_samples)
     consensus_clusterings = zeros((n_samples, n_samples))
 
-    for c_i in range(n_clusterings):
-        for i in range(n_samples):
-            for j in range(n_samples):
+    # Count the number of co-occurences
+    for i in range(n_samples):
+        for j in range(n_samples):
+            for c_i in range(n_clusterings):
                 v1 = clustering_x_sample[c_i, i]
                 v2 = clustering_x_sample[c_i, j]
                 if v1 and v2 and (v1 == v2):
                     consensus_clusterings[i, j] += 1
 
-    # Return normalized consensus clustering
+    # Normalize by the number of clusterings and return
     return consensus_clusterings / n_clusterings
 
 
@@ -522,16 +596,18 @@ def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=
     from pandas import DataFrame
     from sklearn.manifold import MDS
 
-    if distance_function:
+    if distance_function:  # Use precomputed distances
         mds_obj = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
         coordinates = mds_obj.fit_transform(compare_matrices(dataframe, dataframe, distance_function,
                                                              is_distance=True, axis=1))
-    else:
+    else:  # Use Euclidean distances
         mds_obj = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
         coordinates = mds_obj.fit_transform(dataframe)
+
+    # Convert to DataFrame
     coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
 
-    if standardize:
+    if standardize:  # Rescale coordinates between 0 and 1
         coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
 
     return coordinates
@@ -574,8 +650,7 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     n_samples = math.ceil(0.632 * features.shape[1])
     if n_samples < 3:
         print_log('Can\'t bootstrap with 0.632 * n_samples < 3.')
-    else:
-        # Limit features to be bootstrapped
+    else:  # Limit features to be bootstrapped
         if n_features < 1:  # Limit using percentile
             above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
             print_log('Bootstrapping {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
