@@ -16,10 +16,8 @@ Laboratory of Jill Mesirov
 """
 from pandas import DataFrame, Series, merge
 
-from .support import print_log, establish_path, read_gct, untitle_string
-from .information import information_coefficient
+from .support import print_log, establish_path, read_gct, untitle_string, information_coefficient, compare_matrices, compute_against_reference
 from .visualize import DPI, plot_clustermap, plot_features_against_reference
-from .analyze import compare_matrices, compute_against_reference
 
 
 def make_match_panel(annotations, filepath_prefix,
@@ -189,7 +187,26 @@ def match(features, ref, filepath_prefix, feature_type='continuous', ref_type='c
                                     filepath=filepath_prefix + '.pdf', dpi=dpi)
 
 
+# ======================================================================================================================
+# Compare 2 matrices
+# ======================================================================================================================
 def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, verbose=False, title=None):
+    """
+    Compare `matrix1` and `matrix2` row-wise (`axis=1`) or column-wise (`axis=0`), and plot hierarchical clustering.
+    :param matrix1: pandas DataFrame or numpy 2D arrays;
+    :param matrix2: pandas DataFrame or numpy 2D arrays;
+    :param function: function; association function
+    :param axis: int; 0 and 1 for row-wise and column-wise comparison respectively
+    :param is_distance: bool; if True, then distances are computed from associations as in: distance = 1 - association
+    :param verbose: bool; print computation progress or not
+    :param title: str; plot title
+    :return: pandas DataFrame; association or distance matrix
+    """
+    # Compute association or distance matrix, which is returned at the end
     compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance, verbose=verbose)
+
+    # Plot hierarchical clustering of the matrix
     plot_clustermap(compared_matrix, title=title)
+
+    # Return the computed association or distance matrix
     return compared_matrix

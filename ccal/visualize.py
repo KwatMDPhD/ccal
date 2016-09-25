@@ -28,8 +28,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot, violinplot, boxplot
 
-from .support import print_log, establish_path, get_unique_in_order
-from .analyze import normalize_pandas_object
+from .support import print_log, establish_path, get_unique_in_order, normalize_pandas_object
 
 # ======================================================================================================================
 # Set up glonal parameters

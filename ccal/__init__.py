@@ -16,15 +16,13 @@ Laboratory of Jill Mesirov
 
 Import missing dependencies. And import functional modules.
 """
-# TODO: consider limiting access to some functional modules
+# TODO: Optimize import
 
 from . import support
 
 # Install libraries that are not in Anaconda3 distribution
 support.install_libraries(['rpy2', 'seaborn'])
 
-from . import information
-from . import analyze
 from . import visualize
 from . import onco_gps
 from . import association

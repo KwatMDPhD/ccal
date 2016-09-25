@@ -14,17 +14,28 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-from .support import SEED, print_log, write_dictionary, save_nmf_results
-from .analyze import nmf_and_score, normalize_pandas_object, consensus_cluster, exponential_function, \
-    make_onco_gps_elements
+
+from numpy import array, asarray, zeros, argmax
+from pandas import DataFrame
+from scipy.optimize import curve_fit
+import rpy2.robjects as ro
+from rpy2.robjects.packages import importr
+from rpy2.robjects.numpy2ri import numpy2ri
+
+from .support import SEED, EPS, print_log, establish_path, write_gct, write_dictionary, nmf_and_score, \
+    information_coefficient, normalize_pandas_object, consensus_cluster, exponential_function, mds
 from .visualize import FIGURE_SIZE, DPI, plot_clustermap, plot_clusterings, plot_nmf_result, plot_clustering_scores, \
     plot_onco_gps
 
+ro.conversion.py2ri = numpy2ri
+mass = importr('MASS')
+bcv = mass.bcv
+kde2d = mass.kde2d
 
-def preprocess_matrix():
-    return None
 
-
+# ======================================================================================================================
+# Define components
+# ======================================================================================================================
 def define_components(matrix, ks, filepath_prefix, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE,
                       dpi=DPI):
     """
@@ -59,6 +70,22 @@ def define_components(matrix, ks, filepath_prefix, n_clusterings=30, random_stat
     return nmf_results, nmf_scores
 
 
+def save_nmf_results(nmf_results, filepath_prefix):
+    """
+    Save `nmf_results` dictionary.
+    :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
+    :param filepath_prefix: str; `filepath_prefix`_nmf_k{k}_{w, h}.gct and  will be saved
+    :return: None
+    """
+    establish_path(filepath_prefix)
+    for k, v in nmf_results.items():
+        write_gct(v['W'], filepath_prefix + '_nmf_k{}_w.gct'.format(k))
+        write_gct(v['H'], filepath_prefix + '_nmf_k{}_h.gct'.format(k))
+
+
+# ======================================================================================================================
+# Define states
+# ======================================================================================================================
 def define_states(h, ks, filepath_prefix, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE,
                   title='Clustering Labels', dpi=DPI):
     """
@@ -69,6 +96,7 @@ def define_states(h, ks, filepath_prefix, max_std=3, n_clusterings=50, figure_si
     :param n_clusterings:
     :param filepath_prefix:
     :param figure_size:
+    :param title: str; plot title
     :param dpi:
     :return:
     """
@@ -80,6 +108,9 @@ def define_states(h, ks, filepath_prefix, max_std=3, n_clusterings=50, figure_si
     return labels, scores
 
 
+# ======================================================================================================================
+# Make Onco-GPS map
+# ======================================================================================================================
 # TODO: Simplify
 def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
              informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
@@ -204,3 +235,172 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                   effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                   effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
                   filepath=filepath, figure_size=figure_size, dpi=dpi)
+
+
+def make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train',
+                           states_test=None,
+                           informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
+                           function_to_fit=exponential_function, fit_maxfev=1000,
+                           fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
+                           n_pulling_components='all', component_pull_power='auto', n_pullratio_components=0,
+                           pullratio_factor=5,
+                           n_grids=128, kde_bandwidths_factor=1):
+    """
+    Compute component and sample coordinates. And compute grid probabilities and states.
+    :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param states_train: iterable of int; (n_samples); sample states
+    :param std_max: number; threshold to clip standardized values
+    :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param h_test_normalization: str or None; {'as_train', 'clip_and_0-1', None}
+    :param states_test: iterable of int; (n_samples); sample states
+    :param informational_mds: bool; use informational MDS or not
+    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :param mds_n_init: int;
+    :param mds_max_iter: int;
+    :param function_to_fit: function;
+    :param fit_maxfev: int;
+    :param fit_min: number;
+    :param fit_max: number;
+    :param pull_power_min: number;
+    :param pull_power_max: number;
+    :param n_pulling_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param component_pull_power: str or number; power to raise components' influence on each sample
+    :param n_pullratio_components: number; number if int; percentile if float & < 1
+    :param pullratio_factor: number;
+    :param n_grids: int;
+    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
+    :return: pandas DataFrame, DataFrame, numpy array, and numpy array;
+             component_coordinates (n_components, [x, y]), samples (n_samples, [x, y, state, annotation]),
+             grid_probabilities (n_grids, n_grids), and grid_states (n_grids, n_grids)
+    """
+    print_log('Making Onco-GPS with {} components, {} samples, and {} states {} ...'.format(*h_train.shape,
+                                                                                            len(set(states_train)),
+                                                                                            set(states_train)))
+
+    # TODO: consider deleting
+    # training_samples = DataFrame(index=h_train.columns, columns=['x', 'y', 'state'])
+
+    # clip and 0-1 normalize the data
+    training_h = normalize_pandas_object(normalize_pandas_object(h_train, method='-0-', axis=1).clip(-std_max, std_max),
+                                         method='0-1', axis=1)
+
+    # Compute component coordinates
+    if informational_mds:
+        distance_function = information_coefficient
+    else:
+        distance_function = None
+    component_coordinates = mds(training_h, distance_function=distance_function,
+                                mds_seed=mds_seed, n_init=mds_n_init, max_iter=mds_max_iter, standardize=True)
+
+    # Compute component pulling power
+    if component_pull_power == 'auto':
+        fit_parameters = fit_columns(training_h, function_to_fit=function_to_fit, maxfev=fit_maxfev)
+        print_log('Modeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
+        k = fit_parameters[1]
+        # Linear transform
+        k_normalized = (k - fit_min) / (fit_max - fit_min)
+        component_pull_power = k_normalized * (pull_power_max - pull_power_min) + pull_power_min
+        print_log('component_pulling_power = {0:.3f}.'.format(component_pull_power))
+
+    # Compute sample coordinates
+    training_samples = get_sample_coordinates_via_pulling(component_coordinates, training_h,
+                                                          n_influencing_components=n_pulling_components,
+                                                          component_pulling_power=component_pull_power)
+
+    # Compute pulling ratios
+    ratios = zeros(training_h.shape[1])
+    if 0 < n_pullratio_components:
+        if n_pullratio_components < 1:
+            n_pullratio_components = training_h.shape[0] * n_pullratio_components
+        for i, (c_idx, c) in enumerate(training_h.iteritems()):
+            c_sorted = c.sort_values(ascending=False)
+            ratio = float(
+                c_sorted[:n_pullratio_components].sum() / max(c_sorted[n_pullratio_components:].sum(), EPS)) * c.sum()
+            ratios[i] = ratio
+        normalized_ratios = (ratios - ratios.min()) / (ratios.max() - ratios.min()) * pullratio_factor
+        training_samples.ix[:, 'pullratio'] = normalized_ratios.clip(0, 1)
+
+    # Load sample states
+    training_samples.ix[:, 'state'] = states_train
+
+    # Compute grid probabilities and states
+    grid_probabilities = zeros((n_grids, n_grids))
+    grid_states = zeros((n_grids, n_grids), dtype=int)
+    # Get KDE for each state using bandwidth created from all states' x & y coordinates; states starts from 1, not 0
+    kdes = zeros((training_samples.ix[:, 'state'].unique().size + 1, n_grids, n_grids))
+    bandwidths = asarray([bcv(asarray(training_samples.ix[:, 'x'].tolist()))[0],
+                          bcv(asarray(training_samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
+    for s in sorted(training_samples.ix[:, 'state'].unique()):
+        coordinates = training_samples.ix[training_samples.ix[:, 'state'] == s, ['x', 'y']]
+        kde = kde2d(asarray(coordinates.ix[:, 'x'], dtype=float), asarray(coordinates.ix[:, 'y'], dtype=float),
+                    bandwidths, n=asarray([n_grids]), lims=asarray([0, 1, 0, 1]))
+        kdes[s] = asarray(kde[2])
+    # Assign the best KDE probability and state for each grid
+    for i in range(n_grids):
+        for j in range(n_grids):
+            grid_probabilities[i, j] = max(kdes[:, j, i])
+            grid_states[i, j] = argmax(kdes[:, i, j])
+
+    if isinstance(h_test, DataFrame):
+        print_log('Focusing on samples from testing H matrix ...')
+        # Normalize testing H
+        if h_test_normalization == 'as_train':
+            testing_h = h_test
+            for r_idx, r in h_train.iterrows():
+                if r.std() == 0:
+                    testing_h.ix[r_idx, :] = testing_h.ix[r_idx, :] / r.size()
+                else:
+                    testing_h.ix[r_idx, :] = (testing_h.ix[r_idx, :] - r.mean()) / r.std()
+        elif h_test_normalization == 'clip_and_0-1':
+            testing_h = normalize_pandas_object(
+                normalize_pandas_object(h_test, method='-0-', axis=1).clip(-std_max, std_max),
+                method='0-1', axis=1)
+        elif not h_test_normalization:
+            testing_h = h_test
+        else:
+            raise ValueError('Unknown normalization method for testing H {}.'.format(h_test_normalization))
+
+        # Compute testing-sample coordinates
+        testing_samples = get_sample_coordinates_via_pulling(component_coordinates, testing_h,
+                                                             n_influencing_components=n_pulling_components,
+                                                             component_pulling_power=component_pull_power)
+        testing_samples.ix[:, 'state'] = states_test
+        return component_coordinates, testing_samples, grid_probabilities, grid_states
+    else:
+        return component_coordinates, training_samples, grid_probabilities, grid_states
+
+
+def fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
+    """
+    Fit columsn of `dataframe` to `function_to_fit`.
+    :param dataframe: pandas DataFrame;
+    :param function_to_fit: function;
+    :param maxfev: int;
+    :return: list; fit parameters
+    """
+    x = array(range(dataframe.shape[0]))
+    y = asarray(dataframe.apply(sorted).apply(sum, axis=1)) / dataframe.shape[1]
+    fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
+    return fit_parameters
+
+
+def get_sample_coordinates_via_pulling(component_x_coordinates, component_x_samples,
+                                       n_influencing_components='all', component_pulling_power=1):
+    """
+    Compute sample coordinates based on component coordinates, which pull samples.
+    :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
+    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
+    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :return: pandas DataFrame; (n_samples, [x, y])
+    """
+    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
+    for sample in sample_coordinates.index:
+        c = component_x_samples.ix[:, sample]
+        if n_influencing_components == 'all':
+            n_influencing_components = component_x_samples.shape[0]
+        c = c.mask(c < c.sort_values().tolist()[-n_influencing_components], other=0)
+        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(c ** component_pulling_power)
+        y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
+        sample_coordinates.ix[sample, ['x', 'y']] = x, y
+    return sample_coordinates
