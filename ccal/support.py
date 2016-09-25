@@ -15,6 +15,8 @@ jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
 # TODO: optimize return
+# TODO: optimize import
+# TODO: optimize error message
 
 from numpy import finfo
 
@@ -307,36 +309,6 @@ def write_dictionary(dictionary, filepath, key_name, value_name):
         f.write('{}\t{}\n'.format(key_name, value_name))
         for k, v in sorted(dictionary.items()):
             f.writelines('{}\t{}\n'.format(k, v))
-
-
-# ======================================================================================================================
-# Simulate
-# ======================================================================================================================
-def make_random_dataframe_or_series(n_rows, n_cols, n_categories=None):
-    """
-    Simulate DataFrame (2D) or Series (1D).
-    :param n_rows: int;
-    :param n_cols: int;
-    :param n_categories: None or int; continuous if None and categorical if int
-    :return: pandas DataFrame or Series; (`n_rows`, `n_cols`) or (1, `n_cols`)
-    """
-    from numpy.random import random_integers, random_sample
-    from pandas import DataFrame
-
-    # Set up indices and column names
-    indices = ['Feature {}'.format(i) for i in range(n_rows)]
-    columns = ['Sample {}'.format(i) for i in range(n_cols)]
-
-    # Set up data type: continuous, categorical, or binary
-    if n_categories:
-        features = DataFrame(random_integers(0, n_categories - 1, (n_rows, n_cols)), index=indices, columns=columns)
-    else:
-        features = DataFrame(random_sample((n_rows, n_cols)), index=indices, columns=columns)
-
-    if n_rows == 1:  # Return series if there is only 1 row
-        return features.iloc[0, :]
-    else:  # Return dataframe if there is more than 1 row
-        return features
 
 
 # ======================================================================================================================
@@ -946,3 +918,33 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
     return nmf_results
+
+
+# ======================================================================================================================
+# Simulate
+# ======================================================================================================================
+def make_random_dataframe_or_series(n_rows, n_cols, n_categories=None):
+    """
+    Simulate DataFrame (2D) or Series (1D).
+    :param n_rows: int;
+    :param n_cols: int;
+    :param n_categories: None or int; continuous if None and categorical if int
+    :return: pandas DataFrame or Series; (`n_rows`, `n_cols`) or (1, `n_cols`)
+    """
+    from numpy.random import random_integers, random_sample
+    from pandas import DataFrame
+
+    # Set up indices and column names
+    indices = ['Feature {}'.format(i) for i in range(n_rows)]
+    columns = ['Sample {}'.format(i) for i in range(n_cols)]
+
+    # Set up data type: continuous, categorical, or binary
+    if n_categories:
+        features = DataFrame(random_integers(0, n_categories - 1, (n_rows, n_cols)), index=indices, columns=columns)
+    else:
+        features = DataFrame(random_sample((n_rows, n_cols)), index=indices, columns=columns)
+
+    if n_rows == 1:  # Return series if there is only 1 row
+        return features.iloc[0, :]
+    else:  # Return dataframe if there is more than 1 row
+        return features
