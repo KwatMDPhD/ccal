@@ -944,7 +944,7 @@ def make_random_dataframe_or_series(n_rows, n_cols, n_categories=None):
     else:
         features = DataFrame(random_sample((n_rows, n_cols)), index=indices, columns=columns)
 
-    if n_rows == 1:  # Return series if there is only 1 row
+    if n_rows == 1:  # Return as series if there is only 1 row
         return features.iloc[0, :]
-    else:  # Return dataframe if there is more than 1 row
+    else:
         return features
