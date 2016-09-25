@@ -533,7 +533,7 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
 
             elif method == 'rank':
                 # TODO: implement
-                raise ValueError('Normalizing combination of \'rank\' & axix=\'all\' has not been implemented yet.')
+                raise ValueError('Normalizing combination of \'rank\' & axis=\'all\' has not been implemented yet.')
 
 
 def drop_nan_columns(arrays):
@@ -554,7 +554,7 @@ def drop_nan_columns(arrays):
     return [a[not_nan_filter] for a in arrays]
 
 
-def get_consensus(clustering_x_sample):
+def count_coclusterings(clustering_x_sample):
     """
     Count number of co-clusterings.
     :param clustering_x_sample: numpy array; (n_clusterings, n_samples)
@@ -566,20 +566,18 @@ def get_consensus(clustering_x_sample):
 
     n_clusterings, n_samples = clustering_x_sample.shape
 
-    # Make an empty co-occurence matrix (n_samples, n_samples)
-    consensus_clusterings = zeros((n_samples, n_samples))
-
-    # Count the number of co-occurences
+    # Count the number of co-clusterings
+    coclusterings = zeros((n_samples, n_samples))
     for i in range(n_samples):
         for j in range(n_samples):
             for c_i in range(n_clusterings):
                 v1 = clustering_x_sample[c_i, i]
                 v2 = clustering_x_sample[c_i, j]
                 if v1 and v2 and (v1 == v2):
-                    consensus_clusterings[i, j] += 1
+                    coclusterings[i, j] += 1
 
     # Normalize by the number of clusterings and return
-    return consensus_clusterings / n_clusterings
+    return coclusterings / n_clusterings
 
 
 def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
@@ -778,7 +776,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50, filepath_prefix=N
     normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
 
     # Make sample-distance matrix
-    print_log('Making sample-distance matrix ...')
+    print_log('Computing distances between samples ...')
     distance_matrix = compare_matrices(normalized_matrix, normalized_matrix, information_coefficient, is_distance=True)
 
     # Consensus cluster distance matrix
@@ -804,12 +802,12 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50, filepath_prefix=N
             # Assign labels to the samples selected by permutation with repeat
             clustering_labels[i, randomized_column_indices] = ward.labels_
 
-        # Make co-assignment matrix using labels created by clusterings of permuted-distance matrix
-        print_log('\tMaking Counting co-assignments during {} permuted-distance-matrix clusterings ...'.format(n_clusterings))
-        coassignments = get_consensus(clustering_labels)
+        # Make co-clustering matrix using labels created by clusterings of permuted-distance matrix
+        print_log('\tCounting co-clusterings of {} permuted-distance-matrix ...'.format(n_clusterings))
+        coclusterings = count_coclusterings(clustering_labels)
 
-        # Convert co-assignments to distance
-        distances = 1 - coassignments
+        # Convert co-clustering matrix into distance matrix
+        distances = 1 - coclusterings
 
         # Cluster distance matrix to assign the final label
         ward = linkage(distances, method='ward')
@@ -866,7 +864,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     scores = {}
 
     if method == 'cophenetic_correlation':
-        print_log('Scoring NMF with cophenetic correlation of consensus-clustering ({} clusterings) ...'.format(
+        print_log('Scoring NMF with cophenetic correlation from consensus-clustering ({} clusterings) ...'.format(
             n_clusterings))
         for k in ks:
             print_log('k={} ...'.format(k))
@@ -890,9 +888,9 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
                 # Column labels are the row index holding the highest value
                 clustering_labels[i, :] = argmax(asarray(nmf_result['H']), axis=0)
 
-            # Consensus cluster `n_clustering` sets of NMF labels
-            print_log('\tConsensus clustering {} sets of NMF labels ...'.format(n_clusterings))
-            consensus_clusterings = get_consensus(clustering_labels)
+            # Make co-clustering matrix using NMF labels
+            print_log('\tCounting co-clusterings during {} NMF ...'.format(n_clusterings))
+            consensus_clusterings = count_coclusterings(clustering_labels)
 
             # Compute clustering scores, the correlation between cophenetic and Euclidian distances
             scores[k] = cophenet(linkage(consensus_clusterings, 'average'), pdist(consensus_clusterings))[0]
