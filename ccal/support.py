@@ -614,8 +614,44 @@ def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=
 
 
 # ======================================================================================================================
-# Association
+# Associate
 # ======================================================================================================================
+def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
+    """
+    Make association or distance matrix of `matrix1` and `matrix2` by row or column.
+    :param matrix1: pandas DataFrame;
+    :param matrix2: pandas DataFrame;
+    :param function: function; function used to compute association or dissociation
+    :param axis: int; 0 for by-row and 1 for by-column
+    :param is_distance: bool; True for distance and False for association
+    :return: pandas DataFrame;
+    """
+    from pandas import DataFrame
+
+    # Copy and rotate matrices to make the comparison by row
+    if axis == 1:
+        m1 = matrix1.copy()
+        m2 = matrix2.copy()
+    else:
+        m1 = matrix1.T
+        m2 = matrix2.T
+
+    # Compare
+    compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
+    n = m1.shape[0]
+    for i, (i1, r1) in enumerate(m1.iterrows()):
+        if i % 100 == 0:
+            print_log('Comparing {} ({}/{}) ...'.format(i1, i, n))
+        for i2, r2 in m2.iterrows():
+            compared_matrix.ix[i1, i2] = function(r1, r2)
+
+    if is_distance:  # Convert associations to distances
+        print_log('Converting association to distance (1 - association) ...')
+        compared_matrix = 1 - compared_matrix
+
+    return compared_matrix
+
+
 def compute_against_reference(features, ref, function=information_coefficient, n_features=0.95, ascending=False,
                               n_samplings=30, confidence=0.95, n_perms=30):
     """
@@ -711,41 +747,6 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     scores = merge(scores, permutation_pvals_and_fdrs, left_index=True, right_index=True)
 
     return scores.sort_values('score', ascending=ascending)
-
-
-def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False, verbose=False):
-    """
-    Make association or distance matrix of `matrix1` and `matrix2` by row or column.
-    :param matrix1: pandas DataFrame;
-    :param matrix2: pandas DataFrame;
-    :param function: function; function used to compute association or dissociation
-    :param axis: int; 0 for by-row and 1 for by-column
-    :param is_distance: bool; True for distance and False for association
-    :param verbose: bool;
-    :return: pandas DataFrame;
-    """
-    from pandas import DataFrame
-
-    if axis == 1:
-        m1 = matrix1.copy()
-        m2 = matrix2.copy()
-    else:
-        m1 = matrix1.T
-        m2 = matrix2.T
-
-    compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
-    n = m1.shape[0]
-    for i, (i1, r1) in enumerate(m1.iterrows()):
-        if verbose and i % 50 == 0:
-            print_log('Comparing {} ({}/{}) ...'.format(i1, i, n))
-        for i2, r2 in m2.iterrows():
-            compared_matrix.ix[i1, i2] = function(r1, r2)
-
-    if is_distance:
-        print_log('Converting association to distance (1 - association) ...')
-        compared_matrix = 1 - compared_matrix
-
-    return compared_matrix
 
 
 # ======================================================================================================================
