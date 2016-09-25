@@ -652,17 +652,18 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     return compared_matrix
 
 
-def compute_against_reference(features, ref, function=information_coefficient, n_features=0.95, ascending=False,
+def compute_against_reference(features, target, function=information_coefficient, n_features=0.95, ascending=False,
                               n_samplings=30, confidence=0.95, n_perms=30):
     """
-    Compute scores[i] = `features`[i] vs. `ref` using `metric` and get CI, p-val, and FDR (BH).
-    :param features: pandas DataFrame; (n_features, n_samples); must have indices and columns
-    :param ref: pandas Series; (n_samples); must have name and columns, which must match `features`'s
-    :param function: function; function to score
-    :param n_features: int or float; number threshold if >= 1 and percentile threshold if < 1
+    Compute scores[i] = `features`[i] vs. `target` using `function`.
+    Compute confidence interval (CI) for `n_features` features. And compute p-val and FDR (BH) for all features.
+    :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
+    :param target: pandas Series; (n_samples); must have name and indices, which must match `features`'s column index
+    :param function: function; scoring function
+    :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param ascending: bool; True if score increase from top to bottom, and False otherwise
-    :param n_samplings: int; number of sampling for confidence interval bootstrapping; must be > 2 to compute CI
-    :param confidence: float; confidence interval
+    :param n_samplings: int; number of sampling for confidence interval bootstrapping; must be > 2 to compute
+    :param confidence: float; fraction compute confidence interval
     :param n_perms: int; number of permutations for permutation test
     :return: pandas DataFrame (n_features, n_scores),
     """
@@ -676,17 +677,19 @@ def compute_against_reference(features, ref, function=information_coefficient, n
     import scipy.stats as stats
     from statsmodels.sandbox.stats.multicomp import multipletests
 
-    # Compute scores
-    print_log('Computing scores using {} ...'.format(function))
-    scores = features.apply(lambda r: function(r, ref), axis=1)
+    ### Compute scores: scores[i] = `features`[i] vs. `target`
+    print_log('Computing scores ...')
+    scores = features.apply(lambda row: function(row, target), axis=1)
     scores = DataFrame(scores, index=features.index, columns=['score'])
 
-    #
-    print_log('Bootstrapping to get {} confidence interval ...'.format(confidence))
+    ### Compute confidence interval using bootstrapped distribution
+    print_log('Computing {} CI using a distribution created by {} bootstrapping ...'.format(confidence, n_samplings))
+
     n_samples = math.ceil(0.632 * features.shape[1])
-    if n_samples < 3:
-        print_log('Can\'t bootstrap with 0.632 * n_samples < 3.')
-    else:  # Limit features to be bootstrapped
+    if n_samples < 3:  # Can't bootstrap only if there is less than 3 samples in 63% of the samples
+        print_log('Can\'t bootstrap because 0.632 * n_samples < 3.')
+
+    else:  # Compute confidence interval for limited features
         if n_features < 1:  # Limit using percentile
             above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
             print_log('Bootstrapping {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
@@ -697,17 +700,17 @@ def compute_against_reference(features, ref, function=information_coefficient, n
             indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
             print_log('Bootstrapping top & bottom {} features ...'.format(n_features))
 
-        # Bootstrap: randomize columns and compute scores for `n_sampling` times
+        # Bootstrap: for `n_sampling` times, randomly choose 63% of the samples, score, and create score distribution
         sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
         for c_i in sampled_scores:
             # Randomize
-            sample_indices = choice(features.columns.tolist(), int(n_samples)).tolist()
-            sampled_features = features.ix[indices_to_bootstrap, sample_indices]
-            sampled_ref = ref.ix[sample_indices]
+            ramdom_samples = choice(features.columns.tolist(), int(n_samples)).tolist()
+            sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
+            sampled_target = target.ix[ramdom_samples]
             # Score
-            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_ref), axis=1)
+            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
 
-        # Compute the score's confidence interval using bootstrapped scores' distributions
+        # Compute the score confidence interval using bootstrapped score distribution
         z_critical = stats.norm.ppf(q=confidence)
         confidence_intervals = sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)), axis=1)
         confidence_intervals = DataFrame(confidence_intervals,
@@ -716,35 +719,36 @@ def compute_against_reference(features, ref, function=information_coefficient, n
         # Merge
         scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
 
-    print_log('Performing permutation test with {} permutations ...'.format(n_perms))
-    permutation_pvals_and_fdrs = DataFrame(index=features.index, columns=['Local P-value', 'Global P-value', 'FDR'])
+    ### Compute P-values and FDRs
+    p_values_and_fdrs = DataFrame(index=features.index, columns=['Local P-value', 'Global P-value', 'FDR'])
 
-    # Compute scores using permuted ref
+    # Compute scores using permuted target
     permutation_scores = empty((features.shape[0], n_perms))
-    shuffled_ref = array(ref)
+    shuffled_target = array(target)
     for i in range(n_perms):
-        shuffle(shuffled_ref)
-        permutation_scores[:, i] = features.apply(lambda r: function(r, shuffled_ref), axis=1)
-    # Compute local and global permutation P-values
+        shuffle(shuffled_target)
+        permutation_scores[:, i] = features.apply(lambda r: function(r, shuffled_target), axis=1)
+
+    # Compute local and global P-values
     all_permutation_scores = permutation_scores.flatten()
     for i, (idx, f) in enumerate(scores.iterrows()):
         # Compute local p-value
         local_pval = float(sum(permutation_scores[i, :] > float(f.ix['score'])) / n_perms)
         if not local_pval:
             local_pval = float(1 / n_perms)
-        permutation_pvals_and_fdrs.ix[idx, 'Local P-value'] = local_pval
+        p_values_and_fdrs.ix[idx, 'Local P-value'] = local_pval
+
         # Compute global p-value
         global_pval = float(sum(all_permutation_scores > float(f.ix['score'])) / (n_perms * features.shape[0]))
         if not global_pval:
             global_pval = float(1 / (n_perms * features.shape[0]))
-        permutation_pvals_and_fdrs.ix[idx, 'Global P-value'] = global_pval
+        p_values_and_fdrs.ix[idx, 'Global P-value'] = global_pval
 
     # Compute global permutation FDRs
-    permutation_pvals_and_fdrs.ix[:, 'FDR'] = multipletests(permutation_pvals_and_fdrs.ix[:, 'Global P-value'],
-                                                            method='fdr_bh')[1]
+    p_values_and_fdrs.ix[:, 'FDR'] = multipletests(p_values_and_fdrs.ix[:, 'Global P-value'], method='fdr_bh')[1]
 
     # Merge
-    scores = merge(scores, permutation_pvals_and_fdrs, left_index=True, right_index=True)
+    scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
 
     return scores.sort_values('score', ascending=ascending)
 
@@ -758,7 +762,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50, filepath_prefix=N
     :param matrix: pandas DataFrame; (n_features, m_samples)
     :param ks: iterable; list of ks used for clustering
     :param max_std: number; threshold to clip standardized values
-    :param n_clusterings: int; number of clusterings for the consenssu clustering
+    :param n_clusterings: int; number of clusterings for the consensus clustering
     :param filepath_prefix: str;
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
@@ -769,47 +773,53 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50, filepath_prefix=N
     from scipy.spatial.distance import pdist
     from scipy.cluster.hierarchy import linkage, fcluster, cophenet
 
-    # '-0-' normalize `matrix` and clip values `max_std` standard deviation away; then '0-1' normalize the output
-    clipped_h = normalize_pandas_object(matrix, method='-0-', axis=1).clip(-max_std, max_std)
-    normalized_h = normalize_pandas_object(clipped_h, method='0-1', axis=1)
+    # '-0-' normalize by features and clip values `max_std` standard deviation away; then '0-1' normalize by features
+    clipped_matrix = normalize_pandas_object(matrix, method='-0-', axis=1).clip(-max_std, max_std)
+    normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
 
-    # Get distance between samples
-    print_log('Computing distances between columns ...')
-    sample_distances = compare_matrices(normalized_h, normalized_h, information_coefficient, is_distance=True,
-                                        verbose=True)
+    # Make sample-distance matrix
+    print_log('Making sample-distance matrix ...')
+    distance_matrix = compare_matrices(normalized_matrix, normalized_matrix, information_coefficient, is_distance=True)
 
+    # Consensus cluster distance matrix
     print_log('Consensus clustering with {} clusterings ...'.format(n_clusterings))
     consensus_clustering_labels = DataFrame(index=ks, columns=list(matrix.columns))
     consensus_clustering_labels.index.name = 'k'
     cophenetic_correlations = {}
+
     if isinstance(ks, int):
         ks = [ks]
     for k in ks:
         print_log('k={} ...'.format(k))
-        # Hierarchical cluster
+
+        # For `n_clusterings` times, permute distance matrix with repeat, and cluster
         clustering_labels = empty((n_clusterings, matrix.shape[1]))
         for i in range(n_clusterings):
             if i % 10 == 0:
-                print_log('\tClustering sample distances ({}/{}) ...'.format(i, n_clusterings))
-            randomized_column_indices = random_integers(0, sample_distances.shape[1] - 1, sample_distances.shape[1])
+                print_log('\tPermuting distance matrix with repeat and clustering ({}/{}) ...'.format(i, n_clusterings))
+            randomized_column_indices = random_integers(0, distance_matrix.shape[1] - 1, distance_matrix.shape[1])
             ward = AgglomerativeClustering(n_clusters=k)
-            ward.fit(sample_distances.iloc[randomized_column_indices, randomized_column_indices])
-            # Assign column labels
+            ward.fit(distance_matrix.iloc[randomized_column_indices, randomized_column_indices])
+
+            # Assign labels to the samples selected by permutation with repeat
             clustering_labels[i, randomized_column_indices] = ward.labels_
 
-        # Consensus cluster hierarchical clustering labels
-        print_log('\tConsensus clustering ...')
-        consensus_clusterings = get_consensus(clustering_labels)
-        # Convert to distances
-        distances = 1 - consensus_clusterings
+        # Make co-assignment matrix using labels created by clusterings of permuted-distance matrix
+        print_log('\tMaking Counting co-assignments during {} permuted-distance-matrix clusterings ...'.format(n_clusterings))
+        coassignments = get_consensus(clustering_labels)
 
-        # Hierarchical cluster the consensus clusterings to assign the final label
+        # Convert co-assignments to distance
+        distances = 1 - coassignments
+
+        # Cluster distance matrix to assign the final label
         ward = linkage(distances, method='ward')
         consensus_clustering_labels.ix[k, :] = fcluster(ward, k, criterion='maxclust')
-        # Compute clustering scores, the correlation between cophenetic and Euclidian distances
+
+        # Compute clustering scores, the correlation between cophenetic and Euclidean distances
         cophenetic_correlations[k] = cophenet(ward, pdist(distances))[0]
         print_log('Computed cophenetic correlations.')
 
+    # Save
     if filepath_prefix:
         establish_path(filepath_prefix)
         write_gct(consensus_clustering_labels, filepath_prefix + '_labels.gct')
@@ -845,7 +855,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     :param eta:
     :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
     """
-    from numpy import zeros, asarray, argmax
+    from numpy import empty, asarray, argmax
     from scipy.spatial.distance import pdist
     from scipy.cluster.hierarchy import linkage, cophenet
 
@@ -854,32 +864,34 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
 
     nmf_results = {}
     scores = {}
+
     if method == 'cophenetic_correlation':
-        print_log(
-            'Scoring NMF with consensus-clustering ({} clusterings) cophenetic correlation ...'.format(n_clusterings))
+        print_log('Scoring NMF with cophenetic correlation of consensus-clustering ({} clusterings) ...'.format(
+            n_clusterings))
         for k in ks:
             print_log('k={} ...'.format(k))
 
-            # NMF cluster
-            clustering_labels = zeros((n_clusterings, matrix.shape[1]), dtype=int)
+            # NMF cluster `n_clustering` times
+            clustering_labels = empty((n_clusterings, matrix.shape[1]), dtype=int)
             for i in range(n_clusterings):
                 if i % 10 == 0:
                     print_log('\tNMF ({}/{}) ...'.format(i, n_clusterings))
+
                 nmf_result = nmf(matrix, k,
                                  init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
                                  alpha=alpha, l1_ratio=l1_ratio, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
                                  sparseness=sparseness, beta=beta, eta=eta)[k]
 
-                # Save 1 NMF result for eack k
+                # Save the first NMF decomposition for each k
                 if i == 0:
                     nmf_results[k] = nmf_result
                     print_log('\t\tSaved the 1st NMF decomposition.')
 
-                # Assigning column labels, the row index holding the highest value
+                # Column labels are the row index holding the highest value
                 clustering_labels[i, :] = argmax(asarray(nmf_result['H']), axis=0)
 
-            # Consensus cluster NMF clustering labels
-            print_log('\tConsensus clustering ...')
+            # Consensus cluster `n_clustering` sets of NMF labels
+            print_log('\tConsensus clustering {} sets of NMF labels ...'.format(n_clusterings))
             consensus_clusterings = get_consensus(clustering_labels)
 
             # Compute clustering scores, the correlation between cophenetic and Euclidian distances
