@@ -151,24 +151,32 @@ def read_gct(filepath, fill_na=None, drop_description=True):
     """
     from pandas import read_csv
 
+    # Read .gct
     df = read_csv(filepath, skiprows=2, sep='\t')
+
     if fill_na:
         df.fillna(fill_na, inplace=True)
+
     c1, c2 = df.columns[:2]
+
+    # Check if the 1st column is 'Name' and set it as the index of the dataframe
     if c1 != 'Name':
         if c1.strip() != 'Name':
             raise ValueError('Column 1 != \'Name\'.')
         else:
             raise ValueError('Column 1 has more than 1 extra space around \'Name\'. Please strip it.')
+    df.set_index('Name', inplace=True)
+    df.index.name = None
+
+    # Check if the 2nd column is 'Description' and drop it as necessary
     if c2 != 'Description':
         if c2.strip() != 'Description':
             raise ValueError('Column 2 != \'Description\'')
         else:
             raise ValueError('Column 2 has more than 1 extra space around \'Description\'. Please strip it.')
-    df.set_index('Name', inplace=True)
-    df.index.name = None
     if drop_description:
         df.drop('Description', axis=1, inplace=True)
+
     return df
 
 
