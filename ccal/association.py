@@ -91,8 +91,8 @@ def read_annotations(annotations):
 
 def match(features, target, filepath_prefix, feature_type='continuous', ref_type='continuous', min_n_feature_values=3,
           feature_ascending=False, ref_ascending=False, ref_sort=True,
-          function=information_coefficient, n_features=0.95, n_samplings=30, confidence=0.95,
-          n_permutations=30, title=None, title_size=16, annotation_label_size=9, plot_colname=False,
+          function=information_coefficient, n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
+          title=None, title_size=16, annotation_label_size=9, plot_colname=False,
           figure_size='auto', dpi=DPI):
     """
     Compute scores[i] = `features`[i] vs. `target` using `function`. Compute confidence interval (CI) for `n_features`
@@ -106,11 +106,11 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
     :param feature_ascending: bool; True if features score increase from top to bottom, and False otherwise
     :param ref_ascending: bool; True if ref values increase from left to right, and False otherwise
     :param ref_sort: bool; sort `ref` or not
-    :param function: function; function to score
-    :param n_features: int or float; number threshold if >= 1 and percentile threshold if < 1
-    :param n_samplings: int; number of sampling for confidence interval bootstrapping; must be > 2 to compute CI
-    :param confidence: float; confidence interval
-    :param n_permutations: int; number of permutations for permutation test
+    :param function: function; scoring function
+    :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
+    :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
+    :param confidence: float; fraction compute confidence interval
+    :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param title: str; plot title
     :param title_size: int; title text size
     :param annotation_label_size: int; annotation text size
@@ -169,27 +169,30 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
     # Format FDR
     annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
 
-    # Plot confidence interval for limited features
-    if n_features < 1:  # Limit using percentile
-        above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
-        print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
-        below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
-        print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
-        indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
-    else:  # Limit using numbers
-        if 2 * n_features >= scores.shape[0]:
-            indices_to_plot = scores.index
-            print_log('Plotting all {} features ...'.format(scores.shape[0]))
-        else:
-            indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
-            print_log('Plotting top & bottom {} features ...'.format(n_features))
+    if not (isinstance(n_features, int) or isinstance(n_features, float)):
+        print_log('Not plotting.')
 
-    plot_features_against_reference(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
-                                    feature_type=feature_type, ref_type=ref_type,
-                                    figure_size=figure_size, title=title, title_size=title_size,
-                                    annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
-                                    annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                    filepath=filepath_prefix + '.pdf', dpi=dpi)
+    else:  # Plot confidence interval for limited features
+        if n_features < 1:  # Limit using percentile
+            above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+            print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
+            below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+            print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
+            indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
+        else:  # Limit using numbers
+            if 2 * n_features >= scores.shape[0]:
+                indices_to_plot = scores.index
+                print_log('Plotting all {} features ...'.format(scores.shape[0]))
+            else:
+                indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
+                print_log('Plotting top & bottom {} features ...'.format(n_features))
+
+        plot_features_against_reference(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
+                                        feature_type=feature_type, ref_type=ref_type,
+                                        figure_size=figure_size, title=title, title_size=title_size,
+                                        annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
+                                        annotation_label_size=annotation_label_size, plot_colname=plot_colname,
+                                        filepath=filepath_prefix + '.pdf', dpi=dpi)
     return scores
 
 
