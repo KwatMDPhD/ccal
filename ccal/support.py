@@ -646,10 +646,11 @@ def compute_against_target(features, target, function=information_coefficient, n
     :return: pandas DataFrame (n_features, n_scores),
     """
     import math
+    from multiprocessing import cpu_count
 
     from numpy import array
     from numpy.random import choice, shuffle
-    from pandas import DataFrame, merge
+    from pandas import DataFrame, concat, merge
     import scipy.stats as stats
     from statsmodels.sandbox.stats.multicomp import multipletests
 
@@ -715,11 +716,19 @@ def compute_against_target(features, target, function=information_coefficient, n
     p_values_and_fdrs = DataFrame(index=features.index, columns=['Local P-value', 'Global P-value', 'FDR'])
 
     # Compute scores using permuted target
-    permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))
     # TODO: parallelize
     if n_jobs > 1:
-        pass
+        # Group
+        n_jobs = min(n_jobs, cpu_count())
+        n_per_job = features.shape[0] // n_jobs
+        args = [(features.iloc[i * n_per_job: (i + 1) * n_per_job, :], target, n_permutations) for i in range(n_jobs)]
+
+        # Parallelize
+        parallel_output = apply_parallel(permute_and_score, args, n_jobs)
+        permutation_scores = concat(parallel_output)
+
     else:
+        permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))
         shuffled_target = array(target)
         for i in range(n_permutations):
             print_log('\tPermuting target and scoring ({}/{}) ...'.format(i, n_permutations))
@@ -748,6 +757,29 @@ def compute_against_target(features, target, function=information_coefficient, n
     scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
 
     return scores.sort_values('score', ascending=ascending)
+
+
+def apply_parallel(function, iterable, n_jobs):
+    from multiprocessing import Pool
+
+    with Pool(n_jobs) as p:
+        return p.map(function, iterable)
+
+
+def permute_and_score(args):
+    from numpy import array
+    from numpy.random import shuffle
+    from pandas import DataFrame
+
+    features, target, n_permutations = args
+
+    permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))
+    shuffled_target = array(target)
+    for i in range(n_permutations):
+        print_log('\tPermuting target and scoring ({}/{}) ...'.format(i, n_permutations))
+        shuffle(shuffled_target)
+        permutation_scores.iloc[:, i] = features.apply(lambda r: information_coefficient(r, shuffled_target), axis=1)
+    return permutation_scores
 
 
 # ======================================================================================================================
