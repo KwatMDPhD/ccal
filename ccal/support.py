@@ -186,7 +186,7 @@ def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, colum
 
     # Set row and column name
     df.index.name = row_name
-    df.column.name = column_name
+    df.columns.name = column_name
 
     return df
 
@@ -217,7 +217,7 @@ def write_gct(pandas_object, filepath, descriptions=None):
 
     # Set row and column name
     obj.index.name = 'Name'
-    obj.column.name = None
+    obj.columns.name = None
 
     # Save as .gct
     if not filepath.endswith('.gct'):
@@ -288,7 +288,7 @@ def write_gmt(pandas_object, filepath, descriptions=None):
 
     # Set row and column name
     obj.index.name = 'Name'
-    obj.column.name = None
+    obj.columns.name = None
 
     # Save as .gmt
     if not filepath.endswith('.gmt'):
@@ -622,11 +622,11 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     return compared_matrix
 
 
-def compute_against_reference(features, target, function=information_coefficient, n_features=0.95, ascending=False,
-                              n_samplings=30, confidence=0.95, n_perms=30):
+def compute_against_target(features, target, function=information_coefficient, n_features=0.95, ascending=False,
+                           n_samplings=30, confidence=0.95, n_permutations=30):
     """
-    Compute scores[i] = `features`[i] vs. `target` using `function`.
-    Compute confidence interval (CI) for `n_features` features. And compute p-val and FDR (BH) for all features.
+    Compute scores[i] = `features`[i] vs. `target` using `function`. Compute confidence interval (CI) for `n_features`
+    features. And compute p-val and FDR (BH) for all features.
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
     :param target: pandas Series; (n_samples); must have name and indices, which must match `features`'s column index
     :param function: function; scoring function
@@ -634,7 +634,7 @@ def compute_against_reference(features, target, function=information_coefficient
     :param ascending: bool; True if score increase from top to bottom, and False otherwise
     :param n_samplings: int; number of sampling for confidence interval bootstrapping; must be > 2 to compute
     :param confidence: float; fraction compute confidence interval
-    :param n_perms: int; number of permutations for permutation test
+    :param n_permutations: int; number of permutations for permutation test
     :return: pandas DataFrame (n_features, n_scores),
     """
     # TODO: refactor
@@ -647,12 +647,16 @@ def compute_against_reference(features, target, function=information_coefficient
     import scipy.stats as stats
     from statsmodels.sandbox.stats.multicomp import multipletests
 
-    ### Compute scores: scores[i] = `features`[i] vs. `target`
+    #
+    # Compute scores: scores[i] = `features`[i] vs. `target`
+    #
     print_log('Computing scores ...')
     scores = features.apply(lambda row: function(row, target), axis=1)
-    scores = DataFrame(scores, index=features.index, columns=['score'])
+    scores = DataFrame(scores, index=features.index, columns=['score']).sort_values('score')
 
-    ### Compute confidence interval using bootstrapped distribution
+    #
+    #  Compute confidence interval using bootstrapped distribution
+    #
     print_log('Computing {} CI using a distribution created by {} bootstrapping ...'.format(confidence, n_samplings))
 
     n_samples = math.ceil(0.632 * features.shape[1])
@@ -667,8 +671,13 @@ def compute_against_reference(features, target, function=information_coefficient
             print_log('Bootstrapping {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
             indices_to_bootstrap = scores.index[above_quantile | below_quantile].tolist()
         else:  # Limit using numbers
-            indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
-            print_log('Bootstrapping top & bottom {} features ...'.format(n_features))
+            if 2 * n_features >= scores.shape[0]:
+                indices_to_bootstrap = scores.index
+                print_log('Bootstrapping all {} features ...'.format(scores.shape[0]))
+            else:
+                indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
+                print_log('Bootstrapping top & bottom {} features ...'.format(n_features))
+        print('IBS:', indices_to_bootstrap)
 
         # Bootstrap: for `n_sampling` times, randomly choose 63% of the samples, score, and create score distribution
         sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
@@ -680,7 +689,7 @@ def compute_against_reference(features, target, function=information_coefficient
             # Score
             sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
 
-        # Compute the score confidence interval using bootstrapped score distribution
+        # Compute confidence interval for score using bootstrapped score distribution
         z_critical = stats.norm.ppf(q=confidence)
         confidence_intervals = sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)), axis=1)
         confidence_intervals = DataFrame(confidence_intervals,
@@ -689,29 +698,31 @@ def compute_against_reference(features, target, function=information_coefficient
         # Merge
         scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
 
-    ### Compute P-values and FDRs
+    #
+    # Compute P-values and FDRs
+    #
     p_values_and_fdrs = DataFrame(index=features.index, columns=['Local P-value', 'Global P-value', 'FDR'])
 
     # Compute scores using permuted target
-    permutation_scores = empty((features.shape[0], n_perms))
+    permutation_scores = empty((features.shape[0], n_permutations))
     shuffled_target = array(target)
-    for i in range(n_perms):
+    for i in range(n_permutations):
         shuffle(shuffled_target)
         permutation_scores[:, i] = features.apply(lambda r: function(r, shuffled_target), axis=1)
 
     # Compute local and global P-values
     all_permutation_scores = permutation_scores.flatten()
     for i, (idx, f) in enumerate(scores.iterrows()):
-        # Compute local p-value
-        local_pval = float(sum(permutation_scores[i, :] > float(f.ix['score'])) / n_perms)
+        # Compute local P-value
+        local_pval = float(sum(permutation_scores[i, :] > float(f.ix['score'])) / n_permutations)
         if not local_pval:
-            local_pval = float(1 / n_perms)
+            local_pval = float(1 / n_permutations)
         p_values_and_fdrs.ix[idx, 'Local P-value'] = local_pval
 
         # Compute global p-value
-        global_pval = float(sum(all_permutation_scores > float(f.ix['score'])) / (n_perms * features.shape[0]))
+        global_pval = float(sum(all_permutation_scores > float(f.ix['score'])) / (n_permutations * features.shape[0]))
         if not global_pval:
-            global_pval = float(1 / (n_perms * features.shape[0]))
+            global_pval = float(1 / (n_permutations * features.shape[0]))
         p_values_and_fdrs.ix[idx, 'Global P-value'] = global_pval
 
     # Compute global permutation FDRs
@@ -923,7 +934,7 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
 # ======================================================================================================================
 # Simulate
 # ======================================================================================================================
-def make_random_dataframe_or_series(n_rows, n_cols, n_categories=None):
+def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None):
     """
     Simulate DataFrame (2D) or Series (1D).
     :param n_rows: int;
