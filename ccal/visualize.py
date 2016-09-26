@@ -53,6 +53,7 @@ DPI = 1000
 def plot_clustermap(matrix, figure_size=FIGURE_SIZE, title=None, title_fontsize=20,
                     xticklabels=True, yticklabels=True,
                     xticklabels_rotation=90, yticklabels_rotation=0,
+                    row_colors=None, column_colors=None,
                     filepath=None, dpi=DPI):
     """
     Plot heatmap for `matrix`.
@@ -62,13 +63,16 @@ def plot_clustermap(matrix, figure_size=FIGURE_SIZE, title=None, title_fontsize=
     :param title_fontsize:
     :param xticklabels_rotation:
     :param yticklabels_rotation:
+    :param row_colors:
+    :param column_colors:
     :param filepath:
     :param dpi:
     :return: None
     """
     plt.figure(figsize=figure_size)
 
-    clustergrid = clustermap(matrix, xticklabels=xticklabels, yticklabels=yticklabels, cmap=CMAP_CONTINUOUS)
+    clustergrid = clustermap(matrix, xticklabels=xticklabels, yticklabels=yticklabels,
+                             row_colors=row_colors, column_colors=column_colors, cmap=CMAP_CONTINUOUS)
     for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set_rotation(xticklabels_rotation)
     for t in clustergrid.ax_heatmap.get_yticklabels():

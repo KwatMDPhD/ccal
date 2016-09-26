@@ -659,7 +659,7 @@ def compute_against_target(features, target, function=information_coefficient, n
     #
     print_log('Computing scores ...')
     scores = features.apply(lambda row: function(row, target), axis=1)
-    scores = DataFrame(scores, index=features.index, columns=['score']).sort_values('score')
+    scores = DataFrame(scores, index=features.index, columns=['Score']).sort_values('Score')
 
     #
     #  Compute confidence interval using bootstrapped distribution
@@ -713,10 +713,11 @@ def compute_against_target(features, target, function=information_coefficient, n
     # Compute P-values and FDRs
     #
     print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
-    p_values_and_fdrs = DataFrame(index=features.index, columns=['Local P-value', 'Global P-value', 'FDR'])
+    p_values_and_fdrs = DataFrame(index=features.index, columns=['Global P-value', 'Local P-value',
+                                                                 'Global FDR', 'Global FDR (flipped)',
+                                                                 'Local FDR', 'Local FDR (flipped)'])
 
     # Compute scores using permuted target
-    # TODO: parallelize
     if n_jobs > 1:
         # Group
         n_jobs = min(n_jobs, cpu_count())
@@ -739,24 +740,31 @@ def compute_against_target(features, target, function=information_coefficient, n
     all_permutation_scores = permutation_scores.values.flatten()
     for i, (idx, row) in enumerate(scores.iterrows()):
         # Compute local P-value
-        local_pval = float(sum(permutation_scores.iloc[i, :] > float(row.ix['score'])) / n_permutations)
+        local_pval = float(sum(permutation_scores.iloc[i, :] > float(row.ix['Score'])) / n_permutations)
         if not local_pval:
             local_pval = float(1 / n_permutations)
         p_values_and_fdrs.ix[idx, 'Local P-value'] = local_pval
 
         # Compute global p-value
-        global_pval = float(sum(all_permutation_scores > float(row.ix['score'])) / (n_permutations * features.shape[0]))
+        global_pval = float(sum(all_permutation_scores > float(row.ix['Score'])) / (n_permutations * features.shape[0]))
         if not global_pval:
             global_pval = float(1 / (n_permutations * features.shape[0]))
         p_values_and_fdrs.ix[idx, 'Global P-value'] = global_pval
 
     # Compute global permutation FDRs
-    p_values_and_fdrs.ix[:, 'FDR'] = multipletests(p_values_and_fdrs.ix[:, 'Global P-value'], method='fdr_bh')[1]
+    p_values_and_fdrs.ix[:, 'Local FDR'] = multipletests(p_values_and_fdrs.ix[:, 'Local P-value'],
+                                                         method='fdr_bh')[1]
+    p_values_and_fdrs.ix[:, 'Local FDR (flipped)'] = multipletests(1 - p_values_and_fdrs.ix[:, 'Local P-value'],
+                                                                   method='fdr_bh')[1]
+    p_values_and_fdrs.ix[:, 'Global FDR'] = multipletests(p_values_and_fdrs.ix[:, 'Global P-value'],
+                                                          method='fdr_bh')[1]
+    p_values_and_fdrs.ix[:, 'Global FDR (flipped)'] = multipletests(1 - p_values_and_fdrs.ix[:, 'Global P-value'],
+                                                                    method='fdr_bh')[1]
 
     # Merge
     scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
 
-    return scores.sort_values('score', ascending=ascending)
+    return scores.sort_values('Score', ascending=ascending)
 
 
 def apply_parallel(function, iterable, n_jobs):

@@ -121,6 +121,8 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
     :param dpi: int; dots per square inch of pixel in the output figure
     :return: pandas DataFrame; scores
     """
+    # TODO: skip calculation if n_features = None
+
     print_log('Matching {} against features ...'.format(target.name))
 
     if isinstance(features, Series):  # Convert Series into DataFrame
@@ -162,23 +164,23 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
     for idx, s in features.iterrows():
         # Format Score and confidence interval
         if '{} MoE'.format(confidence) in scores.columns:
-            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, 'score']) \
+            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, 'Score']) \
                                                 + '({0:.3f})'.format(scores.ix[idx, '{} MoE'.format(confidence)])
         else:
-            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}(x.xxx)'.format(scores.ix[idx, 'score'])
+            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}(x.xxx)'.format(scores.ix[idx, 'Score'])
     # Format P-Value
     annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global P-value']]
     # Format FDR
-    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
+    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global FDR']]
 
     if not (isinstance(n_features, int) or isinstance(n_features, float)):
         print_log('Not plotting.')
 
     else:  # Plot confidence interval for limited features
         if n_features < 1:  # Limit using percentile
-            above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+            above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'Score'].quantile(n_features)
             print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
-            below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+            below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'Score'].quantile(1 - n_features)
             print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
             indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
         else:  # Limit using numbers
