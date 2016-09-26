@@ -169,9 +169,10 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
         else:
             annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}(x.xxx)'.format(scores.ix[idx, 'Score'])
     # Format P-Value
-    annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global P-value']]
+    annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
     # Format FDR
-    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'Global FDR']]
+    print(scores)
+    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
 
     if not (isinstance(n_features, int) or isinstance(n_features, float)):
         print_log('Not plotting.')

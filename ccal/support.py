@@ -713,20 +713,34 @@ def compute_against_target(features, target, function=information_coefficient, n
     # Compute P-values and FDRs
     #
     print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
-    p_values_and_fdrs = DataFrame(index=features.index, columns=['Global P-value', 'Local P-value',
-                                                                 'Global FDR', 'Global FDR (flipped)',
-                                                                 'Local FDR', 'Local FDR (flipped)'])
+    p_values_and_fdrs = DataFrame(index=features.index,
+                                  columns=['P-value', 'FDR (forward)', 'FDR (reverse)', 'FDR'])
 
     # Compute scores using permuted target
     if n_jobs > 1:
         # Group
         n_jobs = min(n_jobs, cpu_count())
         n_per_job = features.shape[0] // n_jobs
-        args = [(features.iloc[i * n_per_job: (i + 1) * n_per_job, :], target, n_permutations) for i in range(n_jobs)]
+        args = []
+        leftovers = list(features.index)
+        for i in range(n_jobs):
+            df = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
+            for leftover in df.index:
+                leftovers.remove(leftover)
+            args.append((df, target, n_permutations))
 
         # Parallelize
         parallel_output = apply_parallel(permute_and_score, args, n_jobs)
         permutation_scores = concat(parallel_output)
+
+        for leftover in leftovers:
+            permutation_scores.ix[leftover, :] = None
+        shuffled_target = array(target)
+        for i in range(n_permutations):
+            print_log('\tPermuting target and scoring leftovers: {} ({}/{}) ...'.format(leftovers, i, n_permutations))
+            shuffle(shuffled_target)
+            permutation_scores.ix[leftovers, i] = features.ix[leftovers, :].apply(
+                lambda r: function(r, shuffled_target), axis=1)
 
     else:
         permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))
@@ -738,28 +752,17 @@ def compute_against_target(features, target, function=information_coefficient, n
 
     # Compute local and global P-values
     all_permutation_scores = permutation_scores.values.flatten()
-    for i, (idx, row) in enumerate(scores.iterrows()):
-        # Compute local P-value
-        local_pval = float(sum(permutation_scores.iloc[i, :] > float(row.ix['Score'])) / n_permutations)
-        if not local_pval:
-            local_pval = float(1 / n_permutations)
-        p_values_and_fdrs.ix[idx, 'Local P-value'] = local_pval
-
+    for i, (r_i, r) in enumerate(scores.iterrows()):
         # Compute global p-value
-        global_pval = float(sum(all_permutation_scores > float(row.ix['Score'])) / (n_permutations * features.shape[0]))
-        if not global_pval:
-            global_pval = float(1 / (n_permutations * features.shape[0]))
-        p_values_and_fdrs.ix[idx, 'Global P-value'] = global_pval
+        p_value = float(sum(all_permutation_scores > float(r.ix['Score'])) / (n_permutations * features.shape[0]))
+        if not p_value:
+            p_value = float(1 / (n_permutations * features.shape[0]))
+        p_values_and_fdrs.ix[r_i, 'P-value'] = p_value
 
     # Compute global permutation FDRs
-    p_values_and_fdrs.ix[:, 'Local FDR'] = multipletests(p_values_and_fdrs.ix[:, 'Local P-value'],
-                                                         method='fdr_bh')[1]
-    p_values_and_fdrs.ix[:, 'Local FDR (flipped)'] = multipletests(1 - p_values_and_fdrs.ix[:, 'Local P-value'],
-                                                                   method='fdr_bh')[1]
-    p_values_and_fdrs.ix[:, 'Global FDR'] = multipletests(p_values_and_fdrs.ix[:, 'Global P-value'],
-                                                          method='fdr_bh')[1]
-    p_values_and_fdrs.ix[:, 'Global FDR (flipped)'] = multipletests(1 - p_values_and_fdrs.ix[:, 'Global P-value'],
-                                                                    method='fdr_bh')[1]
+    p_values_and_fdrs.ix[:, 'FDR (forward)'] = multipletests(p_values_and_fdrs.ix[:, 'P-value'], method='fdr_bh')[1]
+    p_values_and_fdrs.ix[:, 'FDR (reverse)'] = multipletests(1 - p_values_and_fdrs.ix[:, 'P-value'], method='fdr_bh')[1]
+    p_values_and_fdrs.ix[:, 'FDR'] = p_values_and_fdrs.ix[:, ['FDR (forward)', 'FDR (reverse)']].min(axis=1)
 
     # Merge
     scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
