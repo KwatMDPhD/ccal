@@ -331,6 +331,20 @@ def exponential_function(x, a, k, c):
 # ======================================================================================================================#
 # Compute
 # ======================================================================================================================#
+# TODO: optimize import
+from numpy import asarray, sign, sum, sqrt, exp, log, isnan
+from numpy.random import random_sample
+from scipy.stats import pearsonr
+import rpy2.robjects as ro
+from rpy2.robjects.numpy2ri import numpy2ri
+from rpy2.robjects.packages import importr
+
+ro.conversion.py2ri = numpy2ri
+mass = importr('MASS')
+bcv = mass.bcv
+kde2d = mass.kde2d
+
+
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     """
     Compute the information coefficient between `x` and `y`, which can be either continuous, categorical, or binary
@@ -340,19 +354,11 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     :param jitter: number;
     :return: float;
     """
-    # TODO: optimize import
-    from numpy import asarray, sign, sum, sqrt, exp, log, isnan
-    from numpy.random import random_sample
-    from scipy.stats import pearsonr
-    import rpy2.robjects as ro
-    from rpy2.robjects.numpy2ri import numpy2ri
-    from rpy2.robjects.packages import importr
-    ro.conversion.py2ri = numpy2ri
-    mass = importr('MASS')
-    bcv = mass.bcv
-    kde2d = mass.kde2d
-
     # Can't work with missing any value
+    # not_nan_filter = ~isnan(x)
+    # not_nan_filter &= ~isnan(y)
+    # x = x[not_nan_filter]
+    # y = y[not_nan_filter]
     x, y = drop_nan_columns([x, y])
 
     # Need at least 3 values to compute bandwidth
@@ -623,7 +629,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
 
 
 def compute_against_target(features, target, function=information_coefficient, n_features=0.95, ascending=False,
-                           n_samplings=30, confidence=0.95, n_permutations=30):
+                           n_cores=1, n_samplings=30, confidence=0.95, n_permutations=30):
     """
     Compute scores[i] = `features`[i] vs. `target` using `function`. Compute confidence interval (CI) for `n_features`
     features. And compute p-val and FDR (BH) for all features.
@@ -633,16 +639,16 @@ def compute_against_target(features, target, function=information_coefficient, n
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
     :param ascending: bool; True if score increase from top to bottom, and False otherwise
+    :param n_cores: int; number of threads
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :return: pandas DataFrame (n_features, n_scores),
     """
-    # TODO: refactor
-
     import math
+    import multiprocessing
 
-    from numpy import array, empty
+    from numpy import array
     from numpy.random import choice, shuffle
     from pandas import DataFrame, merge
     import scipy.stats as stats
@@ -709,24 +715,44 @@ def compute_against_target(features, target, function=information_coefficient, n
     print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
     p_values_and_fdrs = DataFrame(index=features.index, columns=['Local P-value', 'Global P-value', 'FDR'])
 
+    # TODO: parallelize
     # Compute scores using permuted target
-    permutation_scores = empty((features.shape[0], n_permutations))
-    shuffled_target = array(target)
-    for i in range(n_permutations):
-        shuffle(shuffled_target)
-        permutation_scores[:, i] = features.apply(lambda r: function(r, shuffled_target), axis=1)
+    permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))
+    if n_cores > 1:
+        jobs = []
+        n_features_per_job = int(scores.shape[0] / n_cores)
+        print_log('Parallelizing using {} cores ({} features per core) ...'.format(n_cores, n_features_per_job))
+        features_computed = []
+        for n in range(n_cores):
+            job_features = features.iloc[n * n_features_per_job: (n + 1) * n_features_per_job, :]
+            j = multiprocessing.Process(target=worker, args=(job_features, target, n_permutations, permutation_scores))
+            jobs.append(j)
+            j.start()
+            features_computed += job_features.index.tolist()
+        for j in jobs:
+            print_log('\tWaiting for {} to end ...'.format(j.name))
+            j.join()
+        leftover_features = set(features.index) - set(features_computed)
+
+    else:
+        shuffled_target = array(target)
+        for i in range(n_permutations):
+            print_log('\tPermuting target and scoring ({}/{}) ...'.format(i, n_permutations))
+            shuffle(shuffled_target)
+            permutation_scores.iloc[:, i] = features.apply(lambda r: function(r, shuffled_target), axis=1)
 
     # Compute local and global P-values
-    all_permutation_scores = permutation_scores.flatten()
-    for i, (idx, f) in enumerate(scores.iterrows()):
+    all_permutation_scores = permutation_scores.values.flatten()
+    for i, (idx, job_features) in enumerate(scores.iterrows()):
         # Compute local P-value
-        local_pval = float(sum(permutation_scores[i, :] > float(f.ix['score'])) / n_permutations)
+        local_pval = float(sum(permutation_scores.iloc[i, :] > float(job_features.ix['score'])) / n_permutations)
         if not local_pval:
             local_pval = float(1 / n_permutations)
         p_values_and_fdrs.ix[idx, 'Local P-value'] = local_pval
 
         # Compute global p-value
-        global_pval = float(sum(all_permutation_scores > float(f.ix['score'])) / (n_permutations * features.shape[0]))
+        global_pval = float(
+            sum(all_permutation_scores > float(job_features.ix['score'])) / (n_permutations * features.shape[0]))
         if not global_pval:
             global_pval = float(1 / (n_permutations * features.shape[0]))
         p_values_and_fdrs.ix[idx, 'Global P-value'] = global_pval
@@ -738,6 +764,19 @@ def compute_against_target(features, target, function=information_coefficient, n
     scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
 
     return scores.sort_values('score', ascending=ascending)
+
+
+from numpy import array
+from numpy.random import shuffle
+
+
+def worker(features, target, n_permutations, permutation_scores):
+    shuffled_target = array(target)
+    for i in range(n_permutations):
+        print_log('\tPermuting target and scoring ({}/{}) ...'.format(i, n_permutations))
+        shuffle(shuffled_target)
+        permutation_scores.ix[features.index, i] = features.apply(lambda r: information_coefficient(r, shuffled_target),
+                                                                  axis=1)
 
 
 # ======================================================================================================================
