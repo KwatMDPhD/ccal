@@ -91,7 +91,7 @@ def read_annotations(annotations):
 
 def match(features, target, filepath_prefix, feature_type='continuous', ref_type='continuous', min_n_feature_values=3,
           feature_ascending=False, ref_ascending=False, ref_sort=True,
-          function=information_coefficient, n_features=0.95, n_threads=1,
+          function=information_coefficient, n_features=0.95, n_jobs=1,
           n_samplings=30, confidence=0.95, n_permutations=30,
           title=None, title_size=16, annotation_label_size=9, plot_colname=False,
           figure_size='auto', dpi=DPI):
@@ -109,7 +109,7 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
     :param ref_sort: bool; sort `ref` or not
     :param function: function; scoring function
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
-    :param n_threads: int; number of threads
+    :param n_jobs: int; number of jobs to parallelize
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
@@ -150,7 +150,7 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
 
     # Compute score, P-val, FDR, and confidence interval for some features
     scores = compute_against_target(features, target, function=function,
-                                    n_features=n_features, ascending=feature_ascending, n_cores=n_threads,
+                                    n_features=n_features, ascending=feature_ascending, n_jobs=n_jobs,
                                     n_samplings=n_samplings, confidence=confidence, n_permutations=n_permutations)
     features = features.reindex(scores.index)
 
