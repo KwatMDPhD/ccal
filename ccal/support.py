@@ -314,6 +314,29 @@ def write_dictionary(dictionary, filepath, key_name, value_name):
 # ======================================================================================================================
 # Write equations
 # ======================================================================================================================
+def parallelize(function, args, n_jobs=None):
+    """
+    Apply function with args on separate processors, using a total of `n_jobs` processors.
+    :param function: function;
+    :param args: list-like; function's arguments
+    :param n_jobs: int; if not specified, parallelize to all CPUs
+    :return: list; list of returned values from all jobs
+    """
+    from multiprocessing import Pool, cpu_count
+
+    # Use all available CPUs
+    if not n_jobs:
+        n_jobs = cpu_count()
+
+    # Parallelize
+    with Pool(n_jobs) as p:
+        # Apply function with args on separate processors
+        return p.map(function, args)
+
+
+# ======================================================================================================================
+# Write equations
+# ======================================================================================================================
 def exponential_function(x, a, k, c):
     """
     Apply exponential function on `x`.
@@ -646,7 +669,6 @@ def compute_against_target(features, target, function=information_coefficient, n
     :return: pandas DataFrame (n_features, n_scores),
     """
     import math
-    from multiprocessing import cpu_count
 
     from numpy import array
     from numpy.random import choice, shuffle
@@ -657,9 +679,36 @@ def compute_against_target(features, target, function=information_coefficient, n
     #
     # Compute scores: scores[i] = `features`[i] vs. `target`
     #
-    print_log('Computing scores ...')
-    scores = features.apply(lambda row: function(row, target), axis=1)
-    scores = DataFrame(scores, index=features.index, columns=['Score']).sort_values('Score')
+    def score(args):
+        features, target, function = args
+        scores = features.apply(lambda r: function(r, target), axis=1)
+        return DataFrame(scores, index=features.index, columns=['Score']).sort_values('Score')
+
+    if n_jobs == 1:
+        print_log('Scoring (without parallelizing) ...')
+        scores = score((features, target, function))
+    else:
+        print_log('Scoring across {} parallelized jobs ...'.format(n_jobs))
+
+        # Group
+        n_per_job = features.shape[0] // n_jobs
+        args = []
+        leftovers = list(features.index)
+        for i in range(n_jobs):
+            split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
+            args.append((split_features, target, function))
+
+            # Remove scored features
+            for feature in split_features.index:
+                leftovers.remove(feature)
+
+        # Parallelize
+        scores = concat(parallelize(score, args, n_jobs=n_jobs))
+
+        # Score leftovers
+        if leftovers:
+            print_log('Scoring leftovers: {} ...'.format(leftovers))
+            scores = concat([scores, score((features.ix[leftovers, :], target, function))])
 
     #
     #  Compute confidence interval using bootstrapped distribution
@@ -712,46 +761,48 @@ def compute_against_target(features, target, function=information_coefficient, n
     #
     # Compute P-values and FDRs
     #
-    print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
     p_values_and_fdrs = DataFrame(index=features.index,
                                   columns=['P-value', 'FDR (forward)', 'FDR (reverse)', 'FDR'])
+    print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
 
-    # Compute scores using permuted target
-    if n_jobs > 1:
-        # TODO: Refactor
+    def permute_and_score(args):
+        features, target, function, n_permutations = args
 
-        # Group
-        n_jobs = min(n_jobs, cpu_count())
-        n_per_job = features.shape[0] // n_jobs
-        args = []
-        leftovers = list(features.index)
-        for i in range(n_jobs):
-            df = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
-            for leftover in df.index:
-                leftovers.remove(leftover)
-            args.append((df, target, n_permutations))
-
-        # Parallelize
-        parallel_output = apply_parallel(permute_and_score, args, n_jobs)
-        permutation_scores = concat(parallel_output)
-
-        if leftovers:
-            for leftover in leftovers:
-                permutation_scores.ix[leftover, :] = None
-            shuffled_target = array(target)
-            for i in range(n_permutations):
-                print_log('\tPermuting target and scoring leftovers: {} ({}/{}) ...'.format(leftovers, i, n_permutations))
-                shuffle(shuffled_target)
-                permutation_scores.ix[leftovers, i] = features.ix[leftovers, :].apply(
-                    lambda r: function(r, shuffled_target), axis=1)
-
-    else:
         permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))
         shuffled_target = array(target)
         for i in range(n_permutations):
             print_log('\tPermuting target and scoring ({}/{}) ...'.format(i, n_permutations))
             shuffle(shuffled_target)
             permutation_scores.iloc[:, i] = features.apply(lambda r: function(r, shuffled_target), axis=1)
+        return permutation_scores
+
+    # Compute scores using permuted target
+    if n_jobs == 1:
+        print_log('Scoring against permuted target (without parallelizing) ...')
+        permutation_scores = permute_and_score((features, target, function, n_permutations))
+    else:
+        print_log('Scoring against permuted target across {} parallelized jobs ...'.format(n_jobs))
+
+        # Group
+        n_per_job = features.shape[0] // n_jobs
+        args = []
+        leftovers = list(features.index)
+        for i in range(n_jobs):
+            split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
+            args.append((split_features, target, function, n_permutations))
+
+            # Remove scored features
+            for feature in split_features.index:
+                leftovers.remove(feature)
+
+        # Parallelize
+        permutation_scores = concat(parallelize(permute_and_score, args, n_jobs=n_jobs))
+
+        # Handle leftovers
+        if leftovers:
+            print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
+            permutation_scores = concat(
+                [permutation_scores, permute_and_score((features.ix[leftovers, :], target, function, n_permutations))])
 
     # Compute local and global P-values
     all_permutation_scores = permutation_scores.values.flatten()
@@ -771,31 +822,6 @@ def compute_against_target(features, target, function=information_coefficient, n
     scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
 
     return scores.sort_values('Score', ascending=ascending)
-
-
-def apply_parallel(function, iterable, n_jobs):
-    from multiprocessing import Pool
-
-    with Pool(n_jobs) as p:
-        return p.map(function, iterable)
-
-def score(args):
-    pass
-
-def permute_and_score(args):
-    from numpy import array
-    from numpy.random import shuffle
-    from pandas import DataFrame
-
-    features, target, n_permutations = args
-
-    permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))
-    shuffled_target = array(target)
-    for i in range(n_permutations):
-        print_log('\tPermuting target and scoring ({}/{}) ...'.format(i, n_permutations))
-        shuffle(shuffled_target)
-        permutation_scores.iloc[:, i] = features.apply(lambda r: information_coefficient(r, shuffled_target), axis=1)
-    return permutation_scores
 
 
 # ======================================================================================================================
