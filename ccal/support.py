@@ -718,6 +718,8 @@ def compute_against_target(features, target, function=information_coefficient, n
 
     # Compute scores using permuted target
     if n_jobs > 1:
+        # TODO: Refactor
+
         # Group
         n_jobs = min(n_jobs, cpu_count())
         n_per_job = features.shape[0] // n_jobs
@@ -733,14 +735,15 @@ def compute_against_target(features, target, function=information_coefficient, n
         parallel_output = apply_parallel(permute_and_score, args, n_jobs)
         permutation_scores = concat(parallel_output)
 
-        for leftover in leftovers:
-            permutation_scores.ix[leftover, :] = None
-        shuffled_target = array(target)
-        for i in range(n_permutations):
-            print_log('\tPermuting target and scoring leftovers: {} ({}/{}) ...'.format(leftovers, i, n_permutations))
-            shuffle(shuffled_target)
-            permutation_scores.ix[leftovers, i] = features.ix[leftovers, :].apply(
-                lambda r: function(r, shuffled_target), axis=1)
+        if leftovers:
+            for leftover in leftovers:
+                permutation_scores.ix[leftover, :] = None
+            shuffled_target = array(target)
+            for i in range(n_permutations):
+                print_log('\tPermuting target and scoring leftovers: {} ({}/{}) ...'.format(leftovers, i, n_permutations))
+                shuffle(shuffled_target)
+                permutation_scores.ix[leftovers, i] = features.ix[leftovers, :].apply(
+                    lambda r: function(r, shuffled_target), axis=1)
 
     else:
         permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))

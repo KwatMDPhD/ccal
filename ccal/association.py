@@ -206,7 +206,7 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
         plot_features_against_target(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
                                      feature_type=feature_type, target_type=target_type,
                                      figure_size=figure_size, title=title, title_size=title_size,
-                                     annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
+                                     annotation_header=' ' * 11 + 'IC(\u0394)' + ' ' * 5 + 'P-val' + ' ' * 4 + 'FDR',
                                      annotation_label_size=annotation_label_size, plot_colname=plot_colname,
                                      filepath=filepath_prefix + '.pdf', dpi=dpi)
     return scores
