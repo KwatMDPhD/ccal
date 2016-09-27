@@ -827,8 +827,6 @@ def compute_against_target(features, target, function=information_coefficient, n
                     [permutation_scores,
                      score_against_permuted((features.ix[leftovers, :], target, function, n_permutations))])
 
-    print('C')
-    print(scores)
     # Compute local and global P-values
     all_permutation_scores = permutation_scores.values.flatten()
     for i, (r_i, r) in enumerate(scores.iterrows()):
