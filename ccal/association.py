@@ -203,7 +203,7 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
 # ======================================================================================================================
 # Compare 2 matrices
 # ======================================================================================================================
-def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, verbose=False, title=None):
+def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None):
     """
     Compare `matrix1` and `matrix2` row-wise (`axis=1`) or column-wise (`axis=0`), and plot hierarchical clustering.
     :param matrix1: pandas DataFrame or numpy 2D arrays;
@@ -211,7 +211,6 @@ def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_dista
     :param function: function; association function
     :param axis: int; 0 and 1 for row-wise and column-wise comparison respectively
     :param is_distance: bool; if True, then distances are computed from associations as in: distance = 1 - association
-    :param verbose: bool; print computation progress or not
     :param title: str; plot title
     :return: pandas DataFrame; association or distance matrix
     """
@@ -219,7 +218,7 @@ def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_dista
     compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
 
     # Plot hierarchical clustering of the matrix
-    plot_clustermap(compared_matrix, title=title)
+    plot_clustermap(compared_matrix, title=title, row_colors=row_colors, col_colors=col_colors)
 
     # Return the computed association or distance matrix
     return compared_matrix

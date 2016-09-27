@@ -51,27 +51,34 @@ DPI = 1000
 # Functions
 # ======================================================================================================================
 def plot_clustermap(matrix, figure_size=FIGURE_SIZE, title=None, title_fontsize=20,
-                    xticklabels=True, yticklabels=True,
-                    xticklabels_rotation=90, yticklabels_rotation=0,
-                    filepath=None, dpi=DPI):
+                    xticklabels=True, yticklabels=True, xticklabels_rotation=90, yticklabels_rotation=0,
+                    row_colors=None, col_colors=None, filepath=None, dpi=DPI):
     """
     Plot heatmap for `matrix`.
-    :param matrix:
+    :param matrix: pandas DataFrame;
     :param figure_size: tuple; (n_rows, n_cols)
-    :param title:
-    :param title_fontsize:
-    :param xticklabels_rotation:
-    :param yticklabels_rotation:
-    :param row_colors:
-    :param column_colors:
-    :param filepath:
-    :param dpi:
+    :param title: str;
+    :param title_fontsize: number;
+    :param xticklabels_rotation: number;
+    :param yticklabels_rotation: number;
+    :param row_colors: list-like or pandas DataFrame/Series; List of colors to label for either the rows.
+        Useful to evaluate whether samples within a group are clustered together. Can use nested lists or DataFrame for
+        multiple color levels of labeling. If given as a DataFrame or Series, labels for the colors are extracted from
+        the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
+        by their index, ensuring colors are drawn in the correct order.
+    :param col_colors: list-like or pandas DataFrame/Series; List of colors to label for either the column.
+        Useful to evaluate whether samples within a group are clustered together. Can use nested lists or DataFrame for
+        multiple color levels of labeling. If given as a DataFrame or Series, labels for the colors are extracted from
+        the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
+        by their index, ensuring colors are drawn in the correct order.
+    :param filepath: str;
+    :param dpi: int;
     :return: None
     """
     plt.figure(figsize=figure_size)
 
     clustergrid = clustermap(matrix, xticklabels=xticklabels, yticklabels=yticklabels,
-                             cmap=CMAP_CONTINUOUS)
+                             row_colors=row_colors, col_colors=col_colors, cmap=CMAP_CONTINUOUS)
     for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set_rotation(xticklabels_rotation)
     for t in clustergrid.ax_heatmap.get_yticklabels():
