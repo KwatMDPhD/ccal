@@ -676,9 +676,9 @@ def compute_against_target(features, target, function=information_coefficient, n
 
         else:  # Compute confidence interval for limited features
             if n_features < 1:  # Limit using percentile
-                above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+                above_quantile = scores.ix[:, 'Score'] >= scores.ix[:, 'Score'].quantile(n_features)
                 print_log('Bootstrapping {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
-                below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+                below_quantile = scores.ix[:, 'Score'] <= scores.ix[:, 'Score'].quantile(1 - n_features)
                 print_log('Bootstrapping {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
                 indices_to_bootstrap = scores.index[above_quantile | below_quantile].tolist()
             else:  # Limit using numbers

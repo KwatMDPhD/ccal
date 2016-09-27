@@ -89,7 +89,7 @@ def read_annotations(annotations):
     return annotation_dfs
 
 
-def match(features, target, filepath_prefix, feature_type='continuous', ref_type='continuous', min_n_feature_values=3,
+def match(features, target, filepath_prefix, feature_type='continuous', ref_type='continuous', min_n_feature_values=0,
           feature_ascending=False, ref_ascending=False, ref_sort=True,
           function=information_coefficient, n_features=0.95, n_jobs=1,
           n_samplings=30, confidence=0.95, n_permutations=30,
@@ -171,7 +171,6 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
     # Format P-Value
     annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
     # Format FDR
-    print(scores)
     annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
 
     if not (isinstance(n_features, int) or isinstance(n_features, float)):
@@ -179,9 +178,9 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
 
     else:  # Plot confidence interval for limited features
         if n_features < 1:  # Limit using percentile
-            above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'Score'].quantile(n_features)
+            above_quantile = scores.ix[:, 'Score'] >= scores.ix[:, 'Score'].quantile(n_features)
             print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
-            below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'Score'].quantile(1 - n_features)
+            below_quantile = scores.ix[:, 'Score'] <= scores.ix[:, 'Score'].quantile(1 - n_features)
             print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
             indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
         else:  # Limit using numbers
@@ -217,7 +216,7 @@ def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_dista
     :return: pandas DataFrame; association or distance matrix
     """
     # Compute association or distance matrix, which is returned at the end
-    compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance, verbose=verbose)
+    compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
 
     # Plot hierarchical clustering of the matrix
     plot_clustermap(compared_matrix, title=title)
