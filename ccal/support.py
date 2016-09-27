@@ -776,6 +776,8 @@ def apply_parallel(function, iterable, n_jobs):
     with Pool(n_jobs) as p:
         return p.map(function, iterable)
 
+def score(args):
+    pass
 
 def permute_and_score(args):
     from numpy import array

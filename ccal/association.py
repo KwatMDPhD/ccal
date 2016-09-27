@@ -92,6 +92,7 @@ def read_annotations(annotations):
         except ValueError:  # Use all features
             a_name, a_file = a
             annotation_dfs[a_name] = read_gct(a_file)
+        print_log('\t{} features & {} samples.'.format(*annotation_dfs[a_name].shape))
     return annotation_dfs
 
 
@@ -149,9 +150,12 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
                                                                                           target.size))
 
     # Drop features having less than `min_n_feature_values` unique values
+    print_log('Dropping features with less than {} unique values ...'.format(min_n_feature_values))
     features = features.ix[features.apply(lambda row: len(set(row)), axis=1) >= min_n_feature_values]
     if features.empty:
-        raise ValueError('No features with at least {} unique values.'.format(min_n_feature_values))
+        raise ValueError('No feature has at least {} unique values.'.format(min_n_feature_values))
+    else:
+        print_log('\tKept {} features.'.format(features.shape[0]))
 
     # Sort target
     if target_sort:
