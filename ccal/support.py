@@ -782,13 +782,7 @@ def compute_against_target(features, target, function=information_coefficient, n
                                              index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
 
             # Merge
-            print('A')
-            print(scores)
-            print('CI')
-            print(confidence_intervals)
             scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
-            print('B')
-            print(scores)
 
     #
     # Compute P-values and FDRs by sores against permuted target
