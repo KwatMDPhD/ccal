@@ -1,4 +1,4 @@
-Computational Cancer Analysis Library v0.1
+Computational Cancer Analysis Library
 
 Authors:
 Pablo Tamayo
