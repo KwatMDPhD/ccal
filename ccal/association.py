@@ -97,9 +97,8 @@ def read_annotations(annotations):
 
 
 def match(features, target, filepath_prefix, feature_type='continuous', target_type='continuous',
-          min_n_feature_values=0,
-          feature_ascending=False, target_ascending=False, target_sort=True,
-          function=information_coefficient, n_features=0.95, n_jobs=1,
+          min_n_feature_values=1, feature_ascending=False, target_ascending=False, target_sort=True,
+          function=information_coefficient, n_features=0.95, n_jobs=1, min_n_per_job=100,
           n_samplings=30, confidence=0.95, n_permutations=30,
           title=None, title_size=16, annotation_label_size=9, plot_colname=False,
           figure_size='auto', dpi=DPI):
@@ -118,6 +117,7 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
     :param function: function; scoring function
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
+    :param min_n_per_job: int; minimum number of n per job for parallel computing
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR

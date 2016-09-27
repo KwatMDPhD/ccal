@@ -15,10 +15,34 @@ jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
 # TODO: optimize return
-# TODO: optimize import
 # TODO: optimize error message
 
-from numpy import finfo
+from pip import get_installed_distributions, main
+from os import mkdir
+from os.path import abspath, split, isdir, isfile, islink
+from datetime import datetime
+import math
+from random import seed
+from multiprocessing import Pool, cpu_count
+
+from numpy import finfo, array, asarray, empty, ones, zeros, sign, sum, sqrt, exp, log, isnan, argmax
+from numpy.random import random_sample, random_integers, shuffle, choice
+from pandas import Series, DataFrame, concat, merge, read_csv
+from scipy.stats import pearsonr, norm
+from scipy.spatial.distance import pdist
+from scipy.cluster.hierarchy import linkage, fcluster, cophenet
+from statsmodels.sandbox.stats.multicomp import multipletests
+from sklearn.manifold import MDS
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.decomposition import NMF
+import rpy2.robjects as ro
+from rpy2.robjects.numpy2ri import numpy2ri
+from rpy2.robjects.packages import importr
+
+ro.conversion.py2ri = numpy2ri
+mass = importr('MASS')
+bcv = mass.bcv
+kde2d = mass.kde2d
 
 # ======================================================================================================================
 # Set up global parameters
@@ -37,7 +61,6 @@ def install_libraries(libraries_needed):
     :param libraries_needed: iterable; library names
     :return: None
     """
-    from pip import get_installed_distributions, main
 
     print_log('Checking library dependencies ...')
 
@@ -58,7 +81,6 @@ def plant_seed(a_seed=SEED):
     :param a_seed: int;
     :return: None
     """
-    from random import seed
 
     seed(a_seed)
     print_log('Planted a random seed {}.'.format(SEED))
@@ -74,6 +96,7 @@ def print_log(string):
     :param string: str; message to printed
     :return: None
     """
+
     global VERBOSE
     if VERBOSE:
         print('<{}> {}'.format(timestamp(time_only=True), string))
@@ -85,7 +108,6 @@ def timestamp(time_only=False):
     :param time_only: bool; exclude year, month, and date or not
     :return: str; the current time
     """
-    from datetime import datetime
 
     if time_only:
         formatter = '%H%M%S'
@@ -103,6 +125,7 @@ def title_string(string):
     :param string: str;
     :return: str;
     """
+
     string = string.title().replace('_', ' ').replace('\n', '')
     for article in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of']:
         string = string.replace(' ' + article.title() + ' ', ' ' + article + ' ')
@@ -115,6 +138,7 @@ def untitle_string(string):
     :param string: str;
     :return: str;
     """
+
     return string.lower().replace(' ', '_')
 
 
@@ -127,8 +151,6 @@ def establish_path(filepath):
     :param filepath: str;
     :return: None
     """
-    from os import mkdir
-    from os.path import abspath, split, isdir, isfile, islink
 
     prefix, suffix = split(filepath)
     prefix = abspath(prefix)
@@ -155,7 +177,6 @@ def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, colum
     :param column_name: str;
     :return: pandas DataFrame; [n_samples, n_features (or n_features + 1 if not dropping the Description column)]
     """
-    from pandas import read_csv
 
     # Read .gct
     df = read_csv(filepath, skiprows=2, sep='\t')
@@ -199,7 +220,6 @@ def write_gct(pandas_object, filepath, descriptions=None):
     :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gct
     :return: None
     """
-    from pandas import Series, DataFrame
 
     # Copy
     obj = pandas_object.copy()
@@ -234,9 +254,6 @@ def read_gmt(filepath, drop_description=True):
     :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
     :return: pandas DataFrame
     """
-    # TODO: test
-
-    from pandas import read_csv
 
     # Read .gct
     df = read_csv(filepath, sep='\t')
@@ -275,7 +292,6 @@ def write_gmt(pandas_object, filepath, descriptions=None):
     :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gmt
     :return: None
     """
-    # TODO: test
 
     obj = pandas_object.copy()
 
@@ -305,6 +321,7 @@ def write_dictionary(dictionary, filepath, key_name, value_name):
     :param value_name; str;
     :return: None
     """
+
     with open(filepath, 'w') as f:
         f.write('{}\t{}\n'.format(key_name, value_name))
         for k, v in sorted(dictionary.items()):
@@ -322,7 +339,6 @@ def parallelize(function, args, n_jobs=None):
     :param n_jobs: int; if not specified, parallelize to all CPUs
     :return: list; list of returned values from all jobs
     """
-    from multiprocessing import Pool, cpu_count
 
     # Use all available CPUs
     if not n_jobs:
@@ -346,7 +362,6 @@ def exponential_function(x, a, k, c):
     :param c:
     :return:
     """
-    from numpy import exp
 
     return a * exp(k * x) + c
 
@@ -354,20 +369,6 @@ def exponential_function(x, a, k, c):
 # ======================================================================================================================#
 # Compute
 # ======================================================================================================================#
-# TODO: optimize import
-from numpy import asarray, sign, sum, sqrt, exp, log, isnan
-from numpy.random import random_sample
-from scipy.stats import pearsonr
-import rpy2.robjects as ro
-from rpy2.robjects.numpy2ri import numpy2ri
-from rpy2.robjects.packages import importr
-
-ro.conversion.py2ri = numpy2ri
-mass = importr('MASS')
-bcv = mass.bcv
-kde2d = mass.kde2d
-
-
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     """
     Compute the information coefficient between `x` and `y`, which can be either continuous, categorical, or binary
@@ -377,6 +378,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     :param jitter: number;
     :return: float;
     """
+
     # Can't work with missing any value
     # not_nan_filter = ~isnan(x)
     # not_nan_filter &= ~isnan(y)
@@ -439,6 +441,7 @@ def normalize_series(series, method='-0-', n_ranks=10000):
     :param n_ranks: int;
     :return: pandas Series;
     """
+
     if method == '-0-':
         mean = series.mean()
         std = series.std()
@@ -465,6 +468,7 @@ def get_unique_in_order(iterable):
     :param iterable: iterable;
     :return: list;
     """
+
     unique_in_order = []
     for x in iterable:
         if x not in unique_in_order:
@@ -478,7 +482,6 @@ def explode(series):
     :param series: pandas Series;
     :return: pandas DataFrame;
     """
-    from pandas import DataFrame
 
     # Make an empty DataFrame (n_unique_labels, n_samples)
     label_x_sample = DataFrame(index=sorted(set(series)), columns=series.index)
@@ -502,7 +505,6 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
     :param axis: int; None for global, 0 for by-column, and 1 for by-row normalization
     :return: pandas DataFrame or Series;
     """
-    from pandas import Series, DataFrame
 
     print_log('\'{}\' normalizing pandas object on axis={} ...'.format(method, axis))
 
@@ -543,7 +545,6 @@ def drop_nan_columns(arrays):
     :param arrays: iterable of numpy arrays; must have the same length
     :return: list of numpy arrays; none of the arrays contains NaN
     """
-    from numpy import ones, isnan
 
     # Keep all column indices
     not_nan_filter = ones(len(arrays[0]), dtype=bool)
@@ -562,8 +563,6 @@ def count_coclusterings(clustering_x_sample):
     :return: numpy array; (n_samples, n_samples)
     """
     # TODO: enable flexible axis
-
-    from numpy import zeros
 
     n_clusterings, n_samples = clustering_x_sample.shape
 
@@ -592,8 +591,6 @@ def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=
     :param standardize: bool;
     :return: pandas DataFrame; (n_points, [x, y])
     """
-    from pandas import DataFrame
-    from sklearn.manifold import MDS
 
     if distance_function:  # Use precomputed distances
         mds_obj = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
@@ -625,7 +622,6 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     :param is_distance: bool; True for distance and False for association
     :return: pandas DataFrame;
     """
-    from pandas import DataFrame
 
     # Copy and rotate matrices to make the comparison by row
     if axis == 1:
@@ -659,8 +655,6 @@ def score(arguments):
     :return: pandas DataFrame; (n_features, 1 ('Score'))
     """
 
-    from pandas import DataFrame
-
     df, s, func = arguments
     return DataFrame(df.apply(lambda r: func(s, r), axis=1), index=df.index, columns=['Score']).sort_values('Score')
 
@@ -672,9 +666,6 @@ def score_against_permuted(arguments):
         (DataFrame (n_features, m_samples); features, Series (m_samples); target, function, int; n_permutations)
     :return: pandas DataFrame; (n_features, n_permutations)
     """
-    from numpy import array
-    from numpy.random import shuffle
-    from pandas import DataFrame
 
     df, s, func, n_perms = arguments
 
@@ -688,7 +679,7 @@ def score_against_permuted(arguments):
 
 
 def compute_against_target(features, target, function=information_coefficient, n_features=0.95, ascending=False,
-                           n_jobs=1, n_samplings=30, confidence=0.95, n_permutations=30):
+                           n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30):
     """
     Compute scores[i] = `features`[i] vs. `target` using `function`. Compute confidence interval (CI) for `n_features`
     features. And compute p-val and FDR (BH) for all features.
@@ -699,49 +690,49 @@ def compute_against_target(features, target, function=information_coefficient, n
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
     :param ascending: bool; True if score increase from top to bottom, and False otherwise
     :param n_jobs: int; number of jobs to parallelize
+    :param min_n_per_job: int; minimum number of n per job for parallel computing
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :return: pandas DataFrame (n_features, n_scores),
     """
-    import math
-
-    from numpy import array
-    from numpy.random import choice, shuffle
-    from pandas import DataFrame, concat, merge
-    import scipy.stats as stats
-    from statsmodels.sandbox.stats.multicomp import multipletests
 
     #
     # Compute scores: scores[i] = `features`[i] vs. `target`
     #
-
-    if n_jobs == 1:  # Not parallalizing
+    if n_jobs == 1:  # Non-parallel computing
         print_log('Scoring (without parallelizing) ...')
         scores = score((features, target, function))
 
-    else:  # Parallelizing
+    else:  # Parallel computing
         print_log('Scoring across {} parallelized jobs ...'.format(n_jobs))
 
-        # Group
+        # Compute n for a job
         n_per_job = features.shape[0] // n_jobs
-        args = []
-        leftovers = list(features.index)
-        for i in range(n_jobs):
-            split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
-            args.append((split_features, target, function))
 
-            # Remove scored features
-            for feature in split_features.index:
-                leftovers.remove(feature)
+        if n_per_job < min_n_per_job:  # n is not enough for parallel computing
+            print_log('\tNot parallelizing because n_per_job < {}.'.format(min_n_per_job))
+            scores = score((features, target, function))
 
-        # Parallelize
-        scores = concat(parallelize(score, args, n_jobs=n_jobs))
+        else:  # n is enough for parallel computing
+            # Group
+            args = []
+            leftovers = list(features.index)
+            for i in range(n_jobs):
+                split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
+                args.append((split_features, target, function))
 
-        # Score leftovers
-        if leftovers:
-            print_log('Scoring leftovers: {} ...'.format(leftovers))
-            scores = concat([scores, score((features.ix[leftovers, :], target, function))])
+                # Remove scored features
+                for feature in split_features.index:
+                    leftovers.remove(feature)
+
+            # Parallelize
+            scores = concat(parallelize(score, args, n_jobs=n_jobs))
+
+            # Score leftovers
+            if leftovers:
+                print_log('Scoring leftovers: {} ...'.format(leftovers))
+                scores = concat([scores, score((features.ix[leftovers, :], target, function))])
 
     #
     #  Compute confidence interval using bootstrapped distribution
@@ -782,7 +773,8 @@ def compute_against_target(features, target, function=information_coefficient, n
                 sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
 
             # Compute confidence interval for score using bootstrapped score distribution
-            z_critical = stats.norm.ppf(q=confidence)
+            # TODO: imprive confidence interval calculation implementation
+            z_critical = norm.ppf(q=confidence)
             confidence_intervals = sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)),
                                                         axis=1)
             confidence_intervals = DataFrame(confidence_intervals,
@@ -798,34 +790,41 @@ def compute_against_target(features, target, function=information_coefficient, n
                                   columns=['P-value', 'FDR (forward)', 'FDR (reverse)', 'FDR'])
     print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
 
-    if n_jobs == 1:  # Not parallelizing
+    if n_jobs == 1:  # Non-parallel computing
         print_log('Scoring against permuted target (without parallelizing) ...')
         permutation_scores = score_against_permuted((features, target, function, n_permutations))
 
-    else:  # Parallelizing
+    else:  # Parallel computing
         print_log('Scoring against permuted target across {} parallelized jobs ...'.format(n_jobs))
 
-        # Group
+        # Compute n for a job
         n_per_job = features.shape[0] // n_jobs
-        args = []
-        leftovers = list(features.index)
-        for i in range(n_jobs):
-            split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
-            args.append((split_features, target, function, n_permutations))
 
-            # Remove scored features
-            for feature in split_features.index:
-                leftovers.remove(feature)
+        if n_per_job < min_n_per_job:  # n is not enough for parallel computing
+            print_log('\tNot parallelizing because n_per_job < {}.'.format(min_n_per_job))
+            permutation_scores = score_against_permuted((features, target, function, n_permutations))
 
-        # Parallelize
-        permutation_scores = concat(parallelize(score_against_permuted, args, n_jobs=n_jobs))
+        else:  # n is enough for parallel computing
+            # Group
+            args = []
+            leftovers = list(features.index)
+            for i in range(n_jobs):
+                split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
+                args.append((split_features, target, function, n_permutations))
 
-        # Handle leftovers
-        if leftovers:
-            print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
-            permutation_scores = concat(
-                [permutation_scores,
-                 score_against_permuted((features.ix[leftovers, :], target, function, n_permutations))])
+                # Remove scored features
+                for feature in split_features.index:
+                    leftovers.remove(feature)
+
+            # Parallelize
+            permutation_scores = concat(parallelize(score_against_permuted, args, n_jobs=n_jobs))
+
+            # Handle leftovers
+            if leftovers:
+                print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
+                permutation_scores = concat(
+                    [permutation_scores,
+                     score_against_permuted((features.ix[leftovers, :], target, function, n_permutations))])
 
     # Compute local and global P-values
     all_permutation_scores = permutation_scores.values.flatten()
@@ -860,12 +859,6 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50, filepath_prefix=N
     :param filepath_prefix: str;
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
-    from numpy import empty
-    from numpy.random import random_integers
-    from pandas import DataFrame
-    from sklearn.cluster import AgglomerativeClustering
-    from scipy.spatial.distance import pdist
-    from scipy.cluster.hierarchy import linkage, fcluster, cophenet
 
     # '-0-' normalize by features and clip values `max_std` standard deviation away; then '0-1' normalize by features
     clipped_matrix = normalize_pandas_object(matrix, method='-0-', axis=1).clip(-max_std, max_std)
@@ -949,9 +942,6 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     :param eta:
     :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
     """
-    from numpy import empty, asarray, argmax
-    from scipy.spatial.distance import pdist
-    from scipy.cluster.hierarchy import linkage, cophenet
 
     if isinstance(ks, int):
         ks = [ks]
@@ -1018,8 +1008,6 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
     :param eta:
     :return: dict; {k: {W:w, H:h, ERROR:error}}
     """
-    from pandas import DataFrame
-    from sklearn.decomposition import NMF
 
     if isinstance(ks, int):
         ks = [ks]
@@ -1055,8 +1043,6 @@ def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None):
     :param n_categories: None or int; continuous if None and categorical if int
     :return: pandas DataFrame or Series; (`n_rows`, `n_cols`) or (1, `n_cols`)
     """
-    from numpy.random import random_integers, random_sample
-    from pandas import DataFrame
 
     # Set up indices and column names
     indices = ['Feature {}'.format(i) for i in range(n_rows)]
