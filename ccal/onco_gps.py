@@ -111,15 +111,13 @@ def define_states(h, ks, filepath_prefix, max_std=3, n_clusterings=50, figure_si
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-# TODO: Simplify
 def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
-             informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
-             function_to_fit=exponential_function, fit_maxfev=1000,
+             informational_mds=True, mds_seed=SEED,
              fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=5,
              n_pulling_components='all', component_pull_power='auto', n_pullratio_components=0, pullratio_factor=5,
              n_grids=128, kde_bandwidths_factor=1,
              annotations=(), annotation_name='', annotation_type='continuous',
-             title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
+             figure_size=FIGURE_SIZE, title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
              subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
              colors=None, component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
              component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
@@ -131,7 +129,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
              legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
              effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
              effectplot_median_markeredgecolor='#FF0082',
-             filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
+             filepath=None, dpi=DPI):
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states_train: iterable of int; (n_samples); sample states
@@ -141,10 +139,6 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :param states_test: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
-    :param mds_n_init: int;
-    :param mds_max_iter: int;
-    :param function_to_fit: function;
-    :param fit_maxfev: int;
     :param fit_min: number;
     :param fit_max: number;
     :param pull_power_min: number;
@@ -203,9 +197,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                                            h_test=h_test, h_test_normalization=h_test_normalization,
                                            states_test=states_test,
                                            informational_mds=informational_mds, mds_seed=mds_seed,
-                                           mds_n_init=mds_n_init, mds_max_iter=mds_max_iter,
-                                           function_to_fit=function_to_fit,
-                                           fit_maxfev=fit_maxfev, fit_min=fit_min, fit_max=fit_max,
+                                           fit_min=fit_min, fit_max=fit_max,
                                            pull_power_min=pull_power_min, pull_power_max=pull_power_max,
                                            n_pulling_components=n_pulling_components,
                                            component_pull_power=component_pull_power,
@@ -276,9 +268,6 @@ def make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_test
     print_log('Making Onco-GPS with {} components, {} samples, and {} states {} ...'.format(*h_train.shape,
                                                                                             len(set(states_train)),
                                                                                             set(states_train)))
-
-    # TODO: consider deleting
-    # training_samples = DataFrame(index=h_train.columns, columns=['x', 'y', 'state'])
 
     # clip and 0-1 normalize the data
     training_h = normalize_pandas_object(normalize_pandas_object(h_train, method='-0-', axis=1).clip(-std_max, std_max),

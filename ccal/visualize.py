@@ -79,39 +79,49 @@ def plot_clustermap(matrix, figure_size=FIGURE_SIZE, title=None, title_fontsize=
 
     clustergrid = clustermap(matrix, xticklabels=xticklabels, yticklabels=yticklabels,
                              row_colors=row_colors, col_colors=col_colors, cmap=CMAP_CONTINUOUS)
-    for t in clustergrid.ax_heatmap.get_xticklabels():
-        t.set_rotation(xticklabels_rotation)
-    for t in clustergrid.ax_heatmap.get_yticklabels():
-        t.set_rotation(yticklabels_rotation)
 
     if title:
         figuretitle_font_properties = {'fontsize': title_fontsize, 'fontweight': 'bold'}
         plt.suptitle(title, **figuretitle_font_properties)
 
+    for t in clustergrid.ax_heatmap.get_xticklabels():
+        t.set_rotation(xticklabels_rotation)
+    for t in clustergrid.ax_heatmap.get_yticklabels():
+        t.set_rotation(yticklabels_rotation)
+
     if filepath:
         save_plot(filepath, dpi=dpi)
 
 
-def plot_clusterings(matrix, title='Clustering Labels', title_fontsize=20, filepath=None, dpi=DPI):
+def plot_clusterings(matrix, figure_size=FIGURE_SIZE, title='Clustering Labels', title_fontsize=20, filepath=None,
+                     dpi=DPI):
     """
     Plot clustering matrix.
     :param matrix: pandas DataFrame; (n_clusterings, n_samples)
+    :param figure_size: tuple; (n_rows, n_cols)
     :param title: str;
     :param title_fontsize: number;
     :param filepath: str;
     :param dpi: int;
     :return: None
     """
+
     a = asarray(matrix)
     a.sort()
+
+    plt.figure(figsize=figure_size)
     heatmap(DataFrame(a, index=matrix.index), cmap=CMAP_CATEGORICAL, xticklabels=False,
             cbar_kws={'orientation': 'horizontal'})
+
     if title:
         figuretitle_font_properties = {'fontsize': title_fontsize}
         plt.suptitle(title, **figuretitle_font_properties)
+
+    plt.gca().set_xlabel('Sample')
+
     for t in plt.gca().get_yticklabels():
         t.set_weight('bold')
-    plt.gca().set_xlabel('Sample')
+
     colorbar = plt.gca().collections[0].colorbar
     colorbar.set_ticks(list(range(1, a.max() + 1)))
 
@@ -129,7 +139,7 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
     :param h_matrix: Pandas DataFrame
     :param normalize: bool; normalize W and H matrices or not ('-0-' normalization on the component axis)
     :param max_std: number; threshold to clip standardized values
-    :param figure_size: tuple;
+    :param figure_size: tuple; (n_rows, n_cols)
     :param title: str;
     :param title_fontsize: number;
     :param filepath: str;
@@ -224,14 +234,15 @@ def plot_clustering_scores(scores, figure_size=FIGURE_SIZE, title='Clustering Sc
     if isinstance(scores, DataFrame):
         scores = scores.to_dict()
         scores = scores.popitem()[1]
+
     plt.figure(figsize=figure_size)
 
     if title:
         plt.suptitle(title, fontsize=title_fontsize, fontweight='bold')
 
-    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
-
     pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
+
+    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
     plt.gca().set_xlabel('k', **label_font_properties)
     plt.gca().set_ylabel('Score', **label_font_properties)
 
@@ -241,7 +252,7 @@ def plot_clustering_scores(scores, figure_size=FIGURE_SIZE, title='Clustering Sc
 
 def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states, n_states_train,
                   annotations=(), annotation_name='', annotation_type='continuous', std_max=3,
-                  title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
+                  figure_size=FIGURE_SIZE, title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=None,
                   component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
                   component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
@@ -253,7 +264,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                   legend_markersize=10, legend_fontsize=11,
                   effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
                   effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
-                  filepath=None, figure_size=FIGURE_SIZE, dpi=DPI):
+                  filepath=None, dpi=DPI):
     """
     :param component_coordinates: pandas DataFrame; (n_components, [x, y])
     :param samples: pandas DataFrame; (n_samples, [x, y, state, annotation])
@@ -264,6 +275,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number; threshold to clip standardized values
+    :param figure_size: tuple;
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
@@ -296,7 +308,6 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
     :param effectplot_mean_markeredgecolor: matplotlib color;
     :param effectplot_median_markeredgecolor: matplotlib color;
     :param filepath: str;
-    :param figure_size: tuple;
     :param dpi: int;
     :return: None
     """
