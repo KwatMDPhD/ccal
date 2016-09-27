@@ -651,6 +651,42 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     return compared_matrix
 
 
+def score(arguments):
+    """
+    Compute: ith score = function(ith `feature`, `target`).
+    :param arguments: list-like;
+        (DataFrame (n_features, m_samples); features, Series (m_samples); target, function)
+    :return: pandas DataFrame; (n_features, 1 ('Score'))
+    """
+
+    from pandas import DataFrame
+
+    df, s, func = arguments
+    return DataFrame(df.apply(lambda r: func(s, r), axis=1), index=df.index, columns=['Score']).sort_values('Score')
+
+
+def score_against_permuted(arguments):
+    """
+    Compute: ith score = function(ith `feature`, permuted `target`) for n_permutations times.
+    :param arguments: list-like;
+        (DataFrame (n_features, m_samples); features, Series (m_samples); target, function, int; n_permutations)
+    :return: pandas DataFrame; (n_features, n_permutations)
+    """
+    from numpy import array
+    from numpy.random import shuffle
+    from pandas import DataFrame
+
+    df, s, func, n_perms = arguments
+
+    scores = DataFrame(index=df.index, columns=range(n_perms))
+    shuffled_target = array(s)
+    for p in range(n_perms):
+        print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms))
+        shuffle(shuffled_target)
+        scores.iloc[:, p] = df.apply(lambda r: func(r, shuffled_target), axis=1)
+    return scores
+
+
 def compute_against_target(features, target, function=information_coefficient, n_features=0.95, ascending=False,
                            n_jobs=1, n_samplings=30, confidence=0.95, n_permutations=30):
     """
@@ -679,15 +715,12 @@ def compute_against_target(features, target, function=information_coefficient, n
     #
     # Compute scores: scores[i] = `features`[i] vs. `target`
     #
-    def score(args):
-        features, target, function = args
-        scores = features.apply(lambda r: function(r, target), axis=1)
-        return DataFrame(scores, index=features.index, columns=['Score']).sort_values('Score')
 
-    if n_jobs == 1:
+    if n_jobs == 1:  # Not parallalizing
         print_log('Scoring (without parallelizing) ...')
         scores = score((features, target, function))
-    else:
+
+    else:  # Parallelizing
         print_log('Scoring across {} parallelized jobs ...'.format(n_jobs))
 
         # Group
@@ -759,28 +792,17 @@ def compute_against_target(features, target, function=information_coefficient, n
             scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
 
     #
-    # Compute P-values and FDRs
+    # Compute P-values and FDRs by sores against permuted target
     #
     p_values_and_fdrs = DataFrame(index=features.index,
                                   columns=['P-value', 'FDR (forward)', 'FDR (reverse)', 'FDR'])
     print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
 
-    def permute_and_score(args):
-        features, target, function, n_permutations = args
-
-        permutation_scores = DataFrame(index=features.index, columns=range(n_permutations))
-        shuffled_target = array(target)
-        for i in range(n_permutations):
-            print_log('\tPermuting target and scoring ({}/{}) ...'.format(i, n_permutations))
-            shuffle(shuffled_target)
-            permutation_scores.iloc[:, i] = features.apply(lambda r: function(r, shuffled_target), axis=1)
-        return permutation_scores
-
-    # Compute scores using permuted target
-    if n_jobs == 1:
+    if n_jobs == 1:  # Not parallelizing
         print_log('Scoring against permuted target (without parallelizing) ...')
-        permutation_scores = permute_and_score((features, target, function, n_permutations))
-    else:
+        permutation_scores = score_against_permuted((features, target, function, n_permutations))
+
+    else:  # Parallelizing
         print_log('Scoring against permuted target across {} parallelized jobs ...'.format(n_jobs))
 
         # Group
@@ -796,13 +818,14 @@ def compute_against_target(features, target, function=information_coefficient, n
                 leftovers.remove(feature)
 
         # Parallelize
-        permutation_scores = concat(parallelize(permute_and_score, args, n_jobs=n_jobs))
+        permutation_scores = concat(parallelize(score_against_permuted, args, n_jobs=n_jobs))
 
         # Handle leftovers
         if leftovers:
             print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
             permutation_scores = concat(
-                [permutation_scores, permute_and_score((features.ix[leftovers, :], target, function, n_permutations))])
+                [permutation_scores,
+                 score_against_permuted((features.ix[leftovers, :], target, function, n_permutations))])
 
     # Compute local and global P-values
     all_permutation_scores = permutation_scores.values.flatten()
