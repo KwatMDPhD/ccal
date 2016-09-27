@@ -69,12 +69,12 @@ def nnls_matrix(a, b, method='nnls'):
 
 def nmf_and_score(matrix, ks, method='cophenetic_correlation'):
     """
-    Perform NMF with k from `ks` and score each computation.
+    Perform NMF with k from `ks` and score_dataframe_against_series each computation.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param method: str; {'intra_inter_ratio', 'cophenetic_correlation'}
     :param n_assignments: int; number of assignments used to make `assigment_matrix` when using 'cophenetic_correlation'
-    :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
+    :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score_dataframe_against_series}
     """
     n_rows, n_cols = matrix.shape
     scores = {}
@@ -82,7 +82,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation'):
     if method == 'intra_inter_ratio':
         nmf_results = nmf(matrix, ks)
         for k, nmf_result in nmf_results.items():
-            print_log('Computing clustering score for k={} using method {} ...'.format(k, method))
+            print_log('Computing clustering score_dataframe_against_series for k={} using method {} ...'.format(k, method))
 
             assignments = {}  # dict (key: assignment index; value: samples)
             # Cluster of a sample is the index with the highest value in corresponding H column
@@ -112,7 +112,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation'):
                         else:
                             for other_s in assignments[other_a]:
                                 inter_distance.append(distance.euclidean((matrix.ix[:, s]), matrix.ix[:, other_s]))
-                    # Compute assignment score
+                    # Compute assignment score_dataframe_against_series
                     score = np.mean(intra_distance) / np.mean(inter_distance)
                     if not np.isnan(score):
                         assignment_scores_per_k[sidx] = score

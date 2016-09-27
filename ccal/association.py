@@ -24,30 +24,30 @@ from .visualize import DPI, plot_clustermap, plot_features_against_target
 # ======================================================================================================================
 # Match features against target
 # ======================================================================================================================
-# TODO: add docstring
-def make_match_panel(annotations, filepath_prefix,
-                     target_series=None,
-                     target_gct=None, target_df=None, target_name=None, target_axis=1,
-                     feature_type='continuous', target_type='continuous',
-                     feature_ascending=False, target_ascending=False):
+# TODO: implement
+def catalogue(annotations, filepath_prefix,
+              target_series=None, target_gct=None, target_df=None, target_name=None, target_axis=1,
+              feature_type='continuous', target_type='continuous', feature_ascending=False):
     """
-
-    :param annotations:
-    :param filepath_prefix:
-    :param target_series:
-    :param target_gct:
-    :param target_df:
-    :param target_name:
-    :param target_axis:
-    :param feature_type:
-    :param target_type:
-    :param feature_ascending: bool; True if features score increase from top to bottom, and False otherwise
-    :param target_ascending: bool; True if target values increase from left to right, and False otherwise
-    :return:
+    Annotate target using multiple annotations.
+    :param annotations: list of lists; [[name, filepath_to_gct, [row_name1, row_name2, ...](optional)], ...]
+    :param filepath_prefix: str; filepath_prefix + '_vs_name.txt' and filepath_prefix + '.pdf' will be saved
+    :param target_series: pandas Series; annotation target
+    :param target_gct: str; filepath to a file whose row or column is the annotation target
+    :param target_df: DataFrame; whose row or column is the annotation target
+    :param target_name: str; row or column name in target_df, either directly passed or read from target_gct
+    :param target_axis: int; axis on which target_name is found in target_df, either directly passed or read from
+        target_gct
+    :param feature_type: str; {continuous, categorical, binary}
+    :param target_type: str; {continuous, categorical, binary}
+    :param feature_ascending: bool; True if features score_dataframe_against_series increase from top to bottom, and
+        False otherwise
+    :return: None
     """
     # Load target
     if not target_series:
         print_log('Loading the annotation target ...')
+
         # Load and check target_df
         if target_gct:
             target_df = read_gct(target_gct)
@@ -69,19 +69,17 @@ def make_match_panel(annotations, filepath_prefix,
     # Load annotations
     annotation_dfs = read_annotations(annotations)
 
-    # Make match panel
+    # Match target will all annotations
     for a_name, a_df in annotation_dfs.items():
         match(a_df, target_series, filepath_prefix + '_vs_{}'.format(untitle_string(a_name)),
-              feature_type=feature_type, target_type=target_type,
-              feature_ascending=feature_ascending, target_ascending=target_ascending)
+              feature_type=feature_type, target_type=target_type, feature_ascending=feature_ascending)
 
 
-# TODO: add docstring
 def read_annotations(annotations):
     """
-
-    :param annotations:
-    :return:
+    Read annotations from .gct files.
+    :param annotations: list of lists; [[name, filepath_to_gct, [row_name1, row_name2, ...](optional)], ...]
+    :return: list of pandas DataFrames;
     """
     annotation_dfs = {}
     for a in annotations:
@@ -97,11 +95,9 @@ def read_annotations(annotations):
 
 
 def match(features, target, filepath_prefix, feature_type='continuous', target_type='continuous',
-          min_n_feature_values=1, feature_ascending=False, target_ascending=False, target_sort=True,
-          function=information_coefficient, n_features=0.95, n_jobs=1, min_n_per_job=100,
-          n_samplings=30, confidence=0.95, n_permutations=30,
-          title=None, title_size=16, annotation_label_size=9, plot_colname=False,
-          figure_size='auto', dpi=DPI):
+          min_n_feature_values=1, feature_ascending=False, target_sort=True,
+          n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, n_permutations=30,
+          figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False, dpi=DPI):
     """
     Compute scores[i] = `features`[i] vs. `target` using `function`. Compute confidence interval (CI) for `n_features`
     features. Compute p-val and FDR (BH) for all features. And plot the result.
@@ -111,26 +107,22 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param min_n_feature_values: int; minimum number of non-0 values in a feature to be matched
-    :param feature_ascending: bool; True if features score increase from top to bottom, and False otherwise
-    :param target_ascending: bool; True if target values increase from left to right, and False otherwise
+    :param feature_ascending: bool; True if features score_dataframe_against_series increase from top to bottom, and
+        False otherwise
     :param target_sort: bool; sort `target` or not
-    :param function: function; scoring function
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
     :param min_n_per_job: int; minimum number of n per job for parallel computing
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
-    :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
+    :param figure_size: 'auto' or tuple;
     :param title: str; plot title
     :param title_size: int; title text size
     :param annotation_label_size: int; annotation text size
     :param plot_colname: bool; plot column names or not
-    :param figure_size: 'auto' or tuple;
     :param dpi: int; dots per square inch of pixel in the output figure
     :return: pandas DataFrame; scores
     """
-    # TODO: skip calculation if n_features = None
-
     print_log('Matching {} against features ...'.format(target.name))
 
     if isinstance(features, Series):  # Convert Series into DataFrame
@@ -159,37 +151,41 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
 
     # Sort target
     if target_sort:
-        target = target.sort_values(ascending=target_ascending)
+        target.sort_values(ascending=False, inplace=True)
         features = features.reindex_axis(target.index, axis=1)
 
-    # Compute score, P-val, FDR, and confidence interval for some features
-    scores = compute_against_target(features, target, function=function,
-                                    n_features=n_features, ascending=feature_ascending,
+    # Score
+    scores = compute_against_target(features, target, n_features=n_features, ascending=feature_ascending,
                                     n_jobs=n_jobs, min_n_per_job=min_n_per_job,
-                                    n_samplings=n_samplings, confidence=confidence, n_permutations=n_permutations)
+                                    n_samplings=n_samplings, n_permutations=n_permutations)
     features = features.reindex(scores.index)
 
+    # Save features merged with their scores
     establish_path(filepath_prefix)
-    merge(features, scores, left_index=True, right_index=True).to_csv(filepath_prefix + '.txt', sep='\t')
+    features_and_scores = merge(features, scores, left_index=True, right_index=True)
+    features_and_scores.to_csv(filepath_prefix + '.txt', sep='\t')
 
     # Make annotations
-    annotations = DataFrame(index=features.index)
-    for idx, s in features.iterrows():
-        # Format Score and confidence interval
-        if '{} MoE'.format(confidence) in scores.columns:
-            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}'.format(scores.ix[idx, 'Score']) \
-                                                + '({0:.3f})'.format(scores.ix[idx, '{} MoE'.format(confidence)])
-        else:
-            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}(x.xxx)'.format(scores.ix[idx, 'Score'])
-    # Format P-Value
-    annotations['P-val'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
-    # Format FDR
-    annotations['FDR'] = ['{0:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
-
     if not (isinstance(n_features, int) or isinstance(n_features, float)):
         print_log('Not plotting.')
 
-    else:  # Plot confidence interval for limited features
+    else:  # Make annotations and plot
+        # Make annotations
+        annotations = DataFrame(index=features.index)
+
+        # Format Score and confidence interval
+        for idx, s in features.iterrows():
+            if '0.95 MoE' in scores.columns:
+                annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[idx, ['Score', '0.95 MoE']])
+            else:
+                annotations.ix[idx, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(scores.ix[idx, 'Score'])
+
+        # Format P-Value
+        annotations['P-val'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
+
+        # Format FDR
+        annotations['FDR'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
+
         if n_features < 1:  # Limit using percentile
             above_quantile = scores.ix[:, 'Score'] >= scores.ix[:, 'Score'].quantile(n_features)
             print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
@@ -204,13 +200,14 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
                 indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
                 print_log('Plotting top & bottom {} features ...'.format(n_features))
 
+        # Plot
         plot_features_against_target(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
                                      feature_type=feature_type, target_type=target_type,
                                      figure_size=figure_size, title=title, title_size=title_size,
                                      annotation_header=' ' * 11 + 'IC(\u0394)' + ' ' * 5 + 'P-val' + ' ' * 4 + 'FDR',
                                      annotation_label_size=annotation_label_size, plot_colname=plot_colname,
                                      filepath=filepath_prefix + '.pdf', dpi=dpi)
-    return scores
+    return features_and_scores
 
 
 # ======================================================================================================================

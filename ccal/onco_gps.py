@@ -54,7 +54,7 @@ def define_components(matrix, ks, filepath_prefix, n_clusterings=30, random_stat
     matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
     plot_clustermap(matrix, figure_size=figure_size, title='A Matrix', xticklabels=False, yticklabels=False)
 
-    # NMF and score, while saving a NMF result for each k
+    # NMF and score_dataframe_against_series, while saving a NMF result for each k
     nmf_results, nmf_scores = nmf_and_score(matrix=matrix, ks=ks, n_clusterings=n_clusterings,
                                             random_state=random_state)
     save_nmf_results(nmf_results, filepath_prefix)
@@ -100,11 +100,21 @@ def define_states(h, ks, filepath_prefix, max_std=3, n_clusterings=50, figure_si
     :param dpi:
     :return:
     """
-    labels, scores = consensus_cluster(h, ks, max_std=max_std, n_clusterings=n_clusterings,
-                                       filepath_prefix=filepath_prefix)
+    # Cluster
+    labels, scores = consensus_cluster(h, ks, max_std=max_std, n_clusterings=n_clusterings)
+
+    # Save
+    if filepath_prefix:
+        establish_path(filepath_prefix)
+        write_gct(labels, filepath_prefix + '_labels.gct')
+        write_dictionary(scores, filepath_prefix + '_clustering_scores.txt',
+                         key_name='k', value_name='cophenetic_correlation')
+
+    # Plot
     plot_clusterings(labels, title=title, filepath=filepath_prefix + '_labels.pdf')
     plot_clustering_scores(scores, figure_size=figure_size, filepath=filepath_prefix + '_clustering_scores.pdf',
                            dpi=dpi)
+
     return labels, scores
 
 

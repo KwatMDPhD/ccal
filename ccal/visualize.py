@@ -223,7 +223,7 @@ def plot_clustering_scores(scores, figure_size=FIGURE_SIZE, title='Clustering Sc
                            filepath=None, dpi=DPI):
     """
     Plot `scores` dictionary.
-    :param scores: dict or pandas DataFrame; {k: score}
+    :param scores: dict or pandas DataFrame; {k: score_dataframe_against_series}
     :param figure_size: tuple;
     :param title: str;
     :param title_fontsize: number;

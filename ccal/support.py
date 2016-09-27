@@ -14,8 +14,6 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-# TODO: optimize return
-# TODO: optimize error message
 
 from pip import get_installed_distributions, main
 from os import mkdir
@@ -252,7 +250,7 @@ def read_gmt(filepath, drop_description=True):
     Read a .gmt file.
     :param filepath:
     :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
-    :return: pandas DataFrame
+    :return: pandas DataFrame; (n_gene_sets, n_genes_in_the_largest_gene_set)
     """
 
     # Read .gct
@@ -337,7 +335,7 @@ def parallelize(function, args, n_jobs=None):
     :param function: function;
     :param args: list-like; function's arguments
     :param n_jobs: int; if not specified, parallelize to all CPUs
-    :return: list; list of returned values from all jobs
+    :return: list; list of values returned from all jobs
     """
 
     # Use all available CPUs
@@ -356,11 +354,11 @@ def parallelize(function, args, n_jobs=None):
 def exponential_function(x, a, k, c):
     """
     Apply exponential function on `x`.
-    :param x:
-    :param a:
-    :param k:
-    :param c:
-    :return:
+    :param x: array-like; independent variables
+    :param a: number; parameter a
+    :param k: number; parameter k
+    :param c: number; parameter c
+    :return: numpy array; (n_independent_variables)
     """
 
     return a * exp(k * x) + c
@@ -372,9 +370,9 @@ def exponential_function(x, a, k, c):
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     """
     Compute the information coefficient between `x` and `y`, which can be either continuous, categorical, or binary
-    :param x: vector;
-    :param y: vector;
-    :param n_grids: int;
+    :param x: numpy array;
+    :param y: numpy array;
+    :param n_grids: int; number of grid lines in a dimention when estimating bandwidths
     :param jitter: number;
     :return: float;
     """
@@ -438,8 +436,8 @@ def normalize_series(series, method='-0-', n_ranks=10000):
     Normalize a pandas `series`.
     :param series: pandas Series;
     :param method: str; normalization type; {'-0-', '0-1', 'rank'}
-    :param n_ranks: int;
-    :return: pandas Series;
+    :param n_ranks: number; normalization factor for rank normalization: rank / size * n_ranks
+    :return: pandas Series; normalized Series
     """
 
     if method == '-0-':
@@ -480,7 +478,7 @@ def explode(series):
     """
     Make a label-x-sample binary matrix from a Series.
     :param series: pandas Series;
-    :return: pandas DataFrame;
+    :return: pandas DataFrame; (n_labels, n_samples)
     """
 
     # Make an empty DataFrame (n_unique_labels, n_samples)
@@ -501,9 +499,9 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
     Normalize a pandas object.
     :param pandas_object: pandas DataFrame or Series;
     :param method: str; normalization type; {'-0-', '0-1', 'rank'}
-    :param n_ranks: int;
+    :param n_ranks: number; normalization factor for rank normalization: rank / size * n_ranks
     :param axis: int; None for global, 0 for by-column, and 1 for by-row normalization
-    :return: pandas DataFrame or Series;
+    :return: pandas DataFrame or Series; normalized DataFrame or Series
     """
 
     print_log('\'{}\' normalizing pandas object on axis={} ...'.format(method, axis))
@@ -563,6 +561,7 @@ def count_coclusterings(clustering_x_sample):
     :return: numpy array; (n_samples, n_samples)
     """
     # TODO: enable flexible axis
+    # TODO: consider making pandas only
 
     n_clusterings, n_samples = clustering_x_sample.shape
 
@@ -589,7 +588,7 @@ def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=
     :param n_init: int;
     :param max_iter: int;
     :param standardize: bool;
-    :return: pandas DataFrame; (n_points, [x, y])
+    :return: pandas DataFrame; (n_points, 2 ('x', 'y'))
     """
 
     if distance_function:  # Use precomputed distances
@@ -620,7 +619,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     :param function: function; function used to compute association or dissociation
     :param axis: int; 0 for by-row and 1 for by-column
     :param is_distance: bool; True for distance and False for association
-    :return: pandas DataFrame;
+    :return: pandas DataFrame; (n, n); association or distance matrix
     """
 
     # Copy and rotate matrices to make the comparison by row
@@ -647,9 +646,9 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     return compared_matrix
 
 
-def score(arguments):
+def score_dataframe_against_series(arguments):
     """
-    Compute: ith score = function(ith `feature`, `target`).
+    Compute: ith score_dataframe_against_series = function(ith `feature`, `target`).
     :param arguments: list-like;
         (DataFrame (n_features, m_samples); features, Series (m_samples); target, function)
     :return: pandas DataFrame; (n_features, 1 ('Score'))
@@ -659,9 +658,9 @@ def score(arguments):
     return DataFrame(df.apply(lambda r: func(s, r), axis=1), index=df.index, columns=['Score'])
 
 
-def score_against_permuted(arguments):
+def score_dataframe_against_permuted_series(arguments):
     """
-    Compute: ith score = function(ith `feature`, permuted `target`) for n_permutations times.
+    Compute: ith score_dataframe_against_series = function(ith `feature`, permuted `target`) for n_permutations times.
     :param arguments: list-like;
         (DataFrame (n_features, m_samples); features, Series (m_samples); target, function, int; n_permutations)
     :return: pandas DataFrame; (n_features, n_permutations)
@@ -681,8 +680,8 @@ def score_against_permuted(arguments):
 def compute_against_target(features, target, function=information_coefficient, n_features=0.95, ascending=False,
                            n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30):
     """
-    Compute scores[i] = `features`[i] vs. `target` using `function`. Compute confidence interval (CI) for `n_features`
-    features. And compute p-val and FDR (BH) for all features.
+    Compute: ith score_dataframe_against_series = function(ith `feature`, `target`).
+    Compute confidence interval (CI) for `n_features` features. And compute p-val and FDR (BH) for all features.
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
     :param target: pandas Series; (n_samples); must have name and indices, which must match `features`'s column index
     :param function: function; scoring function
@@ -694,7 +693,7 @@ def compute_against_target(features, target, function=information_coefficient, n
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
-    :return: pandas DataFrame (n_features, n_scores),
+    :return: pandas DataFrame; (n_features, 7 ('Score', 'MoE', 'P-value', 'FDR (forward)', 'FDR (reverse)', and 'FDR'))
     """
 
     #
@@ -702,7 +701,7 @@ def compute_against_target(features, target, function=information_coefficient, n
     #
     if n_jobs == 1:  # Non-parallel computing
         print_log('Scoring (without parallelizing) ...')
-        scores = score((features, target, function))
+        scores = score_dataframe_against_series((features, target, function))
 
     else:  # Parallel computing
         print_log('Scoring across {} parallelized jobs ...'.format(n_jobs))
@@ -712,7 +711,7 @@ def compute_against_target(features, target, function=information_coefficient, n
 
         if n_per_job < min_n_per_job:  # n is not enough for parallel computing
             print_log('\tNot parallelizing because n_per_job < {}.'.format(min_n_per_job))
-            scores = score((features, target, function))
+            scores = score_dataframe_against_series((features, target, function))
 
         else:  # n is enough for parallel computing
             # Group
@@ -727,12 +726,12 @@ def compute_against_target(features, target, function=information_coefficient, n
                     leftovers.remove(feature)
 
             # Parallelize
-            scores = concat(parallelize(score, args, n_jobs=n_jobs))
+            scores = concat(parallelize(score_dataframe_against_series, args, n_jobs=n_jobs))
 
             # Score leftovers
             if leftovers:
                 print_log('Scoring leftovers: {} ...'.format(leftovers))
-                scores = concat([scores, score((features.ix[leftovers, :], target, function))])
+                scores = concat([scores, score_dataframe_against_series((features.ix[leftovers, :], target, function))])
     scores.sort_values('Score', inplace=True)
 
     #
@@ -763,7 +762,7 @@ def compute_against_target(features, target, function=information_coefficient, n
                     indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
                     print_log('Bootstrapping top & bottom {} features ...'.format(n_features))
 
-            # Bootstrap: for `n_sampling` times, randomly choose 63% of the samples, score, and build score distribution
+            # Bootstrap: for `n_sampling` times, randomly choose 63% of the samples, score_dataframe_against_series, and build score_dataframe_against_series distribution
             sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
             for c_i in sampled_scores:
                 # Randomize
@@ -773,8 +772,8 @@ def compute_against_target(features, target, function=information_coefficient, n
                 # Score
                 sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
 
-            # Compute confidence interval for score using bootstrapped score distribution
-            # TODO: imprive confidence interval calculation implementation
+            # Compute confidence interval for score_dataframe_against_series using bootstrapped score_dataframe_against_series distribution
+            # TODO: improve confidence interval calculation
             z_critical = norm.ppf(q=confidence)
             confidence_intervals = sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)),
                                                         axis=1)
@@ -793,7 +792,7 @@ def compute_against_target(features, target, function=information_coefficient, n
 
     if n_jobs == 1:  # Non-parallel computing
         print_log('Scoring against permuted target (without parallelizing) ...')
-        permutation_scores = score_against_permuted((features, target, function, n_permutations))
+        permutation_scores = score_dataframe_against_permuted_series((features, target, function, n_permutations))
 
     else:  # Parallel computing
         print_log('Scoring against permuted target across {} parallelized jobs ...'.format(n_jobs))
@@ -803,7 +802,7 @@ def compute_against_target(features, target, function=information_coefficient, n
 
         if n_per_job < min_n_per_job:  # n is not enough for parallel computing
             print_log('\tNot parallelizing because n_per_job < {}.'.format(min_n_per_job))
-            permutation_scores = score_against_permuted((features, target, function, n_permutations))
+            permutation_scores = score_dataframe_against_permuted_series((features, target, function, n_permutations))
 
         else:  # n is enough for parallel computing
             # Group
@@ -818,14 +817,15 @@ def compute_against_target(features, target, function=information_coefficient, n
                     leftovers.remove(feature)
 
             # Parallelize
-            permutation_scores = concat(parallelize(score_against_permuted, args, n_jobs=n_jobs))
+            permutation_scores = concat(parallelize(score_dataframe_against_permuted_series, args, n_jobs=n_jobs))
 
             # Handle leftovers
             if leftovers:
                 print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
                 permutation_scores = concat(
                     [permutation_scores,
-                     score_against_permuted((features.ix[leftovers, :], target, function, n_permutations))])
+                     score_dataframe_against_permuted_series(
+                         (features.ix[leftovers, :], target, function, n_permutations))])
 
     # Compute local and global P-values
     all_permutation_scores = permutation_scores.values.flatten()
@@ -850,14 +850,13 @@ def compute_against_target(features, target, function=information_coefficient, n
 # ======================================================================================================================
 # Cluster
 # ======================================================================================================================
-def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50, filepath_prefix=None):
+def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
     """
     Consensus cluster `matrix`'s columns into k clusters.
     :param matrix: pandas DataFrame; (n_features, m_samples)
     :param ks: iterable; list of ks used for clustering
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for the consensus clustering
-    :param filepath_prefix: str;
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
 
@@ -907,13 +906,6 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50, filepath_prefix=N
         cophenetic_correlations[k] = cophenet(ward, pdist(distances))[0]
         print_log('Computed cophenetic correlations.')
 
-    # Save
-    if filepath_prefix:
-        establish_path(filepath_prefix)
-        write_gct(consensus_clustering_labels, filepath_prefix + '_labels.gct')
-        write_dictionary(cophenetic_correlations, filepath_prefix + '_clustering_scores.txt',
-                         key_name='k', value_name='cophenetic_correlation')
-
     return consensus_clustering_labels, cophenetic_correlations
 
 
@@ -924,7 +916,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
                   init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
                   shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
-    Perform NMF with k from `ks` and score each NMF decomposition.
+    Perform NMF with k from `ks` and score_dataframe_against_series each NMF decomposition.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param method: str; {'cophenetic_correlation'}
@@ -941,7 +933,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     :param sparseness:
     :param beta:
     :param eta:
-    :return: 2 dicts; {k: {W:w, H:h, ERROR:error}} and {k: score}
+    :return: 2 dicts; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and {k: cophenetic score}
     """
 
     if isinstance(ks, int):
@@ -1007,7 +999,7 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
     :param sparseness:
     :param beta:
     :param eta:
-    :return: dict; {k: {W:w, H:h, ERROR:error}}
+    :return: dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}}
     """
 
     if isinstance(ks, int):
