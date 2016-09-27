@@ -299,7 +299,7 @@ def make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_test
         # Linear transform
         k_normalized = (k - fit_min) / (fit_max - fit_min)
         component_pull_power = k_normalized * (pull_power_max - pull_power_min) + pull_power_min
-        print_log('component_pulling_power = {0:.3f}.'.format(component_pull_power))
+        print_log('component_pulling_power = {:.3f}.'.format(component_pull_power))
 
     # Compute sample coordinates
     training_samples = get_sample_coordinates_via_pulling(component_coordinates, training_h,

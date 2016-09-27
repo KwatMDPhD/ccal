@@ -427,6 +427,23 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     return ic
 
 
+def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
+    # Compute score
+    score = function(x, y)
+
+    # Compute scores against permuted target
+    # TODO: decide which of x and y is the target
+    permutation_scores = empty(n_permutations)
+    shuffled_target = array(y)
+    for p in range(n_permutations):
+        shuffle(shuffled_target)
+        permutation_scores[p] = function(x, shuffled_target)
+
+    # Compute p-value
+    p_val = sum(permutation_scores > score) / n_permutations
+    return score, p_val
+
+
 # ======================================================================================================================#
 # Work on array-like
 # ======================================================================================================================#

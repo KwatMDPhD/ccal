@@ -28,7 +28,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot, violinplot, boxplot
 
-from .support import print_log, establish_path, get_unique_in_order, normalize_pandas_object
+from .support import print_log, establish_path, get_unique_in_order, normalize_pandas_object, compute_score_and_pvalue
 
 # ======================================================================================================================
 # Set up glonal parameters
@@ -452,8 +452,8 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         # Plot sample legends
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
-        # TODO: Compute IC and get p-val
-        ax_legend.set_title('{}\nIC={} (p-val={})'.format(annotation_name, 'XXX', 'XXX'),
+        score, p_val = compute_score_and_pvalue(samples.ix[:, 'state'], annotations)
+        ax_legend.set_title('{}\nIC={:.3f} (p-val={:.3f})'.format(annotation_name, score, p_val),
                             fontsize=legend_fontsize * 1.26, weight='bold')
         # Plot effect plot
         if effectplot_type == 'violine':
