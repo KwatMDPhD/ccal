@@ -18,13 +18,18 @@ from pandas import DataFrame, Series, merge
 
 from .support import print_log, establish_path, read_gct, untitle_string, information_coefficient, compare_matrices, \
     compute_against_target
-from .visualize import DPI, plot_clustermap, plot_features_against_reference
+from .visualize import DPI, plot_clustermap, plot_features_against_target
 
 
+# ======================================================================================================================
+# Match features against target
+# ======================================================================================================================
+# TODO: add docstring
 def make_match_panel(annotations, filepath_prefix,
                      target_series=None,
                      target_gct=None, target_df=None, target_name=None, target_axis=1,
-                     feature_type='continuous', ref_type='continuous', feature_ascending=False, ref_ascending=False):
+                     feature_type='continuous', target_type='continuous',
+                     feature_ascending=False, target_ascending=False):
     """
 
     :param annotations:
@@ -35,9 +40,9 @@ def make_match_panel(annotations, filepath_prefix,
     :param target_name:
     :param target_axis:
     :param feature_type:
-    :param ref_type:
+    :param target_type:
     :param feature_ascending: bool; True if features score increase from top to bottom, and False otherwise
-    :param ref_ascending: bool; True if ref values increase from left to right, and False otherwise
+    :param target_ascending: bool; True if target values increase from left to right, and False otherwise
     :return:
     """
     # Load target
@@ -67,10 +72,11 @@ def make_match_panel(annotations, filepath_prefix,
     # Make match panel
     for a_name, a_df in annotation_dfs.items():
         match(a_df, target_series, filepath_prefix + '_vs_{}'.format(untitle_string(a_name)),
-              feature_type=feature_type, ref_type=ref_type,
-              feature_ascending=feature_ascending, ref_ascending=ref_ascending)
+              feature_type=feature_type, target_type=target_type,
+              feature_ascending=feature_ascending, target_ascending=target_ascending)
 
 
+# TODO: add docstring
 def read_annotations(annotations):
     """
 
@@ -89,8 +95,9 @@ def read_annotations(annotations):
     return annotation_dfs
 
 
-def match(features, target, filepath_prefix, feature_type='continuous', ref_type='continuous', min_n_feature_values=0,
-          feature_ascending=False, ref_ascending=False, ref_sort=True,
+def match(features, target, filepath_prefix, feature_type='continuous', target_type='continuous',
+          min_n_feature_values=0,
+          feature_ascending=False, target_ascending=False, target_sort=True,
           function=information_coefficient, n_features=0.95, n_jobs=1,
           n_samplings=30, confidence=0.95, n_permutations=30,
           title=None, title_size=16, annotation_label_size=9, plot_colname=False,
@@ -102,11 +109,11 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
     :param target: pandas Series; (n_samples); must have name and indices, which must match `features`'s column index
     :param filepath_prefix: str; `filepath_prefix`.txt and `filepath_prefix`.pdf will be saved
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
-    :param ref_type: str; {'continuous', 'categorical', 'binary'}
+    :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param min_n_feature_values: int; minimum number of non-0 values in a feature to be matched
     :param feature_ascending: bool; True if features score increase from top to bottom, and False otherwise
-    :param ref_ascending: bool; True if ref values increase from left to right, and False otherwise
-    :param ref_sort: bool; sort `ref` or not
+    :param target_ascending: bool; True if target values increase from left to right, and False otherwise
+    :param target_sort: bool; sort `target` or not
     :param function: function; scoring function
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
@@ -131,14 +138,15 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
     # Use intersecting columns
     col_intersection = set(features.columns) & set(target.index)
     if col_intersection:
-        print_log('features ({} cols) and ref ({} cols) have {} intersecting columns.'.format(features.shape[1],
-                                                                                              target.size,
-                                                                                              len(col_intersection)))
+        print_log('features ({} cols) and target ({} cols) have {} intersecting columns.'.format(features.shape[1],
+                                                                                                 target.size,
+                                                                                                 len(col_intersection)))
         features = features.ix[:, col_intersection]
         target = target.ix[col_intersection]
     else:
-        raise ValueError('features ({} cols) and ref ({} cols) have 0 intersecting columns.'.format(features.shape[1],
-                                                                                                    target.size))
+        raise ValueError(
+            'features ({} cols) and target ({} cols) have 0 intersecting columns.'.format(features.shape[1],
+                                                                                          target.size))
 
     # Drop features having less than `min_n_feature_values` unique values
     features = features.ix[features.apply(lambda row: len(set(row)), axis=1) >= min_n_feature_values]
@@ -146,8 +154,8 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
         raise ValueError('No features with at least {} unique values.'.format(min_n_feature_values))
 
     # Sort target
-    if ref_sort:
-        target = target.sort_values(ascending=ref_ascending)
+    if target_sort:
+        target = target.sort_values(ascending=target_ascending)
         features = features.reindex_axis(target.index, axis=1)
 
     # Compute score, P-val, FDR, and confidence interval for some features
@@ -191,34 +199,44 @@ def match(features, target, filepath_prefix, feature_type='continuous', ref_type
                 indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
                 print_log('Plotting top & bottom {} features ...'.format(n_features))
 
-        plot_features_against_reference(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
-                                        feature_type=feature_type, ref_type=ref_type,
-                                        figure_size=figure_size, title=title, title_size=title_size,
-                                        annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
-                                        annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                        filepath=filepath_prefix + '.pdf', dpi=dpi)
+        plot_features_against_target(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
+                                     feature_type=feature_type, target_type=target_type,
+                                     figure_size=figure_size, title=title, title_size=title_size,
+                                     annotation_header=' ' * 7 + 'IC(\u0394)' + ' ' * 9 + 'P-val' + ' ' * 4 + 'FDR',
+                                     annotation_label_size=annotation_label_size, plot_colname=plot_colname,
+                                     filepath=filepath_prefix + '.pdf', dpi=dpi)
     return scores
 
 
 # ======================================================================================================================
-# Compare 2 matrices
+# Compare matrices
 # ======================================================================================================================
-def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None):
+def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False,
+            title=None, filepath_prefix=None):
     """
     Compare `matrix1` and `matrix2` row-wise (`axis=1`) or column-wise (`axis=0`), and plot hierarchical clustering.
     :param matrix1: pandas DataFrame or numpy 2D arrays;
     :param matrix2: pandas DataFrame or numpy 2D arrays;
     :param function: function; association function
     :param axis: int; 0 and 1 for row-wise and column-wise comparison respectively
-    :param is_distance: bool; if True, then distances are computed from associations as in: distance = 1 - association
+    :param is_distance: bool; if True, distances are computed from associations, as in 'distance = 1 - association'
     :param title: str; plot title
+    :param filepath_prefix: str;
     :return: pandas DataFrame; association or distance matrix
     """
     # Compute association or distance matrix, which is returned at the end
     compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
 
+    # Save
+    if filepath_prefix:
+        compared_matrix.to_csv(filepath_prefix + '.txt', sep='\t')
+
     # Plot hierarchical clustering of the matrix
-    plot_clustermap(compared_matrix, title=title, row_colors=row_colors, col_colors=col_colors)
+    if filepath_prefix:
+        filepath = filepath_prefix + '.pdf'
+    else:
+        filepath = None
+    plot_clustermap(compared_matrix, title=title, filepath=filepath)
 
     # Return the computed association or distance matrix
     return compared_matrix

@@ -518,17 +518,17 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
         save_plot(filepath, dpi=dpi)
 
 
-def plot_features_against_reference(features, ref, annotations, feature_type='continuous', ref_type='continuous',
-                                    std_max=3, figure_size='auto', title=None, title_size=20,
-                                    annotation_header=None, annotation_label_size=9,
-                                    plot_colname=False, filepath=None, dpi=DPI):
+def plot_features_against_target(features, ref, annotations, feature_type='continuous', target_type='continuous',
+                                 std_max=3, figure_size='auto', title=None, title_size=20,
+                                 annotation_header=None, annotation_label_size=9,
+                                 plot_colname=False, filepath=None, dpi=DPI):
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
     :param ref: pandas Series; (n_elements); must have indices, which must match `features`'s columns
     :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must match `features`'s
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
-    :param ref_type: str; {'continuous', 'categorical', 'binary'}
+    :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number;
     :param figure_size: 'auto' or tuple;
     :param title: str;
@@ -553,19 +553,19 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
         features_min, features_max = 0, 1
     else:
         raise ValueError('Unknown feature_type {}.'.format(feature_type))
-    if ref_type == 'continuous':
+    if target_type == 'continuous':
         ref_cmap = CMAP_CONTINUOUS
         ref_min, ref_max = -std_max, std_max
         print_log('Normalizing continuous ref ...')
         ref = normalize_pandas_object(ref, method='-0-')
-    elif ref_type == 'categorical':
+    elif target_type == 'categorical':
         ref_cmap = CMAP_CATEGORICAL
         ref_min, ref_max = 0, len(unique(ref))
-    elif ref_type == 'binary':
+    elif target_type == 'binary':
         ref_cmap = CMAP_BINARY
         ref_min, ref_max = 0, 1
     else:
-        raise ValueError('Unknown ref_type {}.'.format(ref_type))
+        raise ValueError('Unknown ref_type {}.'.format(target_type))
 
     if figure_size == 'auto':
         figure_size = (min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9))
@@ -585,7 +585,7 @@ def plot_features_against_reference(features, ref, annotations, feature_type='co
     if title:
         ax_ref.text(features.shape[1] / 2, 1.9, title, horizontalalignment='center', size=title_size, weight='bold')
 
-    if ref_type in ('binary', 'categorical'):
+    if target_type in ('binary', 'categorical'):
         # Add binary or categorical ref labels
         boundaries = [0]
         prev_v = ref.iloc[0]
