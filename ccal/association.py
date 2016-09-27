@@ -164,7 +164,8 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
 
     # Compute score, P-val, FDR, and confidence interval for some features
     scores = compute_against_target(features, target, function=function,
-                                    n_features=n_features, ascending=feature_ascending, n_jobs=n_jobs,
+                                    n_features=n_features, ascending=feature_ascending,
+                                    n_jobs=n_jobs, min_n_per_job=min_n_per_job,
                                     n_samplings=n_samplings, confidence=confidence, n_permutations=n_permutations)
     features = features.reindex(scores.index)
 

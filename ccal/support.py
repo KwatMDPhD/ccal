@@ -656,7 +656,7 @@ def score(arguments):
     """
 
     df, s, func = arguments
-    return DataFrame(df.apply(lambda r: func(s, r), axis=1), index=df.index, columns=['Score']).sort_values('Score')
+    return DataFrame(df.apply(lambda r: func(s, r), axis=1), index=df.index, columns=['Score'])
 
 
 def score_against_permuted(arguments):
@@ -733,6 +733,7 @@ def compute_against_target(features, target, function=information_coefficient, n
             if leftovers:
                 print_log('Scoring leftovers: {} ...'.format(leftovers))
                 scores = concat([scores, score((features.ix[leftovers, :], target, function))])
+    scores.sort_values('Score', inplace=True)
 
     #
     #  Compute confidence interval using bootstrapped distribution
@@ -781,7 +782,13 @@ def compute_against_target(features, target, function=information_coefficient, n
                                              index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
 
             # Merge
+            print('A')
+            print(scores)
+            print('CI')
+            print(confidence_intervals)
             scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
+            print('B')
+            print(scores)
 
     #
     # Compute P-values and FDRs by sores against permuted target
@@ -826,6 +833,8 @@ def compute_against_target(features, target, function=information_coefficient, n
                     [permutation_scores,
                      score_against_permuted((features.ix[leftovers, :], target, function, n_permutations))])
 
+    print('C')
+    print(scores)
     # Compute local and global P-values
     all_permutation_scores = permutation_scores.values.flatten()
     for i, (r_i, r) in enumerate(scores.iterrows()):
