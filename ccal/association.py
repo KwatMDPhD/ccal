@@ -14,6 +14,7 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
+
 from pandas import DataFrame, Series, merge
 
 from .support import print_log, establish_path, read_gct, untitle_string, information_coefficient, compare_matrices, \

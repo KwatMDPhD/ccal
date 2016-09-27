@@ -14,7 +14,8 @@ James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
 """
-import math
+
+from math import pow
 
 from numpy import asarray, unique, linspace
 from pandas import DataFrame, Series, isnull
@@ -579,14 +580,14 @@ def plot_features_against_target(features, ref, annotations, feature_type='conti
         raise ValueError('Unknown ref_type {}.'.format(target_type))
 
     if figure_size == 'auto':
-        figure_size = (min(math.pow(features.shape[1], 0.7), 7), math.pow(features.shape[0], 0.9))
+        figure_size = (min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9))
     plt.figure(figsize=figure_size)
     gridspec = GridSpec(features.shape[0] + 1, features.shape[1] + 1)
     ax_ref = plt.subplot(gridspec[:1, :features.shape[1]])
     ax_features = plt.subplot(gridspec[1:, :features.shape[1]])
     ax_annotation_header = plt.subplot(gridspec[:1, features.shape[1]:])
     ax_annotation_header.axis('off')
-    horizontal_text_margin = math.pow(features.shape[1], 0.39)
+    horizontal_text_margin = pow(features.shape[1], 0.39)
 
     # Plot ref, ref label, and title,
     heatmap(DataFrame(ref).T, ax=ax_ref, vmin=ref_min, vmax=ref_max, cmap=ref_cmap, xticklabels=False, cbar=False)
