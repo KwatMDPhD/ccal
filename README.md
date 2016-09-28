@@ -1,4 +1,6 @@
 Computational Cancer Analysis Library
+Seaborn: statistical data visualization
+=======================================
 
 Authors:
 
