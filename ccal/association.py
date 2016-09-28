@@ -37,7 +37,8 @@ def catalogue(annotations, target_series=None, target_gct=None, target_df=None, 
     :param target_type: str; {continuous, categorical, binary}
     :param feature_ascending: bool; True if features score_dataframe_against_series increase from top to bottom, and
         False otherwise
-    :param filepath_prefix: str; filepath_prefix + '_vs_name.txt' and filepath_prefix + '.pdf' will be saved
+    :param filepath_prefix: str; filepath_prefix + '_vs_annotation_name.txt' and
+        filepath_prefix + '_vs_annotation_name.pdf' will be saved
     :return: None
     """
 
@@ -209,7 +210,7 @@ def match(features, target, feature_type='continuous', target_type='continuous',
                                      figure_size=figure_size, title=title, title_size=title_size,
                                      annotation_header=' ' * 11 + 'IC(\u0394)' + ' ' * 5 + 'P-val' + ' ' * 4 + 'FDR',
                                      annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                     filepath=filepath_prefix + '.pdf', dpi=dpi)
+                                     dpi=dpi, filepath=filepath_prefix + '.pdf')
     return features_and_scores
 
 
@@ -226,7 +227,7 @@ def compare(dataframe1, dataframe2, function=information_coefficient, axis=0, is
     :param axis: int; 0 and 1 for row-wise and column-wise comparison respectively
     :param is_distance: bool; if True, distances are computed from associations, as in 'distance = 1 - association'
     :param title: str; plot title
-    :param filepath_prefix: str;
+    :param filepath_prefix: str; `filepath_prefix`.txt and `filepath_prefix`.pdf will be saved
     :return: pandas DataFrame; association or distance matrix
     """
 
