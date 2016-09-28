@@ -427,6 +427,15 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
 
 
 def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
+    """
+    Compute `function`(`x`, `y`) and p-value using permutation test.
+    :param x: array-like;
+    :param y: array-like;
+    :param function: function;
+    :param n_permutations: int; number of permutations for the p-value permutation test
+    :return: float and float; score and p-value
+    """
+
     # Compute score
     score = function(x, y)
 
