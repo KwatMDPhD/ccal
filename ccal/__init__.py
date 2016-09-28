@@ -6,7 +6,7 @@ Authors:
         kwat.medetgul.ernar@gmail.com
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 
-    Pablo Tamayo - the author of the version implemented in R
+    Pablo Tamayo
         ptamayo@ucsd.edu
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
