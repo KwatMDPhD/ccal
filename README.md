@@ -1,8 +1,8 @@
 Computational Cancer Analysis Library
-Seaborn: statistical data visualization
 =======================================
 
-Authors:
+Authors
+---------------------------------------
 
     Huwate (Kwat) Yeerna (Medetgul-Ernar)
         kwat.medetgul.ernar@gmail.com
