@@ -10,6 +10,7 @@ Authors:
         ptamayo@ucsd.edu
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
+# TODO: refactor
 
 from numpy import array, asarray, zeros, argmax
 from pandas import DataFrame
@@ -32,20 +33,20 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, filepath_prefix, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE,
-                      dpi=DPI):
+def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE,
+                      dpi=DPI, filepath_prefix=None):
     """
     Define components.
     :param matrix:
     :param ks:
     :param n_clusterings:
     :param random_state:
-    :param filepath_prefix:
     :param figure_size:
     :param dpi:
     :param filepath_prefix: str; `filepath_prefix`_nmf_k{k}_{w, h}.gct and  will be saved
-    :return:
+    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and {k: cophenetic score}
     """
+
     # Rank normalize the input matrix by column
     matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
     plot_clustermap(matrix, figure_size=figure_size, title='A Matrix', xticklabels=False, yticklabels=False)
@@ -73,6 +74,7 @@ def save_nmf_results(nmf_results, filepath_prefix):
     :param filepath_prefix: str; `filepath_prefix`_nmf_k{k}_{w, h}.gct and  will be saved
     :return: None
     """
+
     establish_path(filepath_prefix)
     for k, v in nmf_results.items():
         write_gct(v['W'], filepath_prefix + '_nmf_k{}_w.gct'.format(k))
@@ -82,20 +84,21 @@ def save_nmf_results(nmf_results, filepath_prefix):
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(h, ks, filepath_prefix, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE,
-                  title='Clustering Labels', dpi=DPI):
+def define_states(h, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE,
+                  title='Clustering Labels', dpi=DPI, filepath_prefix=None):
     """
     Define states.
-    :param h:
-    :param ks:
-    :param max_std:
-    :param n_clusterings:
-    :param filepath_prefix:
-    :param figure_size:
+    :param h: pandas DataFrame; (n_features, m_samples)
+    :param ks: iterable; list of ks used for clustering
+    :param max_std: number; threshold to clip standardized values
+    :param n_clusterings: int; number of clusterings for the consensus clustering
+    :param figure_size: tuple,
     :param title: str; plot title
-    :param dpi:
-    :return:
+    :param dpi: int;
+    :param filepath_prefix: str; filepath_prefix + '_labels.gct' and filepath_prefix + '_labels.pdf' will be saved
+    :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
+
     # Cluster
     labels, scores = consensus_cluster(h, ks, max_std=max_std, n_clusterings=n_clusterings)
 
@@ -135,7 +138,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
              legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
              effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
              effectplot_median_markeredgecolor='#FF0082',
-             filepath=None, dpi=DPI):
+             dpi=DPI, filepath=None):
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states_train: iterable of int; (n_samples); sample states
@@ -158,6 +161,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+    :param figure_size: tuple;
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
@@ -189,11 +193,11 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :param effectplot_mean_markerfacecolor: matplotlib color;
     :param effectplot_mean_markeredgecolor: matplotlib color;
     :param effectplot_median_markeredgecolor: matplotlib color;
-    :param filepath: str;
-    :param figure_size: tuple;
     :param dpi: int;
+    :param filepath: str;
     :return: None
     """
+
     if isinstance(states_train[0], str):
         raise ValueError('states_train is an iterable (list) of int with values from [1, ..., <n_states_train>].')
     if 0 in states_train:
@@ -232,7 +236,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                   effectplot_type=effectplot_type, effectplot_mean_markerfacecolor=effectplot_mean_markerfacecolor,
                   effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                   effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
-                  filepath=filepath, figure_size=figure_size, dpi=dpi)
+                  figure_size=figure_size, dpi=dpi, filepath=filepath)
 
 
 def make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train',
@@ -271,6 +275,7 @@ def make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_test
              component_coordinates (n_components, [x, y]), samples (n_samples, [x, y, state, annotation]),
              grid_probabilities (n_grids, n_grids), and grid_states (n_grids, n_grids)
     """
+
     print_log('Making Onco-GPS with {} components, {} samples, and {} states {} ...'.format(*h_train.shape,
                                                                                             len(set(states_train)),
                                                                                             set(states_train)))
@@ -373,6 +378,7 @@ def fit_columns(dataframe, function_to_fit=exponential_function, maxfev=1000):
     :param maxfev: int;
     :return: list; fit parameters
     """
+
     x = array(range(dataframe.shape[0]))
     y = asarray(dataframe.apply(sorted).apply(sum, axis=1)) / dataframe.shape[1]
     fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
@@ -389,6 +395,7 @@ def get_sample_coordinates_via_pulling(component_x_coordinates, component_x_samp
     :param component_pulling_power: str or number; power to raise components' influence on each sample
     :return: pandas DataFrame; (n_samples, [x, y])
     """
+
     sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
     for sample in sample_coordinates.index:
         c = component_x_samples.ix[:, sample]
