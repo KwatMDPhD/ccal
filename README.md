@@ -13,7 +13,7 @@ Authors
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 
 Contributors
----
+-
 
     James Jensen
         jdjensen@eng.ucsd.edu
