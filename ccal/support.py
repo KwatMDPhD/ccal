@@ -72,7 +72,6 @@ def install_libraries(libraries_needed):
             main(['install', lib])
 
 
-# TODO: seed globally
 def plant_seed(a_seed=SEED):
     """
     Set random seed.
@@ -87,7 +86,7 @@ def plant_seed(a_seed=SEED):
 # ======================================================================================================================
 # Log
 # ======================================================================================================================
-# TODO: use logging
+# TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
 def print_log(string):
     """
     Print `string` together with logging information.
@@ -577,7 +576,6 @@ def count_coclusterings(clustering_x_sample):
     :param clustering_x_sample: numpy array; (n_clusterings, n_samples)
     :return: numpy array; (n_samples, n_samples)
     """
-    # TODO: enable flexible axis
     # TODO: consider making pandas only
 
     n_clusterings, n_samples = clustering_x_sample.shape
@@ -897,7 +895,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
         print_log('k={} ...'.format(k))
 
         # For `n_clusterings` times, permute distance matrix with repeat, and cluster
-        clustering_labels = empty((n_clusterings, matrix.shape[1]))
+        clustering_labels = empty((n_clusterings, matrix.shape[1]), dtype=int)
         for i in range(n_clusterings):
             if i % 10 == 0:
                 print_log('\tPermuting distance matrix with repeat and clustering ({}/{}) ...'.format(i, n_clusterings))
