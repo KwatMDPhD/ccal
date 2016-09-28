@@ -41,6 +41,7 @@ def catalogue(annotations, filepath_prefix,
         False otherwise
     :return: None
     """
+
     # Load target
     if not target_series:
         print_log('Loading the annotation target ...')
@@ -78,6 +79,7 @@ def read_annotations(annotations):
     :param annotations: list of lists; [[name, filepath_to_gct, [row_name1, row_name2, ...](optional)], ...]
     :return: list of pandas DataFrames;
     """
+
     annotation_dfs = {}
     for a in annotations:
         print_log('Reading annotation: {} ...'.format(' ~ '.join([str(x) for x in a])))
@@ -120,23 +122,23 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
     :param dpi: int; dots per square inch of pixel in the output figure
     :return: pandas DataFrame; scores
     """
-    print_log('Matching {} against features ...'.format(target.name))
-
     if isinstance(features, Series):  # Convert Series into DataFrame
         features = DataFrame(features).T
 
     # Use intersecting columns
     col_intersection = set(features.columns) & set(target.index)
     if col_intersection:
-        print_log('features ({} cols) and target ({} cols) have {} intersecting columns.'.format(features.shape[1],
-                                                                                                 target.size,
-                                                                                                 len(col_intersection)))
+        print_log('features ({} cols) and target {} ({} cols) have {} shared columns.'.format(features.shape[1],
+                                                                                              target.name,
+                                                                                              target.size,
+                                                                                              len(col_intersection)))
         features = features.ix[:, col_intersection]
         target = target.ix[col_intersection]
     else:
         raise ValueError(
-            'features ({} cols) and target ({} cols) have 0 intersecting columns.'.format(features.shape[1],
-                                                                                          target.size))
+            'features ({} cols) and target {} ({} cols) have 0 shared columns.'.format(features.shape[1],
+                                                                                       target.name,
+                                                                                       target.size))
 
     # Drop features having less than `min_n_feature_values` unique values
     print_log('Dropping features with less than {} unique values ...'.format(min_n_feature_values))
@@ -210,12 +212,12 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
 # ======================================================================================================================
 # Compare matrices
 # ======================================================================================================================
-def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False,
+def compare(dataframe1, dataframe2, function=information_coefficient, axis=0, is_distance=False,
             title=None, filepath_prefix=None):
     """
-    Compare `matrix1` and `matrix2` row-wise (`axis=1`) or column-wise (`axis=0`), and plot hierarchical clustering.
-    :param matrix1: pandas DataFrame or numpy 2D arrays;
-    :param matrix2: pandas DataFrame or numpy 2D arrays;
+    Compare `dataframe1` and `dataframe2` by row (`axis=1`) or by column (`axis=0`), and plot hierarchical clustering.
+    :param dataframe1: pandas DataFrame or numpy 2D arrays;
+    :param dataframe2: pandas DataFrame or numpy 2D arrays;
     :param function: function; association function
     :param axis: int; 0 and 1 for row-wise and column-wise comparison respectively
     :param is_distance: bool; if True, distances are computed from associations, as in 'distance = 1 - association'
@@ -223,8 +225,9 @@ def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_dista
     :param filepath_prefix: str;
     :return: pandas DataFrame; association or distance matrix
     """
+
     # Compute association or distance matrix, which is returned at the end
-    compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
+    compared_matrix = compare_matrices(dataframe1, dataframe2, function, axis=axis, is_distance=is_distance)
 
     # Save
     if filepath_prefix:

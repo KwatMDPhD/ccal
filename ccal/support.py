@@ -632,24 +632,24 @@ def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=
 # ======================================================================================================================
 # Associate
 # ======================================================================================================================
-def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
+def compare_matrices(dataframe1, dataframe2, function, axis=0, is_distance=False):
     """
-    Make association or distance matrix of `matrix1` and `matrix2` by row or column.
-    :param matrix1: pandas DataFrame;
-    :param matrix2: pandas DataFrame;
+    Make association or distance matrix of `dataframe1` and `dataframe2` by row (`axis=1`) or by column (`axis=0`).
+    :param dataframe1: pandas DataFrame;
+    :param dataframe2: pandas DataFrame;
     :param function: function; function used to compute association or dissociation
-    :param axis: int; 0 for by-row and 1 for by-column
+    :param axis: int; 0 for row-wise and 1 column-wise comparison
     :param is_distance: bool; True for distance and False for association
     :return: pandas DataFrame; (n, n); association or distance matrix
     """
 
     # Copy and rotate matrices to make the comparison by row
     if axis == 1:
-        m1 = matrix1.copy()
-        m2 = matrix2.copy()
+        m1 = dataframe1.copy()
+        m2 = dataframe2.copy()
     else:
-        m1 = matrix1.T
-        m2 = matrix2.T
+        m1 = dataframe1.T
+        m2 = dataframe2.T
 
     # Compare
     compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)

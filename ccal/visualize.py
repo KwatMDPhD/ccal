@@ -263,6 +263,7 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                   effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
                   filepath=None, dpi=DPI):
     """
+    Plot Onco-GPS map.
     :param component_coordinates: pandas DataFrame; (n_components, [x, y])
     :param samples: pandas DataFrame; (n_samples, [x, y, state, annotation])
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
