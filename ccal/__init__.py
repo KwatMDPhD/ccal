@@ -16,7 +16,6 @@ Laboratory of Jill Mesirov
 
 Import missing dependencies. And import functional modules.
 """
-# TODO: Optimize import
 
 from .support import read_gct, write_gct, simulate_dataframe_or_series
 from .onco_gps import define_components, define_states, make_map

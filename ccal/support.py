@@ -23,7 +23,7 @@ import math
 from random import seed
 from multiprocessing import Pool, cpu_count
 
-from numpy import finfo, array, asarray, empty, ones, zeros, sign, sum, sqrt, exp, log, isnan, argmax
+from numpy import finfo, array, asarray, empty, ones, sign, sum, sqrt, exp, log, isnan, argmax
 from numpy.random import random_sample, random_integers, shuffle, choice
 from pandas import Series, DataFrame, concat, merge, read_csv
 from scipy.stats import pearsonr, norm
@@ -549,7 +549,7 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
                     return (pandas_object - obj_min) / (obj_max - obj_min)
 
             elif method == 'rank':
-                # TODO: implement
+                # TODO: implement global rank normalization
                 raise ValueError('Normalizing combination of \'rank\' & axis=\'all\' has not been implemented yet.')
 
 
