@@ -22,13 +22,11 @@ from .visualize import DPI, plot_clustermap, plot_features_against_target
 # Match features against target
 # ======================================================================================================================
 # TODO: implement
-def catalogue(annotations, filepath_prefix,
-              target_series=None, target_gct=None, target_df=None, target_name=None, target_axis=1,
-              feature_type='continuous', target_type='continuous', feature_ascending=False):
+def catalogue(annotations, target_series=None, target_gct=None, target_df=None, target_name=None, target_axis=1,
+              feature_type='continuous', target_type='continuous', feature_ascending=False, filepath_prefix=None):
     """
     Annotate target using multiple annotations.
     :param annotations: list of lists; [[name, filepath_to_gct, [row_name1, row_name2, ...](optional)], ...]
-    :param filepath_prefix: str; filepath_prefix + '_vs_name.txt' and filepath_prefix + '.pdf' will be saved
     :param target_series: pandas Series; annotation target
     :param target_gct: str; filepath to a file whose row or column is the annotation target
     :param target_df: DataFrame; whose row or column is the annotation target
@@ -39,6 +37,7 @@ def catalogue(annotations, filepath_prefix,
     :param target_type: str; {continuous, categorical, binary}
     :param feature_ascending: bool; True if features score_dataframe_against_series increase from top to bottom, and
         False otherwise
+    :param filepath_prefix: str; filepath_prefix + '_vs_name.txt' and filepath_prefix + '.pdf' will be saved
     :return: None
     """
 
@@ -69,8 +68,9 @@ def catalogue(annotations, filepath_prefix,
 
     # Match target will all annotations
     for a_name, a_df in annotation_dfs.items():
-        match(a_df, target_series, filepath_prefix + '_vs_{}'.format(untitle_string(a_name)),
-              feature_type=feature_type, target_type=target_type, feature_ascending=feature_ascending)
+        match(a_df, target_series,
+              feature_type=feature_type, target_type=target_type, feature_ascending=feature_ascending,
+              filepath_prefix=filepath_prefix + '_vs_{}'.format(untitle_string(a_name)))
 
 
 def read_annotations(annotations):
@@ -93,16 +93,16 @@ def read_annotations(annotations):
     return annotation_dfs
 
 
-def match(features, target, filepath_prefix, feature_type='continuous', target_type='continuous',
+def match(features, target, feature_type='continuous', target_type='continuous',
           min_n_feature_values=1, feature_ascending=False, target_sort=True,
           n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, n_permutations=30,
-          figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False, dpi=DPI):
+          figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False, dpi=DPI,
+          filepath_prefix=None):
     """
     Compute scores[i] = `features`[i] vs. `target` using `function`. Compute confidence interval (CI) for `n_features`
     features. Compute p-val and FDR (BH) for all features. And plot the result.
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
     :param target: pandas Series; (n_samples); must have name and indices, which must match `features`'s column index
-    :param filepath_prefix: str; `filepath_prefix`.txt and `filepath_prefix`.pdf will be saved
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param min_n_feature_values: int; minimum number of non-0 values in a feature to be matched
@@ -120,8 +120,10 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
     :param annotation_label_size: int; annotation text size
     :param plot_colname: bool; plot column names or not
     :param dpi: int; dots per square inch of pixel in the output figure
+    :param filepath_prefix: str; `filepath_prefix`.txt and `filepath_prefix`.pdf will be saved
     :return: pandas DataFrame; scores
     """
+
     if isinstance(features, Series):  # Convert Series into DataFrame
         features = DataFrame(features).T
 
@@ -159,10 +161,12 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
                                     n_samplings=n_samplings, n_permutations=n_permutations)
     features = features.reindex(scores.index)
 
-    # Save features merged with their scores
-    establish_path(filepath_prefix)
     features_and_scores = merge(features, scores, left_index=True, right_index=True)
-    features_and_scores.to_csv(filepath_prefix + '.txt', sep='\t')
+
+    # Save features merged with their scores
+    if filepath_prefix:
+        establish_path(filepath_prefix)
+        features_and_scores.to_csv(filepath_prefix + '.txt', sep='\t')
 
     # Make annotations
     if not (isinstance(n_features, int) or isinstance(n_features, float)):
@@ -212,8 +216,8 @@ def match(features, target, filepath_prefix, feature_type='continuous', target_t
 # ======================================================================================================================
 # Compare matrices
 # ======================================================================================================================
-def compare(dataframe1, dataframe2, function=information_coefficient, axis=0, is_distance=False,
-            title=None, filepath_prefix=None):
+def compare(dataframe1, dataframe2, function=information_coefficient, axis=0, is_distance=False, title=None,
+            filepath_prefix=None):
     """
     Compare `dataframe1` and `dataframe2` by row (`axis=1`) or by column (`axis=0`), and plot hierarchical clustering.
     :param dataframe1: pandas DataFrame or numpy 2D arrays;
