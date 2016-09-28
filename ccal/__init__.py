@@ -18,10 +18,10 @@ Import missing dependencies. And import functional modules.
 """
 # TODO: Optimize import
 
-from . import support
-from . import visualize
-from . import onco_gps
-from . import association
+from .support import read_gct, write_gct, simulate_dataframe_or_series
+from .onco_gps import define_components, define_states, make_map
+from .association import catalogue, match, compare
+from .visualize import plot_clustermap, plot_clusterings, plot_nmf_result, plot_clustering_scores
 
 print('=' * 80)
 print('=' * 17 + ' Computational Cancer Analysis Library (CCAL) ' + '=' * 17)
