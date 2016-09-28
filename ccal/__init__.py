@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from .support import read_gct, write_gct, simulate_dataframe_or_series
+from .support import VERBOSE, read_gct, write_gct, simulate_dataframe_or_series
 from .onco_gps import define_components, define_states, make_map
 from .association import catalogue, match, compare
 from .visualize import plot_clustermap, plot_clusterings, plot_nmf_result, plot_clustering_scores
