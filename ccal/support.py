@@ -570,25 +570,26 @@ def drop_nan_columns(arrays):
     return [a[not_nan_filter] for a in arrays]
 
 
-def count_coclusterings(clustering_x_sample):
+def count_coclusterings(sample_x_clustering):
     """
     Count number of co-clusterings.
-    :param clustering_x_sample: numpy array; (n_clusterings, n_samples)
-    :return: numpy array; (n_samples, n_samples)
+    :param sample_x_clustering: pandas DataFrame; (n_samples, n_clusterings)
+    :return: pandas DataFrame; (n_samples, n_samples)
     """
-    # TODO: consider making pandas only
 
-    n_clusterings, n_samples = clustering_x_sample.shape
+    n_samples, n_clusterings = sample_x_clustering.shape
+
+    # Make sample x sample matrix
+    coclusterings = DataFrame(index=sample_x_clustering.index, columns=sample_x_clustering.index)
 
     # Count the number of co-clusterings
-    coclusterings = zeros((n_samples, n_samples))
     for i in range(n_samples):
         for j in range(n_samples):
             for c_i in range(n_clusterings):
-                v1 = clustering_x_sample[c_i, i]
-                v2 = clustering_x_sample[c_i, j]
+                v1 = sample_x_clustering.iloc[i, c_i]
+                v2 = sample_x_clustering.iloc[j, c_i]
                 if v1 and v2 and (v1 == v2):
-                    coclusterings[i, j] += 1
+                    coclusterings.iloc[i, j] += 1
 
     # Normalize by the number of clusterings and return
     return coclusterings / n_clusterings
@@ -895,20 +896,26 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
         print_log('k={} ...'.format(k))
 
         # For `n_clusterings` times, permute distance matrix with repeat, and cluster
-        clustering_labels = empty((n_clusterings, matrix.shape[1]), dtype=int)
+
+        # Make sample x clustering matrix
+        sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
         for i in range(n_clusterings):
             if i % 10 == 0:
                 print_log('\tPermuting distance matrix with repeat and clustering ({}/{}) ...'.format(i, n_clusterings))
-            randomized_column_indices = random_integers(0, distance_matrix.shape[1] - 1, distance_matrix.shape[1])
+
+            # Randomize samples with repeat
+            random_indices = random_integers(0, distance_matrix.shape[0] - 1, distance_matrix.shape[0])
+
+            # Cluster random samples
             ward = AgglomerativeClustering(n_clusters=k)
-            ward.fit(distance_matrix.iloc[randomized_column_indices, randomized_column_indices])
+            ward.fit(distance_matrix.iloc[random_indices, random_indices])
 
-            # Assign labels to the samples selected by permutation with repeat
-            clustering_labels[i, randomized_column_indices] = ward.labels_
+            # Assign cluster labels to the random samples
+            sample_x_clustering.iloc[random_indices, i] = ward.labels_
 
-        # Make co-clustering matrix using labels created by clusterings of permuted-distance matrix
-        print_log('\tCounting co-clusterings of {} permuted-distance-matrix ...'.format(n_clusterings))
-        coclusterings = count_coclusterings(clustering_labels)
+        # Make co-clustering matrix using labels created by clusterings of randomized distance matrix
+        print_log('\tCounting co-clusterings of {} randomized distance matrix ...'.format(n_clusterings))
+        coclusterings = count_coclusterings(sample_x_clustering)
 
         # Convert co-clustering matrix into distance matrix
         distances = 1 - coclusterings
@@ -964,11 +971,12 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
             print_log('k={} ...'.format(k))
 
             # NMF cluster `n_clustering` times
-            clustering_labels = empty((n_clusterings, matrix.shape[1]), dtype=int)
+            sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
             for i in range(n_clusterings):
                 if i % 10 == 0:
                     print_log('\tNMF ({}/{}) ...'.format(i, n_clusterings))
 
+                # NMF
                 nmf_result = nmf(matrix, k,
                                  init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
                                  alpha=alpha, l1_ratio=l1_ratio, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
@@ -980,11 +988,11 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
                     print_log('\t\tSaved the 1st NMF decomposition.')
 
                 # Column labels are the row index holding the highest value
-                clustering_labels[i, :] = argmax(asarray(nmf_result['H']), axis=0)
+                sample_x_clustering.iloc[:, i] = argmax(asarray(nmf_result['H']), axis=0)
 
             # Make co-clustering matrix using NMF labels
-            print_log('\tCounting co-clusterings during {} NMF ...'.format(n_clusterings))
-            consensus_clusterings = count_coclusterings(clustering_labels)
+            print_log('\tCounting co-clusterings of {} NMF ...'.format(n_clusterings))
+            consensus_clusterings = count_coclusterings(sample_x_clustering)
 
             # Compute clustering scores, the correlation between cophenetic and Euclidian distances
             scores[k] = cophenet(linkage(consensus_clusterings, 'average'), pdist(consensus_clusterings))[0]
