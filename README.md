@@ -13,7 +13,6 @@ Computational Cancer Analysis Laboratory, UCSD Cancer Center
 
 Contributors
 --------------------------------------------------------------------------------
-
 #####    James Jensen
 jdjensen@eng.ucsd.edu
 Laboratory of Jill Mesirov
