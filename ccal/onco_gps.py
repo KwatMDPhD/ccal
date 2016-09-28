@@ -198,8 +198,10 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
     :return: None
     """
 
+    # TODO: remove
     if isinstance(states_train[0], str):
         raise ValueError('states_train is an iterable (list) of int with values from [1, ..., <n_states_train>].')
+    # TODO: remove
     if 0 in states_train:
         raise ValueError('Can\'t have \'0\' in states_train, whose values range from [1, ..., <n_states_train>].')
 

@@ -266,8 +266,8 @@ def plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_state
                   dpi=DPI, filepath=None):
     """
     Plot Onco-GPS map.
-    :param component_coordinates: pandas DataFrame; (n_components, [x, y])
-    :param samples: pandas DataFrame; (n_samples, [x, y, state, annotation])
+    :param component_coordinates: pandas DataFrame; (n_components, [x, y]); output from make_onco_gps_elements
+    :param samples: pandas DataFrame; (n_samples, [x, y, state])
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
     :param n_states_train: int; number of states used to create Onco-GPS
