@@ -25,6 +25,7 @@ from pandas import Series, DataFrame, concat, merge, read_csv
 from scipy.stats import pearsonr, norm
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster, cophenet
+from scipy.optimize import curve_fit
 from statsmodels.sandbox.stats.multicomp import multipletests
 from sklearn.manifold import MDS
 from sklearn.cluster import AgglomerativeClustering
@@ -32,22 +33,24 @@ from sklearn.decomposition import NMF
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from matplotlib.cm import bwr, Paired
+from matplotlib.backends.backend_pdf import PdfPages
+from seaborn import light_palette, heatmap, clustermap, pointplot
+
+from . import VERBOSE, SEED
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
 bcv = mass.bcv
 kde2d = mass.kde2d
 
-# ======================================================================================================================
-# Set up global parameters
-# ======================================================================================================================
-VERBOSE = True
-SEED = 20121020
 EPS = finfo(float).eps
 
 
 # ======================================================================================================================
-# Set up system
+# System
 # ======================================================================================================================
 def install_libraries(libraries_needed):
     """
@@ -68,7 +71,7 @@ def install_libraries(libraries_needed):
             main(['install', lib])
 
 
-def plant_seed(a_seed=SEED):
+def plant_seed(a_seed):
     """
     Set random seed.
     :param a_seed: int;
@@ -76,67 +79,32 @@ def plant_seed(a_seed=SEED):
     """
 
     seed(a_seed)
-    print_log('Planted a random seed {}.'.format(SEED))
+    print_log('Planted a random seed {}.'.format(a_seed))
 
 
 # ======================================================================================================================
-# Log
+# Parallel computing
 # ======================================================================================================================
-# TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
-def print_log(string):
+def parallelize(function, list_of_args, n_jobs=None):
     """
-    Print `string` together with logging information.
-    :param string: str; message to printed
-    :return: None
-    """
-
-    global VERBOSE
-    if VERBOSE:
-        print('<{}> {}'.format(timestamp(time_only=True), string))
-
-
-def timestamp(time_only=False):
-    """
-    Get the current time.
-    :param time_only: bool; exclude year, month, and date or not
-    :return: str; the current time
+    Apply function on args with parallel computing using `n_jobs` jobs.
+    :param function: function;
+    :param list_of_args: list-like; function's args
+    :param n_jobs: int; if not specified, parallelize to all CPUs
+    :return: list; list of outputs returned by all jobs
     """
 
-    if time_only:
-        formatter = '%H%M%S'
-    else:
-        formatter = '%Y%m%d-%H%M%S'
-    return datetime.now().strftime(formatter)
+    # Use almost all available CPUs
+    if not n_jobs:
+        n_jobs = max(cpu_count() - 1, 1)
 
-
-# =====================================================================================================================
-# Operate on strings
-# =====================================================================================================================
-def title_string(string):
-    """
-    Title a string.
-    :param string: str;
-    :return: str;
-    """
-
-    string = string.title().replace('_', ' ').replace('\n', '')
-    for article in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of']:
-        string = string.replace(' ' + article.title() + ' ', ' ' + article + ' ')
-    return string
-
-
-def untitle_string(string):
-    """
-    Untitle a string.
-    :param string: str;
-    :return: str;
-    """
-
-    return string.lower().replace(' ', '_')
+    # Parallelize
+    with Pool(n_jobs) as p:
+        return p.map(function, list_of_args)
 
 
 # ======================================================================================================================
-# Operate on files
+# File
 # ======================================================================================================================
 def establish_path(filepath):
     """
@@ -322,33 +290,66 @@ def write_dictionary(dictionary, filepath, key_name, value_name):
 
 
 # ======================================================================================================================
-# Write equations
+# Log
 # ======================================================================================================================
-def parallelize(function, args, n_jobs=None):
+# TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
+def print_log(string):
     """
-    Apply function with args on separate processors, using a total of `n_jobs` processors.
-    :param function: function;
-    :param args: list-like; function's arguments
-    :param n_jobs: int; if not specified, parallelize to all CPUs
-    :return: list; list of values returned from all jobs
+    Print `string` together with logging information.
+    :param string: str; message to printed
+    :return: None
     """
 
-    # Use all available CPUs
-    if not n_jobs:
-        n_jobs = cpu_count()
+    if VERBOSE:
+        print('<{}> {}'.format(timestamp(time_only=True), string))
 
-    # Parallelize
-    with Pool(n_jobs) as p:
-        # Apply function with args on separate processors
-        return p.map(function, args)
+
+def timestamp(time_only=False):
+    """
+    Get the current time.
+    :param time_only: bool; exclude year, month, and date or not
+    :return: str; the current time
+    """
+
+    if time_only:
+        formatter = '%H%M%S'
+    else:
+        formatter = '%Y%m%d-%H%M%S'
+    return datetime.now().strftime(formatter)
 
 
 # ======================================================================================================================
-# Write equations
+# String
+# ======================================================================================================================
+def title_string(string):
+    """
+    Title a string.
+    :param string: str;
+    :return: str;
+    """
+
+    string = string.title().replace('_', ' ').replace('\n', '')
+    for article in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of']:
+        string = string.replace(' ' + article.title() + ' ', ' ' + article + ' ')
+    return string
+
+
+def untitle_string(string):
+    """
+    Untitle a string.
+    :param string: str;
+    :return: str;
+    """
+
+    return string.lower().replace(' ', '_')
+
+
+# ======================================================================================================================
+# Equation
 # ======================================================================================================================
 def exponential_function(x, a, k, c):
     """
-    Apply exponential function on `x`.
+    Apply exponential function on `_nmf_and_score`.
     :param x: array-like; independent variables
     :param a: number; parameter a
     :param k: number; parameter k
@@ -359,128 +360,9 @@ def exponential_function(x, a, k, c):
     return a * exp(k * x) + c
 
 
-# ======================================================================================================================#
-# Compute
-# ======================================================================================================================#
-def information_coefficient(x, y, n_grids=25, jitter=1E-10):
-    """
-    Compute the information coefficient between `x` and `y`, which can be either continuous, categorical, or binary
-    :param x: numpy array;
-    :param y: numpy array;
-    :param n_grids: int; number of grid lines in a dimention when estimating bandwidths
-    :param jitter: number;
-    :return: float;
-    """
-
-    # Can't work with missing any value
-    # not_nan_filter = ~isnan(x)
-    # not_nan_filter &= ~isnan(y)
-    # x = x[not_nan_filter]
-    # y = y[not_nan_filter]
-    x, y = drop_nan_columns([x, y])
-
-    # Need at least 3 values to compute bandwidth
-    if len(x) < 3 or len(y) < 3:
-        return 0
-
-    x = asarray(x, dtype=float)
-    y = asarray(y, dtype=float)
-
-    # Add jitter
-    x += random_sample(x.size) * jitter
-    y += random_sample(y.size) * jitter
-
-    # Compute bandwidths
-    cor, p = pearsonr(x, y)
-    bandwidth_x = asarray(bcv(x)[0]) * (1 + (-0.75) * abs(cor))
-    bandwidth_y = asarray(bcv(y)[0]) * (1 + (-0.75) * abs(cor))
-
-    # Compute P(x, y), P(x), P(y)
-    fxy = asarray(kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + EPS
-    dx = (x.max() - x.min()) / (n_grids - 1)
-    dy = (y.max() - y.min()) / (n_grids - 1)
-    pxy = fxy / (fxy.sum() * dx * dy)
-    px = pxy.sum(axis=1) * dy
-    py = pxy.sum(axis=0) * dx
-
-    # Compute mutual information;
-    mi = sum(pxy * log(pxy / (asarray([px] * n_grids).T * asarray([py] * n_grids)))) * dx * dy
-
-    # # Get H(x, y), H(x), and H(y)
-    # hxy = - sum(pxy * log(pxy)) * dx * dy
-    # hx = -sum(px * log(px)) * dx
-    # hy = -sum(py * log(py)) * dy
-    # mi = hx + hy - hxy
-
-    # Compute information coefficient
-    ic = sign(cor) * sqrt(1 - exp(- 2 * mi))
-
-    # TODO: debug when MI < 0 and |MI|  ~ 0 resulting in IC = nan
-    if isnan(ic):
-        ic = 0
-
-    return ic
-
-
-def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
-    """
-    Compute `function`(`x`, `y`) and p-value using permutation test.
-    :param x: array-like;
-    :param y: array-like;
-    :param function: function;
-    :param n_permutations: int; number of permutations for the p-value permutation test
-    :return: float and float; score and p-value
-    """
-
-    # Compute score
-    score = function(x, y)
-
-    # Compute scores against permuted target
-    # TODO: decide which of x and y is the target
-    permutation_scores = empty(n_permutations)
-    shuffled_target = array(y)
-    for p in range(n_permutations):
-        shuffle(shuffled_target)
-        permutation_scores[p] = function(x, shuffled_target)
-
-    # Compute p-value
-    p_val = sum(permutation_scores > score) / n_permutations
-    return score, p_val
-
-
-# ======================================================================================================================#
-# Work on array-like
-# ======================================================================================================================#
-# TODO: make sure the normalization when size == 0 or range == 0 is correct
-def normalize_series(series, method='-0-', n_ranks=10000):
-    """
-    Normalize a pandas `series`.
-    :param series: pandas Series;
-    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
-    :param n_ranks: number; normalization factor for rank normalization: rank / size * n_ranks
-    :return: pandas Series; normalized Series
-    """
-
-    if method == '-0-':
-        mean = series.mean()
-        std = series.std()
-        if std == 0:
-            print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
-            return series / series.size
-        else:
-            return (series - mean) / std
-    elif method == '0-1':
-        series_min = series.min()
-        series_max = series.max()
-        if series_max - series_min == 0:
-            print_log('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing.')
-            return series / series.size
-        else:
-            return (series - series_min) / (series_max - series_min)
-    elif method == 'rank':
-        return series.rank() / series.size * n_ranks
-
-
+# ======================================================================================================================
+# Array-like
+# ======================================================================================================================
 def get_unique_in_order(iterable):
     """
     Get unique elements in order or appearance in `iterable`.
@@ -497,7 +379,7 @@ def get_unique_in_order(iterable):
 
 def explode(series):
     """
-    Make a label-x-sample binary matrix from a Series.
+    Make a label-_nmf_and_score-sample binary matrix from a Series.
     :param series: pandas Series;
     :return: pandas DataFrame; (n_labels, n_samples)
     """
@@ -512,9 +394,87 @@ def explode(series):
     return label_x_sample
 
 
-# ======================================================================================================================#
-# Work on matrix-like
-# ======================================================================================================================#
+# ======================================================================================================================
+# Matrix-like
+# ======================================================================================================================
+def drop_nan_columns(arrays):
+    """
+    Keep only not-NaN column positions in all `arrays`.
+    :param arrays: iterable of numpy arrays; must have the same length
+    :return: list of numpy arrays; none of the arrays contains NaN
+    """
+
+    # Keep all column indices
+    not_nan_filter = ones(len(arrays[0]), dtype=bool)
+
+    # Keep column indices without missing value in all arrays
+    for a in arrays:
+        not_nan_filter &= ~isnan(a)
+
+    return [a[not_nan_filter] for a in arrays]
+
+
+def count_coclusterings(sample_x_clustering):
+    """
+    Count number of co-clusterings.
+    :param sample_x_clustering: pandas DataFrame; (n_samples, n_clusterings)
+    :return: pandas DataFrame; (n_samples, n_samples)
+    """
+    sample_x_clustering_array = asarray(sample_x_clustering)
+
+    n_samples, n_clusterings = sample_x_clustering_array.shape
+
+    # Make sample _nmf_and_score sample matrix
+    coclusterings = zeros((n_samples, n_samples))
+
+    # Count the number of co-clusterings
+    # TODO: don't compare same pair twice
+    for i in range(n_samples):
+        for j in range(n_samples):
+            for c_i in range(n_clusterings):
+                v1 = sample_x_clustering_array[i, c_i]
+                v2 = sample_x_clustering_array[j, c_i]
+                if v1 and v2 and (v1 == v2):
+                    coclusterings[i, j] += 1
+
+    # Normalize by the number of clusterings and return
+    coclusterings /= n_clusterings
+    return DataFrame(coclusterings, index=sample_x_clustering.index, columns=sample_x_clustering.index)
+
+
+def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
+    """
+    Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.
+    :param dataframe: pandas DataFrame; (n_points, n_dimentions)
+    :param distance_function: function; capable of computing the distance between 2 vectors
+    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :param n_init: int;
+    :param max_iter: int;
+    :param standardize: bool;
+    :return: pandas DataFrame; (n_points, 2 ('_nmf_and_score', 'y'))
+    """
+
+    if distance_function:  # Use precomputed distances
+        mds_obj = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
+        coordinates = mds_obj.fit_transform(compare_matrices(dataframe, dataframe, distance_function,
+                                                             is_distance=True, axis=1))
+    else:  # Use Euclidean distances
+        mds_obj = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
+        coordinates = mds_obj.fit_transform(dataframe)
+
+    # Convert to DataFrame
+    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['_nmf_and_score', 'y'])
+
+    if standardize:  # Rescale coordinates between 0 and 1
+        coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
+
+    return coordinates
+
+
+# ======================================================================================================================
+# Normalization
+# ======================================================================================================================
+# TODO: make sure the normalization when size == 0 or range == 0 is correct
 def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
     """
     Normalize a pandas object.
@@ -558,83 +518,127 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
                 raise ValueError('Normalizing combination of \'rank\' & axis=\'all\' has not been implemented yet.')
 
 
-def drop_nan_columns(arrays):
+def normalize_series(series, method='-0-', n_ranks=10000):
     """
-    Keep only not-NaN column positions in all `arrays`.
-    :param arrays: iterable of numpy arrays; must have the same length
-    :return: list of numpy arrays; none of the arrays contains NaN
-    """
-
-    # Keep all column indices
-    not_nan_filter = ones(len(arrays[0]), dtype=bool)
-
-    # Keep column indices without missing value in all arrays
-    for a in arrays:
-        not_nan_filter &= ~isnan(a)
-
-    return [a[not_nan_filter] for a in arrays]
-
-
-def count_coclusterings(sample_x_clustering):
-    """
-    Count number of co-clusterings.
-    :param sample_x_clustering: pandas DataFrame; (n_samples, n_clusterings)
-    :return: pandas DataFrame; (n_samples, n_samples)
-    """
-    sample_x_clustering_array = asarray(sample_x_clustering)
-
-    n_samples, n_clusterings = sample_x_clustering_array.shape
-
-    # Make sample x sample matrix
-    coclusterings = zeros((n_samples, n_samples))
-
-    # Count the number of co-clusterings
-    # TODO: don't compare same pair twice
-    for i in range(n_samples):
-        for j in range(n_samples):
-            for c_i in range(n_clusterings):
-                v1 = sample_x_clustering_array[i, c_i]
-                v2 = sample_x_clustering_array[j, c_i]
-                if v1 and v2 and (v1 == v2):
-                    coclusterings[i, j] += 1
-
-    # Normalize by the number of clusterings and return
-    coclusterings /= n_clusterings
-    return DataFrame(coclusterings, index=sample_x_clustering.index, columns=sample_x_clustering.index)
-
-
-def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
-    """
-    Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.
-    :param dataframe: pandas DataFrame; (n_points, n_dimentions)
-    :param distance_function: function; capable of computing the distance between 2 vectors
-    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
-    :param n_init: int;
-    :param max_iter: int;
-    :param standardize: bool;
-    :return: pandas DataFrame; (n_points, 2 ('x', 'y'))
+    Normalize a pandas `series`.
+    :param series: pandas Series;
+    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
+    :param n_ranks: number; normalization factor for rank normalization: rank / size * n_ranks
+    :return: pandas Series; normalized Series
     """
 
-    if distance_function:  # Use precomputed distances
-        mds_obj = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds_obj.fit_transform(compare_matrices(dataframe, dataframe, distance_function,
-                                                             is_distance=True, axis=1))
-    else:  # Use Euclidean distances
-        mds_obj = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds_obj.fit_transform(dataframe)
-
-    # Convert to DataFrame
-    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
-
-    if standardize:  # Rescale coordinates between 0 and 1
-        coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
-
-    return coordinates
+    if method == '-0-':
+        mean = series.mean()
+        std = series.std()
+        if std == 0:
+            print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
+            return series / series.size
+        else:
+            return (series - mean) / std
+    elif method == '0-1':
+        series_min = series.min()
+        series_max = series.max()
+        if series_max - series_min == 0:
+            print_log('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing.')
+            return series / series.size
+        else:
+            return (series - series_min) / (series_max - series_min)
+    elif method == 'rank':
+        return series.rank() / series.size * n_ranks
 
 
 # ======================================================================================================================
-# Associate
+# Information theory
 # ======================================================================================================================
+def information_coefficient(x, y, n_grids=25, jitter=1E-10):
+    """
+    Compute the information coefficient between `_nmf_and_score` and `y`, which can be either continuous, categorical, or binary
+    :param x: numpy array;
+    :param y: numpy array;
+    :param n_grids: int; number of grid lines in a dimention when estimating bandwidths
+    :param jitter: number;
+    :return: float;
+    """
+
+    # Can't work with missing any value
+    # not_nan_filter = ~isnan(_nmf_and_score)
+    # not_nan_filter &= ~isnan(y)
+    # _nmf_and_score = _nmf_and_score[not_nan_filter]
+    # y = y[not_nan_filter]
+    x, y = drop_nan_columns([x, y])
+
+    # Need at least 3 values to compute bandwidth
+    if len(x) < 3 or len(y) < 3:
+        return 0
+
+    x = asarray(x, dtype=float)
+    y = asarray(y, dtype=float)
+
+    # Add jitter
+    x += random_sample(x.size) * jitter
+    y += random_sample(y.size) * jitter
+
+    # Compute bandwidths
+    cor, p = pearsonr(x, y)
+    bandwidth_x = asarray(bcv(x)[0]) * (1 + (-0.75) * abs(cor))
+    bandwidth_y = asarray(bcv(y)[0]) * (1 + (-0.75) * abs(cor))
+
+    # Compute P(_nmf_and_score, y), P(_nmf_and_score), P(y)
+    fxy = asarray(kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + EPS
+    dx = (x.max() - x.min()) / (n_grids - 1)
+    dy = (y.max() - y.min()) / (n_grids - 1)
+    pxy = fxy / (fxy.sum() * dx * dy)
+    px = pxy.sum(axis=1) * dy
+    py = pxy.sum(axis=0) * dx
+
+    # Compute mutual information;
+    mi = sum(pxy * log(pxy / (asarray([px] * n_grids).T * asarray([py] * n_grids)))) * dx * dy
+
+    # # Get H(_nmf_and_score, y), H(_nmf_and_score), and H(y)
+    # hxy = - sum(pxy * log(pxy)) * dx * dy
+    # hx = -sum(px * log(px)) * dx
+    # hy = -sum(py * log(py)) * dy
+    # mi = hx + hy - hxy
+
+    # Compute information coefficient
+    ic = sign(cor) * sqrt(1 - exp(- 2 * mi))
+
+    # TODO: debug when MI < 0 and |MI|  ~ 0 resulting in IC = nan
+    if isnan(ic):
+        ic = 0
+
+    return ic
+
+
+# ======================================================================================================================
+# Association
+# ======================================================================================================================
+def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
+    """
+    Compute `function`(`_nmf_and_score`, `y`) and p-value using permutation test.
+    :param x: array-like;
+    :param y: array-like;
+    :param function: function;
+    :param n_permutations: int; number of permutations for the p-value permutation test
+    :return: float and float; score and p-value
+    """
+
+    # Compute score
+    score = function(x, y)
+
+    # Compute scores against permuted target
+    # TODO: decide which of _nmf_and_score and y is the target
+    permutation_scores = empty(n_permutations)
+    shuffled_target = array(y)
+    for p in range(n_permutations):
+        shuffle(shuffled_target)
+        permutation_scores[p] = function(x, shuffled_target)
+
+    # Compute p-value
+    p_val = sum(permutation_scores > score) / n_permutations
+    return score, p_val
+
+
 def compare_matrices(dataframe1, dataframe2, function, axis=0, is_distance=False):
     """
     Make association or distance matrix of `dataframe1` and `dataframe2` by row (`axis=1`) or by column (`axis=0`).
@@ -670,41 +674,29 @@ def compare_matrices(dataframe1, dataframe2, function, axis=0, is_distance=False
     return compared_matrix
 
 
-def score_dataframe_against_series(arguments):
+def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
     """
-    Compute: ith score_dataframe_against_series = function(ith `feature`, `target`).
-    :param arguments: list-like;
-        (DataFrame (n_features, m_samples); features, Series (m_samples); target, function)
-    :return: pandas DataFrame; (n_features, 1 ('Score'))
-    """
-
-    df, s, func = arguments
-    return DataFrame(df.apply(lambda r: func(s, r), axis=1), index=df.index, columns=['Score'])
-
-
-def score_dataframe_against_permuted_series(arguments):
-    """
-    Compute: ith score_dataframe_against_series = function(ith `feature`, permuted `target`) for n_permutations times.
-    :param arguments: list-like;
-        (DataFrame (n_features, m_samples); features, Series (m_samples); target, function, int; n_permutations)
-    :return: pandas DataFrame; (n_features, n_permutations)
+    Fit rows or columns of `matrix` to `function_to_fit`.
+    :param matrix: pandas DataFrame;
+    :param function_to_fit: function;
+    :param axis: int;
+    :param maxfev: int;
+    :return: list; fit parameters
     """
 
-    df, s, func, n_perms = arguments
+    if axis == 1:
+        matrix = matrix.T
 
-    scores = DataFrame(index=df.index, columns=range(n_perms))
-    shuffled_target = array(s)
-    for p in range(n_perms):
-        print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms))
-        shuffle(shuffled_target)
-        scores.iloc[:, p] = df.apply(lambda r: func(r, shuffled_target), axis=1)
-    return scores
+    x = array(range(matrix.shape[0]))
+    y = asarray(matrix.apply(sorted).apply(sum, axis=1)) / matrix.shape[1]
+    fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
+    return fit_parameters
 
 
 def compute_against_target(features, target, function=information_coefficient, n_features=0.95, ascending=False,
                            n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30):
     """
-    Compute: ith score_dataframe_against_series = function(ith `feature`, `target`).
+    Compute: ith _score_dataframe_against_series = function(ith `feature`, `target`).
     Compute confidence interval (CI) for `n_features` features. And compute p-val and FDR (BH) for all features.
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
     :param target: pandas Series; (n_samples); must have name and indices, which must match `features`'s column index
@@ -725,7 +717,7 @@ def compute_against_target(features, target, function=information_coefficient, n
     #
     if n_jobs == 1:  # Non-parallel computing
         print_log('Scoring (without parallelizing) ...')
-        scores = score_dataframe_against_series((features, target, function))
+        scores = _score_dataframe_against_series((features, target, function))
 
     else:  # Parallel computing
         print_log('Scoring across {} parallelized jobs ...'.format(n_jobs))
@@ -735,7 +727,7 @@ def compute_against_target(features, target, function=information_coefficient, n
 
         if n_per_job < min_n_per_job:  # n is not enough for parallel computing
             print_log('\tNot parallelizing because n_per_job < {}.'.format(min_n_per_job))
-            scores = score_dataframe_against_series((features, target, function))
+            scores = _score_dataframe_against_series((features, target, function))
 
         else:  # n is enough for parallel computing
             # Group
@@ -750,12 +742,13 @@ def compute_against_target(features, target, function=information_coefficient, n
                     leftovers.remove(feature)
 
             # Parallelize
-            scores = concat(parallelize(score_dataframe_against_series, args, n_jobs=n_jobs))
+            scores = concat(parallelize(_score_dataframe_against_series, args, n_jobs=n_jobs))
 
             # Score leftovers
             if leftovers:
                 print_log('Scoring leftovers: {} ...'.format(leftovers))
-                scores = concat([scores, score_dataframe_against_series((features.ix[leftovers, :], target, function))])
+                scores = concat(
+                    [scores, _score_dataframe_against_series((features.ix[leftovers, :], target, function))])
     scores.sort_values('Score', inplace=True)
 
     #
@@ -786,7 +779,7 @@ def compute_against_target(features, target, function=information_coefficient, n
                     indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
                     print_log('Bootstrapping top & bottom {} features ...'.format(n_features))
 
-            # Bootstrap: for `n_sampling` times, randomly choose 63% of the samples, score_dataframe_against_series, and build score_dataframe_against_series distribution
+            # Bootstrap: for `n_sampling` times, randomly choose 63% of the samples, _score_dataframe_against_series, and build _score_dataframe_against_series distribution
             sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
             for c_i in sampled_scores:
                 # Randomize
@@ -796,7 +789,7 @@ def compute_against_target(features, target, function=information_coefficient, n
                 # Score
                 sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
 
-            # Compute confidence interval for score_dataframe_against_series using bootstrapped score_dataframe_against_series distribution
+            # Compute confidence interval for _score_dataframe_against_series using bootstrapped _score_dataframe_against_series distribution
             # TODO: improve confidence interval calculation
             z_critical = norm.ppf(q=confidence)
             confidence_intervals = sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)),
@@ -816,7 +809,7 @@ def compute_against_target(features, target, function=information_coefficient, n
 
     if n_jobs == 1:  # Non-parallel computing
         print_log('Scoring against permuted target (without parallelizing) ...')
-        permutation_scores = score_dataframe_against_permuted_series((features, target, function, n_permutations))
+        permutation_scores = _score_dataframe_against_permuted_series((features, target, function, n_permutations))
 
     else:  # Parallel computing
         print_log('Scoring against permuted target across {} parallelized jobs ...'.format(n_jobs))
@@ -826,7 +819,7 @@ def compute_against_target(features, target, function=information_coefficient, n
 
         if n_per_job < min_n_per_job:  # n is not enough for parallel computing
             print_log('\tNot parallelizing because n_per_job < {}.'.format(min_n_per_job))
-            permutation_scores = score_dataframe_against_permuted_series((features, target, function, n_permutations))
+            permutation_scores = _score_dataframe_against_permuted_series((features, target, function, n_permutations))
 
         else:  # n is enough for parallel computing
             # Group
@@ -841,14 +834,14 @@ def compute_against_target(features, target, function=information_coefficient, n
                     leftovers.remove(feature)
 
             # Parallelize
-            permutation_scores = concat(parallelize(score_dataframe_against_permuted_series, args, n_jobs=n_jobs))
+            permutation_scores = concat(parallelize(_score_dataframe_against_permuted_series, args, n_jobs=n_jobs))
 
             # Handle leftovers
             if leftovers:
                 print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
                 permutation_scores = concat(
                     [permutation_scores,
-                     score_dataframe_against_permuted_series(
+                     _score_dataframe_against_permuted_series(
                          (features.ix[leftovers, :], target, function, n_permutations))])
 
     # Compute local and global P-values
@@ -870,6 +863,37 @@ def compute_against_target(features, target, function=information_coefficient, n
     scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
 
     return scores.sort_values('Score', ascending=ascending)
+
+
+def _score_dataframe_against_series(args):
+    """
+    Compute: ith _score_dataframe_against_series = function(ith `feature`, `target`).
+    :param args: list-like;
+        (DataFrame (n_features, m_samples); features, Series (m_samples); target, function)
+    :return: pandas DataFrame; (n_features, 1 ('Score'))
+    """
+
+    df, s, func = args
+    return DataFrame(df.apply(lambda r: func(s, r), axis=1), index=df.index, columns=['Score'])
+
+
+def _score_dataframe_against_permuted_series(args):
+    """
+    Compute: ith _score_dataframe_against_series = function(ith `feature`, permuted `target`) for n_permutations times.
+    :param args: list-like;
+        (DataFrame (n_features, m_samples); features, Series (m_samples); target, function, int; n_permutations)
+    :return: pandas DataFrame; (n_features, n_permutations)
+    """
+
+    df, s, func, n_perms = args
+
+    scores = DataFrame(index=df.index, columns=range(n_perms))
+    shuffled_target = array(s)
+    for p in range(n_perms):
+        print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms))
+        shuffle(shuffled_target)
+        scores.iloc[:, p] = df.apply(lambda r: func(r, shuffled_target), axis=1)
+    return scores
 
 
 # ======================================================================================================================
@@ -906,7 +930,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
 
         # For `n_clusterings` times, permute distance matrix with repeat, and cluster
 
-        # Make sample x clustering matrix
+        # Make sample _nmf_and_score clustering matrix
         sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
         for i in range(n_clusterings):
             if i % 10 == 0:
@@ -947,7 +971,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
                   init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
                   shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
-    Perform NMF with k from `ks` and score_dataframe_against_series each NMF decomposition.
+    Perform NMF with k from `ks` and _score_dataframe_against_series each NMF decomposition.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param method: str; {'cophenetic_correlation'}
@@ -983,17 +1007,15 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
             print_log('Parallelizing ...')
             args = [[matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_,
                      nls_max_iter, sparseness, beta, eta] for k in ks]
-            with Pool(cpu_count()) as p:
-                parallel_outputs = p.map(x, args)
 
-            for nmf_result, nmf_score in parallel_outputs:
+            for nmf_result, nmf_score in parallelize(_nmf_and_score, args):
                 nmf_results.update(nmf_result)
                 nmf_scores.update(nmf_score)
         else:
             print_log('Not parallelizing ...')
-            nmf_result, nmf_score = x(
-                [matrix, ks[0], n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_,
-                 nls_max_iter, sparseness, beta, eta])
+            nmf_result, nmf_score = _nmf_and_score([matrix, ks[0], n_clusterings, init, solver, tol, max_iter,
+                                                    random_state, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness,
+                                                    beta, eta])
             nmf_results.update(nmf_result)
             nmf_scores.update(nmf_score)
 
@@ -1003,8 +1025,14 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     return nmf_results, nmf_scores
 
 
-def x(arguments):
-    matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta = arguments
+def _nmf_and_score(args):
+    """
+    NMF and score for a k.
+    :param args:
+    :return:
+    """
+
+    matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta = args
 
     print_log('NMF and scoring k={} ...'.format(k))
 
@@ -1089,7 +1117,7 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
 
 
 # ======================================================================================================================
-# Simulate
+# Simulation
 # ======================================================================================================================
 def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None):
     """
@@ -1114,3 +1142,236 @@ def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None):
         return features.iloc[0, :]
     else:
         return features
+
+
+# ======================================================================================================================
+# Plotting
+# ======================================================================================================================
+# Color maps
+BAD_COLOR = 'wheat'
+CMAP_CONTINUOUS = bwr
+CMAP_CONTINUOUS.set_bad(BAD_COLOR)
+CMAP_CATEGORICAL = Paired
+CMAP_CATEGORICAL.set_bad(BAD_COLOR)
+CMAP_BINARY = light_palette('black', n_colors=2, as_cmap=True)
+CMAP_BINARY.set_bad(BAD_COLOR)
+
+# Figure parameters
+FIGURE_SIZE = (16, 10)
+DPI = 1000
+
+
+def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsize=20,
+                    xticklabels=True, yticklabels=True, xticklabels_rotation=90, yticklabels_rotation=0,
+                    row_colors=None, col_colors=None, dpi=DPI, filepath=None):
+    """
+    Plot heatmap for `dataframe`.
+    :param dataframe: pandas DataFrame;
+    :param figure_size: tuple; (n_rows, n_cols)
+    :param title: str;
+    :param title_fontsize: number;
+    :param xticklabels: bool;
+    :param yticklabels: bool;
+    :param xticklabels_rotation: number;
+    :param yticklabels_rotation: number;
+    :param row_colors: list-like or pandas DataFrame/Series; List of colors to label for either the rows.
+        Useful to evaluate whether samples within a group are clustered together. Can use nested lists or DataFrame for
+        multiple color levels of labeling. If given as a DataFrame or Series, labels for the colors are extracted from
+        the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
+        by their index, ensuring colors are drawn in the correct order.
+    :param col_colors: list-like or pandas DataFrame/Series; List of colors to label for either the column.
+        Useful to evaluate whether samples within a group are clustered together. Can use nested lists or DataFrame for
+        multiple color levels of labeling. If given as a DataFrame or Series, labels for the colors are extracted from
+        the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
+        by their index, ensuring colors are drawn in the correct order.
+    :param dpi: int;
+    :param filepath: str;
+    :return: None
+    """
+
+    plt.figure(figsize=figure_size)
+
+    clustergrid = clustermap(dataframe, xticklabels=xticklabels, yticklabels=yticklabels,
+                             row_colors=row_colors, col_colors=col_colors, cmap=CMAP_CONTINUOUS)
+
+    if title:
+        figuretitle_font_properties = {'fontsize': title_fontsize, 'fontweight': 'bold'}
+        plt.suptitle(title, **figuretitle_font_properties)
+
+    for t in clustergrid.ax_heatmap.get_xticklabels():
+        t.set_rotation(xticklabels_rotation)
+    for t in clustergrid.ax_heatmap.get_yticklabels():
+        t.set_rotation(yticklabels_rotation)
+
+    if filepath:
+        _save_plot(filepath, dpi=dpi)
+
+
+def plot_clusterings(dataframe, figure_size=FIGURE_SIZE, title='Clustering Labels', title_fontsize=20, dpi=DPI,
+                     filepath=None):
+    """
+    Plot clustering matrix.
+    :param dataframe: pandas DataFrame; (n_clusterings, n_samples)
+    :param figure_size: tuple; (n_rows, n_cols)
+    :param title: str;
+    :param title_fontsize: number;
+    :param dpi: int;
+    :param filepath: str;
+    :return: None
+    """
+
+    a = asarray(dataframe)
+    a.sort()
+
+    plt.figure(figsize=figure_size)
+    heatmap(DataFrame(a, index=dataframe.index), cmap=CMAP_CATEGORICAL, xticklabels=False,
+            cbar_kws={'orientation': 'horizontal'})
+
+    if title:
+        figuretitle_font_properties = {'fontsize': title_fontsize}
+        plt.suptitle(title, **figuretitle_font_properties)
+
+    plt.gca().set_xlabel('Sample')
+
+    for t in plt.gca().get_yticklabels():
+        t.set_weight('bold')
+
+    colorbar = plt.gca().collections[0].colorbar
+    colorbar.set_ticks(list(range(1, a.max() + 1)))
+
+    if filepath:
+        _save_plot(filepath, dpi=dpi)
+
+
+def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=False, max_std=3,
+                    figure_size=FIGURE_SIZE, title=None, title_fontsize=20, dpi=DPI, filepath=None):
+    """
+    Plot `nmf_results` dictionary (can be generated by `ccal.analyze.nmf` function).
+    :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
+    :param k: int; k for NMF
+    :param w_matrix: pandas DataFrame
+    :param h_matrix: Pandas DataFrame
+    :param normalize: bool; normalize W and H matrices or not ('-0-' normalization on the component axis)
+    :param max_std: number; threshold to clip standardized values
+    :param figure_size: tuple; (n_rows, n_cols)
+    :param title: str;
+    :param title_fontsize: number;
+    :param dpi: int;
+    :param filepath: str;
+    :return: None
+    """
+    # Check for W and H matrix
+    if isinstance(nmf_results, dict) and k:
+        w_matrix = nmf_results[k]['W']
+        h_matrix = nmf_results[k]['H']
+    elif not (isinstance(w_matrix, DataFrame) and isinstance(h_matrix, DataFrame)):
+        raise ValueError('Need either: 1) NMF result ({k: {W:w, H:h, ERROR:error}) and k; or 2) W and H matrices.')
+
+    # Initialize a PDF
+    if filepath:
+        establish_path(filepath)
+        if not filepath.endswith('.pdf'):
+            filepath += '.pdf'
+        pdf = PdfPages(filepath)
+
+    # Set up aesthetic properties
+    figuretitle_font_properties = {'fontsize': title_fontsize, 'fontweight': 'bold'}
+    axtitle_font_properties = {'fontsize': title_fontsize * 0.9, 'fontweight': 'bold'}
+    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
+
+    # Plot W and H
+    plt.figure(figsize=figure_size)
+    gridspec = GridSpec(10, 16)
+    ax_w = plt.subplot(gridspec[1:, :5])
+    ax_h = plt.subplot(gridspec[3:8, 7:])
+    if not title:
+        title = 'NMF Result for k={}'.format(w_matrix.shape[1])
+    plt.suptitle(title, **figuretitle_font_properties)
+    # Plot W
+    if normalize:
+        w_matrix = normalize_pandas_object(w_matrix, method='-0-', axis=0).clip(-max_std, max_std)
+    heatmap(w_matrix, cmap=CMAP_CONTINUOUS, yticklabels=False, ax=ax_w)
+    ax_w.set_title('W Matrix', **axtitle_font_properties)
+    ax_w.set_xlabel('Component', **label_font_properties)
+    ax_w.set_ylabel('Feature', **label_font_properties)
+    # Plot H
+    if normalize:
+        h_matrix = normalize_pandas_object(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
+    heatmap(h_matrix, cmap=CMAP_CONTINUOUS, xticklabels=False, cbar_kws={'orientation': 'horizontal'}, ax=ax_h)
+    ax_h.set_title('H Matrix', **axtitle_font_properties)
+    ax_h.set_xlabel('Sample', **label_font_properties)
+    ax_h.set_ylabel('Component', **label_font_properties)
+    if filepath:
+        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+
+    # Plot cluster map for W
+    clustergrid = clustermap(w_matrix, standard_scale=0, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
+    plt.suptitle('W Matrix for k={}'.format(w_matrix.shape[1]), **figuretitle_font_properties)
+    clustergrid.ax_heatmap.set_xlabel('Component', **label_font_properties)
+    clustergrid.ax_heatmap.set_ylabel('Feature', **label_font_properties)
+    for t in clustergrid.ax_heatmap.get_xticklabels():
+        t.set_fontweight('bold')
+    for t in clustergrid.ax_heatmap.get_yticklabels():
+        t.set_visible(False)
+    if filepath:
+        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+
+    # Plot cluster map for H
+    clustergrid = clustermap(h_matrix, standard_scale=1, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
+    plt.suptitle('H Matrix for k={}'.format(w_matrix.shape[1]), **figuretitle_font_properties)
+    clustergrid.ax_heatmap.set_xlabel('Sample', **label_font_properties)
+    clustergrid.ax_heatmap.set_ylabel('Component', **label_font_properties)
+    for t in clustergrid.ax_heatmap.get_xticklabels():
+        t.set_visible(False)
+    for t in clustergrid.ax_heatmap.get_yticklabels():
+        t.set_fontweight('bold')
+        t.set_rotation(0)
+    if filepath:
+        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+
+    if filepath:
+        pdf.close()
+
+
+def plot_clustering_scores(scores, figure_size=FIGURE_SIZE, title='Clustering Score vs. k', title_fontsize=20, dpi=DPI,
+                           filepath=None):
+    """
+    Plot `scores` dictionary.
+    :param scores: dict or pandas DataFrame; {k: _score_dataframe_against_series}
+    :param figure_size: tuple;
+    :param title: str;
+    :param title_fontsize: number;
+    :param dpi: int;
+    :param filepath: str;
+    :return: None
+    """
+
+    if isinstance(scores, DataFrame):
+        scores = scores.to_dict()
+        scores = scores.popitem()[1]
+
+    plt.figure(figsize=figure_size)
+
+    if title:
+        plt.suptitle(title, fontsize=title_fontsize, fontweight='bold')
+
+    pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
+
+    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
+    plt.gca().set_xlabel('k', **label_font_properties)
+    plt.gca().set_ylabel('Score', **label_font_properties)
+
+    if filepath:
+        _save_plot(filepath, dpi=dpi)
+
+
+def _save_plot(filepath, dpi=DPI):
+    """
+    Establish filepath and save plot with resolution of dpi.
+    :param filepath: str;
+    :param dpi: int;
+    :return: None
+    """
+
+    establish_path(filepath)
+    plt.savefig(filepath, dpi=dpi, bbox_inches='tight')

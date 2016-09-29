@@ -11,11 +11,15 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
+from numpy import unique
 from pandas import DataFrame, Series, merge
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from seaborn import heatmap
 
-from .support import print_log, establish_path, read_gct, untitle_string, information_coefficient, compare_matrices, \
-    compute_against_target
-from .visualize import DPI, plot_clustermap, plot_features_against_target
+from .support import print_log, establish_path, read_gct, untitle_string, information_coefficient, \
+    get_unique_in_order, normalize_pandas_object, compare_matrices, compute_against_target, DPI, CMAP_CONTINUOUS, \
+    CMAP_CATEGORICAL, CMAP_BINARY, _save_plot, plot_clustermap
 
 
 # ======================================================================================================================
@@ -65,7 +69,7 @@ def catalogue(annotations, target_series=None, target_gct=None, target_df=None, 
             raise ValueError('Unknown target_axis {}.'.format(target_axis))
 
     # Load annotations
-    annotation_dfs = read_annotations(annotations)
+    annotation_dfs = _read_annotations(annotations)
 
     # Match target will all annotations
     for a_name, a_df in annotation_dfs.items():
@@ -74,7 +78,7 @@ def catalogue(annotations, target_series=None, target_gct=None, target_df=None, 
               filepath_prefix=filepath_prefix + '_vs_{}'.format(untitle_string(a_name)))
 
 
-def read_annotations(annotations):
+def _read_annotations(annotations):
     """
     Read annotations from .gct files.
     :param annotations: list of lists; [[name, filepath_to_gct, [row_name1, row_name2, ...](optional)], ...]
@@ -182,7 +186,7 @@ def match(features, target, feature_type='continuous', target_type='continuous',
             if '0.95 MoE' in scores.columns:
                 annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[idx, ['Score', '0.95 MoE']])
             else:
-                annotations.ix[idx, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(scores.ix[idx, 'Score'])
+                annotations.ix[idx, 'IC(\u0394)'] = '{:.3f}(_nmf_and_score.xxx)'.format(scores.ix[idx, 'Score'])
 
         # Format P-Value
         annotations['P-val'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
@@ -205,13 +209,122 @@ def match(features, target, feature_type='continuous', target_type='continuous',
                 print_log('Plotting top & bottom {} features ...'.format(n_features))
 
         # Plot
-        plot_features_against_target(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
-                                     feature_type=feature_type, target_type=target_type,
-                                     figure_size=figure_size, title=title, title_size=title_size,
-                                     annotation_header=' ' * 11 + 'IC(\u0394)' + ' ' * 5 + 'P-val' + ' ' * 4 + 'FDR',
-                                     annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                     dpi=dpi, filepath=filepath_prefix + '.pdf')
+        _plot_features_against_target(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
+                                      feature_type=feature_type, target_type=target_type,
+                                      figure_size=figure_size, title=title, title_size=title_size,
+                                      annotation_header=' ' * 11 + 'IC(\u0394)' + ' ' * 5 + 'P-val' + ' ' * 4 + 'FDR',
+                                      annotation_label_size=annotation_label_size, plot_colname=plot_colname,
+                                      dpi=dpi, filepath=filepath_prefix + '.pdf')
     return features_and_scores
+
+
+def _plot_features_against_target(features, ref, annotations, feature_type='continuous', target_type='continuous',
+                                  std_max=3, figure_size='auto', title=None, title_size=20,
+                                  annotation_header=None, annotation_label_size=9,
+                                  plot_colname=False, dpi=DPI, filepath=None):
+    """
+    Plot a heatmap panel.
+    :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
+    :param ref: pandas Series; (n_elements); must have indices, which must match `features`'s columns
+    :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must match `features`'s
+    :param feature_type: str; {'continuous', 'categorical', 'binary'}
+    :param target_type: str; {'continuous', 'categorical', 'binary'}
+    :param std_max: number;
+    :param figure_size: 'auto' or tuple;
+    :param title: str;
+    :param title_size: number;
+    :param annotation_header: str; annotation header to be plotted
+    :param annotation_label_size: number;
+    :param plot_colname: bool; plot column names or not
+    :param dpi: int;
+    :param filepath: str;
+    :return: None
+    """
+
+    if feature_type == 'continuous':
+        features_cmap = CMAP_CONTINUOUS
+        features_min, features_max = -std_max, std_max
+        print_log('Normalizing continuous features ...')
+        features = normalize_pandas_object(features, method='-0-', axis=1)
+    elif feature_type == 'categorical':
+        features_cmap = CMAP_CATEGORICAL
+        features_min, features_max = 0, len(unique(features))
+    elif feature_type == 'binary':
+        features_cmap = CMAP_BINARY
+        features_min, features_max = 0, 1
+    else:
+        raise ValueError('Unknown feature_type {}.'.format(feature_type))
+    if target_type == 'continuous':
+        ref_cmap = CMAP_CONTINUOUS
+        ref_min, ref_max = -std_max, std_max
+        print_log('Normalizing continuous ref ...')
+        ref = normalize_pandas_object(ref, method='-0-')
+    elif target_type == 'categorical':
+        ref_cmap = CMAP_CATEGORICAL
+        ref_min, ref_max = 0, len(unique(ref))
+    elif target_type == 'binary':
+        ref_cmap = CMAP_BINARY
+        ref_min, ref_max = 0, 1
+    else:
+        raise ValueError('Unknown ref_type {}.'.format(target_type))
+
+    if figure_size == 'auto':
+        figure_size = (min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9))
+    plt.figure(figsize=figure_size)
+    gridspec = GridSpec(features.shape[0] + 1, features.shape[1] + 1)
+    ax_ref = plt.subplot(gridspec[:1, :features.shape[1]])
+    ax_features = plt.subplot(gridspec[1:, :features.shape[1]])
+    ax_annotation_header = plt.subplot(gridspec[:1, features.shape[1]:])
+    ax_annotation_header.axis('off')
+    horizontal_text_margin = pow(features.shape[1], 0.39)
+
+    # Plot ref, ref label, and title,
+    heatmap(DataFrame(ref).T, ax=ax_ref, vmin=ref_min, vmax=ref_max, cmap=ref_cmap, xticklabels=False, cbar=False)
+    for t in ax_ref.get_yticklabels():
+        t.set(rotation=0, weight='bold')
+
+    if title:
+        ax_ref.text(features.shape[1] / 2, 1.9, title, horizontalalignment='center', size=title_size, weight='bold')
+
+    if target_type in ('binary', 'categorical'):
+        # Add binary or categorical ref labels
+        boundaries = [0]
+        prev_v = ref.iloc[0]
+        for i, v in enumerate(ref.iloc[1:]):
+            if prev_v != v:
+                boundaries.append(i + 1)
+            prev_v = v
+        boundaries.append(features.shape[1])
+        label_horizontal_positions = []
+        prev_b = 0
+        for b in boundaries[1:]:
+            label_horizontal_positions.append(b - (b - prev_b) / 2)
+            prev_b = b
+        unique_ref_labels = get_unique_in_order(ref.values)
+
+        for i, pos in enumerate(label_horizontal_positions):
+            ax_ref.text(pos, 1, unique_ref_labels[i], horizontalalignment='center', weight='bold')
+
+    # Plot features
+    heatmap(features, ax=ax_features, vmin=features_min, vmax=features_max, cmap=features_cmap,
+            xticklabels=plot_colname, cbar=False)
+    for t in ax_features.get_yticklabels():
+        t.set(rotation=0, weight='bold')
+
+    # Plot annotations
+    if not annotation_header:
+        annotation_header = '\t'.join(annotations.columns).expandtabs()
+    ax_annotation_header.text(horizontal_text_margin, 0.5, annotation_header, horizontalalignment='left',
+                              verticalalignment='center', size=annotation_label_size, weight='bold')
+    for i, (idx, s) in enumerate(annotations.iterrows()):
+        ax = plt.subplot(gridspec[i + 1:i + 2, features.shape[1]:])
+        ax.axis('off')
+        a = '\t'.join(s.tolist()).expandtabs()
+        ax.text(horizontal_text_margin, 0.5, a, horizontalalignment='left', verticalalignment='center',
+                size=annotation_label_size, weight='bold')
+
+    if filepath:
+        _save_plot(filepath, dpi=dpi)
 
 
 # ======================================================================================================================

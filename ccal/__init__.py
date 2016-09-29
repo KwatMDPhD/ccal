@@ -11,13 +11,17 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from .support import VERBOSE, read_gct, write_gct, simulate_dataframe_or_series
+VERBOSE = True
+
+SEED = 20121020
+
+from .support import read_gct, write_gct, simulate_dataframe_or_series, plot_clustermap, plot_clusterings, \
+    plot_nmf_result, plot_clustering_scores
 from .onco_gps import define_components, define_states, make_map
 from .association import catalogue, match, compare
-from .visualize import plot_clustermap, plot_clusterings, plot_nmf_result, plot_clustering_scores
 
 print('=' * 80)
 print('=' * 17 + ' Computational Cancer Analysis Library (CCAL) ' + '=' * 17)
 print('=' * 80)
 
-support.plant_seed()
+support.plant_seed(SEED)
