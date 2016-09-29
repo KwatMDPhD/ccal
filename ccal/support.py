@@ -19,13 +19,14 @@ import math
 from random import seed
 from multiprocessing import Pool, cpu_count
 
-from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, isnan, argmax
+from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, dot, isnan, argmax
+from numpy.linalg import pinv
 from numpy.random import random_sample, random_integers, shuffle, choice
 from pandas import Series, DataFrame, concat, merge, read_csv
 from scipy.stats import pearsonr, norm
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster, cophenet
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, nnls
 from statsmodels.sandbox.stats.multicomp import multipletests
 from sklearn.manifold import MDS
 from sklearn.cluster import AgglomerativeClustering
@@ -41,12 +42,12 @@ from seaborn import light_palette, heatmap, clustermap, pointplot
 
 from . import VERBOSE, SEED
 
+EPS = finfo(float).eps
+
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
 bcv = mass.bcv
 kde2d = mass.kde2d
-
-EPS = finfo(float).eps
 
 
 # ======================================================================================================================
@@ -1114,6 +1115,28 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
 
     return nmf_results
+
+
+def nnls_matrix(a, b, method='nnls'):
+    """
+    Solve a * x = b of (n, k) * (k, m) = (n, m).
+    :param a: numpy array; (n, k)
+    :param b: numpy array; (n, m)
+    :param method: str; {'nnls', 'pinv'}
+    :return: numpy array; (k, m)
+    """
+    if method == 'nnls':
+        x = DataFrame(index=a.columns, columns=b.columns)
+        for i in range(b.shape[1]):
+            x.iloc[:, i] = nnls(a, b.iloc[:, i])[0]
+    elif method == 'pinv':
+        a_pinv = pinv(a)
+        x = dot(a_pinv, b)
+        x[x < 0] = 0
+        x = DataFrame(x, index=a.columns, columns=b.columns)
+    else:
+        raise ValueError('Unknown method {}. Choose from [\'nnls\', \'pinv\']'.format(method))
+    return x
 
 
 # ======================================================================================================================
