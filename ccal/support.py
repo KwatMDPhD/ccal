@@ -19,7 +19,7 @@ import math
 from random import seed
 from multiprocessing import Pool, cpu_count
 
-from numpy import finfo, array, asarray, empty, ones, sign, sum, sqrt, exp, log, isnan, argmax
+from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, isnan, argmax
 from numpy.random import random_sample, random_integers, shuffle, choice
 from pandas import Series, DataFrame, concat, merge, read_csv
 from scipy.stats import pearsonr, norm
@@ -581,23 +581,26 @@ def count_coclusterings(sample_x_clustering):
     :param sample_x_clustering: pandas DataFrame; (n_samples, n_clusterings)
     :return: pandas DataFrame; (n_samples, n_samples)
     """
+    sample_x_clustering_array = asarray(sample_x_clustering)
 
-    n_samples, n_clusterings = sample_x_clustering.shape
+    n_samples, n_clusterings = sample_x_clustering_array.shape
 
     # Make sample x sample matrix
-    coclusterings = DataFrame(index=sample_x_clustering.index, columns=sample_x_clustering.index)
+    coclusterings = zeros((n_samples, n_samples))
 
     # Count the number of co-clusterings
+    # TODO: don't compare same pair twice
     for i in range(n_samples):
         for j in range(n_samples):
             for c_i in range(n_clusterings):
-                v1 = sample_x_clustering.iloc[i, c_i]
-                v2 = sample_x_clustering.iloc[j, c_i]
+                v1 = sample_x_clustering_array[i, c_i]
+                v2 = sample_x_clustering_array[j, c_i]
                 if v1 and v2 and (v1 == v2):
-                    coclusterings.iloc[i, j] += 1
+                    coclusterings[i, j] += 1
 
     # Normalize by the number of clusterings and return
-    return coclusterings / n_clusterings
+    coclusterings /= n_clusterings
+    return DataFrame(coclusterings, index=sample_x_clustering.index, columns=sample_x_clustering.index)
 
 
 def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
@@ -966,48 +969,77 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
 
     if isinstance(ks, int):
         ks = [ks]
+    else:
+        ks = list(set(ks))
 
     nmf_results = {}
-    scores = {}
+    nmf_scores = {}
 
     if method == 'cophenetic_correlation':
         print_log('Scoring NMF with cophenetic correlation from consensus-clustering ({} clusterings) ...'.format(
             n_clusterings))
-        for k in ks:
-            print_log('k={} ...'.format(k))
 
-            # NMF cluster `n_clustering` times
-            sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
-            for i in range(n_clusterings):
-                if i % 10 == 0:
-                    print_log('\tNMF ({}/{}) ...'.format(i, n_clusterings))
+        if len(ks) > 1:
+            print_log('Parallelizing ...')
+            args = [[matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_,
+                     nls_max_iter, sparseness, beta, eta] for k in ks]
+            with Pool(cpu_count()) as p:
+                parallel_outputs = p.map(x, args)
 
-                # NMF
-                nmf_result = nmf(matrix, k,
-                                 init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
-                                 alpha=alpha, l1_ratio=l1_ratio, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
-                                 sparseness=sparseness, beta=beta, eta=eta)[k]
-
-                # Save the first NMF decomposition for each k
-                if i == 0:
-                    nmf_results[k] = nmf_result
-                    print_log('\t\tSaved the 1st NMF decomposition.')
-
-                # Column labels are the row index holding the highest value
-                sample_x_clustering.iloc[:, i] = argmax(asarray(nmf_result['H']), axis=0)
-
-            # Make co-clustering matrix using NMF labels
-            print_log('\tCounting co-clusterings of {} NMF ...'.format(n_clusterings))
-            consensus_clusterings = count_coclusterings(sample_x_clustering)
-
-            # Compute clustering scores, the correlation between cophenetic and Euclidian distances
-            scores[k] = cophenet(linkage(consensus_clusterings, 'average'), pdist(consensus_clusterings))[0]
-            print_log('\tComputed the cophenetic correlations.')
+            for nmf_result, nmf_score in parallel_outputs:
+                nmf_results.update(nmf_result)
+                nmf_scores.update(nmf_score)
+        else:
+            print_log('Not parallelizing ...')
+            nmf_result, nmf_score = x(
+                [matrix, ks[0], n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_,
+                 nls_max_iter, sparseness, beta, eta])
+            nmf_results.update(nmf_result)
+            nmf_scores.update(nmf_score)
 
     else:
         raise ValueError('Unknown method {}.'.format(method))
 
-    return nmf_results, scores
+    return nmf_results, nmf_scores
+
+
+def x(arguments):
+    matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta = arguments
+
+    print_log('NMF and scoring k={} ...'.format(k))
+
+    nmf_result_dict = {}
+    nmf_score_dict = {}
+
+    # NMF cluster `n_clustering`
+    sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
+    for i in range(n_clusterings):
+        if i % 10 == 0:
+            print_log('\t(k={}) NMF ({}/{}) ...'.format(k, i, n_clusterings))
+
+        # NMF
+        nmf_result = nmf(matrix, k,
+                         init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
+                         alpha=alpha, l1_ratio=l1_ratio, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
+                         sparseness=sparseness, beta=beta, eta=eta)[k]
+
+        # Save the first NMF decomposition for each k
+        if i == 0:
+            nmf_result_dict[k] = nmf_result
+            print_log('\t\t(k={}) Saved the 1st NMF decomposition.'.format(k))
+
+        # Column labels are the row index holding the highest value
+        sample_x_clustering.iloc[:, i] = argmax(asarray(nmf_result['H']), axis=0)
+
+    # Make co-clustering matrix using NMF labels
+    print_log('\t(k={}) Counting co-clusterings of {} NMF ...'.format(k, n_clusterings))
+    consensus_clusterings = count_coclusterings(sample_x_clustering)
+
+    # Compute clustering scores, the correlation between cophenetic and Euclidian distances
+    nmf_score_dict[k] = cophenet(linkage(consensus_clusterings, 'average'), pdist(consensus_clusterings))[0]
+    print_log('\t(k={}) Computed the cophenetic correlations.'.format(k))
+
+    return nmf_result_dict, nmf_score_dict
 
 
 def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED,
@@ -1033,6 +1065,8 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
 
     if isinstance(ks, int):
         ks = [ks]
+    else:
+        ks = list(set(ks))
 
     nmf_results = {}
     for k in ks:

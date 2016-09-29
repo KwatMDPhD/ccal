@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 # TODO: refactor
-
+from os.path import join
 from numpy import array, asarray, zeros, argmax
 from pandas import DataFrame
 from scipy.optimize import curve_fit
@@ -34,7 +34,7 @@ kde2d = mass.kde2d
 # Define components
 # ======================================================================================================================
 def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE,
-                      dpi=DPI, filepath_prefix=None):
+                      dpi=DPI, directory_path=None):
     """
     Define components.
     :param matrix:
@@ -43,7 +43,7 @@ def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_si
     :param random_state:
     :param figure_size:
     :param dpi:
-    :param filepath_prefix: str; `filepath_prefix`_nmf_k{k}_{w, h}.gct and  will be saved
+    :param directory_path: str; directory where nmf_k{k}_{w, h}.gct and nmf_scores.pdf will be saved
     :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and {k: cophenetic score}
     """
 
@@ -54,15 +54,25 @@ def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_si
     # NMF and score_dataframe_against_series, while saving a NMF result for each k
     nmf_results, nmf_scores = nmf_and_score(matrix=matrix, ks=ks, n_clusterings=n_clusterings,
                                             random_state=random_state)
-    save_nmf_results(nmf_results, filepath_prefix)
-    write_dictionary(nmf_scores, filepath_prefix + '_nmf_scores.txt', key_name='k', value_name='cophenetic_correlation')
 
-    print_log('Plotting NMF scores ...')
-    plot_clustering_scores(nmf_scores, figure_size=figure_size, filepath=filepath_prefix + '_nmf_scores.pdf', dpi=dpi)
+    # Make nmf directory
+    directory_path = join(directory_path, 'nmf/')
+    establish_path(directory_path)
+
+    # nmf/scores{.pdf, .gct}
+    print_log('Saving and plotting NMF scores ...')
+    write_dictionary(nmf_scores, join(directory_path, 'scores.txt'), key_name='k', value_name='cophenetic_correlation')
+    plot_clustering_scores(nmf_scores, figure_size=figure_size, dpi=dpi, filepath=join(directory_path, 'scores.pdf'))
+
+    # nmf/matrices/nmf_k{...}_{w, h}.gct
+    print_log('Saving and plotting NMF results ...')
+    save_nmf_results(nmf_results, join(directory_path, 'matrices', ''))
+
+    # nmf/figures/nmf_k{...}.pdf
     for k in ks:
-        print_log('Plotting NMF result for k={} ...'.format(k))
-        plot_nmf_result(nmf_results, k, figure_size=figure_size, filepath=filepath_prefix + '_nmf_k{}.pdf'.format(k),
-                        dpi=dpi)
+        print_log('\tPlotting k={} ...'.format(k))
+        plot_nmf_result(nmf_results, k, figure_size=figure_size,
+                        dpi=dpi, filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
 
     return nmf_results, nmf_scores
 
@@ -77,8 +87,8 @@ def save_nmf_results(nmf_results, filepath_prefix):
 
     establish_path(filepath_prefix)
     for k, v in nmf_results.items():
-        write_gct(v['W'], filepath_prefix + '_nmf_k{}_w.gct'.format(k))
-        write_gct(v['H'], filepath_prefix + '_nmf_k{}_h.gct'.format(k))
+        write_gct(v['W'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
+        write_gct(v['H'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
 
 
 # ======================================================================================================================

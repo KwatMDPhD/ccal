@@ -70,7 +70,7 @@ def catalogue(annotations, target_series=None, target_gct=None, target_df=None, 
     # Match target will all annotations
     for a_name, a_df in annotation_dfs.items():
         match(a_df, target_series,
-              feature_type=feature_type, target_type=target_type, feature_ascending=feature_ascending,
+              feature_type=feature_type, target_type=target_type, feature_ascending=feature_ascending, n_features=0,
               filepath_prefix=filepath_prefix + '_vs_{}'.format(untitle_string(a_name)))
 
 
