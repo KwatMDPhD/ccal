@@ -17,8 +17,9 @@ SEED = 20121020
 seed(SEED)
 
 VERBOSE = True
-from .support import read_gct, write_gct, simulate_dataframe_or_series, plot_clustermap, plot_nmf_result, plot_x_vs_y
-from .onco_gps import define_components, define_states, make_map
+
+from .support import read_gct, write_gct
+from .oncogps import define_components, define_states, make_oncogps_map
 from .association import catalogue, make_match_panel, make_comparison_matrix
 
 print('=' * 80)

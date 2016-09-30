@@ -542,7 +542,7 @@ def round_significant_figure(number, n):
 # ======================================================================================================================
 def exponential_function(x, a, k, c):
     """
-    Apply exponential function on _nmf_and_score.
+    Apply exponential function on x.
     :param x: array-like; independent variables
     :param a: number; parameter a
     :param k: number; parameter k
@@ -712,7 +712,7 @@ def get_unique_in_order(iterable):
 
 def explode(series):
     """
-    Make a label-_nmf_and_score-sample binary matrix from a Series.
+    Make a label-x-sample binary matrix from a Series.
     :param series: pandas Series;
     :return: pandas DataFrame; (n_labels, n_samples)
     """
@@ -780,7 +780,7 @@ def count_coclusterings(sample_x_clustering):
 
     n_samples, n_clusterings = sample_x_clustering_array.shape
 
-    # Make sample _nmf_and_score sample matrix
+    # Make sample x sample matrix
     coclusterings = zeros((n_samples, n_samples))
 
     # Count the number of co-clusterings
@@ -807,7 +807,7 @@ def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=
     :param n_init: int;
     :param max_iter: int;
     :param standardize: bool;
-    :return: pandas DataFrame; (n_points, 2 ('_nmf_and_score', 'y'))
+    :return: pandas DataFrame; (n_points, 2 ('x', 'y'))
     """
 
     if distance_function:  # Use precomputed distances
@@ -819,7 +819,7 @@ def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=
         coordinates = mds_obj.fit_transform(dataframe)
 
     # Convert to DataFrame
-    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['_nmf_and_score', 'y'])
+    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
 
     if standardize:  # Rescale coordinates between 0 and 1
         coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
@@ -943,7 +943,7 @@ def cross_validate(model, data, target, n_partitions):
 # ======================================================================================================================
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     """
-    Compute the information coefficient between _nmf_and_score and y, which can be composed of either continuous,
+    Compute the information coefficient between x and y, which can be composed of either continuous,
     categorical, or binary values.
     :param x: numpy array;
     :param y: numpy array;
@@ -953,9 +953,9 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     """
 
     # Can't work with missing any value
-    # not_nan_filter = ~isnan(_nmf_and_score)
+    # not_nan_filter = ~isnan(x)
     # not_nan_filter &= ~isnan(y)
-    # _nmf_and_score = _nmf_and_score[not_nan_filter]
+    # x = x[not_nan_filter]
     # y = y[not_nan_filter]
     x, y = drop_nan_columns([x, y])
 
@@ -975,7 +975,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     bandwidth_x = asarray(bcv(x)[0]) * (1 + (-0.75) * abs(cor))
     bandwidth_y = asarray(bcv(y)[0]) * (1 + (-0.75) * abs(cor))
 
-    # Compute P(_nmf_and_score, y), P(_nmf_and_score), P(y)
+    # Compute P(x, y), P(x), P(y)
     fxy = asarray(kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + EPS
     dx = (x.max() - x.min()) / (n_grids - 1)
     dy = (y.max() - y.min()) / (n_grids - 1)
@@ -986,7 +986,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     # Compute mutual information;
     mi = sum(pxy * log(pxy / (asarray([px] * n_grids).T * asarray([py] * n_grids)))) * dx * dy
 
-    # # Get H(_nmf_and_score, y), H(_nmf_and_score), and H(y)
+    # # Get H(x, y), H(x), and H(y)
     # hxy = - sum(pxy * log(pxy)) * dx * dy
     # hx = -sum(px * log(px)) * dx
     # hy = -sum(py * log(py)) * dy
@@ -1007,7 +1007,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
 # ======================================================================================================================
 def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
     """
-    Compute function(_nmf_and_score, y) and p-value using permutation test.
+    Compute function(x, y) and p-value using permutation test.
     :param x: array-like;
     :param y: array-like;
     :param function: function;
@@ -1361,7 +1361,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
 
         # For n_clusterings times, permute distance matrix with repeat, and cluster
 
-        # Make sample _nmf_and_score clustering matrix
+        # Make sample x clustering matrix
         sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
         for i in range(n_clusterings):
             if i % 10 == 0:
@@ -1431,7 +1431,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     nmf_scores = {}
 
     if method == 'cophenetic_correlation':
-        print_log('Scoring NMF with cophenetic correlation from consensus-clustering ({} clusterings) ...'.format(
+        print_log('Scoring NMF with cophenetic correlation of consensus-clustering ({} clusterings) ...'.format(
             n_clusterings))
 
         if len(ks) > 1:
@@ -1458,7 +1458,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
 
 def _nmf_and_score(args):
     """
-    NMF and score for a k.
+    NMF and score using 1 k.
     :param args:
     :return:
     """

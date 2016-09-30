@@ -40,8 +40,8 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_clusterings=30, random_state=SEED,
-                      figure_size=FIGURE_SIZE, dpi=DPI, directory_path=None):
+def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE, dpi=DPI,
+                      directory_path=None):
     """
     NMF matrix into W and H matrices using k from ks and calculate cophenetic correlation by consensus clustering.
     :param matrix: pandas DataFrame;
@@ -104,8 +104,8 @@ def _save_nmf_results(nmf_results, filepath_prefix):
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(h, ks, max_std=3, n_clusterings=50,
-                  figure_size=FIGURE_SIZE, title='Clustering Labels', dpi=DPI, filepath_prefix=None):
+def define_states(h, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE, title='Clustering Labels', dpi=DPI,
+                  filepath_prefix=None):
     """
     Cluster samples using k from ks and calculate cophenetic correlation by consensus clustering.
     :param h: pandas DataFrame; (n_features, m_samples); H matrix from NMF
@@ -142,25 +142,27 @@ def define_states(h, ks, max_std=3, n_clusterings=50,
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
-             informational_mds=True, mds_seed=SEED,
-             fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=5,
-             n_pulling_components='all', component_pull_power='auto', n_pullratio_components=0, pullratio_factor=5,
-             n_grids=128, kde_bandwidths_factor=1,
-             annotations=(), annotation_name='', annotation_type='continuous',
-             figure_size=FIGURE_SIZE, title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-             subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-             colors=None, component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
-             component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
-             delaunay_linewidth=1, delaunay_linecolor='#000000',
-             n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-             background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.9,
-             sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
-             sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-             legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
-             effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
-             effectplot_median_markeredgecolor='#FF0082',
-             dpi=DPI, filepath=None):
+def make_oncogps_map(h_train, states_train, std_max=3,
+                     h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
+                     informational_mds=True, mds_seed=SEED,
+                     fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=5,
+                     n_pulling_components='all', component_pull_power='auto',
+                     n_pullratio_components=0, pullratio_factor=5,
+                     n_grids=128, kde_bandwidths_factor=1,
+                     annotations=(), annotation_name='', annotation_type='continuous',
+                     figure_size=FIGURE_SIZE, title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
+                     subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
+                     colors=None, component_markersize=13, component_markerfacecolor='#000726',
+                     component_markeredgewidth=1.69,
+                     component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
+                     delaunay_linewidth=1, delaunay_linecolor='#000000',
+                     n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
+                     background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.9,
+                     sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
+                     sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
+                     legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
+                     effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
+                     effectplot_median_markeredgecolor='#FF0082', dpi=DPI, filepath=None):
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states_train: iterable of int; (n_samples); sample states
@@ -231,6 +233,7 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                                             n_pullratio_components=n_pullratio_components,
                                             pullratio_factor=pullratio_factor,
                                             n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
+
     _plot_onco_gps(cc, s, gp, gs, len(set(states_train)),
                    annotations=annotations, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
@@ -257,13 +260,13 @@ def make_map(h_train, states_train, std_max=3, h_test=None, h_test_normalization
                    figure_size=figure_size, dpi=dpi, filepath=filepath)
 
 
-def _make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_test_normalization='as_train',
-                            states_test=None,
+def _make_onco_gps_elements(h_train, states_train, std_max=3,
+                            h_test=None, h_test_normalization='as_train', states_test=None,
                             informational_mds=True, mds_seed=SEED, mds_n_init=1000, mds_max_iter=1000,
                             function_to_fit=exponential_function, fit_maxfev=1000,
                             fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
-                            n_pulling_components='all', component_pull_power='auto', n_pullratio_components=0,
-                            pullratio_factor=5,
+                            n_pulling_components='all', component_pull_power='auto',
+                            n_pullratio_components=0, pullratio_factor=5,
                             n_grids=128, kde_bandwidths_factor=1):
     """
     Compute component and sample coordinates. And compute grid probabilities and states.
@@ -290,8 +293,8 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_tes
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :return: pandas DataFrame, DataFrame, numpy array, and numpy array;
-             component_coordinates (n_components, [_nmf_and_score, y]),
-             samples (n_samples, [_nmf_and_score, y, state, annotation]),
+             component_coordinates (n_components, [x, y]),
+             samples (n_samples, [x, y, state, annotation]),
              grid_probabilities (n_grids, n_grids),
              and grid_states (n_grids, n_grids)
     """
@@ -348,11 +351,11 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_tes
     grid_states = zeros((n_grids, n_grids), dtype=int)
     # Get KDE for each state using bandwidth created from all states' scores & y coordinates; states have 1 based-index
     kdes = zeros((training_samples.ix[:, 'state'].unique().size + 1, n_grids, n_grids))
-    bandwidths = asarray([bcv(asarray(training_samples.ix[:, '_nmf_and_score'].tolist()))[0],
+    bandwidths = asarray([bcv(asarray(training_samples.ix[:, 'x'].tolist()))[0],
                           bcv(asarray(training_samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
     for s in sorted(training_samples.ix[:, 'state'].unique()):
-        coordinates = training_samples.ix[training_samples.ix[:, 'state'] == s, ['_nmf_and_score', 'y']]
-        kde = kde2d(asarray(coordinates.ix[:, '_nmf_and_score'], dtype=float),
+        coordinates = training_samples.ix[training_samples.ix[:, 'state'] == s, ['x', 'y']]
+        kde = kde2d(asarray(coordinates.ix[:, 'x'], dtype=float),
                     asarray(coordinates.ix[:, 'y'], dtype=float),
                     bandwidths, n=asarray([n_grids]), lims=asarray([0, 1, 0, 1]))
         kdes[s] = asarray(kde[2])
@@ -395,23 +398,23 @@ def _get_sample_coordinates_via_pulling(component_x_coordinates, component_x_sam
                                         n_influencing_components='all', component_pulling_power=1):
     """
     Compute sample coordinates based on component coordinates, which pull samples.
-    :param component_x_coordinates: pandas DataFrame; (n_points, [_nmf_and_score, y])
+    :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
     :param component_x_samples: pandas DataFrame; (n_points, n_samples)
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
     :param component_pulling_power: str or number; power to raise components' influence on each sample
-    :return: pandas DataFrame; (n_samples, [_nmf_and_score, y])
+    :return: pandas DataFrame; (n_samples, [x, y])
     """
 
-    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['_nmf_and_score', 'y'])
+    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
     for sample in sample_coordinates.index:
         c = component_x_samples.ix[:, sample]
         if n_influencing_components == 'all':
             n_influencing_components = component_x_samples.shape[0]
         c = c.mask(c < c.sort_values().tolist()[-n_influencing_components], other=0)
-        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, '_nmf_and_score']) / sum(
+        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(
             c ** component_pulling_power)
         y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
-        sample_coordinates.ix[sample, ['_nmf_and_score', 'y']] = x, y
+        sample_coordinates.ix[sample, ['x', 'y']] = x, y
     return sample_coordinates
 
 
@@ -432,9 +435,9 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                    dpi=DPI, filepath=None):
     """
     Plot Onco-GPS map.
-    :param component_coordinates: pandas DataFrame; (n_components, [_nmf_and_score, y]);
+    :param component_coordinates: pandas DataFrame; (n_components, [x, y]);
         output from _make_onco_gps_elements
-    :param samples: pandas DataFrame; (n_samples, [_nmf_and_score, y, state])
+    :param samples: pandas DataFrame; (n_samples, [x, y, state])
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
     :param n_states_train: int; number of states used to create Onco-GPS
@@ -505,7 +508,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
 
     # Plot components and their labels
-    ax_map.plot(component_coordinates.ix[:, '_nmf_and_score'], component_coordinates.ix[:, 'y'], marker='D',
+    ax_map.plot(component_coordinates.ix[:, 'x'], component_coordinates.ix[:, 'y'], marker='D',
                 linestyle='',
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
                 markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, clip_on=False,
@@ -518,14 +521,14 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
     for i in component_coordinates.index:
         if component_text_position == 'auto':
 
-            if convexhull_region.contains_point((component_coordinates.ix[i, '_nmf_and_score'],
+            if convexhull_region.contains_point((component_coordinates.ix[i, 'x'],
                                                  component_coordinates.ix[i, 'y'] + component_text_verticalshift)):
                 component_text_verticalshift *= -1
         elif component_text_position == 'top':
             component_text_verticalshift *= -1
         elif component_text_position == 'bottom':
             pass
-        x, y = component_coordinates.ix[i, '_nmf_and_score'], component_coordinates.ix[
+        x, y = component_coordinates.ix[i, 'x'], component_coordinates.ix[
             i, 'y'] + component_text_verticalshift
 
         ax_map.text(x, y, i,
@@ -612,12 +615,12 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                 a = samples.ix[idx, 'pullratio']
             else:
                 a = 1
-            ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
                         alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
             if a < 1:
-                ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize,
+                ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
                             markerfacecolor='none',
                             markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                             zorder=5)
@@ -646,7 +649,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
         else:
             raise ValueError('Unknown effectplot_type {}. effectplot_type = [\'violine\', \'box\'].')
-        # Set up _nmf_and_score label, ticks, and lines
+        # Set up x label, ticks, and lines
         ax_legend.set_xlabel('')
         ax_legend.set_xticks([annotation_min, annotation_mean, annotation_max])
         for t in ax_legend.get_xticklabels():
@@ -682,12 +685,12 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                 a = samples.ix[idx, 'pullratio']
             else:
                 a = 1
-            ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
                         alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
             if a < 1:
-                ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize,
+                ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
                             markerfacecolor='none',
                             markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                             zorder=5)

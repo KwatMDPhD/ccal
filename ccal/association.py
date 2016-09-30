@@ -204,7 +204,7 @@ def make_match_panel(features, target, feature_type='continuous', target_type='c
         if '0.95 MoE' in scores.columns:
             annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[idx, ['Score', '0.95 MoE']])
         else:
-            annotations.ix[idx, 'IC(\u0394)'] = '{:.3f}(_nmf_and_score.xxx)'.format(scores.ix[idx, 'Score'])
+            annotations.ix[idx, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(scores.ix[idx, 'Score'])
 
     # Format P-Value
     annotations['P-val'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
