@@ -1042,19 +1042,24 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
 
     # Rotate matrices to make the comparison by row
     if axis == 1:
-        m1 = array(matrix1)
-        m2 = array(matrix2)
+        matrix1 = matrix1.copy()
+        matrix2 = matrix2.copy()
     else:
-        m1 = array(matrix1.T)
-        m2 = array(matrix2.T)
+        matrix1 = matrix1.T
+        matrix2 = matrix2.T
 
+    # Work with array
+    m1 = asarray(matrix1)
+    m2 = asarray(matrix2)
+
+    # Number of comparables
     n_1 = m1.shape[0]
     n_2 = m2.shape[0]
 
     # Compare
     compared_matrix = empty((n_1, n_2))
     for i_1 in range(n_1):
-        if (i_1 + 1) % 1 == 0:
+        if i_1 == 0 or i_1 % 10 == 0:
             print_log('Computing association between matrices ({}/{}) ...'.format(i_1, n_1))
         for i_2 in range(n_2):
             compared_matrix[i_1, i_2] = function(m1[i_1, :], m2[i_2, :])
@@ -1063,7 +1068,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
         print_log('Converting association to distance (1 - association) ...')
         compared_matrix = 1 - compared_matrix
 
-    return DataFrame(compared_matrix, index=matrix1.columns, columns=matrix2.columns)
+    return DataFrame(compared_matrix, index=matrix1.index, columns=matrix2.index)
 
 
 def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
