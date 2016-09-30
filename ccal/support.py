@@ -1159,22 +1159,22 @@ def match(features, target, function=information_coefficient, n_features=0.95, a
 
         n_samples = math.ceil(0.632 * features.shape[1])
         if n_samples < 3:  # Can't bootstrap only if there is less than 3 samples in 63% of the samples
-            print_log('Can\'t bootstrap because 0.632 * n_samples < 3.')
+            print_log('\tCan\'t bootstrap because 0.632 * n_samples < 3.')
 
         else:  # Compute confidence interval for limited features
             if n_features < 1:  # Limit using percentile
                 above_quantile = scores.ix[:, 'Score'] >= scores.ix[:, 'Score'].quantile(n_features)
-                print_log('Bootstrapping {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
+                print_log('\tBootstrapping {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
                 below_quantile = scores.ix[:, 'Score'] <= scores.ix[:, 'Score'].quantile(1 - n_features)
-                print_log('Bootstrapping {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
+                print_log('\tBootstrapping {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
                 indices_to_bootstrap = scores.index[above_quantile | below_quantile].tolist()
             else:  # Limit using numbers
                 if 2 * n_features >= scores.shape[0]:
                     indices_to_bootstrap = scores.index
-                    print_log('Bootstrapping all {} features ...'.format(scores.shape[0]))
+                    print_log('\tBootstrapping all {} features ...'.format(scores.shape[0]))
                 else:
                     indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
-                    print_log('Bootstrapping top & bottom {} features ...'.format(n_features))
+                    print_log('\tBootstrapping top & bottom {} features ...'.format(n_features))
 
             # Bootstrap: for n_sampling times, randomly choose 63% of the samples, score, and build score distribution
             sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))

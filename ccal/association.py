@@ -27,17 +27,22 @@ from .support import print_log, establish_filepath, read_gct, untitle_string, in
 # ======================================================================================================================
 def catalogue(annotations,
               target=None, target_gct=None, target_df=None, target_name=None, target_axis=1, target_type='continuous',
+              n_features=0.95, n_jobs=1, n_samplings=30, n_permutations=30,
               filepath_prefix=None):
     """
     Annotate target using multiple annotations.
     :param annotations: list of lists;
-        [[name, .gct, data_type, reverse_match_or_not, [row_name, ...](optional), [feature_name, ...](optional)], ...]
+        [[name, .gct, data_type, is_reverse_match, [row_name, ...](optional), [feature_name, ...](optional)], ...]
     :param target: pandas Series; annotation target
     :param target_gct: str; filepath to a file whose row or column is the annotation target
     :param target_df: DataFrame; whose row or column is the annotation target
-    :param target_name: str; row or column name in target_df, either directly passed or read from target_gct
+    :param target_name: str or iterable; row or column name(s) in target_df
     :param target_axis: int; axis on which target_name is found in target_gct or target_df
     :param target_type: str; {continuous, categorical, binary}
+    :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
+    :param n_jobs: int; number of jobs to parallelize
+    :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
+    :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath_prefix: str; filepath_prefix_vs_annotation_name.txt and filepath_prefix_vs_annotation_name.pdf
         will be saved
     :return: None
@@ -74,31 +79,34 @@ def catalogue(annotations,
             min_n_feature_values = 2
 
         make_match_panel(a_dict['dataframe'], target, feature_type=a_dict['data_type'], target_type=target_type,
-                         feature_ascending=a_dict['reverse_match_or_not'], min_n_feature_values=min_n_feature_values,
-                         n_features=0, filepath_prefix=filepath_prefix + '_vs_{}'.format(untitle_string(a_name)))
+                         feature_ascending=a_dict['is_reverse_match'], min_n_feature_values=min_n_feature_values,
+                         n_features=n_features, n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
+                         filepath_prefix=filepath_prefix + 'vs_{}'.format(untitle_string(a_name)))
 
 
 def _read_annotations(annotations):
     """
     Read annotations from .gct files.
     :param annotations: list of lists;
-        [[name, .gct, data_type, reverse_match_or_not, [row_name, ...](optional), [feature_name, ...](optional)], ...]
-    :return: dict; {name:{dataframe: DataFrame, data_type: str, reverse_match_or_not: bool}}
+        [[name, .gct, data_type, is_reverse_match, [row_name, ...](optional), [feature_name, ...](optional)], ...]
+    :return: dict; {name:{dataframe: DataFrame, data_type: str, is_reverse_match: bool}}
     """
 
     annotation_dict = {}
 
     # Read all annotations
     for a in annotations:
-        print_log('Reading annotation: {} ...'.format(' ~ '.join([str(x) for x in a])))
+        name, filepath, data_type, is_reverse_match, row_names, feature_names = a
+        print_log(
+            'Reading {} @ {}: data type = {}; is_reverse_match = {}; index names = {}; feature names {} ...'.format(*a))
 
-        name, filepath, data_type, reverse_match_or_not, row_names, feature_names = a
+        annotation_dict[name] = {}
 
         # Read data type
         annotation_dict[name]['data_type'] = data_type
 
         # Read whether reverse make_match_panel or not
-        annotation_dict[name]['reverse_match_or_not'] = reverse_match_or_not
+        annotation_dict[name]['is_reverse_match'] = is_reverse_match
 
         # Read annotation DataFrame
         df = read_gct(filepath)
@@ -110,7 +118,7 @@ def _read_annotations(annotations):
                 df.set_index(feature_names)
         annotation_dict[name]['dataframe'] = df
 
-        print_log('\t{} features & {} samples.'.format(*annotation_dict[name]['dataframe'].shape))
+        print_log('\tRead {} features & {} samples.\n'.format(*annotation_dict[name]['dataframe'].shape))
 
     return annotation_dict
 
@@ -174,7 +182,7 @@ def make_match_panel(features, target, feature_type='continuous', target_type='c
 
     # Sort target
     if target_sort:
-        target.sort_values(inplace=True)
+        target.sort_values(ascending=False, inplace=True)
         features = features.reindex_axis(target.index, axis=1)
 
     # Score
