@@ -784,7 +784,7 @@ def count_coclusterings(sample_x_clustering):
     coclusterings = zeros((n_samples, n_samples))
 
     # Count the number of co-clusterings
-    # TODO: don't compare same pair twice
+    # TODO: don't make_comparison_matrix same pair twice
     for i in range(n_samples):
         for j in range(n_samples):
             for c_i in range(n_clusterings):

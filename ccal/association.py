@@ -25,7 +25,6 @@ from .support import print_log, establish_filepath, read_gct, untitle_string, in
 # ======================================================================================================================
 # Match features against target
 # ======================================================================================================================
-# TODO: implement
 def catalogue(annotations,
               target=None, target_gct=None, target_df=None, target_name=None, target_axis=1, target_type='continuous',
               filepath_prefix=None):
@@ -376,8 +375,8 @@ def _plot_match_panel(features, target, annotations, feature_type='continuous', 
 # ======================================================================================================================
 # Compare matrices
 # ======================================================================================================================
-def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
-            filepath_prefix=None):
+def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
+                           filepath_prefix=None):
     """
     Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
     :param matrix1: pandas DataFrame or numpy 2D arrays;
@@ -391,17 +390,17 @@ def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_dista
     """
 
     # Compute association or distance matrix, which is returned at the end
-    compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
+    comparison_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
 
     # Save
     if filepath_prefix:
-        compared_matrix.to_csv(filepath_prefix + '.txt', sep='\t')
+        comparison_matrix.to_csv(filepath_prefix + '.txt', sep='\t')
 
     # Plot cluster map of the compared matrix
     if filepath_prefix:
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    plot_clustermap(compared_matrix, title=title, filepath=filepath)
+    plot_clustermap(comparison_matrix, title=title, filepath=filepath)
 
-    return compared_matrix
+    return comparison_matrix
