@@ -18,7 +18,7 @@ from matplotlib.gridspec import GridSpec
 from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, untitle_string, information_coefficient, \
-    get_unique_in_order, normalize_pandas_object, compare_matrices, compute_against_target, DPI, CMAP_CONTINUOUS, \
+    get_unique_in_order, normalize_pandas_object, compare_matrices, match, DPI, CMAP_CONTINUOUS, \
     CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap
 
 
@@ -26,22 +26,19 @@ from .support import print_log, establish_filepath, read_gct, untitle_string, in
 # Match features against target
 # ======================================================================================================================
 # TODO: implement
-def catalogue(annotations, target=None, target_gct=None, target_df=None, target_name=None, target_axis=1,
-              feature_type='continuous', target_type='continuous', feature_ascending=False, filepath_prefix=None):
+def catalogue(annotations,
+              target=None, target_gct=None, target_df=None, target_name=None, target_axis=1, target_type='continuous',
+              filepath_prefix=None):
     """
     Annotate target using multiple annotations.
     :param annotations: list of lists;
-        [[name, filepath_to_gct, [row_name, ...](optional), [feature_name, ...](optional)], ...]
+        [[name, .gct, data_type, reverse_match_or_not, [row_name, ...](optional), [feature_name, ...](optional)], ...]
     :param target: pandas Series; annotation target
     :param target_gct: str; filepath to a file whose row or column is the annotation target
     :param target_df: DataFrame; whose row or column is the annotation target
     :param target_name: str; row or column name in target_df, either directly passed or read from target_gct
-    :param target_axis: int; axis on which target_name is found in target_df, either directly passed or read from
-        target_gct
-    :param feature_type: str; {continuous, categorical, binary}
+    :param target_axis: int; axis on which target_name is found in target_gct or target_df
     :param target_type: str; {continuous, categorical, binary}
-    :param feature_ascending: bool; True if features score_dataframe_against_series increase from top to bottom, and
-        False otherwise
     :param filepath_prefix: str; filepath_prefix_vs_annotation_name.txt and filepath_prefix_vs_annotation_name.pdf
         will be saved
     :return: None
@@ -69,63 +66,72 @@ def catalogue(annotations, target=None, target_gct=None, target_df=None, target_
         else:
             raise ValueError('Unknown target_axis {}.'.format(target_axis))
 
-    # Load annotations and match target
-    for a_name, a_df in _read_annotations(annotations).items():
-        match(a_df, target,
-              feature_type=feature_type, target_type=target_type, feature_ascending=feature_ascending, n_features=0,
-              filepath_prefix=filepath_prefix + '_vs_{}'.format(untitle_string(a_name)))
+    # Load annotations and make_match_panel target
+
+    for a_name, a_dict in _read_annotations(annotations).items():
+        if a_dict['data_type'] == 'continuous':
+            min_n_feature_values = 3
+        else:
+            min_n_feature_values = 2
+
+        make_match_panel(a_dict['dataframe'], target, feature_type=a_dict['data_type'], target_type=target_type,
+                         feature_ascending=a_dict['reverse_match_or_not'], min_n_feature_values=min_n_feature_values,
+                         n_features=0, filepath_prefix=filepath_prefix + '_vs_{}'.format(untitle_string(a_name)))
 
 
 def _read_annotations(annotations):
     """
     Read annotations from .gct files.
     :param annotations: list of lists;
-        [[name, filepath_to_gct, [row_name, ...](optional), [feature_name, ...](optional)], ...]
-    :return: dict; {name: annotation DataFrame}
+        [[name, .gct, data_type, reverse_match_or_not, [row_name, ...](optional), [feature_name, ...](optional)], ...]
+    :return: dict; {name:{dataframe: DataFrame, data_type: str, reverse_match_or_not: bool}}
     """
 
-    annotation_dfs = {}
+    annotation_dict = {}
 
     # Read all annotations
     for a in annotations:
         print_log('Reading annotation: {} ...'.format(' ~ '.join([str(x) for x in a])))
 
-        a_name, a_file, a_features, a_features_names = a
+        name, filepath, data_type, reverse_match_or_not, row_names, feature_names = a
+
+        # Read data type
+        annotation_dict[name]['data_type'] = data_type
+
+        # Read whether reverse make_match_panel or not
+        annotation_dict[name]['reverse_match_or_not'] = reverse_match_or_not
 
         # Read annotation DataFrame
-        a_df = read_gct(a_file)
-
+        df = read_gct(filepath)
         # Limit to specified features
-        if a_features:
-            a_df = a_df.ix[a_features, :]
-
+        if row_names:
+            df = df.ix[row_names, :]
             # Update specified features' names
-            if a_features_names:
-                a_df.set_index(a_features_names)
+            if feature_names:
+                df.set_index(feature_names)
+        annotation_dict[name]['dataframe'] = df
 
-        # Save
-        annotation_dfs[a_name] = a_df
+        print_log('\t{} features & {} samples.'.format(*annotation_dict[name]['dataframe'].shape))
 
-        print_log('\t{} features & {} samples.'.format(*annotation_dfs[a_name].shape))
-
-    return annotation_dfs
+    return annotation_dict
 
 
-def match(features, target, feature_type='continuous', target_type='continuous',
-          min_n_feature_values=2, feature_ascending=False, target_sort=True,
-          n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, n_permutations=30,
-          figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False, dpi=DPI,
-          filepath_prefix=None):
+def make_match_panel(features, target, feature_type='continuous', target_type='continuous',
+                     feature_ascending=False, target_sort=True, min_n_feature_values=2,
+                     n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, n_permutations=30,
+                     figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False,
+                     dpi=DPI,
+                     filepath_prefix=None):
     """
-    Compute scores[i] = features[i] vs. target using function. Compute confidence interval (CI) for n_features
+    Compute: ith score = function(ith feature, target). Compute confidence interval (CI) for n_features
     features. Compute p-val and FDR (BH) for all features. And plot the result.
     :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
     :param target: pandas Series; (n_samples); must have name and index matching features's column names
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
-    :param min_n_feature_values: int; minimum number of unique values in a feature for it to be matched (default 2)
     :param feature_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param target_sort: bool; sort target or not
+    :param min_n_feature_values: int; minimum number of unique values in a feature for it to be matched (default 2)
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
     :param min_n_per_job: int; minimum number of n per job for parallel computing
@@ -173,9 +179,8 @@ def match(features, target, feature_type='continuous', target_type='continuous',
         features = features.reindex_axis(target.index, axis=1)
 
     # Score
-    scores = compute_against_target(features, target, n_features=n_features, ascending=feature_ascending,
-                                    n_jobs=n_jobs, min_n_per_job=min_n_per_job,
-                                    n_samplings=n_samplings, n_permutations=n_permutations)
+    scores = match(features, target, n_features=n_features, ascending=feature_ascending,
+                   n_jobs=n_jobs, min_n_per_job=min_n_per_job, n_samplings=n_samplings, n_permutations=n_permutations)
     features = features.reindex(scores.index)
 
     # Merge features and scores
@@ -239,10 +244,10 @@ def _plot_match_panel(features, target, annotations, feature_type='continuous', 
                       annotation_header=None, annotation_label_size=9, plot_colname=False,
                       dpi=DPI, filepath=None):
     """
-    Plot match panel.
+    Plot make_match_panel panel.
     :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
-    :param target: pandas Series; (n_elements); must have indices, which must match features's columns
-    :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must match features's
+    :param target: pandas Series; (n_elements); must have indices, which must make_match_panel features's columns
+    :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must make_match_panel features's
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number;

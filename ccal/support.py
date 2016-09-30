@@ -1084,13 +1084,13 @@ def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
     return fit_parameters
 
 
-def compute_against_target(features, target, function=information_coefficient, n_features=0.95, ascending=False,
-                           n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30):
+def match(features, target, function=information_coefficient, n_features=0.95, ascending=False,
+          n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30):
     """
-    Compute: ith _score_dataframe_against_series = function(ith feature, target).
+    Compute: ith score = function(ith feature, target).
     Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
-    :param target: pandas Series; (n_samples); must have name and indices, which must match features's column index
+    :param target: pandas Series; (n_samples); must have name and indices, which must make_match_panel features's column index
     :param function: function; scoring function
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
