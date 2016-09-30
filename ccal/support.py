@@ -12,14 +12,16 @@ Authors:
 """
 
 from pip import get_installed_distributions, main
-from os import mkdir
+from os import mkdir, environ
 from os.path import abspath, split, isdir, isfile, islink
+from subprocess import Popen, PIPE
+from csv import reader, writer, excel, excel_tab
 from datetime import datetime
 import math
-from random import seed
+from operator import add, sub
 from multiprocessing import Pool, cpu_count
 
-from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, dot, isnan, argmax
+from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, dot, isnan, argmax, average
 from numpy.linalg import pinv
 from numpy.random import random_sample, random_integers, shuffle, choice
 from pandas import Series, DataFrame, concat, merge, read_csv
@@ -31,6 +33,8 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 from sklearn.manifold import MDS
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import NMF
+from sklearn.cross_validation import KFold
+from networkx import Graph, DiGraph
 import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
@@ -40,11 +44,26 @@ from matplotlib.cm import bwr, Paired
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot
 
-from . import VERBOSE, SEED
+# ======================================================================================================================
+# Parameter
+# ======================================================================================================================
+VERBOSE = True
+
+SEED = 1020
 
 EPS = finfo(float).eps
 
+CODON_TO_AMINO_ACID = {'GUC': 'V', 'ACC': 'T', 'GUA': 'V', 'GUG': 'V', 'GUU': 'V', 'AAC': 'N', 'CCU': 'P', 'UGG': 'W',
+                       'AGC': 'S', 'auc': 'I', 'CAU': 'H', 'AAU': 'N', 'AGU': 'S', 'ACU': 'T', 'CAC': 'H', 'ACG': 'T',
+                       'CCG': 'P', 'CCA': 'P', 'ACA': 'T', 'CCC': 'P', 'GGU': 'G', 'UCU': 'S', 'GCG': 'A', 'UGC': 'C',
+                       'CAG': 'Q', 'GAU': 'D', 'UAU': 'Y', 'CGG': 'R', 'UCG': 'S', 'AGG': 'R', 'GGG': 'G', 'UCC': 'S',
+                       'UCA': 'S', 'GAG': 'E', 'GGA': 'G', 'UAC': 'Y', 'GAC': 'D', 'GAA': 'E', 'AUA': 'I', 'GCA': 'A',
+                       'CUU': 'L', 'GGC': 'G', 'AUG': 'M', 'CUG': 'L', 'CUC': 'L', 'AGA': 'R', 'CUA': 'L', 'GCC': 'A',
+                       'AAA': 'K', 'AAG': 'K', 'CAA': 'Q', 'UUU': 'F', 'CGU': 'R', 'CGA': 'R', 'GCU': 'A', 'UGU': 'C',
+                       'AUU': 'I', 'UUG': 'L', 'UUA': 'L', 'CGC': 'R', 'UUC': 'F'}
+
 ro.conversion.py2ri = numpy2ri
+
 mass = importr('MASS')
 bcv = mass.bcv
 kde2d = mass.kde2d
@@ -55,7 +74,7 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 def install_libraries(libraries_needed):
     """
-    Check if `libraries_needed` are installed; if not, then install using pip.
+    Check if libraries_needed are installed; if not, install using pip.
     :param libraries_needed: iterable; library names
     :return: None
     """
@@ -65,22 +84,27 @@ def install_libraries(libraries_needed):
     # Get currently installed libraries
     libraries_installed = [lib.key for lib in get_installed_distributions()]
 
-    # If any of the `libraries_needed` is not in the currently installed libraries, then install it using pip
+    # If any of the libraries_needed is not in the currently installed libraries, then install it using pip
     for lib in libraries_needed:
         if lib not in libraries_installed:
             print_log('{} not found; installing it using pip ...'.format(lib))
             main(['install', lib])
 
 
-def plant_seed(a_seed):
+def source_environment(filepath):
     """
-    Set random seed.
-    :param a_seed: int;
-    :return: None
+    Update environment using source_environment.
+    :param filepath:
+    :return:
     """
 
-    seed(a_seed)
-    print_log('Planted a random seed {}.'.format(a_seed))
+    print_log('Sourcing {} ...'.format(filepath))
+
+    for line in Popen('./{}; env'.format(filepath), stdout=PIPE, universal_newlines=True, shell=True).stdout:
+        key, _, value = line.partition('=')
+        key, value = key.strip(), value.strip()
+        environ[key] = value
+        print_log('\t{} = {}'.format(key, value))
 
 
 # ======================================================================================================================
@@ -88,7 +112,7 @@ def plant_seed(a_seed):
 # ======================================================================================================================
 def parallelize(function, list_of_args, n_jobs=None):
     """
-    Apply function on args with parallel computing using `n_jobs` jobs.
+    Apply function on args with parallel computing using n_jobs jobs.
     :param function: function;
     :param list_of_args: list-like; function's args
     :param n_jobs: int; if not specified, parallelize to all CPUs
@@ -107,9 +131,9 @@ def parallelize(function, list_of_args, n_jobs=None):
 # ======================================================================================================================
 # File
 # ======================================================================================================================
-def establish_path(filepath):
+def establish_filepath(filepath):
     """
-    If the path up to the deepest directory in `filepath` doesn't exist, make the path up to the deepest directory.
+    If the path up to the deepest directory in filepath doesn't exist, make the path up to the deepest directory.
     :param filepath: str;
     :return: None
     """
@@ -129,9 +153,51 @@ def establish_path(filepath):
         print_log('Created directory {}.'.format(d))
 
 
+def split_file_extention(filepath):
+    """
+    Return the base filepath and extension as a tuple.
+    :param filepath: str;
+    :return: str and str;
+    """
+
+    split_filepath = filepath.split('.')
+    base = ''.join(split_filepath[:-1])
+    extension = split_filepath[-1]
+    return base, extension
+
+
+def count_n_lines_in_file(filepath):
+    """
+    Count the number of lines in filepath.
+    :param filepath: str;
+    :return: int;
+    """
+
+    with open(filepath) as f:
+        i = -1
+        for i, x in enumerate(f):
+            pass
+    return i + 1
+
+
+def convert_csv_to_tsv(filepath):
+    """
+    Convert .csv file to .tsv file.
+    :param filepath: str;
+    :return: None
+    """
+
+    with open(filepath, 'rU') as infile:
+        r = reader(infile, dialect=excel)
+    with open(filepath.strip('.csv') + '.tsv', 'w') as outfile:
+        w = writer(outfile, dialect=excel_tab)
+    for line in r:
+        w.writerow(line)
+
+
 def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, column_name=None):
     """
-    Read a .gct (`filepath`) and convert it into a pandas DataFrame.
+    Read a .gct (filepath) and convert it into a pandas DataFrame.
     :param filepath: str;
     :param fill_na: *; value to replace NaN in the DataFrame
     :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
@@ -176,10 +242,10 @@ def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, colum
 
 def write_gct(pandas_object, filepath, descriptions=None):
     """
-    Write a `pandas_object` to a `filepath` as a .gct.
+    Write a pandas_object to a filepath as a .gct file.
     :param pandas_object: pandas DataFrame or Serires; (n_samples, m_features)
     :param filepath: str;
-    :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gct
+    :param descriptions: iterable; (n_rows of pandas_object); description column for the .gct
     :return: None
     """
 
@@ -211,7 +277,7 @@ def write_gct(pandas_object, filepath, descriptions=None):
 
 def read_gmt(filepath, drop_description=True):
     """
-    Read a .gmt file.
+    Read filepath, a .gmt file.
     :param filepath:
     :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
     :return: pandas DataFrame; (n_gene_sets, n_genes_in_the_largest_gene_set)
@@ -248,10 +314,10 @@ def read_gmt(filepath, drop_description=True):
 
 def write_gmt(pandas_object, filepath, descriptions=None):
     """
-    Write a `pandas_object` to a `filepath` as a .gmt.
+    Write a pandas_object to a filepath as a .gmt file.
     :param pandas_object: pandas DataFrame or Serires; (n_samples, m_features)
     :param filepath: str;
-    :param descriptions: iterable; (n_rows of `pandas_object`); description column for the .gmt
+    :param descriptions: iterable; (n_rows of pandas_object); description column for the .gmt
     :return: None
     """
 
@@ -274,20 +340,69 @@ def write_gmt(pandas_object, filepath, descriptions=None):
     obj.to_csv(filepath, sep='\t')
 
 
-def write_dictionary(dictionary, filepath, key_name, value_name):
+def read_dictionary(filepath, sep='\t', switch=False):
+    """
+    Make a dictionary from <mapping_file>: key<sep>value.
+    By default, 1st column is the key and the 2nd value, and use tab delimeter.
+    :param filepath:
+    :param sep:
+    :param switch:
+    :return:
+    """
+
+    # Set column for key and value
+    if switch:
+        column_names = ['value', 'key']
+    else:
+        column_names = ['key', 'value']
+
+    # Load mapping info; drop rows with NaN and duplicates
+    mapping = read_csv(filepath, sep=sep, names=column_names).dropna().drop_duplicates()
+
+    # Sort by key
+    mapping.sort(columns='key', inplace=True)
+
+    # Loop to make dictionary
+    dictionary = dict()
+    prev = None
+    temp = set()
+
+    for i, s in mapping.iterrows():
+
+        # Key and value
+        k = s.ix['key']
+        v = s.ix['value']
+
+        # Add to dictionary when seeing new key
+        if k != prev and prev:
+            dictionary[prev] = temp
+            temp = set()
+
+        # Keep accumulating value for consecutive key
+        temp.add(v)
+        prev = k
+
+    # Last addition to the dictionary for the edge case
+    dictionary[prev] = temp
+
+    return dictionary
+
+
+def write_dictionary(dictionary, filepath, key_name, value_name, sep='\t'):
     """
     Write a dictionary as a 2-column-tab-separated file.
     :param dictionary: dict;
     :param filepath: str;
     :param key_name; str;
     :param value_name; str;
+    :param sep: str; separator
     :return: None
     """
 
     with open(filepath, 'w') as f:
         f.write('{}\t{}\n'.format(key_name, value_name))
         for k, v in sorted(dictionary.items()):
-            f.writelines('{}\t{}\n'.format(k, v))
+            f.write('{}{}{}\n'.format(k, sep, v))
 
 
 # ======================================================================================================================
@@ -296,13 +411,13 @@ def write_dictionary(dictionary, filepath, key_name, value_name):
 # TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
 def print_log(string):
     """
-    Print `string` together with logging information.
+    Print string together with logging information.
     :param string: str; message to printed
     :return: None
     """
 
     if VERBOSE:
-        print('<{}> {}'.format(timestamp(time_only=True), string))
+        print_log('<{}> {}'.format(timestamp(time_only=True), string))
 
 
 def timestamp(time_only=False):
@@ -345,12 +460,91 @@ def untitle_string(string):
     return string.lower().replace(' ', '_')
 
 
+def clean_string(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char='_'):
+    """
+    Return a copy of string that has all non-allowed characters replaced by a new character (default: underscore).
+    :param string:
+    :param illegal_chars:
+    :param replacement_char:
+    :return:
+    """
+
+    new_string = string
+    for illegal_char in illegal_chars:
+        new_string = new_string.replace(illegal_char, replacement_char)
+    return new_string
+
+
+def cast_string_to_int_float_bool_or_str(string):
+    """
+    Convert a <string> into the following data types (return the first successful): int, float, bool, or str.
+    :param string:
+    :return:
+    """
+
+    value = string.strip()
+
+    for var_type in [int, float]:
+        try:
+            converted_var = var_type(value)
+            return converted_var
+        except ValueError:
+            pass
+
+    if value == 'True':
+        return True
+    elif value == 'False':
+        return False
+
+    return str(value)
+
+
+def indent_string(string, n_tabs=1):
+    """
+    Indent block of text by adding a n_tabs number of tabs (default 1) to the beginning of each line.
+    :param string:
+    :param n_tabs:
+    :return:
+    """
+
+    return '\n'.join(['\t' * n_tabs + line for line in string.split('\n')])
+
+
+# ======================================================================================================================
+# Number
+# ======================================================================================================================
+# TODO: combine with round_significant_figure
+def round_number(number):
+    """
+    Round <number> to the nearest integer.
+    :param number:
+    :return:
+    """
+
+    y = round(float(number)) - 0.5
+    return int(y) + (y > 0)
+
+
+def round_significant_figure(number, n):
+    """
+    Round <number> to <n> significant figures.
+    :param number:
+    :param n:
+    :return:
+    """
+
+    if number == 0:
+        return 0
+    else:
+        return round(number, -int(math.floor(math.log10(abs(number)))) + (n - 1))
+
+
 # ======================================================================================================================
 # Equation
 # ======================================================================================================================
 def exponential_function(x, a, k, c):
     """
-    Apply exponential function on `_nmf_and_score`.
+    Apply exponential function on _nmf_and_score.
     :param x: array-like; independent variables
     :param a: number; parameter a
     :param k: number; parameter k
@@ -362,11 +556,151 @@ def exponential_function(x, a, k, c):
 
 
 # ======================================================================================================================
+# Dictionary
+# ======================================================================================================================
+def dict_merge_with_function(function, dict_1, dict_2):
+    """
+    Apply <function> to values keyed by the same key in <dict_1> and <dict_2>.
+    :param function:
+    :param dict_1:
+    :param dict_2:
+    :return:
+    """
+
+    new_dict = {}
+    all_keys = set(dict_1.keys()).union(dict_2.keys())
+    for k in all_keys:
+        if k in dict_1 and k in dict_2:
+            new_dict[k] = function(dict_1[k], dict_2[k])
+        elif k in dict_1:
+            new_dict[k] = dict_1[k]
+        else:
+            new_dict[k] = dict_2[k]
+    return new_dict
+
+
+def dict_add(dict_1, dict_2):
+    """
+    Add <dict_1> and <dict_2>.
+    :param dict_1:
+    :param dict_2:
+    :return:
+    """
+
+    return dict_merge_with_function(add, dict_1, dict_2)
+
+
+def dict_subtract(dict_1, dict_2):
+    """
+    Subtract <dict_2> from <dict_1>.
+    :param dict_1:
+    :param dict_2:
+    :return:
+    """
+
+    return dict_merge_with_function(sub, dict_1, dict_2)
+
+
+# ======================================================================================================================
 # Array-like
 # ======================================================================================================================
+def compute_sliding_mean(vector, window_size=1):
+    """
+    Return a vector of means for each <window_size> in <vector>.
+    :param vector:
+    :param window_size:
+    :return:
+    """
+
+    m = zeros(len(vector))
+    for i in range(len(vector)):
+        m[i] = sum(vector[max(0, i - window_size):min(len(vector), i + window_size + 1)]) / float(window_size * 2 + 1)
+    return m
+
+
+def compute_geometric_mean(vector):
+    """
+    Return the geometric mean (the n-th root of the product of n terms) of an vector.
+    :param vector:
+    :return:
+    """
+    product = vector[0]
+    for n in vector[1:]:
+        product *= n
+    return product ** (1 / len(vector))
+
+
+def quantize(vector, precision_factor):
+    """
+    Return a copy of <vector> that is scaled by <precision_factor> and then rounded to the nearest integer.
+    To re-scale, simply divide by <precision_factor>.
+    Note that because of rounding, an open interval from (x, y) will give rise to up to
+    (x - y) * <precision_factor> + 1 bins.
+    :param vector:
+    :param precision_factor:
+    :return:
+    """
+
+    return (asarray(vector) * precision_factor).round(0)
+
+
+def group_iterable(iterable, n=2, partial_final_item=False):
+    """
+    Given iterable, return sub-lists made of n items.
+    :param iterable:
+    :param n:
+    :param partial_final_item:
+    :return:
+    """
+
+    accumulator = []
+    for item in iterable:
+        accumulator.append(item)
+        if len(accumulator) == n:
+            yield accumulator
+            accumulator = []
+    if len(accumulator) != 0 and (len(accumulator) == n or partial_final_item):
+        yield accumulator
+
+
+def count_n_occurrences_of_all_items(iterable, case_sensitive=True):
+    """
+    Count the number of occurrences of items in iterable.
+    :param iterable:
+    :param case_sensitive:
+    :return: dict; a dictionary keyed by value holding the number of occurrences of that value
+    """
+
+    freq_dict = {}
+    for item in iterable:
+        if not case_sensitive:
+            item = item.lower()
+        if item not in freq_dict:
+            freq_dict[item] = 1
+        else:
+            freq_dict[item] += 1
+    return freq_dict
+
+
+def get_mode(iterable, rank=0, excluded=()):
+    """
+    Return the most common object in <iterable> that is not in <exclude>.
+    This is the default behavior, if <rank> is 0.
+    If <rank> != 0, return the <rank>+1-most common item in <iterable>.
+    :param iterable:
+    :param rank:
+    :param excluded:
+    :return:
+    """
+
+    exclude_set = set(excluded)
+    return sorted([f for f in count_n_occurrences_of_all_items(iterable).items() if f[0] not in exclude_set],
+                  key=lambda x: x[1], reverse=True)[rank][0]
+
+
 def get_unique_in_order(iterable):
     """
-    Get unique elements in order or appearance in `iterable`.
+    Get unique elements in order or appearance in iterable.
     :param iterable: iterable;
     :return: list;
     """
@@ -398,9 +732,32 @@ def explode(series):
 # ======================================================================================================================
 # Matrix-like
 # ======================================================================================================================
+def flatten_nested_iterables(nested_iterable, list_type=(list, tuple)):
+    """
+    Flatten an arbitrarily-deep nested_list.
+    :param nested_iterable: a list to flatten_nested_iterables
+    :param list_type: valid variable types to flatten_nested_iterables
+    :return: list; a flattened list
+    """
+
+    type_ = type(nested_iterable)
+    nested_iterable = list(nested_iterable)
+    i = 0
+    while i < len(nested_iterable):
+        while isinstance(nested_iterable[i], list_type):
+            if not nested_iterable[i]:
+                nested_iterable.pop(i)
+                i -= 1
+                break
+            else:
+                nested_iterable[i:i + 1] = nested_iterable[i]
+        i += 1
+    return type_(nested_iterable)
+
+
 def drop_nan_columns(arrays):
     """
-    Keep only not-NaN column positions in all `arrays`.
+    Keep only not-NaN column positions in all arrays.
     :param arrays: iterable of numpy arrays; must have the same length
     :return: list of numpy arrays; none of the arrays contains NaN
     """
@@ -445,7 +802,7 @@ def count_coclusterings(sample_x_clustering):
 
 def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
     """
-    Multidimentional scale rows of `pandas_object` from <n_cols>D into 2D.
+    Multidimentional scale rows of pandas_object from <n_cols>D into 2D.
     :param dataframe: pandas DataFrame; (n_points, n_dimentions)
     :param distance_function: function; capable of computing the distance between 2 vectors
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
@@ -521,7 +878,7 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
 
 def normalize_series(series, method='-0-', n_ranks=10000):
     """
-    Normalize a pandas `series`.
+    Normalize a pandas series.
     :param series: pandas Series;
     :param method: str; normalization type; {'-0-', '0-1', 'rank'}
     :param n_ranks: number; normalization factor for rank normalization: rank / size * n_ranks
@@ -549,11 +906,47 @@ def normalize_series(series, method='-0-', n_ranks=10000):
 
 
 # ======================================================================================================================
+# Math
+# ======================================================================================================================
+def cross_validate(model, data, target, n_partitions):
+    """
+    Cross-validata.
+    :param model:
+    :param data:
+    :param target:
+    :param n_partitions:
+    :return:
+    """
+
+    # Initialize indexes for cross validation folds
+    folds = KFold(len(data), n_partitions, shuffle=True)
+
+    # List to keep cross validation scores
+    scores = []
+
+    # For each fold
+    for k, (train_index, test_index) in enumerate(folds):
+        # Partition training and testing data sets
+        x_train, x_test = data.iloc[train_index], data.iloc[test_index]
+        y_train, y_test = target.iloc[train_index], target.iloc[test_index]
+
+        # Learn
+        model.fit(x_train, y_train.iloc[:, 0])
+
+        # Score the learned fit
+        score = pearsonr(model.predict(x_test), y_test.iloc[:, 0])
+        scores.append(score)
+
+    return average([s[0] for s in scores]), average([s[1] for s in scores])
+
+
+# ======================================================================================================================
 # Information theory
 # ======================================================================================================================
 def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     """
-    Compute the information coefficient between `_nmf_and_score` and `y`, which can be either continuous, categorical, or binary
+    Compute the information coefficient between _nmf_and_score and y, which can be composed of either continuous,
+    categorical, or binary values.
     :param x: numpy array;
     :param y: numpy array;
     :param n_grids: int; number of grid lines in a dimention when estimating bandwidths
@@ -616,7 +1009,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
 # ======================================================================================================================
 def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
     """
-    Compute `function`(`_nmf_and_score`, `y`) and p-value using permutation test.
+    Compute function(_nmf_and_score, y) and p-value using permutation test.
     :param x: array-like;
     :param y: array-like;
     :param function: function;
@@ -628,7 +1021,6 @@ def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutati
     score = function(x, y)
 
     # Compute scores against permuted target
-    # TODO: decide which of _nmf_and_score and y is the target
     permutation_scores = empty(n_permutations)
     shuffled_target = array(y)
     for p in range(n_permutations):
@@ -642,7 +1034,7 @@ def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutati
 
 def compare_matrices(dataframe1, dataframe2, function, axis=0, is_distance=False):
     """
-    Make association or distance matrix of `dataframe1` and `dataframe2` by row (`axis=1`) or by column (`axis=0`).
+    Make association or distance matrix of dataframe1 and dataframe2 by row (axis=1) or by column (axis=0).
     :param dataframe1: pandas DataFrame;
     :param dataframe2: pandas DataFrame;
     :param function: function; function used to compute association or dissociation
@@ -677,7 +1069,7 @@ def compare_matrices(dataframe1, dataframe2, function, axis=0, is_distance=False
 
 def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
     """
-    Fit rows or columns of `matrix` to `function_to_fit`.
+    Fit rows or columns of matrix to function_to_fit.
     :param matrix: pandas DataFrame;
     :param function_to_fit: function;
     :param axis: int;
@@ -697,10 +1089,10 @@ def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
 def compute_against_target(features, target, function=information_coefficient, n_features=0.95, ascending=False,
                            n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30):
     """
-    Compute: ith _score_dataframe_against_series = function(ith `feature`, `target`).
-    Compute confidence interval (CI) for `n_features` features. And compute p-val and FDR (BH) for all features.
+    Compute: ith _score_dataframe_against_series = function(ith feature, target).
+    Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
-    :param target: pandas Series; (n_samples); must have name and indices, which must match `features`'s column index
+    :param target: pandas Series; (n_samples); must have name and indices, which must match features's column index
     :param function: function; scoring function
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
@@ -714,7 +1106,7 @@ def compute_against_target(features, target, function=information_coefficient, n
     """
 
     #
-    # Compute scores: scores[i] = `features`[i] vs. `target`
+    # Compute scores: scores[i] = features[i] vs. target
     #
     if n_jobs == 1:  # Non-parallel computing
         print_log('Scoring (without parallelizing) ...')
@@ -780,7 +1172,7 @@ def compute_against_target(features, target, function=information_coefficient, n
                     indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
                     print_log('Bootstrapping top & bottom {} features ...'.format(n_features))
 
-            # Bootstrap: for `n_sampling` times, randomly choose 63% of the samples, _score_dataframe_against_series, and build _score_dataframe_against_series distribution
+            # Bootstrap: for n_sampling times, randomly choose 63% of the samples, score, and build score distribution
             sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
             for c_i in sampled_scores:
                 # Randomize
@@ -790,7 +1182,7 @@ def compute_against_target(features, target, function=information_coefficient, n
                 # Score
                 sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
 
-            # Compute confidence interval for _score_dataframe_against_series using bootstrapped _score_dataframe_against_series distribution
+            # Compute scores' confidence intervals using bootstrapped score distributions
             # TODO: improve confidence interval calculation
             z_critical = norm.ppf(q=confidence)
             confidence_intervals = sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)),
@@ -868,7 +1260,7 @@ def compute_against_target(features, target, function=information_coefficient, n
 
 def _score_dataframe_against_series(args):
     """
-    Compute: ith _score_dataframe_against_series = function(ith `feature`, `target`).
+    Compute: ith _score_dataframe_against_series = function(ith feature, target).
     :param args: list-like;
         (DataFrame (n_features, m_samples); features, Series (m_samples); target, function)
     :return: pandas DataFrame; (n_features, 1 ('Score'))
@@ -880,7 +1272,7 @@ def _score_dataframe_against_series(args):
 
 def _score_dataframe_against_permuted_series(args):
     """
-    Compute: ith _score_dataframe_against_series = function(ith `feature`, permuted `target`) for n_permutations times.
+    Compute: ith _score_dataframe_against_series = function(ith feature, permuted target) for n_permutations times.
     :param args: list-like;
         (DataFrame (n_features, m_samples); features, Series (m_samples); target, function, int; n_permutations)
     :return: pandas DataFrame; (n_features, n_permutations)
@@ -898,11 +1290,51 @@ def _score_dataframe_against_permuted_series(args):
 
 
 # ======================================================================================================================
+# Network
+# ======================================================================================================================
+def make_network_from_similarity_matrix(similarity_matrix):
+    """
+    Make graph from a similarity matrix.
+    :param similarity_matrix:
+    :return:
+    """
+
+    graph = Graph()
+    for i, s in similarity_matrix.iterrows():
+        for j in s.index:
+            graph.add_edge(s.name, j, weight=s.ix[j])
+
+
+def make_network_from_edge_file(edge_file, di=False, sep='\t'):
+    """
+    Make networkx graph from <edge_file>: from<sep>to.
+    :param edge_file:
+    :param di: boolean, directed or not
+    :param sep: separator, default \t
+    :return:
+    """
+    # Load edge
+    e = read_csv(edge_file, sep=sep)
+
+    # Make graph from edge
+    if di:
+        # Directed graph
+        g = DiGraph()
+    else:
+        # Undirected graph
+        g = Graph()
+
+    g.add_edges_from(e.values)
+
+    return g
+
+
+# ======================================================================================================================
 # Cluster
 # ======================================================================================================================
 def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
     """
-    Consensus cluster `matrix`'s columns into k clusters.
+    Consensus cluster matrix's columns into k clusters.
     :param matrix: pandas DataFrame; (n_features, m_samples)
     :param ks: iterable; list of ks used for clustering
     :param max_std: number; threshold to clip standardized values
@@ -910,7 +1342,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
 
-    # '-0-' normalize by features and clip values `max_std` standard deviation away; then '0-1' normalize by features
+    # '-0-' normalize by features and clip values max_std standard deviation away; then '0-1' normalize by features
     clipped_matrix = normalize_pandas_object(matrix, method='-0-', axis=1).clip(-max_std, max_std)
     normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
 
@@ -929,7 +1361,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
     for k in ks:
         print_log('k={} ...'.format(k))
 
-        # For `n_clusterings` times, permute distance matrix with repeat, and cluster
+        # For n_clusterings times, permute distance matrix with repeat, and cluster
 
         # Make sample _nmf_and_score clustering matrix
         sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
@@ -972,7 +1404,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
                   init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
                   shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
-    Perform NMF with k from `ks` and _score_dataframe_against_series each NMF decomposition.
+    Perform NMF with k from ks and _score_dataframe_against_series each NMF decomposition.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param method: str; {'cophenetic_correlation'}
@@ -1033,14 +1465,15 @@ def _nmf_and_score(args):
     :return:
     """
 
-    matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta = args
+    matrix, k, n_clusterings = args[:3]
+    init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta = args[3:]
 
     print_log('NMF and scoring k={} ...'.format(k))
 
     nmf_result_dict = {}
     nmf_score_dict = {}
 
-    # NMF cluster `n_clustering`
+    # NMF cluster n_clustering
     sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
     for i in range(n_clusterings):
         if i % 10 == 0:
@@ -1074,7 +1507,7 @@ def _nmf_and_score(args):
 def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED,
         alpha=0, l1_ratio=0, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
-    Nonenegative matrix factorize `matrix` with k from `ks`.
+    Nonenegative matrix factorize matrix with k from ks.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param init:
@@ -1117,7 +1550,7 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
     return nmf_results
 
 
-def nnls_matrix(a, b, method='nnls'):
+def solve_matrix_linear_equation(a, b, method='nnls'):
     """
     Solve a * x = b of (n, k) * (k, m) = (n, m).
     :param a: numpy array; (n, k)
@@ -1148,7 +1581,7 @@ def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None):
     :param n_rows: int;
     :param n_cols: int;
     :param n_categories: None or int; continuous if None and categorical if int
-    :return: pandas DataFrame or Series; (`n_rows`, `n_cols`) or (1, `n_cols`)
+    :return: pandas DataFrame or Series; (n_rows, n_cols) or (1, n_cols)
     """
 
     # Set up indices and column names
@@ -1188,7 +1621,7 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
                     xticklabels=True, yticklabels=True, xticklabels_rotation=90, yticklabels_rotation=0,
                     row_colors=None, col_colors=None, dpi=DPI, filepath=None):
     """
-    Plot heatmap for `dataframe`.
+    Plot heatmap for dataframe.
     :param dataframe: pandas DataFrame;
     :param figure_size: tuple; (n_rows, n_cols)
     :param title: str;
@@ -1198,13 +1631,15 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
     :param xticklabels_rotation: number;
     :param yticklabels_rotation: number;
     :param row_colors: list-like or pandas DataFrame/Series; List of colors to label for either the rows.
-        Useful to evaluate whether samples within a group are clustered together. Can use nested lists or DataFrame for
-        multiple color levels of labeling. If given as a DataFrame or Series, labels for the colors are extracted from
+        Useful to evaluate whether samples within a group_iterable are clustered together.
+        Can use nested lists or DataFrame for multiple color levels of labeling.
+        If given as a DataFrame or Series, labels for the colors are extracted from
         the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
         by their index, ensuring colors are drawn in the correct order.
     :param col_colors: list-like or pandas DataFrame/Series; List of colors to label for either the column.
-        Useful to evaluate whether samples within a group are clustered together. Can use nested lists or DataFrame for
-        multiple color levels of labeling. If given as a DataFrame or Series, labels for the colors are extracted from
+        Useful to evaluate whether samples within a group_iterable are clustered together.
+        Can use nested lists or DataFrame for multiple color levels of labeling.
+        If given as a DataFrame or Series, labels for the colors are extracted from
         the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
         by their index, ensuring colors are drawn in the correct order.
     :param dpi: int;
@@ -1230,8 +1665,38 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
         _save_plot(filepath, dpi=dpi)
 
 
-def plot_clusterings(dataframe, figure_size=FIGURE_SIZE, title='Clustering Labels', title_fontsize=20, dpi=DPI,
-                     filepath=None):
+def plot_x_vs_y(x, y, figure_size=FIGURE_SIZE, title='title', title_fontsize=20, xlabel='xlabel', ylabel='ylabel',
+                dpi=DPI, filepath=None):
+    """
+    Plot x vs y.
+    :param x:
+    :param y:
+    :param figure_size:
+    :param title:
+    :param title_fontsize:
+    :param xlabel:
+    :param ylabel:
+    :param dpi:
+    :param filepath:
+    :return:
+    """
+    plt.figure(figsize=figure_size)
+
+    if title:
+        plt.suptitle(title, fontsize=title_fontsize, fontweight='bold')
+
+    pointplot(x, y)
+
+    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
+    plt.gca().set_xlabel(xlabel, **label_font_properties)
+    plt.gca().set_ylabel(ylabel, **label_font_properties)
+
+    if filepath:
+        _save_plot(filepath, dpi=dpi)
+
+
+def plot_clustering_per_k(dataframe, figure_size=FIGURE_SIZE, title='Clustering per k', title_fontsize=20, dpi=DPI,
+                          filepath=None):
     """
     Plot clustering matrix.
     :param dataframe: pandas DataFrame; (n_clusterings, n_samples)
@@ -1269,7 +1734,7 @@ def plot_clusterings(dataframe, figure_size=FIGURE_SIZE, title='Clustering Label
 def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=False, max_std=3,
                     figure_size=FIGURE_SIZE, title=None, title_fontsize=20, dpi=DPI, filepath=None):
     """
-    Plot `nmf_results` dictionary (can be generated by `ccal.analyze.nmf` function).
+    Plot nmf_results dictionary (can be generated by ccal.analyze.nmf function).
     :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
     :param k: int; k for NMF
     :param w_matrix: pandas DataFrame
@@ -1292,7 +1757,7 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
 
     # Initialize a PDF
     if filepath:
-        establish_path(filepath)
+        establish_filepath(filepath)
         if not filepath.endswith('.pdf'):
             filepath += '.pdf'
         pdf = PdfPages(filepath)
@@ -1356,45 +1821,13 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
         pdf.close()
 
 
-def plot_clustering_scores(scores, figure_size=FIGURE_SIZE, title='Clustering Score vs. k', title_fontsize=20, dpi=DPI,
-                           filepath=None):
-    """
-    Plot `scores` dictionary.
-    :param scores: dict or pandas DataFrame; {k: _score_dataframe_against_series}
-    :param figure_size: tuple;
-    :param title: str;
-    :param title_fontsize: number;
-    :param dpi: int;
-    :param filepath: str;
-    :return: None
-    """
-
-    if isinstance(scores, DataFrame):
-        scores = scores.to_dict()
-        scores = scores.popitem()[1]
-
-    plt.figure(figsize=figure_size)
-
-    if title:
-        plt.suptitle(title, fontsize=title_fontsize, fontweight='bold')
-
-    pointplot(x=[k for k, v in scores.items()], y=[v for k, v in scores.items()])
-
-    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
-    plt.gca().set_xlabel('k', **label_font_properties)
-    plt.gca().set_ylabel('Score', **label_font_properties)
-
-    if filepath:
-        _save_plot(filepath, dpi=dpi)
-
-
 def _save_plot(filepath, dpi=DPI):
     """
-    Establish filepath and save plot with resolution of dpi.
+    Establish filepath and save plot at dpi resolution.
     :param filepath: str;
     :param dpi: int;
     :return: None
     """
 
-    establish_path(filepath)
+    establish_filepath(filepath)
     plt.savefig(filepath, dpi=dpi, bbox_inches='tight')
