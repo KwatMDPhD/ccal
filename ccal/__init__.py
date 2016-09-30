@@ -13,6 +13,10 @@ Authors:
 
 from random import seed
 
+SEED = 20121020
+seed(SEED)
+
+VERBOSE = True
 from .support import read_gct, write_gct, simulate_dataframe_or_series, plot_clustermap, plot_nmf_result, plot_x_vs_y
 from .onco_gps import define_components, define_states, make_map
 from .association import catalogue, match, compare
@@ -20,8 +24,3 @@ from .association import catalogue, match, compare
 print('=' * 80)
 print('=' * 17 + ' Computational Cancer Analysis Library (CCAL) ' + '=' * 17)
 print('=' * 80)
-
-SEED = 20121020
-seed(SEED)
-
-VERBOSE = True

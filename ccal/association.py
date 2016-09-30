@@ -17,9 +17,9 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from seaborn import heatmap
 
-from .support import print_log, establish_path, read_gct, untitle_string, information_coefficient, \
+from .support import print_log, establish_filepath, read_gct, untitle_string, information_coefficient, \
     get_unique_in_order, normalize_pandas_object, compare_matrices, compute_against_target, DPI, CMAP_CONTINUOUS, \
-    CMAP_CATEGORICAL, CMAP_BINARY, _save_plot, plot_clustermap
+    CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap
 
 
 # ======================================================================================================================
@@ -170,7 +170,7 @@ def match(features, target, feature_type='continuous', target_type='continuous',
 
     # Save features merged with their scores
     if filepath_prefix:
-        establish_path(filepath_prefix)
+        establish_filepath(filepath_prefix)
         features_and_scores.to_csv(filepath_prefix + '.txt', sep='\t')
 
     # Make annotations
@@ -324,7 +324,7 @@ def _plot_features_against_target(features, ref, annotations, feature_type='cont
                 size=annotation_label_size, weight='bold')
 
     if filepath:
-        _save_plot(filepath, dpi=dpi)
+        save_plot(filepath, dpi=dpi)
 
 
 # ======================================================================================================================

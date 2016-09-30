@@ -10,7 +10,6 @@ Authors:
         ptamayo@ucsd.edu
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
-# TODO: document
 
 from os.path import join
 from numpy import asarray, zeros, argmax, linspace
@@ -26,10 +25,11 @@ from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import violinplot, boxplot
 
-from .support import SEED, EPS, print_log, establish_path, write_gct, write_dictionary, fit_matrix, nmf_and_score, \
+from . import SEED
+from .support import EPS, print_log, establish_filepath, write_gct, write_dictionary, fit_matrix, nmf_and_score, \
     information_coefficient, normalize_pandas_object, consensus_cluster, exponential_function, mds, \
-    compute_score_and_pvalue, FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, _save_plot, \
-    plot_clustermap, plot_clusterings, plot_nmf_result, plot_clustering_scores
+    compute_score_and_pvalue, FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, \
+    plot_clustermap, plot_clustering_per_k, plot_nmf_result, plot_x_vs_y
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -64,12 +64,14 @@ def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_si
 
     # Make nmf directory
     directory_path = join(directory_path, 'nmf/')
-    establish_path(directory_path)
+    establish_filepath(directory_path)
 
     # nmf/scores{.pdf, .gct}
     print_log('Saving and plotting NMF scores ...')
     write_dictionary(nmf_scores, join(directory_path, 'scores.txt'), key_name='k', value_name='cophenetic_correlation')
-    plot_clustering_scores(nmf_scores, figure_size=figure_size, dpi=dpi, filepath=join(directory_path, 'scores.pdf'))
+    plot_x_vs_y(sorted(nmf_scores.keys()), [nmf_scores[k] for k in sorted(nmf_scores.keys())],
+                figure_size=figure_size, title='NMF Cophenetic Score vs. k', xlabel='k', ylabel='NMF Cophenetic Score',
+                dpi=dpi, filepath=join(directory_path, 'scores.pdf'))
 
     # nmf/matrices/nmf_k{...}_{w, h}.gct
     print_log('Saving and plotting NMF results ...')
@@ -92,7 +94,7 @@ def _save_nmf_results(nmf_results, filepath_prefix):
     :return: None
     """
 
-    establish_path(filepath_prefix)
+    establish_filepath(filepath_prefix)
     for k, v in nmf_results.items():
         write_gct(v['W'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
         write_gct(v['H'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
@@ -121,15 +123,15 @@ def define_states(h, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE, t
 
     # Save
     if filepath_prefix:
-        establish_path(filepath_prefix)
+        establish_filepath(filepath_prefix)
         write_gct(labels, filepath_prefix + '_labels.gct')
         write_dictionary(scores, filepath_prefix + '_clustering_scores.txt',
                          key_name='k', value_name='cophenetic_correlation')
 
     # Plot
-    plot_clusterings(labels, title=title, filepath=filepath_prefix + '_labels.pdf')
-    plot_clustering_scores(scores, figure_size=figure_size, filepath=filepath_prefix + '_clustering_scores.pdf',
-                           dpi=dpi)
+    plot_clustering_per_k(labels, title=title, filepath=filepath_prefix + '_labels.pdf')
+    plot_x_vs_y(scores, figure_size=figure_size, filepath=filepath_prefix + '_clustering_scores.pdf',
+                dpi=dpi)
 
     return labels, scores
 
@@ -345,7 +347,8 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_tes
                           bcv(asarray(training_samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
     for s in sorted(training_samples.ix[:, 'state'].unique()):
         coordinates = training_samples.ix[training_samples.ix[:, 'state'] == s, ['_nmf_and_score', 'y']]
-        kde = kde2d(asarray(coordinates.ix[:, '_nmf_and_score'], dtype=float), asarray(coordinates.ix[:, 'y'], dtype=float),
+        kde = kde2d(asarray(coordinates.ix[:, '_nmf_and_score'], dtype=float),
+                    asarray(coordinates.ix[:, 'y'], dtype=float),
                     bandwidths, n=asarray([n_grids]), lims=asarray([0, 1, 0, 1]))
         kdes[s] = asarray(kde[2])
     # Assign the best KDE probability and state for each grid
@@ -400,7 +403,8 @@ def _get_sample_coordinates_via_pulling(component_x_coordinates, component_x_sam
         if n_influencing_components == 'all':
             n_influencing_components = component_x_samples.shape[0]
         c = c.mask(c < c.sort_values().tolist()[-n_influencing_components], other=0)
-        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, '_nmf_and_score']) / sum(c ** component_pulling_power)
+        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, '_nmf_and_score']) / sum(
+            c ** component_pulling_power)
         y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
         sample_coordinates.ix[sample, ['_nmf_and_score', 'y']] = x, y
     return sample_coordinates
@@ -495,7 +499,8 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
 
     # Plot components and their labels
-    ax_map.plot(component_coordinates.ix[:, '_nmf_and_score'], component_coordinates.ix[:, 'y'], marker='D', linestyle='',
+    ax_map.plot(component_coordinates.ix[:, '_nmf_and_score'], component_coordinates.ix[:, 'y'], marker='D',
+                linestyle='',
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
                 markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, clip_on=False,
                 aa=True, zorder=6)
@@ -514,7 +519,8 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
             component_text_verticalshift *= -1
         elif component_text_position == 'bottom':
             pass
-        x, y = component_coordinates.ix[i, '_nmf_and_score'], component_coordinates.ix[i, 'y'] + component_text_verticalshift
+        x, y = component_coordinates.ix[i, '_nmf_and_score'], component_coordinates.ix[
+            i, 'y'] + component_text_verticalshift
 
         ax_map.text(x, y, i,
                     fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
@@ -600,11 +606,13 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                 a = samples.ix[idx, 'pullratio']
             else:
                 a = 1
-            ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c, alpha=a,
+            ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+                        alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
             if a < 1:
-                ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor='none',
+                ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize,
+                            markerfacecolor='none',
                             markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                             zorder=5)
         # Plot sample legends
@@ -668,11 +676,13 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                 a = samples.ix[idx, 'pullratio']
             else:
                 a = 1
-            ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c, alpha=a,
+            ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
+                        alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                         zorder=5)
             if a < 1:
-                ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor='none',
+                ax_map.plot(s.ix['_nmf_and_score'], s.ix['y'], marker='o', markersize=sample_markersize,
+                            markerfacecolor='none',
                             markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                             zorder=5)
         # Plot sample legends
@@ -684,4 +694,4 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if filepath:
-        _save_plot(filepath, dpi=dpi)
+        save_plot(filepath, dpi=dpi)

@@ -44,13 +44,11 @@ from matplotlib.cm import bwr, Paired
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot
 
+from . import VERBOSE, SEED
+
 # ======================================================================================================================
 # Parameter
 # ======================================================================================================================
-VERBOSE = True
-
-SEED = 1020
-
 EPS = finfo(float).eps
 
 CODON_TO_AMINO_ACID = {'GUC': 'V', 'ACC': 'T', 'GUA': 'V', 'GUG': 'V', 'GUU': 'V', 'AAC': 'N', 'CCU': 'P', 'UGG': 'W',
@@ -1662,7 +1660,7 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
         t.set_rotation(yticklabels_rotation)
 
     if filepath:
-        _save_plot(filepath, dpi=dpi)
+        save_plot(filepath, dpi=dpi)
 
 
 def plot_x_vs_y(x, y, figure_size=FIGURE_SIZE, title='title', title_fontsize=20, xlabel='xlabel', ylabel='ylabel',
@@ -1692,7 +1690,7 @@ def plot_x_vs_y(x, y, figure_size=FIGURE_SIZE, title='title', title_fontsize=20,
     plt.gca().set_ylabel(ylabel, **label_font_properties)
 
     if filepath:
-        _save_plot(filepath, dpi=dpi)
+        save_plot(filepath, dpi=dpi)
 
 
 def plot_clustering_per_k(dataframe, figure_size=FIGURE_SIZE, title='Clustering per k', title_fontsize=20, dpi=DPI,
@@ -1728,7 +1726,7 @@ def plot_clustering_per_k(dataframe, figure_size=FIGURE_SIZE, title='Clustering 
     colorbar.set_ticks(list(range(1, a.max() + 1)))
 
     if filepath:
-        _save_plot(filepath, dpi=dpi)
+        save_plot(filepath, dpi=dpi)
 
 
 def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=False, max_std=3,
@@ -1821,7 +1819,7 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
         pdf.close()
 
 
-def _save_plot(filepath, dpi=DPI):
+def save_plot(filepath, dpi=DPI):
     """
     Establish filepath and save plot at dpi resolution.
     :param filepath: str;
