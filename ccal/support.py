@@ -1616,18 +1616,15 @@ DPI = 1000
 
 
 def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsize=20,
+                    row_colors=None, col_colors=None, xlabel=None, ylabel=None,
                     xticklabels=True, yticklabels=True, xticklabels_rotation=90, yticklabels_rotation=0,
-                    row_colors=None, col_colors=None, dpi=DPI, filepath=None):
+                    dpi=DPI, filepath=None):
     """
     Plot heatmap for dataframe.
     :param dataframe: pandas DataFrame;
     :param figure_size: tuple; (n_rows, n_cols)
     :param title: str;
     :param title_fontsize: number;
-    :param xticklabels: bool;
-    :param yticklabels: bool;
-    :param xticklabels_rotation: number;
-    :param yticklabels_rotation: number;
     :param row_colors: list-like or pandas DataFrame/Series; List of colors to label for either the rows.
         Useful to evaluate whether samples within a group_iterable are clustered together.
         Can use nested lists or DataFrame for multiple color levels of labeling.
@@ -1640,6 +1637,12 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
         If given as a DataFrame or Series, labels for the colors are extracted from
         the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
         by their index, ensuring colors are drawn in the correct order.
+    :param xlabel: str;
+    :param ylabel: str;
+    :param xticklabels: bool;
+    :param yticklabels: bool;
+    :param xticklabels_rotation: number;
+    :param yticklabels_rotation: number;
     :param dpi: int;
     :param filepath: str;
     :return: None
@@ -1653,6 +1656,10 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
     if title:
         figuretitle_font_properties = {'fontsize': title_fontsize, 'fontweight': 'bold'}
         plt.suptitle(title, **figuretitle_font_properties)
+
+    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
+    plt.gca().set_xlabel(xlabel, **label_font_properties)
+    plt.gca().set_ylabel(ylabel, **label_font_properties)
 
     for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set_rotation(xticklabels_rotation)

@@ -26,12 +26,13 @@ from .support import print_log, establish_filepath, read_gct, untitle_string, in
 # Match features against target
 # ======================================================================================================================
 # TODO: implement
-def catalogue(annotations, target_series=None, target_gct=None, target_df=None, target_name=None, target_axis=1,
+def catalogue(annotations, target=None, target_gct=None, target_df=None, target_name=None, target_axis=1,
               feature_type='continuous', target_type='continuous', feature_ascending=False, filepath_prefix=None):
     """
     Annotate target using multiple annotations.
-    :param annotations: list of lists; [[name, filepath_to_gct, [row_name1, row_name2, ...](optional)], ...]
-    :param target_series: pandas Series; annotation target
+    :param annotations: list of lists;
+        [[name, filepath_to_gct, [row_name, ...](optional), [feature_name, ...](optional)], ...]
+    :param target: pandas Series; annotation target
     :param target_gct: str; filepath to a file whose row or column is the annotation target
     :param target_df: DataFrame; whose row or column is the annotation target
     :param target_name: str; row or column name in target_df, either directly passed or read from target_gct
@@ -41,39 +42,36 @@ def catalogue(annotations, target_series=None, target_gct=None, target_df=None, 
     :param target_type: str; {continuous, categorical, binary}
     :param feature_ascending: bool; True if features score_dataframe_against_series increase from top to bottom, and
         False otherwise
-    :param filepath_prefix: str; filepath_prefix + '_vs_annotation_name.txt' and
-        filepath_prefix + '_vs_annotation_name.pdf' will be saved
+    :param filepath_prefix: str; filepath_prefix_vs_annotation_name.txt and filepath_prefix_vs_annotation_name.pdf
+        will be saved
     :return: None
     """
 
     # Load target
-    if not target_series:
+    if not target:
         print_log('Loading the annotation target ...')
 
         # Load and check target_df
         if target_gct:
             target_df = read_gct(target_gct)
         if not isinstance(target_df, DataFrame):
-            raise ValueError('No target_df {} ({}).'.format(target_df, type(target_df)))
+            raise ValueError('No target_df {}.'.format(target_df))
 
         # Check target_name
         if not target_name:
-            raise ValueError('No target_name {} ({}).'.format(target_name, type(target_name)))
+            raise ValueError('No target_name {}.'.format(target_name))
 
-        # Load target_series
+        # Load target
         if target_axis == 0:
-            target_series = target_df.ix[:, target_name]
+            target = target_df.ix[:, target_name]
         elif target_axis == 1:
-            target_series = target_df.ix[target_name, :]
+            target = target_df.ix[target_name, :]
         else:
             raise ValueError('Unknown target_axis {}.'.format(target_axis))
 
-    # Load annotations
-    annotation_dfs = _read_annotations(annotations)
-
-    # Match target will all annotations
-    for a_name, a_df in annotation_dfs.items():
-        match(a_df, target_series,
+    # Load annotations and match target
+    for a_name, a_df in _read_annotations(annotations).items():
+        match(a_df, target,
               feature_type=feature_type, target_type=target_type, feature_ascending=feature_ascending, n_features=0,
               filepath_prefix=filepath_prefix + '_vs_{}'.format(untitle_string(a_name)))
 
@@ -81,38 +79,52 @@ def catalogue(annotations, target_series=None, target_gct=None, target_df=None, 
 def _read_annotations(annotations):
     """
     Read annotations from .gct files.
-    :param annotations: list of lists; [[name, filepath_to_gct, [row_name1, row_name2, ...](optional)], ...]
-    :return: list of pandas DataFrames;
+    :param annotations: list of lists;
+        [[name, filepath_to_gct, [row_name, ...](optional), [feature_name, ...](optional)], ...]
+    :return: dict; {name: annotation DataFrame}
     """
 
     annotation_dfs = {}
+
+    # Read all annotations
     for a in annotations:
         print_log('Reading annotation: {} ...'.format(' ~ '.join([str(x) for x in a])))
-        try:  # Filter with features
-            a_name, a_file, a_features = a
-            annotation_dfs[a_name] = read_gct(a_file).ix[a_features, :]
-        except ValueError:  # Use all features
-            a_name, a_file = a
-            annotation_dfs[a_name] = read_gct(a_file)
+
+        a_name, a_file, a_features, a_features_names = a
+
+        # Read annotation DataFrame
+        a_df = read_gct(a_file)
+
+        # Limit to specified features
+        if a_features:
+            a_df = a_df.ix[a_features, :]
+
+            # Update specified features' names
+            if a_features_names:
+                a_df.set_index(a_features_names)
+
+        # Save
+        annotation_dfs[a_name] = a_df
+
         print_log('\t{} features & {} samples.'.format(*annotation_dfs[a_name].shape))
+
     return annotation_dfs
 
 
 def match(features, target, feature_type='continuous', target_type='continuous',
-          min_n_feature_values=1, feature_ascending=False, target_sort=True,
+          min_n_feature_values=2, feature_ascending=False, target_sort=True,
           n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, n_permutations=30,
           figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False, dpi=DPI,
           filepath_prefix=None):
     """
     Compute scores[i] = features[i] vs. target using function. Compute confidence interval (CI) for n_features
     features. Compute p-val and FDR (BH) for all features. And plot the result.
-    :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
-    :param target: pandas Series; (n_samples); must have name and indices, which must match features's column index
+    :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
+    :param target: pandas Series; (n_samples); must have name and index matching features's column names
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
-    :param min_n_feature_values: int; minimum number of non-0 values in a feature to be matched
-    :param feature_ascending: bool; True if features score_dataframe_against_series increase from top to bottom, and
-        False otherwise
+    :param min_n_feature_values: int; minimum number of unique values in a feature for it to be matched (default 2)
+    :param feature_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param target_sort: bool; sort target or not
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
@@ -123,24 +135,24 @@ def match(features, target, feature_type='continuous', target_type='continuous',
     :param title: str; plot title
     :param title_size: int; title text size
     :param annotation_label_size: int; annotation text size
-    :param plot_colname: bool; plot column names or not
+    :param plot_colname: bool; plot column names below the plot or not
     :param dpi: int; dots per square inch of pixel in the output figure
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
     :return: pandas DataFrame; scores
     """
 
-    if isinstance(features, Series):  # Convert Series into DataFrame
+    if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
         features = DataFrame(features).T
 
-    # Use intersecting columns
-    col_intersection = set(features.columns) & set(target.index)
-    if col_intersection:
+    # Use intersecting columns (samples)
+    intersection = set(features.columns) & set(target.index)
+    if intersection:
         print_log('features ({} cols) and target {} ({} cols) have {} shared columns.'.format(features.shape[1],
                                                                                               target.name,
                                                                                               target.size,
-                                                                                              len(col_intersection)))
-        features = features.ix[:, col_intersection]
-        target = target.ix[col_intersection]
+                                                                                              len(intersection)))
+        features = features.ix[:, intersection]
+        target = target.ix[intersection]
     else:
         raise ValueError(
             'features ({} cols) and target {} ({} cols) have 0 shared columns.'.format(features.shape[1],
@@ -157,7 +169,7 @@ def match(features, target, feature_type='continuous', target_type='continuous',
 
     # Sort target
     if target_sort:
-        target.sort_values(ascending=False, inplace=True)
+        target.sort_values(inplace=True)
         features = features.reindex_axis(target.index, axis=1)
 
     # Score
@@ -166,66 +178,70 @@ def match(features, target, feature_type='continuous', target_type='continuous',
                                     n_samplings=n_samplings, n_permutations=n_permutations)
     features = features.reindex(scores.index)
 
+    # Merge features and scores
     features_and_scores = merge(features, scores, left_index=True, right_index=True)
 
-    # Save features merged with their scores
+    # Save
     if filepath_prefix:
         establish_filepath(filepath_prefix)
         features_and_scores.to_csv(filepath_prefix + '.txt', sep='\t')
 
-    # Make annotations
-    if not (isinstance(n_features, int) or isinstance(n_features, float)):
+    if not (isinstance(n_features, int) or isinstance(n_features, float)):  # n_features = None
         print_log('Not plotting.')
+        return features_and_scores
 
-    else:  # Make annotations and plot
-        # Make annotations
-        annotations = DataFrame(index=features.index)
+    #
+    # Make annotations and plot
+    #
+    annotations = DataFrame(index=features.index)
 
-        # Format Score and confidence interval
-        for idx, s in features.iterrows():
-            if '0.95 MoE' in scores.columns:
-                annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[idx, ['Score', '0.95 MoE']])
-            else:
-                annotations.ix[idx, 'IC(\u0394)'] = '{:.3f}(_nmf_and_score.xxx)'.format(scores.ix[idx, 'Score'])
+    # Format Score and confidence interval
+    for idx, s in features.iterrows():
+        if '0.95 MoE' in scores.columns:
+            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[idx, ['Score', '0.95 MoE']])
+        else:
+            annotations.ix[idx, 'IC(\u0394)'] = '{:.3f}(_nmf_and_score.xxx)'.format(scores.ix[idx, 'Score'])
 
-        # Format P-Value
-        annotations['P-val'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
+    # Format P-Value
+    annotations['P-val'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
 
-        # Format FDR
-        annotations['FDR'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
+    # Format FDR
+    annotations['FDR'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
 
-        if n_features < 1:  # Limit using percentile
-            above_quantile = scores.ix[:, 'Score'] >= scores.ix[:, 'Score'].quantile(n_features)
-            print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
-            below_quantile = scores.ix[:, 'Score'] <= scores.ix[:, 'Score'].quantile(1 - n_features)
-            print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
-            indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
-        else:  # Limit using numbers
-            if 2 * n_features >= scores.shape[0]:
-                indices_to_plot = scores.index
-                print_log('Plotting all {} features ...'.format(scores.shape[0]))
-            else:
-                indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
-                print_log('Plotting top & bottom {} features ...'.format(n_features))
+    # Plot limited features
+    if n_features < 1:  # Limit using percentile
+        above_quantile = scores.ix[:, 'Score'] >= scores.ix[:, 'Score'].quantile(n_features)
+        print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
+        below_quantile = scores.ix[:, 'Score'] <= scores.ix[:, 'Score'].quantile(1 - n_features)
+        print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
+        indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
+    else:  # Limit using numbers
+        if 2 * n_features >= scores.shape[0]:
+            indices_to_plot = scores.index
+            print_log('Plotting all {} features ...'.format(scores.shape[0]))
+        else:
+            indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
+            print_log('Plotting top & bottom {} features ...'.format(n_features))
 
-        # Plot
-        _plot_features_against_target(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
-                                      feature_type=feature_type, target_type=target_type,
-                                      figure_size=figure_size, title=title, title_size=title_size,
-                                      annotation_header=' ' * 11 + 'IC(\u0394)' + ' ' * 5 + 'P-val' + ' ' * 4 + 'FDR',
-                                      annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                                      dpi=dpi, filepath=filepath_prefix + '.pdf')
+    # Plot
+    _plot_match_panel(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
+                      feature_type=feature_type, target_type=target_type,
+                      figure_size=figure_size, title=title, title_size=title_size,
+                      annotation_header=' ' * 11 + 'IC(\u0394)' + ' ' * 5 + 'P-val' + ' ' * 4 + 'FDR',
+                      annotation_label_size=annotation_label_size, plot_colname=plot_colname,
+                      dpi=dpi, filepath=filepath_prefix + '.pdf')
+
     return features_and_scores
 
 
-def _plot_features_against_target(features, ref, annotations, feature_type='continuous', target_type='continuous',
-                                  std_max=3, figure_size='auto', title=None, title_size=20,
-                                  annotation_header=None, annotation_label_size=9,
-                                  plot_colname=False, dpi=DPI, filepath=None):
+def _plot_match_panel(features, target, annotations, feature_type='continuous', target_type='continuous',
+                      std_max=3, figure_size='auto', title=None, title_size=20,
+                      annotation_header=None, annotation_label_size=9, plot_colname=False,
+                      dpi=DPI, filepath=None):
     """
-    Plot a heatmap panel.
+    Plot match panel.
     :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
-    :param ref: pandas Series; (n_elements); must have indices, which must match features's columns
+    :param target: pandas Series; (n_elements); must have indices, which must match features's columns
     :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must match features's
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
@@ -241,6 +257,7 @@ def _plot_features_against_target(features, ref, annotations, feature_type='cont
     :return: None
     """
 
+    # Set up features
     if feature_type == 'continuous':
         features_cmap = CMAP_CONTINUOUS
         features_min, features_max = -std_max, std_max
@@ -254,68 +271,91 @@ def _plot_features_against_target(features, ref, annotations, feature_type='cont
         features_min, features_max = 0, 1
     else:
         raise ValueError('Unknown feature_type {}.'.format(feature_type))
-    if target_type == 'continuous':
-        ref_cmap = CMAP_CONTINUOUS
-        ref_min, ref_max = -std_max, std_max
-        print_log('Normalizing continuous ref ...')
-        ref = normalize_pandas_object(ref, method='-0-')
-    elif target_type == 'categorical':
-        ref_cmap = CMAP_CATEGORICAL
-        ref_min, ref_max = 0, len(unique(ref))
-    elif target_type == 'binary':
-        ref_cmap = CMAP_BINARY
-        ref_min, ref_max = 0, 1
-    else:
-        raise ValueError('Unknown ref_type {}.'.format(target_type))
 
+    # Set up target
+    if target_type == 'continuous':
+        target_cmap = CMAP_CONTINUOUS
+        target_min, target_max = -std_max, std_max
+        print_log('Normalizing continuous ref ...')
+        target = normalize_pandas_object(target, method='-0-')
+    elif target_type == 'categorical':
+        target_cmap = CMAP_CATEGORICAL
+        target_min, target_max = 0, len(unique(target))
+    elif target_type == 'binary':
+        target_cmap = CMAP_BINARY
+        target_min, target_max = 0, 1
+    else:
+        raise ValueError('Unknown target_type {}.'.format(target_type))
+
+    # Set up figure
     if figure_size == 'auto':
         figure_size = (min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9))
     plt.figure(figsize=figure_size)
+
+    # Set up axes
     gridspec = GridSpec(features.shape[0] + 1, features.shape[1] + 1)
-    ax_ref = plt.subplot(gridspec[:1, :features.shape[1]])
+    ax_target = plt.subplot(gridspec[:1, :features.shape[1]])
     ax_features = plt.subplot(gridspec[1:, :features.shape[1]])
     ax_annotation_header = plt.subplot(gridspec[:1, features.shape[1]:])
     ax_annotation_header.axis('off')
     horizontal_text_margin = pow(features.shape[1], 0.39)
 
-    # Plot ref, ref label, and title,
-    heatmap(DataFrame(ref).T, ax=ax_ref, vmin=ref_min, vmax=ref_max, cmap=ref_cmap, xticklabels=False, cbar=False)
-    for t in ax_ref.get_yticklabels():
+    #
+    # Plot target, target label, and title
+    #
+    # Plot target heat band
+    heatmap(DataFrame(target).T, ax=ax_target, vmin=target_min, vmax=target_max, cmap=target_cmap, xticklabels=False,
+            cbar=False)
+
+    # Adjust target name
+    for t in ax_target.get_yticklabels():
         t.set(rotation=0, weight='bold')
 
-    if title:
-        ax_ref.text(features.shape[1] / 2, 1.9, title, horizontalalignment='center', size=title_size, weight='bold')
-
-    if target_type in ('binary', 'categorical'):
-        # Add binary or categorical ref labels
+    if target_type in ('binary', 'categorical'):  # Add binary or categorical target labels
         boundaries = [0]
-        prev_v = ref.iloc[0]
-        for i, v in enumerate(ref.iloc[1:]):
+
+        # Get values
+        prev_v = target.iloc[0]
+        for i, v in enumerate(target.iloc[1:]):
             if prev_v != v:
                 boundaries.append(i + 1)
             prev_v = v
         boundaries.append(features.shape[1])
+
+        # Get positions
         label_horizontal_positions = []
         prev_b = 0
         for b in boundaries[1:]:
             label_horizontal_positions.append(b - (b - prev_b) / 2)
             prev_b = b
-        unique_ref_labels = get_unique_in_order(ref.values)
+        unique_target_labels = get_unique_in_order(target.values)
 
+        # Plot values to their corresponding positions
         for i, pos in enumerate(label_horizontal_positions):
-            ax_ref.text(pos, 1, unique_ref_labels[i], horizontalalignment='center', weight='bold')
+            ax_target.text(pos, 1, unique_target_labels[i], horizontalalignment='center', weight='bold')
 
+    if title:  # Plot title
+        ax_target.text(features.shape[1] / 2, 1.9, title, horizontalalignment='center', size=title_size, weight='bold')
+
+    #
     # Plot features
+    #
+    # Plot features heatmap
     heatmap(features, ax=ax_features, vmin=features_min, vmax=features_max, cmap=features_cmap,
             xticklabels=plot_colname, cbar=False)
     for t in ax_features.get_yticklabels():
         t.set(rotation=0, weight='bold')
 
+    #
     # Plot annotations
+    #
+    # Plot annotation header
     if not annotation_header:
         annotation_header = '\t'.join(annotations.columns).expandtabs()
     ax_annotation_header.text(horizontal_text_margin, 0.5, annotation_header, horizontalalignment='left',
                               verticalalignment='center', size=annotation_label_size, weight='bold')
+
+    # Plot annotations for each feature
     for i, (idx, s) in enumerate(annotations.iterrows()):
         ax = plt.subplot(gridspec[i + 1:i + 2, features.shape[1]:])
         ax.axis('off')
@@ -323,6 +363,7 @@ def _plot_features_against_target(features, ref, annotations, feature_type='cont
         ax.text(horizontal_text_margin, 0.5, a, horizontalalignment='left', verticalalignment='center',
                 size=annotation_label_size, weight='bold')
 
+    # Save
     if filepath:
         save_plot(filepath, dpi=dpi)
 
@@ -330,14 +371,14 @@ def _plot_features_against_target(features, ref, annotations, feature_type='cont
 # ======================================================================================================================
 # Compare matrices
 # ======================================================================================================================
-def compare(dataframe1, dataframe2, function=information_coefficient, axis=0, is_distance=False, title=None,
+def compare(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
             filepath_prefix=None):
     """
-    Compare dataframe1 and dataframe2 by row (axis=1) or by column (axis=0), and plot hierarchical clustering.
-    :param dataframe1: pandas DataFrame or numpy 2D arrays;
-    :param dataframe2: pandas DataFrame or numpy 2D arrays;
-    :param function: function; association function
-    :param axis: int; 0 and 1 for row-wise and column-wise comparison respectively
+    Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
+    :param matrix1: pandas DataFrame or numpy 2D arrays;
+    :param matrix2: pandas DataFrame or numpy 2D arrays;
+    :param function: function; association or distance function
+    :param axis: int; 0 for row-wise and 1 for column-wise comparison
     :param is_distance: bool; if True, distances are computed from associations, as in 'distance = 1 - association'
     :param title: str; plot title
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
@@ -345,18 +386,17 @@ def compare(dataframe1, dataframe2, function=information_coefficient, axis=0, is
     """
 
     # Compute association or distance matrix, which is returned at the end
-    compared_matrix = compare_matrices(dataframe1, dataframe2, function, axis=axis, is_distance=is_distance)
+    compared_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
 
     # Save
     if filepath_prefix:
         compared_matrix.to_csv(filepath_prefix + '.txt', sep='\t')
 
-    # Plot hierarchical clustering of the matrix
+    # Plot cluster map of the compared matrix
     if filepath_prefix:
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
     plot_clustermap(compared_matrix, title=title, filepath=filepath)
 
-    # Return the computed association or distance matrix
     return compared_matrix

@@ -40,25 +40,26 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE, dpi=DPI,
-                      directory_path=None):
+def define_components(matrix, ks, n_clusterings=30, random_state=SEED,
+                      figure_size=FIGURE_SIZE, dpi=DPI, directory_path=None):
     """
-    Define components.
-    :param matrix:
-    :param ks:
-    :param n_clusterings:
-    :param random_state:
-    :param figure_size:
-    :param dpi:
+    NMF matrix into W and H matrices using k from ks and calculate cophenetic correlation by consensus clustering.
+    :param matrix: pandas DataFrame;
+    :param ks: iterable; iterable of int k used for NMF
+    :param n_clusterings: int; number of NMF for consensus clustering
+    :param random_state: int;
+    :param figure_size: tuple;
+    :param dpi: int;
     :param directory_path: str; directory where nmf_k{k}_{w, h}.gct and nmf_scores.pdf will be saved
-    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and {k: cophenetic score}
+    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and {k: cophenetic correlation}
     """
 
     # Rank normalize the input matrix by column
     matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
-    plot_clustermap(matrix, figure_size=figure_size, title='A Matrix', xticklabels=False, yticklabels=False)
+    plot_clustermap(matrix, figure_size=figure_size,
+                    title='A Matrix', xlabel='Sample', ylabel='Gene', xticklabels=False, yticklabels=False)
 
-    # NMF and score_dataframe_against_series, while saving a NMF result for each k
+    # NMF and score, while saving a NMF result for each k
     nmf_results, nmf_scores = nmf_and_score(matrix=matrix, ks=ks, n_clusterings=n_clusterings,
                                             random_state=random_state)
 
@@ -66,31 +67,31 @@ def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_si
     directory_path = join(directory_path, 'nmf/')
     establish_filepath(directory_path)
 
-    # nmf/scores{.pdf, .gct}
+    # Save NMF scores @ nmf/scores{.pdf, .gct}
     print_log('Saving and plotting NMF scores ...')
     write_dictionary(nmf_scores, join(directory_path, 'scores.txt'), key_name='k', value_name='cophenetic_correlation')
     plot_x_vs_y(sorted(nmf_scores.keys()), [nmf_scores[k] for k in sorted(nmf_scores.keys())],
                 figure_size=figure_size, title='NMF Cophenetic Score vs. k', xlabel='k', ylabel='NMF Cophenetic Score',
                 dpi=dpi, filepath=join(directory_path, 'scores.pdf'))
 
-    # nmf/matrices/nmf_k{...}_{w, h}.gct
+    # Save NMF results @ nmf/matrices/nmf_k{...}_{w, h}.gct
     print_log('Saving and plotting NMF results ...')
     _save_nmf_results(nmf_results, join(directory_path, 'matrices', ''))
 
-    # nmf/figures/nmf_k{...}.pdf
+    # Save NMF figures @ nmf/figures/nmf_k{...}.pdf
     for k in ks:
         print_log('\tPlotting k={} ...'.format(k))
-        plot_nmf_result(nmf_results, k, figure_size=figure_size,
-                        dpi=dpi, filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
+        plot_nmf_result(nmf_results, k, figure_size=figure_size, dpi=dpi,
+                        filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
 
     return nmf_results, nmf_scores
 
 
 def _save_nmf_results(nmf_results, filepath_prefix):
     """
-    Save `nmf_results` dictionary.
+    Save nmf_results.
     :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
-    :param filepath_prefix: str; `filepath_prefix`_nmf_k{k}_{w, h}.gct and  will be saved
+    :param filepath_prefix: str; filepath_prefix_nmf_k{k}_{w, h}.gct and  will be saved
     :return: None
     """
 
@@ -103,37 +104,39 @@ def _save_nmf_results(nmf_results, filepath_prefix):
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(h, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE, title='Clustering Labels', dpi=DPI,
-                  filepath_prefix=None):
+def define_states(h, ks, max_std=3, n_clusterings=50,
+                  figure_size=FIGURE_SIZE, title='Clustering Labels', dpi=DPI, filepath_prefix=None):
     """
-    Define states.
-    :param h: pandas DataFrame; (n_features, m_samples)
-    :param ks: iterable; list of ks used for clustering
+    Cluster samples using k from ks and calculate cophenetic correlation by consensus clustering.
+    :param h: pandas DataFrame; (n_features, m_samples); H matrix from NMF
+    :param ks: iterable; iterable of int k used for NMF
     :param max_std: number; threshold to clip standardized values
-    :param n_clusterings: int; number of clusterings for the consensus clustering
-    :param figure_size: tuple,
+    :param n_clusterings: int; number of clusterings for consensus clustering
+    :param figure_size: tuple;
     :param title: str; plot title
     :param dpi: int;
-    :param filepath_prefix: str; filepath_prefix + '_labels.gct' and filepath_prefix + '_labels.pdf' will be saved
+    :param filepath_prefix: str; filepath_prefix_labels.gct and filepath_prefix_labels.pdf will be saved
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
 
     # Cluster
-    labels, scores = consensus_cluster(h, ks, max_std=max_std, n_clusterings=n_clusterings)
+    clusterings, scores = consensus_cluster(h, ks, max_std=max_std, n_clusterings=n_clusterings)
 
     # Save
     if filepath_prefix:
         establish_filepath(filepath_prefix)
-        write_gct(labels, filepath_prefix + '_labels.gct')
+        write_gct(clusterings, filepath_prefix + '_labels.gct')
         write_dictionary(scores, filepath_prefix + '_clustering_scores.txt',
                          key_name='k', value_name='cophenetic_correlation')
 
     # Plot
-    plot_clustering_per_k(labels, title=title, filepath=filepath_prefix + '_labels.pdf')
-    plot_x_vs_y(scores, figure_size=figure_size, filepath=filepath_prefix + '_clustering_scores.pdf',
-                dpi=dpi)
+    plot_clustering_per_k(clusterings, title=title, filepath=filepath_prefix + '_labels.pdf')
+    plot_x_vs_y(sorted(scores.keys()), [scores[k] for k in sorted(scores.keys())],
+                figure_size=figure_size, title='Consensus Clustering Cophenetic Score vs. k',
+                xlabel='k', ylabel='Consensus Clustering Cophenetic Score',
+                dpi=dpi, filepath=filepath_prefix + '_clustering_scores.pdf')
 
-    return labels, scores
+    return clusterings, scores
 
 
 # ======================================================================================================================
@@ -287,8 +290,10 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_tes
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :return: pandas DataFrame, DataFrame, numpy array, and numpy array;
-             component_coordinates (n_components, [_nmf_and_score, y]), samples (n_samples, [_nmf_and_score, y, state, annotation]),
-             grid_probabilities (n_grids, n_grids), and grid_states (n_grids, n_grids)
+             component_coordinates (n_components, [_nmf_and_score, y]),
+             samples (n_samples, [_nmf_and_score, y, state, annotation]),
+             grid_probabilities (n_grids, n_grids),
+             and grid_states (n_grids, n_grids)
     """
 
     print_log('Making Onco-GPS with {} components, {} samples, and {} states {} ...'.format(*h_train.shape,
@@ -341,7 +346,7 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3, h_test=None, h_tes
     # Compute grid probabilities and states
     grid_probabilities = zeros((n_grids, n_grids))
     grid_states = zeros((n_grids, n_grids), dtype=int)
-    # Get KDE for each state using bandwidth created from all states' _nmf_and_score & y coordinates; states starts from 1, not 0
+    # Get KDE for each state using bandwidth created from all states' scores & y coordinates; states have 1 based-index
     kdes = zeros((training_samples.ix[:, 'state'].unique().size + 1, n_grids, n_grids))
     bandwidths = asarray([bcv(asarray(training_samples.ix[:, '_nmf_and_score'].tolist()))[0],
                           bcv(asarray(training_samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
@@ -427,7 +432,8 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                    dpi=DPI, filepath=None):
     """
     Plot Onco-GPS map.
-    :param component_coordinates: pandas DataFrame; (n_components, [_nmf_and_score, y]); output from _make_onco_gps_elements
+    :param component_coordinates: pandas DataFrame; (n_components, [_nmf_and_score, y]);
+        output from _make_onco_gps_elements
     :param samples: pandas DataFrame; (n_samples, [_nmf_and_score, y, state])
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
