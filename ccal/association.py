@@ -246,7 +246,7 @@ def _plot_match_panel(features, target, annotations, feature_type='continuous', 
     Plot make_match_panel panel.
     :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
     :param target: pandas Series; (n_elements); must have indices, which must make_match_panel features's columns
-    :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must make_match_panel features's
+    :param annotations: pandas DataFrame; (n_features, n_annotations); must have indices matching features's index
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number;
