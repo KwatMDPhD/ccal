@@ -784,9 +784,8 @@ def count_coclusterings(sample_x_clustering):
     coclusterings = zeros((n_samples, n_samples))
 
     # Count the number of co-clusterings
-    # TODO: don't make_comparison_matrix same pair twice
     for i in range(n_samples):
-        for j in range(n_samples):
+        for j in range(n_samples)[i + 1:]:
             for c_i in range(n_clusterings):
                 v1 = sample_x_clustering_array[i, c_i]
                 v2 = sample_x_clustering_array[j, c_i]
@@ -1090,7 +1089,7 @@ def match(features, target, function=information_coefficient, n_features=0.95, a
     Compute: ith score = function(ith feature, target).
     Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
-    :param target: pandas Series; (n_samples); must have name and indices, which must make_match_panel features's column index
+    :param target: pandas Series; (n_samples); must have name and indices, matching features's column index
     :param function: function; scoring function
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
@@ -1362,7 +1361,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
         # For n_clusterings times, permute distance matrix with repeat, and cluster
 
         # Make sample x clustering matrix
-        sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings), dtype=int)
+        sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings))
         for i in range(n_clusterings):
             if i % 10 == 0:
                 print_log('\tPermuting distance matrix with repeat and clustering ({}/{}) ...'.format(i, n_clusterings))
