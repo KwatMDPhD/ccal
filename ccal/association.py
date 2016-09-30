@@ -372,9 +372,6 @@ def _plot_match_panel(features, target, annotations, feature_type='continuous', 
         save_plot(filepath, dpi=dpi)
 
 
-# ======================================================================================================================
-# Compare matrices
-# ======================================================================================================================
 def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
                            filepath_prefix=None):
     """
