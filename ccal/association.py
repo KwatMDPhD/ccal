@@ -104,16 +104,16 @@ def match(features, target, feature_type='continuous', target_type='continuous',
           figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False, dpi=DPI,
           filepath_prefix=None):
     """
-    Compute scores[i] = `features`[i] vs. `target` using `function`. Compute confidence interval (CI) for `n_features`
+    Compute scores[i] = features[i] vs. target using function. Compute confidence interval (CI) for n_features
     features. Compute p-val and FDR (BH) for all features. And plot the result.
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
-    :param target: pandas Series; (n_samples); must have name and indices, which must match `features`'s column index
+    :param target: pandas Series; (n_samples); must have name and indices, which must match features's column index
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param min_n_feature_values: int; minimum number of non-0 values in a feature to be matched
     :param feature_ascending: bool; True if features score_dataframe_against_series increase from top to bottom, and
         False otherwise
-    :param target_sort: bool; sort `target` or not
+    :param target_sort: bool; sort target or not
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
     :param min_n_per_job: int; minimum number of n per job for parallel computing
@@ -125,7 +125,7 @@ def match(features, target, feature_type='continuous', target_type='continuous',
     :param annotation_label_size: int; annotation text size
     :param plot_colname: bool; plot column names or not
     :param dpi: int; dots per square inch of pixel in the output figure
-    :param filepath_prefix: str; `filepath_prefix`.txt and `filepath_prefix`.pdf will be saved
+    :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
     :return: pandas DataFrame; scores
     """
 
@@ -147,7 +147,7 @@ def match(features, target, feature_type='continuous', target_type='continuous',
                                                                                        target.name,
                                                                                        target.size))
 
-    # Drop features having less than `min_n_feature_values` unique values
+    # Drop features having less than min_n_feature_values unique values
     print_log('Dropping features with less than {} unique values ...'.format(min_n_feature_values))
     features = features.ix[features.apply(lambda row: len(set(row)), axis=1) >= min_n_feature_values]
     if features.empty:
@@ -225,8 +225,8 @@ def _plot_features_against_target(features, ref, annotations, feature_type='cont
     """
     Plot a heatmap panel.
     :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
-    :param ref: pandas Series; (n_elements); must have indices, which must match `features`'s columns
-    :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must match `features`'s
+    :param ref: pandas Series; (n_elements); must have indices, which must match features's columns
+    :param annotations:  pandas DataFrame; (n_features, n_annotations); must have indices, which must match features's
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number;
@@ -333,14 +333,14 @@ def _plot_features_against_target(features, ref, annotations, feature_type='cont
 def compare(dataframe1, dataframe2, function=information_coefficient, axis=0, is_distance=False, title=None,
             filepath_prefix=None):
     """
-    Compare `dataframe1` and `dataframe2` by row (`axis=1`) or by column (`axis=0`), and plot hierarchical clustering.
+    Compare dataframe1 and dataframe2 by row (axis=1) or by column (axis=0), and plot hierarchical clustering.
     :param dataframe1: pandas DataFrame or numpy 2D arrays;
     :param dataframe2: pandas DataFrame or numpy 2D arrays;
     :param function: function; association function
     :param axis: int; 0 and 1 for row-wise and column-wise comparison respectively
     :param is_distance: bool; if True, distances are computed from associations, as in 'distance = 1 - association'
     :param title: str; plot title
-    :param filepath_prefix: str; `filepath_prefix`.txt and `filepath_prefix`.pdf will be saved
+    :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
     :return: pandas DataFrame; association or distance matrix
     """
 

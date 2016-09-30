@@ -340,7 +340,7 @@ def write_gmt(pandas_object, filepath, descriptions=None):
 
 def read_dictionary(filepath, sep='\t', switch=False):
     """
-    Make a dictionary from <mapping_file>: key<sep>value.
+    Make a dictionary from mapping_file: key<sep>value.
     By default, 1st column is the key and the 2nd value, and use tab delimeter.
     :param filepath:
     :param sep:
@@ -475,7 +475,7 @@ def clean_string(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_c
 
 def cast_string_to_int_float_bool_or_str(string):
     """
-    Convert a <string> into the following data types (return the first successful): int, float, bool, or str.
+    Convert string into the following data types (return the first successful): int, float, bool, or str.
     :param string:
     :return:
     """
@@ -514,7 +514,7 @@ def indent_string(string, n_tabs=1):
 # TODO: combine with round_significant_figure
 def round_number(number):
     """
-    Round <number> to the nearest integer.
+    Round number to the nearest integer.
     :param number:
     :return:
     """
@@ -525,7 +525,7 @@ def round_number(number):
 
 def round_significant_figure(number, n):
     """
-    Round <number> to <n> significant figures.
+    Round number to n significant figures.
     :param number:
     :param n:
     :return:
@@ -558,7 +558,7 @@ def exponential_function(x, a, k, c):
 # ======================================================================================================================
 def dict_merge_with_function(function, dict_1, dict_2):
     """
-    Apply <function> to values keyed by the same key in <dict_1> and <dict_2>.
+    Apply function to values keyed by the same key in dict_1 and dict_2.
     :param function:
     :param dict_1:
     :param dict_2:
@@ -579,7 +579,7 @@ def dict_merge_with_function(function, dict_1, dict_2):
 
 def dict_add(dict_1, dict_2):
     """
-    Add <dict_1> and <dict_2>.
+    Add dict_1 and dict_2.
     :param dict_1:
     :param dict_2:
     :return:
@@ -590,7 +590,7 @@ def dict_add(dict_1, dict_2):
 
 def dict_subtract(dict_1, dict_2):
     """
-    Subtract <dict_2> from <dict_1>.
+    Subtract dict_2 from dict_1.
     :param dict_1:
     :param dict_2:
     :return:
@@ -604,7 +604,7 @@ def dict_subtract(dict_1, dict_2):
 # ======================================================================================================================
 def compute_sliding_mean(vector, window_size=1):
     """
-    Return a vector of means for each <window_size> in <vector>.
+    Return a vector of means for each window_size in vector.
     :param vector:
     :param window_size:
     :return:
@@ -630,10 +630,10 @@ def compute_geometric_mean(vector):
 
 def quantize(vector, precision_factor):
     """
-    Return a copy of <vector> that is scaled by <precision_factor> and then rounded to the nearest integer.
-    To re-scale, simply divide by <precision_factor>.
+    Return a copy of vector that is scaled by precision_factor and then rounded to the nearest integer.
+    To re-scale, simply divide by precision_factor.
     Note that because of rounding, an open interval from (x, y) will give rise to up to
-    (x - y) * <precision_factor> + 1 bins.
+    (x - y) * precision_factor + 1 bins.
     :param vector:
     :param precision_factor:
     :return:
@@ -682,9 +682,9 @@ def count_n_occurrences_of_all_items(iterable, case_sensitive=True):
 
 def get_mode(iterable, rank=0, excluded=()):
     """
-    Return the most common object in <iterable> that is not in <exclude>.
-    This is the default behavior, if <rank> is 0.
-    If <rank> != 0, return the <rank>+1-most common item in <iterable>.
+    Return the most common object in iterable that is not in exclude.
+    This is the default behavior, if rank is 0.
+    If rank != 0, return the <rank + 1>-most common item in iterable.
     :param iterable:
     :param rank:
     :param excluded:
@@ -1305,7 +1305,7 @@ def make_network_from_similarity_matrix(similarity_matrix):
 
 def make_network_from_edge_file(edge_file, di=False, sep='\t'):
     """
-    Make networkx graph from <edge_file>: from<sep>to.
+    Make networkx graph from edge_file: from<sep>to.
     :param edge_file:
     :param di: boolean, directed or not
     :param sep: separator, default \t
