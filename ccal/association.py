@@ -73,6 +73,7 @@ def catalogue(annotations,
     # Load annotations and make_match_panel target
 
     for a_name, a_dict in _read_annotations(annotations).items():
+        print_log('Annotating {} with {} ...'.format(target.name, a_name))
         if a_dict['data_type'] == 'continuous':
             min_n_feature_values = 3
         else:
@@ -125,10 +126,9 @@ def _read_annotations(annotations):
 
 def make_match_panel(features, target, feature_type='continuous', target_type='continuous',
                      feature_ascending=False, target_sort=True, min_n_feature_values=2,
-                     n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, n_permutations=30,
+                     n_features=0.95, n_jobs=1, min_n_per_job=30, n_samplings=30, n_permutations=30,
                      figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False,
-                     dpi=DPI,
-                     filepath_prefix=None):
+                     dpi=DPI, filepath_prefix=None):
     """
     Compute: ith score = function(ith feature, target). Compute confidence interval (CI) for n_features
     features. Compute p-val and FDR (BH) for all features. And plot the result.
