@@ -415,7 +415,7 @@ def print_log(string):
     """
 
     if VERBOSE:
-        print_log('<{}> {}'.format(timestamp(time_only=True), string))
+        print('<{}> {}'.format(timestamp(time_only=True), string))
 
 
 def timestamp(time_only=False):
@@ -1029,39 +1029,41 @@ def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutati
     return score, p_val
 
 
-def compare_matrices(dataframe1, dataframe2, function, axis=0, is_distance=False):
+def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     """
-    Make association or distance matrix of dataframe1 and dataframe2 by row (axis=1) or by column (axis=0).
-    :param dataframe1: pandas DataFrame;
-    :param dataframe2: pandas DataFrame;
+    Make association or distance matrix of matrix1 and matrix2 by row (axis=1) or by column (axis=0).
+    :param matrix1: pandas DataFrame;
+    :param matrix2: pandas DataFrame;
     :param function: function; function used to compute association or dissociation
     :param axis: int; 0 for row-wise and 1 column-wise comparison
     :param is_distance: bool; True for distance and False for association
     :return: pandas DataFrame; (n, n); association or distance matrix
     """
 
-    # Copy and rotate matrices to make the comparison by row
+    # Rotate matrices to make the comparison by row
     if axis == 1:
-        m1 = dataframe1.copy()
-        m2 = dataframe2.copy()
+        m1 = array(matrix1)
+        m2 = array(matrix2)
     else:
-        m1 = dataframe1.T
-        m2 = dataframe2.T
+        m1 = array(matrix1.T)
+        m2 = array(matrix2.T)
+
+    n_1 = m1.shape[0]
+    n_2 = m2.shape[0]
 
     # Compare
-    compared_matrix = DataFrame(index=m1.index, columns=m2.index, dtype=float)
-    n = m1.shape[0]
-    for i, (i1, r1) in enumerate(m1.iterrows()):
-        if i % 100 == 0:
-            print_log('Comparing {} ({}/{}) ...'.format(i1, i, n))
-        for i2, r2 in m2.iterrows():
-            compared_matrix.ix[i1, i2] = function(r1, r2)
+    compared_matrix = empty((n_1, n_2))
+    for i_1 in range(n_1):
+        if (i_1 + 1) % 1 == 0:
+            print_log('Computing association between matrices ({}/{}) ...'.format(i_1, n_1))
+        for i_2 in range(n_2):
+            compared_matrix[i_1, i_2] = function(m1[i_1, :], m2[i_2, :])
 
-    if is_distance:  # Convert associations to distances
+    if is_distance:  # Convert association to distance
         print_log('Converting association to distance (1 - association) ...')
         compared_matrix = 1 - compared_matrix
 
-    return compared_matrix
+    return DataFrame(compared_matrix, index=matrix1.columns, columns=matrix2.columns)
 
 
 def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
@@ -1344,7 +1346,7 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
     normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
 
     # Make sample-distance matrix
-    print_log('Computing distances between samples ...')
+    print_log('Computing distance between samples ...')
     distance_matrix = compare_matrices(normalized_matrix, normalized_matrix, information_coefficient, is_distance=True)
 
     # Consensus cluster distance matrix
