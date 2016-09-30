@@ -81,7 +81,7 @@ def catalogue(annotations,
         make_match_panel(a_dict['dataframe'], target, feature_type=a_dict['data_type'], target_type=target_type,
                          feature_ascending=a_dict['is_reverse_match'], min_n_feature_values=min_n_feature_values,
                          n_features=n_features, n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
-                         filepath_prefix=filepath_prefix + 'vs_{}'.format(untitle_string(a_name)))
+                         filepath_prefix=filepath_prefix + '_{}'.format(untitle_string(a_name)))
 
 
 def _read_annotations(annotations):
@@ -212,13 +212,13 @@ def make_match_panel(features, target, feature_type='continuous', target_type='c
         if '0.95 MoE' in scores.columns:
             annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[idx, ['Score', '0.95 MoE']])
         else:
-            annotations.ix[idx, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(scores.ix[idx, 'Score'])
+            annotations.ix[idx, 'IC(\u0394)'] = '{:.2e}(x.xxx)'.format(scores.ix[idx, 'Score'])
 
     # Format P-Value
-    annotations['P-val'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'P-value']]
+    annotations['P-val'] = ['{:.2e}'.format(x) for x in scores.ix[:, 'P-value']]
 
     # Format FDR
-    annotations['FDR'] = ['{:.3f}'.format(x) for x in scores.ix[:, 'FDR']]
+    annotations['FDR'] = ['{:.2e}'.format(x) for x in scores.ix[:, 'FDR']]
 
     # Plot limited features
     if n_features < 1:  # Limit using percentile
@@ -236,10 +236,11 @@ def make_match_panel(features, target, feature_type='continuous', target_type='c
             print_log('Plotting top & bottom {} features ...'.format(n_features))
 
     # Plot
+    # Right alignment: ' ' * 11 + 'IC(\u0394)' + ' ' * 10 + 'P-val' + ' ' * 15 + 'FDR',
     _plot_match_panel(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
                       feature_type=feature_type, target_type=target_type,
                       figure_size=figure_size, title=title, title_size=title_size,
-                      annotation_header=' ' * 11 + 'IC(\u0394)' + ' ' * 5 + 'P-val' + ' ' * 4 + 'FDR',
+                      annotation_header=' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
                       annotation_label_size=annotation_label_size, plot_colname=plot_colname,
                       dpi=dpi, filepath=filepath_prefix + '.pdf')
 
