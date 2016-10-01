@@ -26,7 +26,8 @@ from .support import print_log, establish_filepath, read_gct, untitle_string, in
 # Match features against target
 # ======================================================================================================================
 def make_association_panels(target_bundle, feature_bundle,
-                            n_features=0.95, n_jobs=1, n_samplings=30, n_permutations=30, filepath_prefix=None):
+                            n_features=0.95, n_jobs=1, n_samplings=30, n_permutations=30,
+                            dpi=DPI, filepath_prefix=None):
     """
     Annotate each target in the target bundle with each feature in the feature bundle.
     :param target_bundle: list of lists;
@@ -79,20 +80,21 @@ def make_association_panels(target_bundle, feature_bundle,
 
             # Annotate this target with each feature
             for f_name, f_dict in feature_dict.items():
+                title = '{}_vs_{}'.format(untitle_string(t_i), untitle_string(f_name))
                 print_log('')
                 print_log('$')
                 print_log('$$')
                 print_log('$$$')
                 print_log('$$$$')
                 print_log('$$$$$')
-                print_log('Annotating {} with {} ...'.format(t_i, f_name))
+                print_log('Annotating {} ...'.format(title))
 
                 make_association_panel(t, f_dict['dataframe'],
                                        target_type=t_dict['data_type'], feature_type=f_dict['data_type'],
                                        feature_ascending=f_dict['is_ascending'], n_features=n_features,
                                        n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
-                                       filepath_prefix=filepath_prefix + '{}_vs_{}'.format(untitle_string(t_i),
-                                                                                           untitle_string(f_name)))
+                                       title=title, dpi=dpi,
+                                       filepath_prefix=filepath_prefix + title)
                 print_log('$$$$$')
                 print_log('$$$$')
                 print_log('$$$')

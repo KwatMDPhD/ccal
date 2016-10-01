@@ -25,3 +25,4 @@ from .association import make_association_panels, make_association_panel, make_c
 print('=' * 80)
 print('=' * 17 + ' Computational Cancer Analysis Library (CCAL) ' + '=' * 17)
 print('=' * 80)
+print('Planted a random seed: {}.'.format(SEED))
