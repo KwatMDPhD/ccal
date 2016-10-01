@@ -20,7 +20,7 @@ VERBOSE = True
 
 from .support import read_gct, write_gct
 from .oncogps import define_components, define_states, make_oncogps_map
-from .association import catalogue, make_match_panel, make_comparison_matrix
+from .association import make_association_panels, make_association_panel, make_comparison_matrix
 
 print('=' * 80)
 print('=' * 17 + ' Computational Cancer Analysis Library (CCAL) ' + '=' * 17)

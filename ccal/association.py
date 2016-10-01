@@ -25,119 +25,171 @@ from .support import print_log, establish_filepath, read_gct, untitle_string, in
 # ======================================================================================================================
 # Match features against target
 # ======================================================================================================================
-def catalogue(annotations,
-              target=None, target_gct=None, target_df=None, target_name=None, target_axis=1, target_type='continuous',
-              n_features=0.95, n_jobs=1, n_samplings=30, n_permutations=30,
-              filepath_prefix=None):
+def make_association_panels(target_bundle, feature_bundle,
+                            n_features=0.95, n_jobs=1, n_samplings=30, n_permutations=30, filepath_prefix=None):
     """
-    Annotate target using multiple annotations.
-    :param annotations: list of lists;
-        [[name, .gct, data_type, is_reverse_match, [row_name, ...](optional), [feature_name, ...](optional)], ...]
-    :param target: pandas Series; annotation target
-    :param target_gct: str; filepath to a file whose row or column is the annotation target
-    :param target_df: DataFrame; whose row or column is the annotation target
-    :param target_name: str or iterable; row or column name(s) in target_df
-    :param target_axis: int; axis on which target_name is found in target_gct or target_df
-    :param target_type: str; {continuous, categorical, binary}
+    Annotate each target in the target bundle with each feature in the feature bundle.
+    :param target_bundle: list of lists;
+        [
+            [name
+            df or filepath to .gct
+            data_type,
+            is_ascending,
+            (optional) index_axis,
+            (optional) index,
+            (optional) index_alias],
+
+            ...
+
+        ]
+    :param feature_bundle: list of lists;
+        [
+            [name
+            df or filepath to .gct
+            data_type,
+            is_ascending,
+            (optional) index_axis,
+            (optional) index,
+            (optional) index_alias],
+
+            ...
+
+        ]
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
-    :param filepath_prefix: str; filepath_prefix_vs_annotation_name.txt and filepath_prefix_vs_annotation_name.pdf
-        will be saved
+    :param filepath_prefix: str; filepath_prefix_annotation_name.txt and filepath_prefix_annotation_name.pdf are saved
     :return: None
     """
 
     # Load target
-    if not target:
-        print_log('Loading the annotation target ...')
+    print_log('Loading targets bundle ...')
+    target_dict = _read_data_bundle(target_bundle)
 
-        # Load and check target_df
-        if target_gct:
-            target_df = read_gct(target_gct)
-        if not isinstance(target_df, DataFrame):
-            raise ValueError('No target_df {}.'.format(target_df))
+    # Load features
+    print_log('Loading feature bundle ...')
+    feature_dict = _read_data_bundle(feature_bundle)
 
-        # Check target_name
-        if not target_name:
-            raise ValueError('No target_name {}.'.format(target_name))
+    # For each target dataframe
+    for t_name, t_dict in target_dict.items():
 
-        # Load target
-        if target_axis == 0:
-            target = target_df.ix[:, target_name]
-        elif target_axis == 1:
-            target = target_df.ix[target_name, :]
-        else:
-            raise ValueError('Unknown target_axis {}.'.format(target_axis))
+        # For each target (row) in this dataframe
+        for t_i, t in t_dict['dataframe'].iterrows():
 
-    # Load annotations and make_match_panel target
+            # Annotate this target with each feature
+            for f_name, f_dict in feature_dict.items():
+                print_log('')
+                print_log('$')
+                print_log('$$')
+                print_log('$$$')
+                print_log('Annotating {} with {} ...'.format(t_i, f_name))
 
-    for a_name, a_dict in _read_annotations(annotations).items():
-        print_log('Annotating {} with {} ...'.format(target.name, a_name))
-        if a_dict['data_type'] == 'continuous':
-            min_n_feature_values = 3
-        else:
-            min_n_feature_values = 2
-
-        make_match_panel(a_dict['dataframe'], target, feature_type=a_dict['data_type'], target_type=target_type,
-                         feature_ascending=a_dict['is_reverse_match'], min_n_feature_values=min_n_feature_values,
-                         n_features=n_features, n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
-                         filepath_prefix=filepath_prefix + '_{}'.format(untitle_string(a_name)))
+                make_association_panel(t, f_dict['dataframe'],
+                                       target_type=t_dict['data_type'], feature_type=f_dict['data_type'],
+                                       feature_ascending=f_dict['is_ascending'], n_features=n_features,
+                                       n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
+                                       filepath_prefix=filepath_prefix + '{}_vs_{}'.format(untitle_string(t_i),
+                                                                                           untitle_string(f_name)))
+                print_log('$$$')
+                print_log('$$')
+                print_log('$')
+                print_log('')
 
 
-def _read_annotations(annotations):
+def _read_data_bundle(data_bundle):
     """
-    Read annotations from .gct files.
-    :param annotations: list of lists;
-        [[name, .gct, data_type, is_reverse_match, [row_name, ...](optional), [feature_name, ...](optional)], ...]
-    :return: dict; {name:{dataframe: DataFrame, data_type: str, is_reverse_match: bool}}
+    Read data bundle.
+    :param data_bundle: list;
+        [
+            [name
+            df or filepath to .gct
+            data_type,
+            is_ascending,
+            (optional) index_axis,
+            (optional) index,
+            (optional) index_alias],
+
+            ...
+
+        ]
+    :return: dict; {name: {dataframe: DataFrame,
+                    data_type: str,
+                    is_ascending: bool}}
     """
 
-    annotation_dict = {}
+    data_dict = {}
 
     # Read all annotations
-    for a in annotations:
-        name, filepath, data_type, is_reverse_match, row_names, feature_names = a
-        print_log(
-            'Reading {} @ {}: data type = {}; is_reverse_match = {}; index names = {}; feature names {} ...'.format(*a))
+    for name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, index_alias in data_bundle:
+        print_log('Reading {} ...'.format(name))
+        print_log('\tData: {}.'.format(type(dataframe_or_filepath)))
+        print_log('\tData type: {}.'.format(data_type))
+        print_log('\tIs ascending: {}.'.format(is_ascending))
+        print_log('\tIndex axis: {}.'.format(index_axis))
+        print_log('\tIndex: {}.'.format(index))
+        print_log('\tIndex alias: {}.'.format(index_alias))
 
-        annotation_dict[name] = {}
+        data_dict[name] = {}
 
         # Read data type
-        annotation_dict[name]['data_type'] = data_type
+        data_dict[name]['data_type'] = data_type
 
-        # Read whether reverse make_match_panel or not
-        annotation_dict[name]['is_reverse_match'] = is_reverse_match
+        # Read whether reverse make_association_panel or not
+        data_dict[name]['is_ascending'] = is_ascending
 
-        # Read annotation DataFrame
-        df = read_gct(filepath)
+        # Read DataFrame
+        if isinstance(dataframe_or_filepath, DataFrame):
+            df = dataframe_or_filepath
+        elif isinstance(dataframe_or_filepath, str):
+            df = read_gct(dataframe_or_filepath)
+        else:
+            raise ValueError('dataframe_or_filepath (2nd in the list) must be either a DataFrame or str (filepath).')
+
         # Limit to specified features
-        if row_names:
-            df = df.ix[row_names, :]
-            # Update specified features' names
-            if feature_names:
-                df.set_index(feature_names)
-        annotation_dict[name]['dataframe'] = df
+        if index:  # Extract
 
-        print_log('\tRead {} features & {} samples.\n'.format(*annotation_dict[name]['dataframe'].shape))
+            if index_axis == 0:  # By row
+                df = df.ix[index, :]
+                if isinstance(df, Series):
+                    df = DataFrame(df).T
 
-    return annotation_dict
+            elif index_axis == 1:  # By column
+                df = df.ix[:, index]
+                if isinstance(df, Series):
+                    df = DataFrame(df).T
+                else:
+                    df = df.T
+            else:
+                raise ValueError('index_axis (6th in the list) must be either 0 (row) or 1 (column).')
+
+            if index_alias:  # Use aliases instead of index
+                if isinstance(index_alias, str):  # Wrap string with list
+                    index_alias = [index_alias]
+                df.index = index_alias
+
+        data_dict[name]['dataframe'] = df
+
+        print_log('\tRead {} features & {} samples.'.format(*data_dict[name]['dataframe'].shape))
+
+    return data_dict
 
 
-def make_match_panel(features, target, feature_type='continuous', target_type='continuous',
-                     feature_ascending=False, target_sort=True, min_n_feature_values=2,
-                     n_features=0.95, n_jobs=1, min_n_per_job=30, n_samplings=30, n_permutations=30,
-                     figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False,
-                     dpi=DPI, filepath_prefix=None):
+def make_association_panel(target, features, target_type='continuous', feature_type='continuous',
+                           target_sort=True, feature_ascending=False,
+                           min_n_feature_values=None, n_features=0.95, n_jobs=1, min_n_per_job=30,
+                           n_samplings=30, n_permutations=30,
+                           figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False,
+                           dpi=DPI, filepath_prefix=None):
     """
     Compute: ith score = function(ith feature, target). Compute confidence interval (CI) for n_features
     features. Compute p-val and FDR (BH) for all features. And plot the result.
-    :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
     :param target: pandas Series; (n_samples); must have name and index matching features's column names
-    :param feature_type: str; {'continuous', 'categorical', 'binary'}
+    :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
     :param target_type: str; {'continuous', 'categorical', 'binary'}
-    :param feature_ascending: bool; True if features scores increase from top to bottom, and False otherwise
+    :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_sort: bool; sort target or not
+    :param feature_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param min_n_feature_values: int; minimum number of unique values in a feature for it to be matched (default 2)
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
@@ -151,7 +203,7 @@ def make_match_panel(features, target, feature_type='continuous', target_type='c
     :param plot_colname: bool; plot column names below the plot or not
     :param dpi: int; dots per square inch of pixel in the output figure
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
-    :return: pandas DataFrame; scores
+    :return: pandas DataFrame; merged features and scores
     """
 
     if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
@@ -160,19 +212,30 @@ def make_match_panel(features, target, feature_type='continuous', target_type='c
     # Use intersecting columns (samples)
     intersection = set(features.columns) & set(target.index)
     if intersection:
-        print_log('features ({} cols) and target {} ({} cols) have {} shared columns.'.format(features.shape[1],
-                                                                                              target.name,
-                                                                                              target.size,
-                                                                                              len(intersection)))
-        features = features.ix[:, intersection]
         target = target.ix[intersection]
+        features = features.ix[:, intersection]
+        print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
+                                                                                              target.size,
+                                                                                              features.shape[1],
+                                                                                              len(intersection)))
     else:
-        raise ValueError(
-            'features ({} cols) and target {} ({} cols) have 0 shared columns.'.format(features.shape[1],
-                                                                                       target.name,
-                                                                                       target.size))
+        raise ValueError('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
+                                                                                                     target.size,
+                                                                                                     features.shape[1],
+                                                                                                     len(intersection)))
+
+    if target_sort:  # Sort target
+        target.sort_values(ascending=False, inplace=True)
+        features = features.reindex_axis(target.index, axis=1)
 
     # Drop features having less than min_n_feature_values unique values
+    if not min_n_feature_values:
+        if feature_type == 'continuous':
+            min_n_feature_values = 3
+        elif feature_type in ('categorical', 'binary'):
+            min_n_feature_values = 2
+        else:
+            raise ValueError('feature_type must be one of {continuous, categorical, binary}.')
     print_log('Dropping features with less than {} unique values ...'.format(min_n_feature_values))
     features = features.ix[features.apply(lambda row: len(set(row)), axis=1) >= min_n_feature_values]
     if features.empty:
@@ -180,53 +243,51 @@ def make_match_panel(features, target, feature_type='continuous', target_type='c
     else:
         print_log('\tKept {} features.'.format(features.shape[0]))
 
-    # Sort target
-    if target_sort:
-        target.sort_values(ascending=False, inplace=True)
-        features = features.reindex_axis(target.index, axis=1)
-
-    # Score
-    scores = match(features, target, n_features=n_features, ascending=feature_ascending,
+    # Score and sort
+    scores = match(target, features, n_features=n_features,
                    n_jobs=n_jobs, min_n_per_job=min_n_per_job, n_samplings=n_samplings, n_permutations=n_permutations)
-    features = features.reindex(scores.index)
-
     # Merge features and scores
-    features_and_scores = merge(features, scores, left_index=True, right_index=True)
+    features_with_scores = merge(features, scores, left_index=True, right_index=True)
+    features_with_scores.sort_values('score', ascending=feature_ascending, inplace=True)
 
     # Save
     if filepath_prefix:
         establish_filepath(filepath_prefix)
-        features_and_scores.to_csv(filepath_prefix + '.txt', sep='\t')
+        features_with_scores.to_csv(filepath_prefix + '.txt', sep='\t')
 
     if not (isinstance(n_features, int) or isinstance(n_features, float)):  # n_features = None
         print_log('Not plotting.')
-        return features_and_scores
+        return features_with_scores
 
     #
-    # Make annotations and plot
+    # Make annotations
     #
-    annotations = DataFrame(index=features.index)
+    annotations = DataFrame(index=features_with_scores.index)
 
     # Format Score and confidence interval
-    for idx, s in features.iterrows():
-        if '0.95 MoE' in scores.columns:
-            annotations.ix[idx, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[idx, ['Score', '0.95 MoE']])
+    for i in features_with_scores.index:
+        if '0.95 moe' in scores.columns:
+            annotations.ix[i, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[i, ['score', '0.95 moe']])
         else:
-            annotations.ix[idx, 'IC(\u0394)'] = '{:.2e}(x.xxx)'.format(scores.ix[idx, 'Score'])
+            annotations.ix[i, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(scores.ix[i, 'score'])
 
     # Format P-Value
-    annotations['P-val'] = ['{:.2e}'.format(x) for x in scores.ix[:, 'P-value']]
+    annotations['P-val'] = ['{:.2e}'.format(x) for x in scores.ix[:, 'p-value']]
 
     # Format FDR
-    annotations['FDR'] = ['{:.2e}'.format(x) for x in scores.ix[:, 'FDR']]
+    annotations['FDR'] = ['{:.2e}'.format(x) for x in scores.ix[:, 'fdr']]
 
-    # Plot limited features
+    #
+    # Plot
+    #
+    # Limited features to plot
     if n_features < 1:  # Limit using percentile
-        above_quantile = scores.ix[:, 'Score'] >= scores.ix[:, 'Score'].quantile(n_features)
-        print_log('Plotting {} features (> {} percentile) ...'.format(sum(above_quantile), n_features))
-        below_quantile = scores.ix[:, 'Score'] <= scores.ix[:, 'Score'].quantile(1 - n_features)
-        print_log('Plotting {} features (< {} percentile) ...'.format(sum(below_quantile), 1 - n_features))
+        above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+        print_log('Plotting {} features (> {:.03f} percentile) ...'.format(sum(above_quantile), n_features))
+        below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+        print_log('Plotting {} features (< {:.03f} percentile) ...'.format(sum(below_quantile), 1 - n_features))
         indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
+
     else:  # Limit using numbers
         if 2 * n_features >= scores.shape[0]:
             indices_to_plot = scores.index
@@ -235,29 +296,28 @@ def make_match_panel(features, target, feature_type='continuous', target_type='c
             indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
             print_log('Plotting top & bottom {} features ...'.format(n_features))
 
-    # Plot
     # Right alignment: ' ' * 11 + 'IC(\u0394)' + ' ' * 10 + 'P-val' + ' ' * 15 + 'FDR',
-    _plot_match_panel(features.ix[indices_to_plot, :], target, annotations.ix[indices_to_plot, :],
-                      feature_type=feature_type, target_type=target_type,
-                      figure_size=figure_size, title=title, title_size=title_size,
-                      annotation_header=' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
-                      annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                      dpi=dpi, filepath=filepath_prefix + '.pdf')
+    _plot_association_panel(target, features.ix[indices_to_plot, :], annotations.ix[indices_to_plot, :],
+                            feature_type=feature_type, target_type=target_type,
+                            figure_size=figure_size, title=title, title_size=title_size,
+                            annotation_header=' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
+                            annotation_label_size=annotation_label_size, plot_colname=plot_colname,
+                            dpi=dpi, filepath=filepath_prefix + '.pdf')
 
-    return features_and_scores
+    return features_with_scores
 
 
-def _plot_match_panel(features, target, annotations, feature_type='continuous', target_type='continuous',
-                      std_max=3, figure_size='auto', title=None, title_size=20,
-                      annotation_header=None, annotation_label_size=9, plot_colname=False,
-                      dpi=DPI, filepath=None):
+def _plot_association_panel(target, features, annotations, target_type='continuous', feature_type='continuous',
+                            std_max=3, figure_size='auto', title=None, title_size=20,
+                            annotation_header=None, annotation_label_size=9, plot_colname=False,
+                            dpi=DPI, filepath=None):
     """
-    Plot make_match_panel panel.
+    Plot make_association_panel panel.
+    :param target: pandas Series; (n_elements); must have indices, which must make_association_panel features's columns
     :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
-    :param target: pandas Series; (n_elements); must have indices, which must make_match_panel features's columns
     :param annotations: pandas DataFrame; (n_features, n_annotations); must have indices matching features's index
-    :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_type: str; {'continuous', 'categorical', 'binary'}
+    :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number;
     :param figure_size: 'auto' or tuple;
     :param title: str;
@@ -269,6 +329,21 @@ def _plot_match_panel(features, target, annotations, feature_type='continuous', 
     :param filepath: str;
     :return: None
     """
+
+    # Set up target
+    if target_type == 'continuous':
+        target_cmap = CMAP_CONTINUOUS
+        target_min, target_max = -std_max, std_max
+        print_log('Normalizing continuous target ...')
+        target = normalize_pandas_object(target, method='-0-')
+    elif target_type == 'categorical':
+        target_cmap = CMAP_CATEGORICAL
+        target_min, target_max = 0, len(unique(target))
+    elif target_type == 'binary':
+        target_cmap = CMAP_BINARY
+        target_min, target_max = 0, 1
+    else:
+        raise ValueError('target_type must be one of {continuous, categorical, binary}.')
 
     # Set up features
     if feature_type == 'continuous':
@@ -283,22 +358,9 @@ def _plot_match_panel(features, target, annotations, feature_type='continuous', 
         features_cmap = CMAP_BINARY
         features_min, features_max = 0, 1
     else:
-        raise ValueError('Unknown feature_type {}.'.format(feature_type))
+        raise ValueError('feature_type must be one of {continuous, categorical, binary}.')
 
-    # Set up target
-    if target_type == 'continuous':
-        target_cmap = CMAP_CONTINUOUS
-        target_min, target_max = -std_max, std_max
-        print_log('Normalizing continuous ref ...')
-        target = normalize_pandas_object(target, method='-0-')
-    elif target_type == 'categorical':
-        target_cmap = CMAP_CATEGORICAL
-        target_min, target_max = 0, len(unique(target))
-    elif target_type == 'binary':
-        target_cmap = CMAP_BINARY
-        target_min, target_max = 0, 1
-    else:
-        raise ValueError('Unknown target_type {}.'.format(target_type))
+    print_log('Plotting ...')
 
     # Set up figure
     if figure_size == 'auto':
