@@ -1105,7 +1105,7 @@ def match(target, features, function=information_coefficient,
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
-    :return: DataFrame; (n_features, 7 ('score', '0.95 moe', 'p-value', 'fdr (forward)', 'fdr (reverse)', and 'fdr'))
+    :return: DataFrame; (n_features, 7 ('score', '<confidence> moe', 'p-value', 'fdr (forward)', 'fdr (reverse)', and 'fdr'))
     """
 
     #
@@ -1154,7 +1154,6 @@ def match(target, features, function=information_coefficient,
         print_log('Not computing confidence interval.')
 
     else:
-        confidence_intervals = DataFrame(columns=['{} moe'.format(confidence)])
         print_log('Computing {} CI using distributions built by {} bootstraps ...'.format(confidence, n_samplings))
 
         n_samples = math.ceil(0.632 * features.shape[1])
@@ -1184,7 +1183,7 @@ def match(target, features, function=information_coefficient,
                     indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
                     print_log('\tBootstrapping top & bottom {} features ...'.format(n_features))
 
-            confidence_intervals.index = indices_to_bootstrap
+            confidence_intervals = DataFrame(index=indices_to_bootstrap, columns=['{} moe'.format(confidence)])
 
             # Bootstrap: for n_sampling times, randomly choose 63% of the samples, score, and build score distribution
             sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
