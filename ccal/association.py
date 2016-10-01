@@ -219,10 +219,9 @@ def make_association_panel(target, features, target_type='continuous', feature_t
                                                                                               features.shape[1],
                                                                                               len(intersection)))
     else:
-        raise ValueError('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
-                                                                                                     target.size,
-                                                                                                     features.shape[1],
-                                                                                                     len(intersection)))
+        raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
+                                                                                                    target.size,
+                                                                                                    features.shape[1]))
 
     if target_sort:  # Sort target
         target.sort_values(ascending=False, inplace=True)
@@ -246,65 +245,71 @@ def make_association_panel(target, features, target_type='continuous', feature_t
     # Score and sort
     scores = match(target, features, n_features=n_features,
                    n_jobs=n_jobs, min_n_per_job=min_n_per_job, n_samplings=n_samplings, n_permutations=n_permutations)
-    # Merge features and scores
-    features_with_scores = merge(features, scores, left_index=True, right_index=True)
-    features_with_scores.sort_values('score', ascending=feature_ascending, inplace=True)
+    # Merge features and scores, and sort by scores
+    features = merge(features, scores, left_index=True, right_index=True)
+    features.sort_values('score', ascending=feature_ascending, inplace=True)
 
     # Save
     if filepath_prefix:
         establish_filepath(filepath_prefix)
-        features_with_scores.to_csv(filepath_prefix + '.txt', sep='\t')
+        features.to_csv(filepath_prefix + '.txt', sep='\t')
 
     if not (isinstance(n_features, int) or isinstance(n_features, float)):  # n_features = None
         print_log('Not plotting.')
-        return features_with_scores
+        return features
 
     #
     # Make annotations
     #
-    annotations = DataFrame(index=features_with_scores.index)
+    annotations = DataFrame(index=features.index)
 
-    # Format Score and confidence interval
-    for i in features_with_scores.index:
-        if '0.95 moe' in scores.columns:
-            annotations.ix[i, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*scores.ix[i, ['score', '0.95 moe']])
+    # Add IC(0.95 confidence interval)
+    for i in annotations.index:
+        if '0.95 moe' in features.columns:
+            annotations.ix[i, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*features.ix[i, ['score', '0.95 moe']])
         else:
-            annotations.ix[i, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(scores.ix[i, 'score'])
+            annotations.ix[i, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(features.ix[i, 'score'])
 
-    # Format P-Value
-    annotations['P-val'] = ['{:.2e}'.format(x) for x in scores.ix[:, 'p-value']]
+    # Add P-val
+    annotations['P-val'] = ['{:.2e}'.format(x) for x in features.ix[:, 'p-value']]
 
-    # Format FDR
-    annotations['FDR'] = ['{:.2e}'.format(x) for x in scores.ix[:, 'fdr']]
+    # Add FDR
+    annotations['FDR'] = ['{:.2e}'.format(x) for x in features.ix[:, 'fdr']]
 
     #
     # Plot
     #
     # Limited features to plot
     if n_features < 1:  # Limit using percentile
-        above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+        # Limit top features
+        above_quantile = features.ix[:, 'score'] >= features.ix[:, 'score'].quantile(n_features)
         print_log('Plotting {} features (> {:.03f} percentile) ...'.format(sum(above_quantile), n_features))
-        below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+
+        # Limit bottom features
+        below_quantile = features.ix[:, 'score'] <= features.ix[:, 'score'].quantile(1 - n_features)
         print_log('Plotting {} features (< {:.03f} percentile) ...'.format(sum(below_quantile), 1 - n_features))
-        indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
+
+        indices_to_plot = features.index[above_quantile | below_quantile].tolist()
 
     else:  # Limit using numbers
-        if 2 * n_features >= scores.shape[0]:
-            indices_to_plot = scores.index
-            print_log('Plotting all {} features ...'.format(scores.shape[0]))
+        if 2 * n_features >= features.shape[0]:
+            indices_to_plot = features.index
+            print_log('Plotting all {} features ...'.format(features.shape[0]))
         else:
-            indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
+            indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
             print_log('Plotting top & bottom {} features ...'.format(n_features))
 
     # Right alignment: ' ' * 11 + 'IC(\u0394)' + ' ' * 10 + 'P-val' + ' ' * 15 + 'FDR',
-    _plot_association_panel(target, features.ix[indices_to_plot, :], annotations.ix[indices_to_plot, :],
+    _plot_association_panel(target,
+                            features.ix[indices_to_plot, :len(scores.columns)],
+                            annotations.ix[indices_to_plot, :],
                             feature_type=feature_type, target_type=target_type,
                             figure_size=figure_size, title=title, title_size=title_size,
                             annotation_header=' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
                             annotation_label_size=annotation_label_size, plot_colname=plot_colname,
                             dpi=dpi, filepath=filepath_prefix + '.pdf')
 
-    return features_with_scores
+    return features
 
 
 def _plot_association_panel(target, features, annotations, target_type='continuous', feature_type='continuous',
