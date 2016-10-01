@@ -83,6 +83,8 @@ def make_association_panels(target_bundle, feature_bundle,
                 print_log('$')
                 print_log('$$')
                 print_log('$$$')
+                print_log('$$$$')
+                print_log('$$$$$')
                 print_log('Annotating {} with {} ...'.format(t_i, f_name))
 
                 make_association_panel(t, f_dict['dataframe'],
@@ -91,6 +93,8 @@ def make_association_panels(target_bundle, feature_bundle,
                                        n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
                                        filepath_prefix=filepath_prefix + '{}_vs_{}'.format(untitle_string(t_i),
                                                                                            untitle_string(f_name)))
+                print_log('$$$$$')
+                print_log('$$$$')
                 print_log('$$$')
                 print_log('$$')
                 print_log('$')
@@ -261,7 +265,7 @@ def make_association_panel(target, features, target_type='continuous', feature_t
     #
     # Make annotations
     #
-    annotations = DataFrame(index=features.index)
+    annotations = DataFrame(index=features.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
 
     # Add IC(0.95 confidence interval)
     for i in annotations.index:
@@ -271,10 +275,10 @@ def make_association_panel(target, features, target_type='continuous', feature_t
             annotations.ix[i, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(features.ix[i, 'score'])
 
     # Add P-val
-    annotations['P-val'] = ['{:.2e}'.format(x) for x in features.ix[:, 'p-value']]
+    annotations.ix[:, 'P-val'] = ['{:.2e}'.format(x) for x in features.ix[:, 'p-value']]
 
     # Add FDR
-    annotations['FDR'] = ['{:.2e}'.format(x) for x in features.ix[:, 'fdr']]
+    annotations.ix[:, 'FDR'] = ['{:.2e}'.format(x) for x in features.ix[:, 'fdr']]
 
     #
     # Plot
@@ -301,7 +305,7 @@ def make_association_panel(target, features, target_type='continuous', feature_t
 
     # Right alignment: ' ' * 11 + 'IC(\u0394)' + ' ' * 10 + 'P-val' + ' ' * 15 + 'FDR',
     _plot_association_panel(target,
-                            features.ix[indices_to_plot, :len(scores.columns)],
+                            features.ix[indices_to_plot, :-len(scores.columns)],
                             annotations.ix[indices_to_plot, :],
                             feature_type=feature_type, target_type=target_type,
                             figure_size=figure_size, title=title, title_size=title_size,

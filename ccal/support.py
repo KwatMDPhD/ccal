@@ -1105,7 +1105,7 @@ def match(target, features, function=information_coefficient,
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
-    :return: DataFrame; (n_features, 7 ('score', 'moe', 'p-value', 'fdr (forward)', 'fdr (reverse)', and 'fdr'))
+    :return: DataFrame; (n_features, 7 ('score', '0.95 moe', 'p-value', 'fdr (forward)', 'fdr (reverse)', and 'fdr'))
     """
 
     #
@@ -1154,28 +1154,37 @@ def match(target, features, function=information_coefficient,
         print_log('Not computing confidence interval.')
 
     else:
+        confidence_intervals = DataFrame(columns=['{} moe'.format(confidence)])
         print_log('Computing {} CI using distributions built by {} bootstraps ...'.format(confidence, n_samplings))
 
         n_samples = math.ceil(0.632 * features.shape[1])
-        if n_samples < 3:  # Can't bootstrap only if there is less than 3 samples in 63% of the samples
+        if n_samples < 3:  # Can't bootstrap if there is less than 3 samples in 63% of the samples
             print_log('\tCan\'t bootstrap because 0.632 * n_samples < 3.')
 
         else:  # Compute confidence interval for limited features
             if n_features < 1:  # Limit using percentile
-                above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
-                print_log(
-                    '\tBootstrapping {} features (> {:.3f} percentile) ...'.format(sum(above_quantile), n_features))
-                below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
-                print_log(
-                    '\tBootstrapping {} features (< {:.3f} percentile) ...'.format(sum(below_quantile), 1 - n_features))
-                indices_to_bootstrap = scores.index[above_quantile | below_quantile].tolist()
+                # Top features
+                top_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+                print_log('\tBootstrapping {} features >= {:.3f} percentile ...'.format(sum(top_quantile),
+                                                                                        n_features))
+
+                # Bottom features
+                bottom_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+                print_log('\tBootstrapping {} features <= {:.3f} percentile ...'.format(sum(bottom_quantile),
+                                                                                        1 - n_features))
+
+                indices_to_bootstrap = scores.index[top_quantile | bottom_quantile].tolist()
+
             else:  # Limit using numbers
                 if 2 * n_features >= scores.shape[0]:
                     indices_to_bootstrap = scores.index
                     print_log('\tBootstrapping all {} features ...'.format(scores.shape[0]))
+
                 else:
                     indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
                     print_log('\tBootstrapping top & bottom {} features ...'.format(n_features))
+
+            confidence_intervals.index = indices_to_bootstrap
 
             # Bootstrap: for n_sampling times, randomly choose 63% of the samples, score, and build score distribution
             sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
@@ -1190,10 +1199,8 @@ def match(target, features, function=information_coefficient,
             # Compute scores' confidence intervals using bootstrapped score distributions
             # TODO: improve confidence interval calculation
             z_critical = norm.ppf(q=confidence)
-            confidence_intervals = sampled_scores.apply(lambda r: z_critical * (r.std() / math.sqrt(n_samplings)),
-                                                        axis=1)
-            confidence_intervals = DataFrame(confidence_intervals,
-                                             index=indices_to_bootstrap, columns=['{} MoE'.format(confidence)])
+            confidence_intervals.ix[:, '{} moe'.format(confidence)] = sampled_scores.apply(
+                lambda f: z_critical * (f.std() / math.sqrt(n_samplings)), axis=1)
 
             # Merge
             scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
@@ -1201,8 +1208,7 @@ def match(target, features, function=information_coefficient,
     #
     # Compute P-values and FDRs by sores against permuted target
     #
-    p_values_and_fdrs = DataFrame(index=features.index,
-                                  columns=['p-value', 'fdr (forward)', 'fdr (reverse)', 'fdr'])
+    p_values_and_fdrs = DataFrame(index=features.index, columns=['p-value', 'fdr (forward)', 'fdr (reverse)', 'fdr'])
     print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
 
     if n_jobs == 1:  # Non-parallel computing
