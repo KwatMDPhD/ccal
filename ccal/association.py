@@ -11,19 +11,24 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import unique, isnan
-from pandas import DataFrame, Series, merge
+from math import ceil, sqrt
+
+from numpy import array, sum, unique, isnan
+from numpy.random import shuffle, choice
+from pandas import Series, DataFrame, concat
+from scipy.stats import norm
+from statsmodels.sandbox.stats.multicomp import multipletests
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, untitle_string, information_coefficient, \
-    get_unique_in_order, normalize_pandas_object, compare_matrices, match, DPI, CMAP_CONTINUOUS, \
-    CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap
+    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, \
+    CMAP_BINARY, save_plot, plot_clustermap
 
 
 # ======================================================================================================================
-# Match features against target
+# Association panel
 # ======================================================================================================================
 def make_association_panels(target_bundle, feature_bundle,
                             n_features=0.95, n_jobs=1, n_samplings=30, n_permutations=30,
@@ -65,11 +70,11 @@ def make_association_panels(target_bundle, feature_bundle,
     :return: None
     """
 
-    # Load target
+    # Load target bundle
     print_log('Loading targets bundle ...')
     target_dict = _read_data_bundle(target_bundle)
 
-    # Load features
+    # Load feature bundle
     print_log('Loading feature bundle ...')
     feature_dict = _read_data_bundle(feature_bundle)
 
@@ -92,10 +97,9 @@ def make_association_panels(target_bundle, feature_bundle,
 
                 make_association_panel(t, f_dict['dataframe'],
                                        target_type=t_dict['data_type'], feature_type=f_dict['data_type'],
-                                       feature_ascending=f_dict['is_ascending'], n_features=n_features,
+                                       features_ascending=f_dict['is_ascending'], n_features=n_features,
                                        n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
-                                       title=title, dpi=dpi,
-                                       filepath_prefix=filepath_prefix + title)
+                                       title=title, dpi=dpi, filepath_prefix=filepath_prefix + title)
                 print_log('$$$$$')
                 print_log('$$$$')
                 print_log('$$$')
@@ -105,7 +109,7 @@ def make_association_panels(target_bundle, feature_bundle,
 
 
 def make_association_panel(target, features, target_type='continuous', feature_type='continuous',
-                           target_ascending=True, feature_ascending=False,
+                           target_ascending=True, features_ascending=False,
                            min_n_feature_values=None, n_features=0.95, n_jobs=1, min_n_per_job=30,
                            n_samplings=30, n_permutations=30,
                            figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False,
@@ -118,7 +122,7 @@ def make_association_panel(target, features, target_type='continuous', feature_t
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
     :param target_ascending: bool; sort target based on target_ascending if bool; don't sort if None
-    :param feature_ascending: bool; True if features scores increase from top to bottom, and False otherwise
+    :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param min_n_feature_values: int; minimum number of unique values in a feature for it to be matched (default 2)
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
@@ -135,6 +139,9 @@ def make_association_panel(target, features, target_type='continuous', feature_t
     :return: pandas DataFrame; merged features and scores
     """
 
+    #
+    # Preprocess data
+    #
     if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
         features = DataFrame(features).T
 
@@ -171,20 +178,19 @@ def make_association_panel(target, features, target_type='continuous', feature_t
     else:
         print_log('\tKept {} features.'.format(features.shape[0]))
 
-    # Score and sort
+    #
+    # Score
+    #
     if filepath_prefix:
         filepath = filepath_prefix + '.txt'
     else:
         filepath = None
-    scores = match(target, features, feature_ascending=feature_ascending, n_features=n_features,
-                   n_jobs=n_jobs, min_n_per_job=min_n_per_job, n_samplings=n_samplings, n_permutations=n_permutations,
-                   filepath=filepath)
-    # Merge features and scores
-    features = merge(features, scores, left_index=True, right_index=True)
+    scores = associate(target, features, features_ascending=features_ascending,
+                       n_features=n_features, n_jobs=n_jobs, min_n_per_job=min_n_per_job,
+                       n_samplings=n_samplings, n_permutations=n_permutations, filepath=filepath)
 
-    if not (isinstance(n_features, int) or isinstance(n_features, float)):  # n_features = None
-        print_log('Not plotting.')
-        return scores
+    # Concatenate
+    features = concat([features, scores], join_axes=[scores.index])
 
     #
     # Make annotations
@@ -217,6 +223,9 @@ def make_association_panel(target, features, target_type='continuous', feature_t
     # Plot
     #
     # Limited features to plot
+    if n_features < 1 and n_features * features.shape[0] > 100:
+        n_features = 50
+
     if n_features < 1:  # Limit using percentile
         # Limit top features
         above_quantile = features.ix[:, 'score'] >= features.ix[:, 'score'].quantile(n_features)
@@ -249,6 +258,244 @@ def make_association_panel(target, features, target_type='continuous', feature_t
                             annotation_label_size=annotation_label_size, plot_colname=plot_colname,
                             dpi=dpi, filepath=filepath)
 
+    return scores
+
+
+def associate(target, features, function=information_coefficient, features_ascending=False,
+              n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30,
+              filepath=None):
+    """
+    Compute: score_i = function(target, feature_i).
+    Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
+    :param target: pandas Series; (n_samples); must have name and indices, matching features's column index
+    :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
+    :param function: function; scoring function
+    :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
+    :param n_features: int or float; number of features to compute confidence interval and plot;
+                        number threshold if >= 1, percentile threshold if < 1, and don't compute if None
+    :param n_jobs: int; number of jobs to parallelize
+    :param min_n_per_job: int; minimum number of n per job for parallel computing
+    :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
+    :param confidence: float; fraction compute confidence interval
+    :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
+    :param filepath: str;
+    :return: DataFrame; (n_features,
+                         7 ('score', '<confidence> moe', 'p-value', 'fdr (forward)', 'fdr (reverse)', and 'fdr'))
+    """
+
+    #
+    # Compute: score_i = function(target, feature_i).
+    #
+    if n_jobs == 1:  # Non-parallel computing
+        print_log('Scoring ...')
+        scores = _score((target, features, function))
+
+    else:  # Parallel computing
+
+        # Compute n per job
+        n_per_job = features.shape[0] // n_jobs
+
+        if n_per_job < min_n_per_job:  # n is not enough for parallel computing
+            print_log('Scoring (with n_jobs=1 because n_per_job ({}) < min_n_per_job ({})) ...'.format(n_per_job,
+                                                                                                       min_n_per_job))
+            scores = _score((target, features, function))
+
+        else:  # n is enough for parallel computing
+            print_log('Scoring (n_jobs={}) ...'.format(n_jobs))
+
+            # Group
+            args = []
+            leftovers = list(features.index)
+            for i in range(n_jobs):
+                split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
+                args.append((target, split_features, function))
+
+                # Remove scored features
+                for feature in split_features.index:
+                    leftovers.remove(feature)
+
+            # Parallelize
+            scores = concat(parallelize(_score, args, n_jobs=n_jobs))
+
+            # Score leftovers
+            if leftovers:
+                print_log('Scoring leftovers: {} ...'.format(leftovers))
+                scores = concat(
+                    [scores, _score((target, features.ix[leftovers, :], function))])
+
+    # Sort by score
+    scores.sort_values('score', ascending=features_ascending, inplace=True)
+
+    #
+    #  Compute CI using bootstrapped distribution
+    #
+    if not (isinstance(n_features, int) or isinstance(n_features, float)):
+        print_log('Not computing CI because n_features = None.')
+
+    elif n_samplings < 2:
+        print_log('Not computing CI because n_samplings < 2.')
+
+    elif ceil(0.632 * features.shape[1]) < 3:
+        print_log('Not computing CI because 0.632 * n_samples < 3.')
+    else:
+        print_log('Computing {} CI for using distributions built by {} bootstraps ...'.format(confidence, n_samplings))
+        if n_features < 1:  # Limit using percentile
+            # Top features
+            top_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+            print_log('\tBootstrapping {} features >= {:.3f} percentile ...'.format(sum(top_quantile),
+                                                                                    n_features))
+
+            # Bottom features
+            bottom_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+            print_log('\tBootstrapping {} features <= {:.3f} percentile ...'.format(sum(bottom_quantile),
+                                                                                    1 - n_features))
+
+            indices_to_bootstrap = scores.index[top_quantile | bottom_quantile].tolist()
+
+        else:  # Limit using numbers, assuming that scores are sorted already
+            if 2 * n_features >= scores.shape[0]:  # Number of features to compute CI for > number of total features
+                indices_to_bootstrap = scores.index
+                print_log('\tBootstrapping all {} features ...'.format(scores.shape[0]))
+
+            else:
+                indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
+                print_log('\tBootstrapping top & bottom {} features ...'.format(n_features))
+
+        confidence_intervals = DataFrame(index=indices_to_bootstrap, columns=['{} moe'.format(confidence)])
+
+        # Bootstrap: for n_sampling times, randomly choose 63.2% of the samples, score, and build score distribution
+        sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
+        for c_i in sampled_scores:
+            # Randomize
+            ramdom_samples = choice(features.columns.tolist(), int(ceil(0.632 * features.shape[1]))).tolist()
+            sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
+            sampled_target = target.ix[ramdom_samples]
+            # Score
+            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
+
+        # Compute scores' confidence intervals using bootstrapped score distributions
+        # TODO: improve confidence interval calculation
+        z_critical = norm.ppf(q=confidence)
+        confidence_intervals.ix[:, '{} moe'.format(confidence)] = sampled_scores.apply(
+            lambda f: z_critical * (f.std() / sqrt(n_samplings)), axis=1)
+
+        # Concatenate
+        scores = concat([scores, confidence_intervals], join_axes=[scores.index], axis=1)
+
+    #
+    # Compute P-values and FDRs by sores against permuted target
+    #
+    if n_permutations < 1:
+        print_log('Not computing P-value and FDR because n_perm < 1.')
+    else:
+        p_values_and_fdrs = DataFrame(index=scores.index,
+                                      columns=['p-value', 'fdr (forward)', 'fdr (reverse)', 'fdr'])
+
+        if n_jobs == 1:  # Non-parallel computing
+            print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
+            permutation_scores = _permute_and_score((target, features, function, n_permutations))
+
+        else:  # Parallel computing
+
+            # Compute n for a job
+            n_per_job = features.shape[0] // n_jobs
+
+            if n_per_job < min_n_per_job:  # n is not enough for parallel computing
+                print_log('Computing P-value & FDR by scoring against {} permuted targets'
+                          '(with n_jobs=1 because n_per_jobs ({}) < min_n_jobs ({})) ...'.format(n_permutations,
+                                                                                                 n_per_job,
+                                                                                                 min_n_per_job))
+                permutation_scores = _permute_and_score((target,
+                                                         features,
+                                                         function,
+                                                         n_permutations))
+
+            else:  # n is enough for parallel computing
+                print_log('Computing P-value & FDR by scoring against {} permuted targets'
+                          '(n_jobs={}) ...'.format(n_permutations,
+                                                   n_jobs))
+
+                # Group
+                args = []
+                leftovers = list(features.index)
+                for i in range(n_jobs):
+                    split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
+                    args.append((target, split_features, function, n_permutations))
+
+                    # Remove scored features
+                    for feature in split_features.index:
+                        leftovers.remove(feature)
+
+                # Parallelize
+                permutation_scores = concat(parallelize(_permute_and_score, args, n_jobs=n_jobs))
+
+                # Handle leftovers
+                if leftovers:
+                    print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
+                    permutation_scores = concat([permutation_scores,
+                                                 _permute_and_score((target,
+                                                                     features.ix[leftovers, :],
+                                                                     function,
+                                                                     n_permutations))])
+
+        # Compute local and global P-values
+        print_log('\tComputing P-value and FDR ...')
+        all_permutation_scores = permutation_scores.values.flatten()
+        for i, (r_i, r) in enumerate(scores.iterrows()):
+            # Compute global p-value
+            p_value = float(sum(all_permutation_scores > float(r.ix['score'])) / (n_permutations * features.shape[0]))
+            if not p_value:
+                p_value = float(1 / (n_permutations * scores.shape[0]))
+            p_values_and_fdrs.ix[r_i, 'p-value'] = p_value
+
+        # Compute global permutation FDRs
+        p_values_and_fdrs.ix[:, 'fdr (forward)'] = multipletests(p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
+        p_values_and_fdrs.ix[:, 'fdr (reverse)'] = \
+            multipletests(1 - p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
+        p_values_and_fdrs.ix[:, 'fdr'] = p_values_and_fdrs.ix[:, ['fdr (forward)', 'fdr (reverse)']].min(axis=1)
+
+        # Concat
+        scores = concat([scores, p_values_and_fdrs], join_axes=[scores.index], axis=1)
+
+    # Save
+    if filepath:
+        establish_filepath(filepath)
+        scores.to_csv(filepath, sep='\t')
+
+    return scores
+
+
+def _score(args):
+    """
+    Compute: ith score = function(target, ith feature).
+    :param args: list-like;
+        (DataFrame (n_features, m_samples); features, Series (m_samples); target, function)
+    :return: pandas DataFrame; (n_features, 1 ('score'))
+    """
+
+    t, f, func = args
+    return DataFrame(f.apply(lambda a_f: func(t, a_f), axis=1), index=f.index, columns=['score'], dtype=float)
+
+
+def _permute_and_score(args):
+    """
+    Compute: ith score = function(target, ith feature) for n_permutations times.
+    :param args: list-like;
+        (Series (m_samples); target,
+         DataFrame (n_features, m_samples); features,
+         function,
+         int; n_permutations)
+    :return: pandas DataFrame; (n_features, n_permutations)
+    """
+
+    t, f, func, n_perms = args
+
+    scores = DataFrame(index=f.index, columns=range(n_perms))
+    shuffled_target = array(t)
+    for p in range(n_perms):
+        print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms))
+        shuffle(shuffled_target)
+        scores.iloc[:, p] = f.apply(lambda r: func(shuffled_target, r), axis=1)
     return scores
 
 
@@ -466,6 +713,9 @@ def _read_data_bundle(data_bundle):
     return data_dict
 
 
+# ======================================================================================================================
+# Comparison panel
+# ======================================================================================================================
 def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
                            filepath_prefix=None):
     """
