@@ -23,8 +23,8 @@ from matplotlib.gridspec import GridSpec
 from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, untitle_string, information_coefficient, \
-    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, \
-    CMAP_BINARY, save_plot, plot_clustermap
+    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, DPI, CMAP_CONTINUOUS, \
+    CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap
 
 
 # ======================================================================================================================
@@ -371,7 +371,7 @@ def associate(target, features, function=information_coefficient, features_ascen
             sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
             sampled_target = target.ix[ramdom_samples]
             # Score
-            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
+            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda f: function(f, sampled_target), axis=1)
 
         # Compute scores' confidence intervals using bootstrapped score distributions
         # TODO: improve confidence interval calculation
