@@ -24,7 +24,7 @@ from multiprocessing import Pool, cpu_count
 from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, dot, isnan, argmax, average
 from numpy.linalg import pinv
 from numpy.random import random_sample, random_integers, shuffle, choice
-from pandas import Series, DataFrame, concat, merge, read_csv
+from pandas import Series, DataFrame, concat, read_csv
 from scipy.stats import pearsonr, norm
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster, cophenet
@@ -1090,14 +1090,16 @@ def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
     return fit_parameters
 
 
-def match(target, features, function=information_coefficient,
-          n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30):
+def match(target, features, function=information_coefficient, feature_ascending=False,
+          n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30,
+          filepath=None):
     """
     Compute: score_i = function(target, feature_i).
     Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
     :param target: pandas Series; (n_samples); must have name and indices, matching features's column index
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
     :param function: function; scoring function
+    :param feature_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
     :param n_jobs: int; number of jobs to parallelize
@@ -1105,6 +1107,7 @@ def match(target, features, function=information_coefficient,
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
+    :param filepath: str;
     :return: DataFrame; (n_features, 7 ('score', '<confidence> moe', 'p-value', 'fdr (forward)', 'fdr (reverse)', and 'fdr'))
     """
 
@@ -1149,7 +1152,7 @@ def match(target, features, function=information_coefficient,
                     [scores, _score_dataframe_against_series((target, features.ix[leftovers, :], function))])
 
     # Sort by score
-    scores.sort_values('score', inplace=True)
+    scores.sort_values('score', ascending=feature_ascending, inplace=True)
 
     #
     #  Compute CI using bootstrapped distribution
@@ -1177,7 +1180,7 @@ def match(target, features, function=information_coefficient,
 
             indices_to_bootstrap = scores.index[top_quantile | bottom_quantile].tolist()
 
-        else:  # Limit using numbers
+        else:  # Limit using numbers, assuming that scores are sorted already
             if 2 * n_features >= scores.shape[0]:  # Number of features to compute CI for > number of total features
                 indices_to_bootstrap = scores.index
                 print_log('\tBootstrapping all {} features ...'.format(scores.shape[0]))
@@ -1204,8 +1207,8 @@ def match(target, features, function=information_coefficient,
         confidence_intervals.ix[:, '{} moe'.format(confidence)] = sampled_scores.apply(
             lambda f: z_critical * (f.std() / math.sqrt(n_samplings)), axis=1)
 
-        # Merge
-        scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
+        # Concatenate
+        scores = concat([scores, confidence_intervals], join_axes=[scores.index], axis=1)
 
     #
     # Compute P-values and FDRs by sores against permuted target
@@ -1213,7 +1216,7 @@ def match(target, features, function=information_coefficient,
     if n_permutations < 1:
         print_log('Not computing P-value and FDR because n_perm < 1.')
     else:
-        p_values_and_fdrs = DataFrame(index=features.index,
+        p_values_and_fdrs = DataFrame(index=scores.index,
                                       columns=['p-value', 'fdr (forward)', 'fdr (reverse)', 'fdr'])
 
         if n_jobs == 1:  # Non-parallel computing
@@ -1270,7 +1273,7 @@ def match(target, features, function=information_coefficient,
             # Compute global p-value
             p_value = float(sum(all_permutation_scores > float(r.ix['score'])) / (n_permutations * features.shape[0]))
             if not p_value:
-                p_value = float(1 / (n_permutations * features.shape[0]))
+                p_value = float(1 / (n_permutations * scores.shape[0]))
             p_values_and_fdrs.ix[r_i, 'p-value'] = p_value
 
         # Compute global permutation FDRs
@@ -1279,8 +1282,13 @@ def match(target, features, function=information_coefficient,
             multipletests(1 - p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
         p_values_and_fdrs.ix[:, 'fdr'] = p_values_and_fdrs.ix[:, ['fdr (forward)', 'fdr (reverse)']].min(axis=1)
 
-        # Merge
-        scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
+        # Concat
+        scores = concat([scores, p_values_and_fdrs], join_axes=[scores.index], axis=1)
+
+    # Save
+    if filepath:
+        establish_filepath(filepath)
+        scores.to_csv(filepath, sep='\t')
 
     return scores
 
