@@ -1,3 +1,0 @@
-	Sample 1	Sample 0	Sample 2	score	p-value	fdr (forward)	fdr (reverse)	fdr
-Feature 0	8	6	2	0.5660808391578681	0.5	0.5	0.5	0.5
-Feature 1	1	1	3	-0.3480166714907268	0.5	0.5	0.5	0.5
