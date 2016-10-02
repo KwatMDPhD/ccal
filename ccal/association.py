@@ -190,7 +190,7 @@ def make_association_panel(target, features, target_type='continuous', feature_t
                        n_samplings=n_samplings, n_permutations=n_permutations, filepath=filepath)
 
     # Concatenate
-    features = concat([features, scores], join_axes=[scores.index])
+    features = concat([features, scores], join_axes=[scores.index], axis=1)
 
     #
     # Make annotations
@@ -454,7 +454,7 @@ def associate(target, features, function=information_coefficient, features_ascen
             multipletests(1 - p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
         p_values_and_fdrs.ix[:, 'fdr'] = p_values_and_fdrs.ix[:, ['fdr (forward)', 'fdr (reverse)']].min(axis=1)
 
-        # Concat
+        # Concatenate
         scores = concat([scores, p_values_and_fdrs], join_axes=[scores.index], axis=1)
 
     # Save
