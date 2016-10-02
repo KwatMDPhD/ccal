@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import unique
+from numpy import unique, isnan
 from pandas import DataFrame, Series, merge
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -270,17 +270,26 @@ def make_association_panel(target, features, target_type='continuous', feature_t
     annotations = DataFrame(index=features.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
 
     # Add IC(0.95 confidence interval)
-    for i in annotations.index:
-        if '0.95 moe' in features.columns:
-            annotations.ix[i, 'IC(\u0394)'] = '{0:.3f}({1:.3f})'.format(*features.ix[i, ['score', '0.95 moe']])
+    for f_i, s_moe in features.ix[:, ['score', '0.95 moe']].iterrows():
+        if isnan(s_moe.ix['0.95 moe']):
+            a = '{0:.3f}(x.xxx)'.format(s_moe.ix['score'])
         else:
-            annotations.ix[i, 'IC(\u0394)'] = '{:.3f}(x.xxx)'.format(features.ix[i, 'score'])
+            a = '{0:.3f}({1:.3f})'.format(*s_moe.ix[['score', '0.95 moe']])
+        annotations.ix[f_i, 'IC(\u0394)'] = a
 
     # Add P-val
-    annotations.ix[:, 'P-val'] = ['{:.2e}'.format(x) for x in features.ix[:, 'p-value']]
+    if 'p-value' in features.columns:
+        a = ['{:.2e}'.format(pv) for pv in features.ix[:, 'p-value']]
+    else:
+        a = 'x.xxe\u00B1xx'
+    annotations.ix[:, 'P-val'] = a
 
     # Add FDR
-    annotations.ix[:, 'FDR'] = ['{:.2e}'.format(x) for x in features.ix[:, 'fdr']]
+    if 'fdr' in features.columns:
+        a = ['{:.2e}'.format(fdr) for fdr in features.ix[:, 'fdr']]
+    else:
+        a = 'x.xxe\u00B1xx'
+    annotations.ix[:, 'FDR'] = a
 
     #
     # Plot
@@ -306,6 +315,12 @@ def make_association_panel(target, features, target_type='continuous', feature_t
             print_log('Plotting top & bottom {} features ...'.format(n_features))
 
     # Right alignment: ' ' * 11 + 'IC(\u0394)' + ' ' * 10 + 'P-val' + ' ' * 15 + 'FDR',
+
+    # Plot
+    if filepath_prefix:
+        filepath = filepath_prefix + '.pdf'
+    else:
+        filepath = None
     _plot_association_panel(target,
                             features.ix[indices_to_plot, :-len(scores.columns)],
                             annotations.ix[indices_to_plot, :],
@@ -313,7 +328,7 @@ def make_association_panel(target, features, target_type='continuous', feature_t
                             figure_size=figure_size, title=title, title_size=title_size,
                             annotation_header=' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
                             annotation_label_size=annotation_label_size, plot_colname=plot_colname,
-                            dpi=dpi, filepath=filepath_prefix + '.pdf')
+                            dpi=dpi, filepath=filepath)
 
     return features
 

@@ -1093,7 +1093,7 @@ def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
 def match(target, features, function=information_coefficient,
           n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30):
     """
-    Compute: ith score = function(target, ith feature).
+    Compute: score_i = function(target, feature_i).
     Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
     :param target: pandas Series; (n_samples); must have name and indices, matching features's column index
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
@@ -1109,23 +1109,25 @@ def match(target, features, function=information_coefficient,
     """
 
     #
-    # Compute: ith score = function(target, ith feature).
+    # Compute: score_i = function(target, feature_i).
     #
     if n_jobs == 1:  # Non-parallel computing
-        print_log('Scoring (without parallelizing) ...')
+        print_log('Scoring ...')
         scores = _score_dataframe_against_series((target, features, function))
 
     else:  # Parallel computing
-        print_log('Scoring across {} parallelized jobs ...'.format(n_jobs))
 
-        # Compute n for a job
+        # Compute n per job
         n_per_job = features.shape[0] // n_jobs
 
         if n_per_job < min_n_per_job:  # n is not enough for parallel computing
-            print_log('\tNot parallelizing because n_per_job < {}.'.format(min_n_per_job))
+            print_log('Scoring (with n_jobs=1 because n_per_job ({}) < min_n_per_job ({})) ...'.format(n_per_job,
+                                                                                                       min_n_per_job))
             scores = _score_dataframe_against_series((target, features, function))
 
         else:  # n is enough for parallel computing
+            print_log('Scoring (n_jobs={}) ...'.format(n_jobs))
+
             # Group
             args = []
             leftovers = list(features.index)
@@ -1145,126 +1147,140 @@ def match(target, features, function=information_coefficient,
                 print_log('Scoring leftovers: {} ...'.format(leftovers))
                 scores = concat(
                     [scores, _score_dataframe_against_series((target, features.ix[leftovers, :], function))])
+
+    # Sort by score
     scores.sort_values('score', inplace=True)
 
     #
-    #  Compute confidence interval using bootstrapped distribution
+    #  Compute CI using bootstrapped distribution
     #
-    if not (isinstance(n_features, int) or isinstance(n_features, float)):  # n_features = None
-        print_log('Not computing confidence interval.')
+    if not (isinstance(n_features, int) or isinstance(n_features, float)):
+        print_log('Not computing CI because n_features = None.')
 
+    elif n_samplings < 2:
+        print_log('Not computing CI because n_samplings < 2.')
+
+    elif math.ceil(0.632 * features.shape[1]) < 3:
+        print_log('Not computing CI because 0.632 * n_samples < 3.')
     else:
-        print_log('Computing {} CI using distributions built by {} bootstraps ...'.format(confidence, n_samplings))
+        print_log('Computing {} CI for using distributions built by {} bootstraps ...'.format(confidence, n_samplings))
+        if n_features < 1:  # Limit using percentile
+            # Top features
+            top_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+            print_log('\tBootstrapping {} features >= {:.3f} percentile ...'.format(sum(top_quantile),
+                                                                                    n_features))
 
-        n_samples = math.ceil(0.632 * features.shape[1])
-        if n_samples < 3:  # Can't bootstrap if there is less than 3 samples in 63% of the samples
-            print_log('\tCan\'t bootstrap because 0.632 * n_samples < 3.')
+            # Bottom features
+            bottom_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+            print_log('\tBootstrapping {} features <= {:.3f} percentile ...'.format(sum(bottom_quantile),
+                                                                                    1 - n_features))
 
-        else:  # Compute confidence interval for limited features
-            if n_features < 1:  # Limit using percentile
-                # Top features
-                top_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
-                print_log('\tBootstrapping {} features >= {:.3f} percentile ...'.format(sum(top_quantile),
-                                                                                        n_features))
+            indices_to_bootstrap = scores.index[top_quantile | bottom_quantile].tolist()
 
-                # Bottom features
-                bottom_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
-                print_log('\tBootstrapping {} features <= {:.3f} percentile ...'.format(sum(bottom_quantile),
-                                                                                        1 - n_features))
+        else:  # Limit using numbers
+            if 2 * n_features >= scores.shape[0]:  # Number of features to compute CI for > number of total features
+                indices_to_bootstrap = scores.index
+                print_log('\tBootstrapping all {} features ...'.format(scores.shape[0]))
 
-                indices_to_bootstrap = scores.index[top_quantile | bottom_quantile].tolist()
+            else:
+                indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
+                print_log('\tBootstrapping top & bottom {} features ...'.format(n_features))
 
-            else:  # Limit using numbers
-                if 2 * n_features >= scores.shape[0]:
-                    indices_to_bootstrap = scores.index
-                    print_log('\tBootstrapping all {} features ...'.format(scores.shape[0]))
+        confidence_intervals = DataFrame(index=indices_to_bootstrap, columns=['{} moe'.format(confidence)])
 
-                else:
-                    indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
-                    print_log('\tBootstrapping top & bottom {} features ...'.format(n_features))
+        # Bootstrap: for n_sampling times, randomly choose 63.2% of the samples, score, and build score distribution
+        sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
+        for c_i in sampled_scores:
+            # Randomize
+            ramdom_samples = choice(features.columns.tolist(), int(math.ceil(0.632 * features.shape[1]))).tolist()
+            sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
+            sampled_target = target.ix[ramdom_samples]
+            # Score
+            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
 
-            confidence_intervals = DataFrame(index=indices_to_bootstrap, columns=['{} moe'.format(confidence)])
+        # Compute scores' confidence intervals using bootstrapped score distributions
+        # TODO: improve confidence interval calculation
+        z_critical = norm.ppf(q=confidence)
+        confidence_intervals.ix[:, '{} moe'.format(confidence)] = sampled_scores.apply(
+            lambda f: z_critical * (f.std() / math.sqrt(n_samplings)), axis=1)
 
-            # Bootstrap: for n_sampling times, randomly choose 63% of the samples, score, and build score distribution
-            sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
-            for c_i in sampled_scores:
-                # Randomize
-                ramdom_samples = choice(features.columns.tolist(), int(n_samples)).tolist()
-                sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
-                sampled_target = target.ix[ramdom_samples]
-                # Score
-                sampled_scores.ix[:, c_i] = sampled_features.apply(lambda r: function(r, sampled_target), axis=1)
-
-            # Compute scores' confidence intervals using bootstrapped score distributions
-            # TODO: improve confidence interval calculation
-            z_critical = norm.ppf(q=confidence)
-            confidence_intervals.ix[:, '{} moe'.format(confidence)] = sampled_scores.apply(
-                lambda f: z_critical * (f.std() / math.sqrt(n_samplings)), axis=1)
-
-            # Merge
-            scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
+        # Merge
+        scores = merge(scores, confidence_intervals, how='outer', left_index=True, right_index='True')
 
     #
     # Compute P-values and FDRs by sores against permuted target
     #
-    p_values_and_fdrs = DataFrame(index=features.index, columns=['p-value', 'fdr (forward)', 'fdr (reverse)', 'fdr'])
-    print_log('Computing P-value and FDR using {} permutation test ...'.format(n_permutations))
+    if n_permutations < 1:
+        print_log('Not computing P-value and FDR because n_perm < 1.')
+    else:
+        p_values_and_fdrs = DataFrame(index=features.index,
+                                      columns=['p-value', 'fdr (forward)', 'fdr (reverse)', 'fdr'])
 
-    if n_jobs == 1:  # Non-parallel computing
-        print_log('Scoring against permuted target (without parallelizing) ...')
-        permutation_scores = _score_dataframe_against_permuted_series((target, features, function, n_permutations))
-
-    else:  # Parallel computing
-        print_log('Scoring against permuted target across {} parallelized jobs ...'.format(n_jobs))
-
-        # Compute n for a job
-        n_per_job = features.shape[0] // n_jobs
-
-        if n_per_job < min_n_per_job:  # n is not enough for parallel computing
-            print_log('\tNot parallelizing because n_per_job < {}.'.format(min_n_per_job))
+        if n_jobs == 1:  # Non-parallel computing
+            print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
             permutation_scores = _score_dataframe_against_permuted_series((target, features, function, n_permutations))
 
-        else:  # n is enough for parallel computing
-            # Group
-            args = []
-            leftovers = list(features.index)
-            for i in range(n_jobs):
-                split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
-                args.append((target, split_features, function, n_permutations))
+        else:  # Parallel computing
 
-                # Remove scored features
-                for feature in split_features.index:
-                    leftovers.remove(feature)
+            # Compute n for a job
+            n_per_job = features.shape[0] // n_jobs
 
-            # Parallelize
-            permutation_scores = concat(parallelize(_score_dataframe_against_permuted_series, args, n_jobs=n_jobs))
+            if n_per_job < min_n_per_job:  # n is not enough for parallel computing
+                print_log('Computing P-value & FDR by scoring against {} permuted targets'
+                          '(with n_jobs=1 because n_per_jobs ({}) < min_n_jobs ({})) ...'.format(n_permutations,
+                                                                                                 n_per_job,
+                                                                                                 min_n_per_job))
+                permutation_scores = _score_dataframe_against_permuted_series((target,
+                                                                               features,
+                                                                               function,
+                                                                               n_permutations))
 
-            # Handle leftovers
-            if leftovers:
-                print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
-                permutation_scores = concat([permutation_scores,
-                                             _score_dataframe_against_permuted_series((target,
-                                                                                       features.ix[leftovers, :],
-                                                                                       function,
-                                                                                       n_permutations))])
+            else:  # n is enough for parallel computing
+                print_log('Computing P-value & FDR by scoring against {} permuted targets'
+                          '(n_jobs={}) ...'.format(n_permutations,
+                                                   n_jobs))
 
-    # Compute local and global P-values
-    print_log('Computing P-value and FDR ...')
-    all_permutation_scores = permutation_scores.values.flatten()
-    for i, (r_i, r) in enumerate(scores.iterrows()):
-        # Compute global p-value
-        p_value = float(sum(all_permutation_scores > float(r.ix['score'])) / (n_permutations * features.shape[0]))
-        if not p_value:
-            p_value = float(1 / (n_permutations * features.shape[0]))
-        p_values_and_fdrs.ix[r_i, 'p-value'] = p_value
+                # Group
+                args = []
+                leftovers = list(features.index)
+                for i in range(n_jobs):
+                    split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
+                    args.append((target, split_features, function, n_permutations))
 
-    # Compute global permutation FDRs
-    p_values_and_fdrs.ix[:, 'fdr (forward)'] = multipletests(p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
-    p_values_and_fdrs.ix[:, 'fdr (reverse)'] = multipletests(1 - p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
-    p_values_and_fdrs.ix[:, 'fdr'] = p_values_and_fdrs.ix[:, ['fdr (forward)', 'fdr (reverse)']].min(axis=1)
+                    # Remove scored features
+                    for feature in split_features.index:
+                        leftovers.remove(feature)
 
-    # Merge
-    scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
+                # Parallelize
+                permutation_scores = concat(parallelize(_score_dataframe_against_permuted_series, args, n_jobs=n_jobs))
+
+                # Handle leftovers
+                if leftovers:
+                    print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
+                    permutation_scores = concat([permutation_scores,
+                                                 _score_dataframe_against_permuted_series((target,
+                                                                                           features.ix[leftovers, :],
+                                                                                           function,
+                                                                                           n_permutations))])
+
+        # Compute local and global P-values
+        print_log('\nComputing P-value and FDR ...')
+        all_permutation_scores = permutation_scores.values.flatten()
+        for i, (r_i, r) in enumerate(scores.iterrows()):
+            # Compute global p-value
+            p_value = float(sum(all_permutation_scores > float(r.ix['score'])) / (n_permutations * features.shape[0]))
+            if not p_value:
+                p_value = float(1 / (n_permutations * features.shape[0]))
+            p_values_and_fdrs.ix[r_i, 'p-value'] = p_value
+
+        # Compute global permutation FDRs
+        p_values_and_fdrs.ix[:, 'fdr (forward)'] = multipletests(p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
+        p_values_and_fdrs.ix[:, 'fdr (reverse)'] = \
+            multipletests(1 - p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
+        p_values_and_fdrs.ix[:, 'fdr'] = p_values_and_fdrs.ix[:, ['fdr (forward)', 'fdr (reverse)']].min(axis=1)
+
+        # Merge
+        scores = merge(scores, p_values_and_fdrs, left_index=True, right_index=True)
 
     return scores
 
@@ -1278,7 +1294,7 @@ def _score_dataframe_against_series(args):
     """
 
     t, f, func = args
-    return DataFrame(f.apply(lambda a_f: func(t, a_f), axis=1), index=f.index, columns=['score'])
+    return DataFrame(f.apply(lambda a_f: func(t, a_f), axis=1), index=f.index, columns=['score'], dtype=float)
 
 
 def _score_dataframe_against_permuted_series(args):
