@@ -61,6 +61,7 @@ def make_association_panels(target_bundle, feature_bundle,
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath_prefix: str; filepath_prefix_annotation_name.txt and filepath_prefix_annotation_name.pdf are saved
+    :param dpi: int;
     :return: None
     """
 
@@ -103,86 +104,8 @@ def make_association_panels(target_bundle, feature_bundle,
                 print_log('')
 
 
-def _read_data_bundle(data_bundle):
-    """
-    Read data bundle.
-    :param data_bundle: list;
-        [
-            [name
-            df or filepath to .gct
-            data_type,
-            is_ascending,
-            (optional) index_axis,
-            (optional) index,
-            (optional) index_alias],
-
-            ...
-
-        ]
-    :return: dict; {name: {dataframe: DataFrame,
-                    data_type: str,
-                    is_ascending: bool}}
-    """
-
-    data_dict = {}
-
-    # Read all annotations
-    for name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, index_alias in data_bundle:
-        print_log('Reading {} ...'.format(name))
-        print_log('\tData: {}.'.format(type(dataframe_or_filepath)))
-        print_log('\tData type: {}.'.format(data_type))
-        print_log('\tIs ascending: {}.'.format(is_ascending))
-        print_log('\tIndex axis: {}.'.format(index_axis))
-        print_log('\tIndex: {}.'.format(index))
-        print_log('\tIndex alias: {}.'.format(index_alias))
-
-        data_dict[name] = {}
-
-        # Read data type
-        data_dict[name]['data_type'] = data_type
-
-        # Read whether reverse make_association_panel or not
-        data_dict[name]['is_ascending'] = is_ascending
-
-        # Read DataFrame
-        if isinstance(dataframe_or_filepath, DataFrame):
-            df = dataframe_or_filepath
-        elif isinstance(dataframe_or_filepath, str):
-            df = read_gct(dataframe_or_filepath)
-        else:
-            raise ValueError('dataframe_or_filepath (2nd in the list) must be either a DataFrame or str (filepath).')
-
-        # Limit to specified features
-        if index:  # Extract
-
-            if index_axis == 0:  # By row
-                df = df.ix[index, :]
-                if isinstance(df, Series):
-                    df = DataFrame(df).T
-
-            elif index_axis == 1:  # By column
-                df = df.ix[:, index]
-                if isinstance(df, Series):
-                    df = DataFrame(df).T
-                else:
-                    df = df.T
-            else:
-                raise ValueError('index_axis (6th in the list) must be either 0 (row) or 1 (column).')
-
-            if index_alias:  # Use aliases instead of index
-                if isinstance(index_alias, str):  # Wrap string with list
-                    index_alias = [index_alias]
-                df.index = index_alias
-
-        data_dict[name]['dataframe'] = df
-
-        print_log('\tRead {} features & {} samples.'.format(*data_dict[name]['dataframe'].shape))
-
-    return data_dict
-
-
 def make_association_panel(target, features, target_type='continuous', feature_type='continuous',
-                           target_sort=True, feature_ascending=False,
+                           target_ascending=True, feature_ascending=False,
                            min_n_feature_values=None, n_features=0.95, n_jobs=1, min_n_per_job=30,
                            n_samplings=30, n_permutations=30,
                            figure_size='auto', title=None, title_size=16, annotation_label_size=9, plot_colname=False,
@@ -194,7 +117,7 @@ def make_association_panel(target, features, target_type='continuous', feature_t
     :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param feature_type: str; {'continuous', 'categorical', 'binary'}
-    :param target_sort: bool; sort target or not
+    :param target_ascending: bool; sort target based on target_ascending if bool; don't sort if None
     :param feature_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param min_n_feature_values: int; minimum number of unique values in a feature for it to be matched (default 2)
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
@@ -229,7 +152,7 @@ def make_association_panel(target, features, target_type='continuous', feature_t
                                                                                                     target.size,
                                                                                                     features.shape[1]))
 
-    if target_sort:  # Sort target
+    if isinstance(target_ascending, bool):  # Sort target
         target.sort_values(ascending=False, inplace=True)
         features = features.reindex_axis(target.index, axis=1)
 
@@ -467,6 +390,84 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
     # Save
     if filepath:
         save_plot(filepath, dpi=dpi)
+
+
+def _read_data_bundle(data_bundle):
+    """
+    Read data bundle.
+    :param data_bundle: list;
+        [
+            [name
+            df or filepath to .gct
+            data_type,
+            is_ascending,
+            (optional) index_axis,
+            (optional) index,
+            (optional) index_alias],
+
+            ...
+
+        ]
+    :return: dict; {name: {dataframe: DataFrame,
+                    data_type: str,
+                    is_ascending: bool}}
+    """
+
+    data_dict = {}
+
+    # Read all annotations
+    for name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, index_alias in data_bundle:
+        print_log('Reading {} ...'.format(name))
+        print_log('\tData: {}.'.format(type(dataframe_or_filepath)))
+        print_log('\tData type: {}.'.format(data_type))
+        print_log('\tIs ascending: {}.'.format(is_ascending))
+        print_log('\tIndex axis: {}.'.format(index_axis))
+        print_log('\tIndex: {}.'.format(index))
+        print_log('\tIndex alias: {}.'.format(index_alias))
+
+        data_dict[name] = {}
+
+        # Read data type
+        data_dict[name]['data_type'] = data_type
+
+        # Read whether reverse make_association_panel or not
+        data_dict[name]['is_ascending'] = is_ascending
+
+        # Read DataFrame
+        if isinstance(dataframe_or_filepath, DataFrame):
+            df = dataframe_or_filepath
+        elif isinstance(dataframe_or_filepath, str):
+            df = read_gct(dataframe_or_filepath)
+        else:
+            raise ValueError('dataframe_or_filepath (2nd in the list) must be either a DataFrame or str (filepath).')
+
+        # Limit to specified features
+        if index:  # Extract
+
+            if index_axis == 0:  # By row
+                df = df.ix[index, :]
+                if isinstance(df, Series):
+                    df = DataFrame(df).T
+
+            elif index_axis == 1:  # By column
+                df = df.ix[:, index]
+                if isinstance(df, Series):
+                    df = DataFrame(df).T
+                else:
+                    df = df.T
+            else:
+                raise ValueError('index_axis (6th in the list) must be either 0 (row) or 1 (column).')
+
+            if index_alias:  # Use aliases instead of index
+                if isinstance(index_alias, str):  # Wrap string with list
+                    index_alias = [index_alias]
+                df.index = index_alias
+
+        data_dict[name]['dataframe'] = df
+
+        print_log('\tRead {} features & {} samples.'.format(*data_dict[name]['dataframe'].shape))
+
+    return data_dict
 
 
 def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
