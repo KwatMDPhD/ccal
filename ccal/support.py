@@ -1264,7 +1264,7 @@ def match(target, features, function=information_coefficient,
                                                                                            n_permutations))])
 
         # Compute local and global P-values
-        print_log('\nComputing P-value and FDR ...')
+        print_log('\tComputing P-value and FDR ...')
         all_permutation_scores = permutation_scores.values.flatten()
         for i, (r_i, r) in enumerate(scores.iterrows()):
             # Compute global p-value
