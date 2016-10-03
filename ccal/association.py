@@ -467,12 +467,7 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
     features, features_min, features_max, features_cmap = _prepare_data_for_plotting(features, features_type)
 
     # Set up figure
-    # TODO: remove
-    # if figure_size == 'auto':
-    #     figure_size = (min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9))
-    # else:
-    #     figure_size = FIGURE_SIZE
-    figure(figsize=FIGURE_SIZE)
+    figure(figsize=(min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9)))
 
     # Set up axis grids
     gridspec = GridSpec(features.shape[0] + 1, 1)
