@@ -442,8 +442,8 @@ def title_string(string):
     """
 
     string = string.title().replace('_', ' ').replace('\n', '')
-    for article in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of']:
-        string = string.replace(' ' + article.title() + ' ', ' ' + article + ' ')
+    for lowercase in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of', 'vs', 'vs']:
+        string = string.replace(' ' + lowercase.title() + ' ', ' ' + lowercase + ' ')
     return string
 
 
@@ -1404,6 +1404,13 @@ def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None):
 # ======================================================================================================================
 # Plotting
 # ======================================================================================================================
+FIGURE_SIZE = (16, 10)
+
+# Fonts
+# TODO: make plotters use these instead of manual entry
+FONT = {'rotation': 0, 'fontsize': 9, 'weight': 'bold'}
+FONT_TITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
+
 # Color maps
 BAD_COLOR = 'wheat'
 CMAP_CONTINUOUS = bwr
@@ -1413,8 +1420,6 @@ CMAP_CATEGORICAL.set_bad(BAD_COLOR)
 CMAP_BINARY = light_palette('black', n_colors=2, as_cmap=True)
 CMAP_BINARY.set_bad(BAD_COLOR)
 
-# Figure parameters
-FIGURE_SIZE = (16, 10)
 DPI = 1000
 
 
@@ -1631,11 +1636,15 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
 
 def save_plot(filepath, dpi=DPI):
     """
-    Establish filepath and save plot at dpi resolution.
+    Establish filepath and save plot (.pdf) at dpi resolution.
     :param filepath: str;
     :param dpi: int;
     :return: None
     """
 
+    if not filepath.endswith('.pdf'):
+        filepath += '.pdf'
+
     establish_filepath(filepath)
+
     plt.savefig(filepath, dpi=dpi, bbox_inches='tight')

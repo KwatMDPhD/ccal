@@ -22,41 +22,37 @@ from matplotlib.pyplot import figure, subplot
 from matplotlib.gridspec import GridSpec
 from seaborn import heatmap
 
-from .support import print_log, establish_filepath, read_gct, untitle_string, information_coefficient, \
-    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, FIGURE_SIZE, DPI, CMAP_CONTINUOUS, \
-    CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap
+from .support import print_log, establish_filepath, read_gct, title_string, untitle_string, information_coefficient, \
+    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, FIGURE_SIZE, CMAP_CONTINUOUS, \
+    CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, save_plot, plot_clustermap
 
 
 # ======================================================================================================================
 # Association panel
 # ======================================================================================================================
 def make_association_panels(target, features_bundle, target_name=None, target_type='continuous',
-                            n_features=0.95, n_jobs=1, n_samplings=30, n_permutations=30,
-                            dpi=DPI, filepath_prefix=None):
+                            n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, filepath_prefix=None):
     """
-    Annotate each target in the target bundle with each feature in the feature bundle.
+    Annotate target with each feature in the features bundle.
     :param target: pandas Series; (n_elements); must have indices
-    :param target_name: str;
-    :param target_type:
     :param features_bundle: list of lists;
         [
             [name
-            df or filepath to .gct
+            dataframe_or_filepath (to .gct),
             data_type,
             is_ascending,
             (optional) index_axis,
             (optional) index,
             (optional) index_alias],
-
             ...
-
         ]
-    :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
+    :param target_name: str;
+    :param target_type:
     :param n_jobs: int; number of jobs to parallelize
+    :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath_prefix: str; filepath_prefix_annotation_name.txt and filepath_prefix_annotation_name.pdf are saved
-    :param dpi: int;
     :return: None
     """
 
@@ -64,59 +60,37 @@ def make_association_panels(target, features_bundle, target_name=None, target_ty
     print_log('Loading features bundle ...')
     feature_dicts = _read_bundle(features_bundle)
 
+    if target_name:  # Set target name
+        target.name = target_name
+
     # Annotate this target with each feature
     for features_name, features_dict in feature_dicts.items():
-
-        if not target_name:
-            target_name = target.name
-        title = '{}_vs_{}'.format(untitle_string(target_name), untitle_string(features_name))
-
-        print_log('')
-        print_log('$')
-        print_log('$$')
-        print_log('$$$')
-        print_log('$$$$')
-        print_log('$$$$$')
-        print_log('Annotating target_name with {} ...'.format(title))
-
+        title = '{} vs {}'.format(target.name, features_name)
+        print_log('{} ...'.format(title_string(title)))
         make_association_panel(target, features_dict['dataframe'],
                                target_type=target_type, features_type=features_dict['data_type'],
                                features_ascending=features_dict['is_ascending'], n_features=n_features,
                                n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
-                               title=title, dpi=dpi, filepath_prefix=filepath_prefix + title)
-        print_log('$$$$$')
-        print_log('$$$$')
-        print_log('$$$')
-        print_log('$$')
-        print_log('$')
-        print_log('')
+                               title=title_string(title), filepath_prefix=filepath_prefix + untitle_string(title))
 
 
-def make_association_panel(target, features, target_name=None, target_type='continuous', features_type='continuous',
-                           features_ascending=False, min_n_unique_values=None, n_features=0.95, n_jobs=1,
-                           min_n_per_job=30, n_samplings=30, n_permutations=30,
-                           figure_size='auto', title=None, title_fontsize=16, annotation_label_size=9,
-                           plot_colname=False, dpi=DPI, filepath_prefix=None):
+def make_association_panel(target, features, target_type='continuous', features_type='continuous',
+                           n_jobs=1, features_ascending=False, n_features=0.95, n_samplings=30, n_permutations=30,
+                           title=None, plot_colname=False, filepath_prefix=None):
     """
-    Compute: ith score = function(ith feature, target). Compute confidence interval (CI) for n_features
-    features. Compute p-val and FDR (BH) for all features. And plot the result.
+    Compute: score_i = function(target, feature_i). Compute confidence interval (CI) for n_features features.
+    Compute p-val and FDR (BH) for all features. And plot the result.
     :param target: pandas Series; (n_samples); must have name and index matching features's column names
     :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param features_type: str; {'continuous', 'categorical', 'binary'}
-    :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
-    :param min_n_unique_values: int; minimum number of unique values in a feature for it to be matched (default 2)
-    :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_jobs: int; number of jobs to parallelize
-    :param min_n_per_job: int; minimum number of n per job for parallel computing
+    :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
+    :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
-    :param figure_size: 'auto' or tuple;
     :param title: str; plot title
-    :param title_fontsize: int; title text size
-    :param annotation_label_size: int; annotation text size
     :param plot_colname: bool; plot column names below the plot or not
-    :param dpi: int; dots per square inch of pixel in the output figure
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
     :return: pandas DataFrame; merged features and scores
     """
@@ -130,6 +104,7 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     # Keep only columns shared by target and features
     shared = target.index & features.columns
     if any(shared):
+        # Target is always descending from left to right
         target = target.ix[shared].sort_values(ascending=False)
         features = features.ix[:, target.index]
         print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
@@ -141,16 +116,10 @@ def make_association_panel(target, features, target_name=None, target_type='cont
                                                                                                     target.size,
                                                                                                     features.shape[1]))
 
-    # Drop features having less than min_n_unique_values unique values
-    if not min_n_unique_values:
-        if features_type == 'continuous':
-            min_n_unique_values = 3
-        elif features_type in ('categorical', 'binary'):
-            min_n_unique_values = 2
-        else:
-            raise ValueError('features_type must be one of {continuous, categorical, binary}.')
+    # Drop features having less than 2 unique values
+    min_n_unique_values = 2
     print_log('Dropping features with less than {} unique values ...'.format(min_n_unique_values))
-    features = features.ix[features.apply(lambda row: len(set(row)), axis=1) >= min_n_unique_values]
+    features = features.ix[features.apply(lambda f: len(set(f)), axis=1) >= min_n_unique_values]
     if features.empty:
         raise ValueError('No feature has at least {} unique values.'.format(min_n_unique_values))
     else:
@@ -163,9 +132,8 @@ def make_association_panel(target, features, target_name=None, target_type='cont
         filepath = filepath_prefix + '.txt'
     else:
         filepath = None
-    scores = associate(target, features, features_ascending=features_ascending,
-                       n_features=n_features, n_jobs=n_jobs, min_n_per_job=min_n_per_job,
-                       n_samplings=n_samplings, n_permutations=n_permutations, filepath=filepath)
+    scores = associate(target, features, n_jobs=n_jobs, features_ascending=features_ascending,
+                       n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations, filepath=filepath)
 
     # Concatenate
     features = concat([features, scores], join_axes=[scores.index], axis=1)
@@ -175,7 +143,7 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     #
     annotations = DataFrame(index=features.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
 
-    # Add IC(0.95 confidence interval)
+    # Add IC (0.95 confidence interval)
     for f_i, s_moe in features.ix[:, ['score', '0.95 moe']].iterrows():
         if isnan(s_moe.ix['0.95 moe']):
             a = '{0:.3f}(x.xxx)'.format(s_moe.ix['score'])
@@ -201,25 +169,26 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     # Plot
     #
     # Limited features to plot
-    if n_features < 1 and n_features * features.shape[0] > 100:
-        n_features = 50
+    if n_features > 100 or (n_features < 1 and n_features * features.shape[0] > 100):
+        n_features = 100
+        print_log('Changed n_features to be 100 because using {} results in plotting too many features.')
 
     if n_features < 1:  # Limit using percentile
         # Limit top features
         above_quantile = features.ix[:, 'score'] >= features.ix[:, 'score'].quantile(n_features)
-        print_log('Plotting {} features (> {:.03f} percentile) ...'.format(sum(above_quantile), n_features))
+        print_log('Plotting {} features (> {:.02f} percentile) ...'.format(sum(above_quantile), n_features))
 
         # Limit bottom features
         below_quantile = features.ix[:, 'score'] <= features.ix[:, 'score'].quantile(1 - n_features)
-        print_log('Plotting {} features (< {:.03f} percentile) ...'.format(sum(below_quantile), 1 - n_features))
+        print_log('Plotting {} features (< {:.02f} percentile) ...'.format(sum(below_quantile), 1 - n_features))
 
         indices_to_plot = features.index[above_quantile | below_quantile].tolist()
 
-    else:  # Limit using numbers
+    else:  # Limit using numbers assuming that features is sorted
         if 2 * n_features >= features.shape[0]:
             indices_to_plot = features.index
             print_log('Plotting all {} features ...'.format(features.shape[0]))
-        else:  # Assuming that features is sorted
+        else:
             indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
             print_log('Plotting top & bottom {} features ...'.format(n_features))
 
@@ -230,15 +199,13 @@ def make_association_panel(target, features, target_name=None, target_type='cont
         filepath = None
     _plot_association_panel(target, features.ix[indices_to_plot, :-len(scores.columns)],
                             annotations.ix[indices_to_plot, :], target_type=target_type, features_type=features_type,
-                            figure_size=figure_size, title=title, title_fontsize=title_fontsize,
-                            annotation_label_fontsize=annotation_label_size, plot_colname=plot_colname,
-                            dpi=dpi, filepath=filepath)
+                            title=title, plot_colname=plot_colname, filepath=filepath)
 
     return scores
 
 
-def associate(target, features, function=information_coefficient, features_ascending=False,
-              n_features=0.95, n_jobs=1, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30,
+def associate(target, features, function=information_coefficient, n_jobs=1, features_ascending=False,
+              n_features=0.95, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30,
               filepath=None):
     """
     Compute: score_i = function(target, feature_i).
@@ -246,10 +213,10 @@ def associate(target, features, function=information_coefficient, features_ascen
     :param target: pandas Series; (n_samples); must have name and indices, matching features's column index
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
     :param function: function; scoring function
+    :param n_jobs: int; number of jobs to parallelize
     :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
-    :param n_jobs: int; number of jobs to parallelize
     :param min_n_per_job: int; minimum number of n per job for parallel computing
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
@@ -476,9 +443,7 @@ def _permute_and_score(args):
 
 
 def _plot_association_panel(target, features, annotations, target_type='continuous', features_type='continuous',
-                            figure_size='auto', title=None, title_fontsize=20,
-                            annotation_label_fontsize=9, plot_colname=False,
-                            dpi=DPI, filepath=None):
+                            title=None, plot_colname=False, filepath=None):
     """
     Plot association panel.
     :param target: pandas Series; (n_elements); must have indices matching features's columns
@@ -486,28 +451,25 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
     :param annotations: pandas DataFrame; (n_features, n_annotations); must have indices matching features's index
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param features_type: str; {'continuous', 'categorical', 'binary'}
-    :param figure_size: 'auto' or tuple;
     :param title: str;
-    :param title_fontsize: number;
-    :param annotation_label_fontsize: number;
     :param plot_colname: bool; plot column names or not
-    :param dpi: int;
     :param filepath: str;
     :return: None
     """
 
     # Prepare target for plotting
-    target, target_min, target_max, target_cmap = _prepare_for_plotting(target, target_type)
+    target, target_min, target_max, target_cmap = _prepare_data_for_plotting(target, target_type)
 
     # Prepare features for plotting
-    features, features_min, features_max, features_cmap = _prepare_for_plotting(features, features_type)
+    features, features_min, features_max, features_cmap = _prepare_data_for_plotting(features, features_type)
 
     # Set up figure
-    if figure_size == 'auto':
-        figure_size = (min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9))
-    else:
-        figure_size = FIGURE_SIZE
-    figure(figsize=figure_size)
+    # TODO: remove
+    # if figure_size == 'auto':
+    #     figure_size = (min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9))
+    # else:
+    #     figure_size = FIGURE_SIZE
+    figure(figsize=FIGURE_SIZE)
 
     # Set up axis grids
     gridspec = GridSpec(features.shape[0] + 1, 1)
@@ -524,7 +486,7 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
 
     # Adjust target name
     for t in target_ax.get_yticklabels():
-        t.set(rotation=0, weight='bold')
+        t.set(**FONT)
 
     if target_type in ('binary', 'categorical'):  # Add binary or categorical target labels
         boundaries = [0]
@@ -546,57 +508,65 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
         unique_target_labels = get_unique_in_order(target.values)
 
         # Plot values to their corresponding positions
-        for i, pos in enumerate(label_horizontal_positions):
-            target_ax.text(pos, target_ax.axis()[3] * 1.1, unique_target_labels[i],
-                           horizontalalignment='center', weight='bold')
+        for i, x in enumerate(label_horizontal_positions):
+            target_ax.text(x, target_ax.axis()[3] * 1.1, unique_target_labels[i], horizontalalignment='center', **FONT)
 
     if title:  # Plot title
-        target_ax.text(target_ax.axis()[1] * 0.5, target_ax.axis()[3] * 1.7, title,
-                       horizontalalignment='center', fontsize=title_fontsize, weight='bold')
+        target_ax.text(target_ax.axis()[1] * 0.5, target_ax.axis()[3] * 1.7, title, horizontalalignment='center',
+                       **FONT_TITLE)
 
     # Plot annotation header
     target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * 0.01, target_ax.axis()[3] * 0.5,
-                   ' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
-                   verticalalignment='center', fontsize=annotation_label_fontsize, weight='bold')
+                   ' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR', verticalalignment='center', **FONT)
 
     # Plot features
     heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap,
             xticklabels=plot_colname, cbar=False)
     for t in features_ax.get_yticklabels():
-        t.set(rotation=0, weight='bold')
-        # t.set(rotation=0, weight='bold')
+        t.set(**FONT)
 
     # Plot features' annotations
     for i, (a_i, a) in enumerate(annotations.iterrows()):
         features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * 0.01, features_ax.axis()[3] - i - 0.5,
-                         '\t'.join(a.tolist()).expandtabs(),
-                         verticalalignment='center', fontsize=annotation_label_fontsize, weight='bold')
+                         '\t'.join(a.tolist()).expandtabs(), verticalalignment='center', **FONT)
 
     # Save
     if filepath:
-        save_plot(filepath, dpi=dpi)
+        save_plot(filepath)
 
 
 def plot_summary_association_panel(target, features_bundle, annotations_bundle, target_type='continuous',
-                                   title_fontsize=23, annotation_label_fontsize=9, dpi=DPI, filepath=None):
+                                   filepath=None):
     """
     Plot summary association panel.
     :param target: pandas Series; (n_elements); must have indices
-    :param features_bundle:
+    :param features_bundle: list;
+        [
+            [name
+            dataframe_or_filepath (to .gct),
+            data_type,
+            is_ascending,
+            (optional) index_axis,
+            (optional) index,
+            (optional) index_alias],
+            ...
+        ]
     :param annotations_bundle:
-    :param target_type:
-    :param title_fontsize:
-    :param annotation_label_fontsize:
-    :param dpi:
-    :param filepath:
-    :return:
+        [
+            [name
+            dataframe_or_filepath (to annotation .gct)],
+            ...
+        ]
+    :param target_type: str;
+    :param filepath: str;
+    :return: None
     """
 
     # Read features
     features_dicts = _read_bundle(features_bundle)
 
     # Prepare target for plotting
-    target, target_min, target_max, target_cmap = _prepare_for_plotting(target, target_type)
+    target, target_min, target_max, target_cmap = _prepare_data_for_plotting(target, target_type)
 
     #
     # Set up figure
@@ -622,12 +592,13 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         features = features_dict['dataframe']
 
         # Prepare features for plotting
-        features, features_min, features_max, features_cmap = _prepare_for_plotting(features,
-                                                                                    features_dict['data_type'])
+        features, features_min, features_max, features_cmap = _prepare_data_for_plotting(features,
+                                                                                         features_dict['data_type'])
 
         # Keep only columns shared by target and features
         shared = target.index & features.columns
         if any(shared):
+            # Target is always descending from right to left
             a_target = target.ix[shared].sort_values(ascending=False)
             features = features.ix[:, a_target.index]
             print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
@@ -657,24 +628,24 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         r_i += features.shape[0]
 
         # Plot title
-        title_ax.text(0.5, 0.3, '{} (n={})'.format(features_name, len(shared)),
-                      horizontalalignment='center', fontsize=title_fontsize, weight='bold')
+        title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 0.3,
+                      '{} (n={})'.format(features_name, len(shared)), horizontalalignment='center', **FONT_TITLE)
 
         # Plot target
         heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
                 xticklabels=False, yticklabels=False, cbar=False)
 
         if header:  # Plot header only for the 1st target axis
-            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * 0.01, target_ax.axis()[3] * 0.05,
-                           ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR',
-                           verticalalignment='center', fontsize=annotation_label_fontsize, weight='bold')
+            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * 0.01, target_ax.axis()[3],
+                           ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR', verticalalignment='center',
+                           **FONT)
             header = False
 
         # Plot features
-        heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap,
-                xticklabels=False, cbar=False)
+        heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=False,
+                cbar=False)
         for t in features_ax.get_yticklabels():
-            t.set(rotation=0, weight='bold')
+            t.set(**FONT)
 
         # Plot annotations for each feature
         for i, (a_i, a) in enumerate(annotations.iterrows()):
@@ -682,14 +653,14 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
             features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * 0.01,
                              features_ax.axis()[3] - i - (features_ax.axis()[1] / features.shape[0]) * 0.5,
                              '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['Score', 'P-value', 'FDR']]).expandtabs(),
-                             verticalalignment='center', fontsize=annotation_label_fontsize, weight='bold')
+                             verticalalignment='center', **FONT)
 
     # Save
     if filepath:
-        save_plot(filepath, dpi=dpi)
+        save_plot(filepath)
 
 
-def _prepare_for_plotting(dataframe, data_type, max_std=3):
+def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
     if data_type == 'continuous':
         return normalize_pandas_object(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_CONTINUOUS
     elif data_type == 'categorical':
@@ -706,22 +677,20 @@ def _read_bundle(data_bundle):
     :param data_bundle: list;
         [
             [name
-            df or filepath to .gct
+            dataframe_or_filepath (to .gct),
             data_type,
             is_ascending,
             (optional) index_axis,
             (optional) index,
             (optional) index_alias],
-
             ...
-
         ]
     :return: dict; {name: {dataframe: DataFrame,
                     data_type: str,
                     is_ascending: bool}}
     """
 
-    data_dict = {}
+    dicts = {}
 
     # Read all annotations
     for name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, index_alias in data_bundle:
@@ -733,13 +702,13 @@ def _read_bundle(data_bundle):
         print_log('\tIndex: {}.'.format(index))
         print_log('\tIndex alias: {}.'.format(index_alias))
 
-        data_dict[name] = {}
+        dicts[name] = {}
 
         # Read data type
-        data_dict[name]['data_type'] = data_type
+        dicts[name]['data_type'] = data_type
 
         # Read whether reverse make_association_panel or not
-        data_dict[name]['is_ascending'] = is_ascending
+        dicts[name]['is_ascending'] = is_ascending
 
         # Read DataFrame
         if isinstance(dataframe_or_filepath, DataFrame):
@@ -771,11 +740,11 @@ def _read_bundle(data_bundle):
                     index_alias = [index_alias]
                 df.index = index_alias
 
-        data_dict[name]['dataframe'] = df
+        dicts[name]['dataframe'] = df
 
-        print_log('\tRead {} features & {} samples.'.format(*data_dict[name]['dataframe'].shape))
+        print_log('\tRead {} features & {} samples.'.format(*dicts[name]['dataframe'].shape))
 
-    return data_dict
+    return dicts
 
 
 # ======================================================================================================================
