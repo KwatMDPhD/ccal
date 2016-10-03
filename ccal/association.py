@@ -634,7 +634,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
                 xticklabels=False, yticklabels=False, cbar=False)
 
         if header:  # Plot header only for the 1st target axis
-            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * 0.01, target_ax.axis()[3],
+            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * 0.01, target_ax.axis()[3] * 0.5,
                            ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR', verticalalignment='center',
                            **FONT)
             header = False

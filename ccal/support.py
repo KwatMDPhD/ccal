@@ -1408,7 +1408,7 @@ FIGURE_SIZE = (16, 10)
 
 # Fonts
 # TODO: make plotters use these instead of manual entry
-FONT = {'rotation': 0, 'fontsize': 9, 'weight': 'bold'}
+FONT = {'rotation': 0, 'fontsize': 12, 'weight': 'bold'}
 FONT_TITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
 
 # Color maps
