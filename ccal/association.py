@@ -23,8 +23,8 @@ from matplotlib.gridspec import GridSpec
 from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, title_string, untitle_string, information_coefficient, \
-    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, FIGURE_SIZE, CMAP_CONTINUOUS, \
-    CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, save_plot, plot_clustermap
+    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, FIGURE_SIZE, SPACING, \
+    CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, save_plot, plot_clustermap
 
 
 # ======================================================================================================================
@@ -507,14 +507,15 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
 
         # Plot values to their corresponding positions
         for i, x in enumerate(label_horizontal_positions):
-            target_ax.text(x, target_ax.axis()[3] * 1.1, unique_target_labels[i], horizontalalignment='center', **FONT)
+            target_ax.text(x, target_ax.axis()[3] * (1 + SPACING), unique_target_labels[i],
+                           horizontalalignment='center', **FONT)
 
     if title:  # Plot title
         target_ax.text(target_ax.axis()[1] * 0.5, target_ax.axis()[3] * 1.7, title, horizontalalignment='center',
                        **FONT_TITLE)
 
     # Plot annotation header
-    target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * 0.01, target_ax.axis()[3] * 0.5,
+    target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
                    ' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR', verticalalignment='center', **FONT)
 
     # Plot features
@@ -523,9 +524,9 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
     for t in features_ax.get_yticklabels():
         t.set(**FONT)
 
-    # Plot features' annotations
+    # Plot annotations
     for i, (a_i, a) in enumerate(annotations.iterrows()):
-        features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * 0.01, features_ax.axis()[3] - i - 0.5,
+        features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * SPACING, features_ax.axis()[3] - i - 0.5,
                          '\t'.join(a.tolist()).expandtabs(), verticalalignment='center', **FONT)
 
     # Save
@@ -634,7 +635,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
                 xticklabels=False, yticklabels=False, cbar=False)
 
         if header:  # Plot header only for the 1st target axis
-            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * 0.01, target_ax.axis()[3] * 0.5,
+            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
                            ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR', verticalalignment='center',
                            **FONT)
             header = False
@@ -645,11 +646,11 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         for t in features_ax.get_yticklabels():
             t.set(**FONT)
 
-        # Plot annotations for each feature
+        # Plot annotations
         for i, (a_i, a) in enumerate(annotations.iterrows()):
             # TODO: lower case
-            features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * 0.01,
-                             features_ax.axis()[3] - i - (features_ax.axis()[1] / features.shape[0]) * 0.5,
+            features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * SPACING,
+                             features_ax.axis()[3] - i * (features_ax.axis()[3] / features.shape[0]) - 0.5,
                              '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['Score', 'P-value', 'FDR']]).expandtabs(),
                              verticalalignment='center', **FONT)
 
