@@ -15,15 +15,15 @@ from math import ceil, sqrt
 
 from numpy import array, sum, unique, isnan
 from numpy.random import shuffle, choice
-from pandas import Series, DataFrame, concat
+from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
 from statsmodels.sandbox.stats.multicomp import multipletests
-import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure, subplot
 from matplotlib.gridspec import GridSpec
 from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, untitle_string, information_coefficient, \
-    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, DPI, CMAP_CONTINUOUS, \
+    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, FIGURE_SIZE, DPI, CMAP_CONTINUOUS, \
     CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap
 
 
@@ -250,12 +250,10 @@ def make_association_panel(target, features, target_type='continuous', feature_t
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    # Right alignment: ' ' * 11 + 'IC(\u0394)' + ' ' * 10 + 'P-val' + ' ' * 15 + 'FDR',
     _plot_association_panel(target, features.ix[indices_to_plot, :-len(scores.columns)],
-                            annotations.ix[indices_to_plot, :], target_type=target_type, feature_type=feature_type,
-                            figure_size=figure_size, title=title, title_size=title_size,
-                            annotation_header=' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
-                            annotation_label_size=annotation_label_size, plot_colname=plot_colname,
+                            annotations.ix[indices_to_plot, :], target_type=target_type, features_type=feature_type,
+                            figure_size=figure_size, title=title, title_fontsize=title_size,
+                            annotation_label_fontsize=annotation_label_size, plot_colname=plot_colname,
                             dpi=dpi, filepath=filepath)
 
     return scores
@@ -499,79 +497,55 @@ def _permute_and_score(args):
     return scores
 
 
-def _plot_association_panel(target, features, annotations, target_type='continuous', feature_type='continuous',
-                            std_max=3, figure_size='auto', title=None, title_size=20,
-                            annotation_header=None, annotation_label_size=9, plot_colname=False,
+def _plot_association_panel(target, features, annotations, target_type='continuous', features_type='continuous',
+                            figure_size='auto', title=None, title_fontsize=20,
+                            annotation_label_fontsize=9, plot_colname=False,
                             dpi=DPI, filepath=None):
     """
-    Plot make_association_panel panel.
-    :param target: pandas Series; (n_elements); must have indices, which must make_association_panel features's columns
+    Plot association panel.
+    :param target: pandas Series; (n_elements); must have indices matching features's columns
     :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
     :param annotations: pandas DataFrame; (n_features, n_annotations); must have indices matching features's index
     :param target_type: str; {'continuous', 'categorical', 'binary'}
-    :param feature_type: str; {'continuous', 'categorical', 'binary'}
-    :param std_max: number;
+    :param features_type: str; {'continuous', 'categorical', 'binary'}
     :param figure_size: 'auto' or tuple;
     :param title: str;
-    :param title_size: number;
-    :param annotation_header: str; annotation header to be plotted
-    :param annotation_label_size: number;
+    :param title_fontsize: number;
+    :param annotation_label_fontsize: number;
     :param plot_colname: bool; plot column names or not
     :param dpi: int;
     :param filepath: str;
     :return: None
     """
 
-    # Set up target
-    if target_type == 'continuous':
-        target_cmap = CMAP_CONTINUOUS
-        target_min, target_max = -std_max, std_max
-        print_log('Normalizing continuous target ...')
-        target = normalize_pandas_object(target, method='-0-')
-    elif target_type == 'categorical':
-        target_cmap = CMAP_CATEGORICAL
-        target_min, target_max = 0, len(unique(target))
-    elif target_type == 'binary':
-        target_cmap = CMAP_BINARY
-        target_min, target_max = 0, 1
-    else:
-        raise ValueError('target_type must be one of {continuous, categorical, binary}.')
+    # Prepare target for plotting
+    target, target_min, target_max, target_colormap = _prepare_for_plotting(target, target_type)
 
-    # Set up features
-    if feature_type == 'continuous':
-        features_cmap = CMAP_CONTINUOUS
-        features_min, features_max = -std_max, std_max
-        print_log('Normalizing continuous features ...')
-        features = normalize_pandas_object(features, method='-0-', axis=1)
-    elif feature_type == 'categorical':
-        features_cmap = CMAP_CATEGORICAL
-        features_min, features_max = 0, len(unique(features))
-    elif feature_type == 'binary':
-        features_cmap = CMAP_BINARY
-        features_min, features_max = 0, 1
-    else:
-        raise ValueError('feature_type must be one of {continuous, categorical, binary}.')
-
-    print_log('Plotting ...')
+    # Prepare features for plotting
+    features, features_min, features_max, features_colormap = _prepare_for_plotting(features, features_type)
 
     # Set up figure
     if figure_size == 'auto':
         figure_size = (min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9))
-    plt.figure(figsize=figure_size)
+    else:
+        figure_size = FIGURE_SIZE
+    figure(figsize=figure_size)
 
-    # Set up axes
+    # Set up axis grids
     gridspec = GridSpec(features.shape[0] + 1, features.shape[1] + 1)
-    ax_target = plt.subplot(gridspec[:1, :features.shape[1]])
-    ax_features = plt.subplot(gridspec[1:, :features.shape[1]])
-    ax_annotation_header = plt.subplot(gridspec[:1, features.shape[1]:])
+    # Set up axes
+    ax_target = subplot(gridspec[:1, :features.shape[1]])
+    ax_features = subplot(gridspec[1:, :features.shape[1]])
+    ax_annotation_header = subplot(gridspec[:1, features.shape[1]:])
     ax_annotation_header.axis('off')
     horizontal_text_margin = pow(features.shape[1], 0.39)
 
     #
     # Plot target, target label, and title
     #
-    # Plot target heat band
-    heatmap(DataFrame(target).T, ax=ax_target, vmin=target_min, vmax=target_max, cmap=target_cmap, xticklabels=False,
+    # Plot target
+    heatmap(DataFrame(target).T, ax=ax_target, vmin=target_min, vmax=target_max, cmap=target_colormap,
+            xticklabels=False,
             cbar=False)
 
     # Adjust target name
@@ -602,13 +576,14 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
             ax_target.text(pos, 1, unique_target_labels[i], horizontalalignment='center', weight='bold')
 
     if title:  # Plot title
-        ax_target.text(features.shape[1] / 2, 1.9, title, horizontalalignment='center', size=title_size, weight='bold')
+        ax_target.text(features.shape[1] / 2, 1.9, title, horizontalalignment='center', fontsize=title_fontsize,
+                       weight='bold')
 
     #
     # Plot features
     #
-    # Plot features heatmap
-    heatmap(features, ax=ax_features, vmin=features_min, vmax=features_max, cmap=features_cmap,
+    # Plot features
+    heatmap(features, ax=ax_features, vmin=features_min, vmax=features_max, cmap=features_colormap,
             xticklabels=plot_colname, cbar=False)
     for t in ax_features.get_yticklabels():
         t.set(rotation=0, weight='bold')
@@ -617,22 +592,134 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
     # Plot annotations
     #
     # Plot annotation header
-    if not annotation_header:
-        annotation_header = '\t'.join(annotations.columns).expandtabs()
-    ax_annotation_header.text(horizontal_text_margin, 0.5, annotation_header, horizontalalignment='left',
-                              verticalalignment='center', size=annotation_label_size, weight='bold')
+    ax_annotation_header.text(horizontal_text_margin, 0.5,
+                              ' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
+                              horizontalalignment='left', verticalalignment='center',
+                              fontsize=annotation_label_fontsize,
+                              weight='bold')
 
     # Plot annotations for each feature
     for i, (idx, s) in enumerate(annotations.iterrows()):
-        ax = plt.subplot(gridspec[i + 1:i + 2, features.shape[1]:])
+        ax = subplot(gridspec[i + 1:i + 2, features.shape[1]:])
         ax.axis('off')
         a = '\t'.join(s.tolist()).expandtabs()
         ax.text(horizontal_text_margin, 0.5, a, horizontalalignment='left', verticalalignment='center',
-                size=annotation_label_size, weight='bold')
+                fontsize=annotation_label_fontsize, weight='bold')
 
     # Save
     if filepath:
         save_plot(filepath, dpi=dpi)
+
+
+def plot_summary_association_panel(target, features_bundle, annotations_bundle, target_type='continuous',
+                                   title_fontsize=23, fontsize=14, dpi=DPI, filepath=None):
+    """
+    Plot summary association panel.
+    :param target: pandas Series; (n_elements); must have indices
+    :param features_bundle:
+    :param annotations_bundle:
+    :param target_type:
+    :param title_fontsize:
+    :param fontsize:
+    :param dpi:
+    :param filepath:
+    :return:
+    """
+
+    # Read features
+    features_dicts = _read_data_bundle(features_bundle)
+
+    # Prepare target for plotting
+    target, target_min, target_max, target_cmap = _prepare_for_plotting(target, target_type)
+
+    #
+    # Set up figure
+    #
+    # Compute the number of row-grids for setting up a figure
+    n = 0
+    for features_name, features_dict in features_dicts.items():
+        n += features_dict['dataframe'].shape[0] + 3
+
+    # Set up figure
+    figure(figsize=FIGURE_SIZE)
+
+    # Set up axis grids
+    gridspec = GridSpec(n, 1)
+
+    #
+    # Annotate this target with each feature
+    #
+    r_i = 0
+    header = True
+    for features_name, features_dict in features_dicts.items():
+        # Read features
+        features = features_dict['dataframe']
+
+        # Prepare features for plotting
+        features, features_min, features_max, features_cmap = _prepare_for_plotting(features,
+                                                                                    features_dict['data_type'])
+
+        # Plot only columns shared by target and features
+        shared = target.index & features.columns
+        a_target = target.ix[shared].sort_values(ascending=False)
+        features = features.ix[:, a_target.index]
+
+        # Read corresponding annotations
+        annotations = read_csv([a[1] for a in annotations_bundle if a[0] == features_name][0], sep='\t', index_col=0)
+        # TODO: change to score
+        annotations = annotations.ix[features.index, :].sort_values('Score', ascending=features_dict['is_ascending'])
+        features = features.ix[annotations.index, :]
+
+        # Set up axes
+        r_i += 1
+        title_ax = subplot(gridspec[r_i: r_i + 1, 0])
+        title_ax.axis('off')
+        r_i += 1
+        target_ax = subplot(gridspec[r_i: r_i + 1, 0])
+        r_i += 1
+        features_ax = subplot(gridspec[r_i: r_i + features.shape[0], 0])
+        r_i += features.shape[0]
+
+        # Plot title
+        title_ax.text(0.5, 0.3, '{} (n={})'.format(features_name, len(shared)), horizontalalignment='center',
+                      fontsize=title_fontsize, weight='bold')
+
+        # Plot target
+        heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
+                xticklabels=False, yticklabels=False, cbar=False)
+
+        if header:  # Plot header only for the 1st target axis
+            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] / 100, target_ax.axis()[3] / 2,
+                           ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR',
+                           verticalalignment='center', fontsize=fontsize, weight='bold')
+            header = False
+
+        # Plot features
+        heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap,
+                xticklabels=False, cbar=False)
+        for t in features_ax.get_yticklabels():
+            t.set(fontsize=fontsize, weight='bold')
+
+        # Plot annotations
+        for i, (a_i, a) in enumerate(annotations.iterrows()):
+            features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] / 100, features_ax.axis()[3] - i - 0.5,
+                             '{0:.3f}\t{1:.3e}\t{2:.3e}'.format(*a.ix[['Score', 'P-value', 'FDR']]).expandtabs(),
+                             verticalalignment='center', fontsize=fontsize, weight='bold')
+
+    # Save
+    if filepath:
+        save_plot(filepath, dpi=dpi)
+
+
+def _prepare_for_plotting(dataframe, data_type, max_std=3):
+    if data_type == 'continuous':
+        return normalize_pandas_object(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_CONTINUOUS
+    elif data_type == 'categorical':
+        return dataframe.copy(), 0, len(unique(dataframe)), CMAP_CATEGORICAL
+    elif data_type == 'binary':
+        return dataframe.copy(), 0, 1, CMAP_BINARY
+    else:
+        raise ValueError('Target data type must be one of {continuous, categorical, binary}.')
 
 
 def _read_data_bundle(data_bundle):
@@ -716,8 +803,8 @@ def _read_data_bundle(data_bundle):
 # ======================================================================================================================
 # Comparison panel
 # ======================================================================================================================
-def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
-                           filepath_prefix=None):
+def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False,
+                           title=None, filepath_prefix=None):
     """
     Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
     :param matrix1: pandas DataFrame or numpy 2D arrays;

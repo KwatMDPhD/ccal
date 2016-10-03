@@ -454,6 +454,7 @@ def untitle_string(string):
     :return: str;
     """
 
+    string = str(string)
     return string.lower().replace(' ', '_')
 
 
@@ -466,7 +467,7 @@ def clean_string(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_c
     :return:
     """
 
-    new_string = string
+    new_string = str(string)
     for illegal_char in illegal_chars:
         new_string = new_string.replace(illegal_char, replacement_char)
     return new_string
