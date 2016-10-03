@@ -24,7 +24,7 @@ from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, title_string, untitle_string, information_coefficient, \
     parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, FIGURE_SIZE, SPACING, \
-    CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, save_plot, plot_clustermap
+    CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, FONT_SUBTITLE, save_plot, plot_clustermap
 
 
 # ======================================================================================================================
@@ -511,7 +511,7 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
                            horizontalalignment='center', **FONT)
 
     if title:  # Plot title
-        target_ax.text(target_ax.axis()[1] * 0.5, target_ax.axis()[3] * 1.7, title, horizontalalignment='center',
+        target_ax.text(target_ax.axis()[1] * 0.5, target_ax.axis()[3] * 1.9, title, horizontalalignment='center',
                        **FONT_TITLE)
 
     # Plot annotation header
@@ -534,7 +534,7 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
         save_plot(filepath)
 
 
-def plot_summary_association_panel(target, features_bundle, annotations_bundle, target_type='continuous',
+def plot_summary_association_panel(target, features_bundle, annotations_bundle, target_type='continuous', title=None,
                                    filepath=None):
     """
     Plot summary association panel.
@@ -585,7 +585,10 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
     # Annotate this target with each feature
     #
     r_i = 0
-    header = True
+    if not title:
+        title = 'Association Summary Panel for {}'.format(target.name)
+    plot_figure_title = True
+    plot_header = True
     for features_name, features_dict in features_dicts.items():
         # Read features
         features = features_dict['dataframe']
@@ -625,19 +628,24 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         features_ax = subplot(gridspec[r_i: r_i + features.shape[0], 0])
         r_i += features.shape[0]
 
+        if plot_figure_title:  # Plot figure title
+            title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 2, title, horizontalalignment='center',
+                          **FONT_TITLE)
+            plot_figure_title = False
+
         # Plot title
         title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 0.3,
-                      '{} (n={})'.format(features_name, len(shared)), horizontalalignment='center', **FONT_TITLE)
+                      '{} (n={})'.format(features_name, len(shared)), horizontalalignment='center', **FONT_SUBTITLE)
 
         # Plot target
         heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
                 xticklabels=False, yticklabels=False, cbar=False)
 
-        if header:  # Plot header only for the 1st target axis
+        if plot_header:  # Plot header only for the 1st target axis
             target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
                            ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR', verticalalignment='center',
                            **FONT)
-            header = False
+            plot_header = False
 
         # Plot features
         heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=False,

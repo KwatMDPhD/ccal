@@ -1411,7 +1411,8 @@ SPACING = 0.05
 # Fonts
 # TODO: make plotters use these instead of manual entry
 FONT = {'rotation': 0, 'fontsize': 12, 'weight': 'bold'}
-FONT_TITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
+FONT_TITLE = {'rotation': 0, 'fontsize': 26, 'weight': 'bold'}
+FONT_SUBTITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
 
 # Color maps
 BAD_COLOR = 'wheat'
