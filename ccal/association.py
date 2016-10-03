@@ -129,6 +129,10 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     else:
         print_log('\tKept {} features.'.format(features.shape[0]))
 
+    if n_features > 100 or (n_features < 1 and n_features * features.shape[0] > 100):
+        n_features = 100
+        print_log('Changed n_features to be 100 to avoid computing CI for and plotting too many features.')
+
     #
     # Score
     #
@@ -173,10 +177,6 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     # Plot
     #
     # Limited features to plot
-    if n_features > 100 or (n_features < 1 and n_features * features.shape[0] > 100):
-        n_features = 100
-        print_log('Changed n_features to be 100 because using {} results in plotting too many features.')
-
     if n_features < 1:  # Limit using percentile
         # Limit top features
         above_quantile = features.ix[:, 'score'] >= features.ix[:, 'score'].quantile(n_features)
@@ -612,8 +612,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
 
         # Read corresponding annotations
         annotations = read_csv([a[1] for a in annotations_bundle if a[0] == features_name][0], sep='\t', index_col=0)
-        # TODO: change to score
-        annotations = annotations.ix[features.index, :].sort_values('Score', ascending=features_dict['is_ascending'])
+        annotations = annotations.ix[features.index, :].sort_values('score', ascending=features_dict['is_ascending'])
         features = features.ix[annotations.index, :]
 
         # Set up axes
@@ -648,10 +647,9 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
 
         # Plot annotations
         for i, (a_i, a) in enumerate(annotations.iterrows()):
-            # TODO: lower case
             features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * SPACING,
                              features_ax.axis()[3] - i * (features_ax.axis()[3] / features.shape[0]) - 0.5,
-                             '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['Score', 'P-value', 'FDR']]).expandtabs(),
+                             '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['score', 'p-value', 'fdr']]).expandtabs(),
                              verticalalignment='center', **FONT)
 
     # Save
