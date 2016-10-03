@@ -69,12 +69,12 @@ def make_association_panels(target, features_bundle, target_name=None, target_ty
         print_log('{} ...'.format(title_string(title)))
         make_association_panel(target, features_dict['dataframe'],
                                target_type=target_type, features_type=features_dict['data_type'],
-                               features_ascending=features_dict['is_ascending'], n_features=n_features,
-                               n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
+                               n_jobs=n_jobs, features_ascending=features_dict['is_ascending'], n_features=n_features,
+                               n_samplings=n_samplings, n_permutations=n_permutations,
                                title=title_string(title), filepath_prefix=filepath_prefix + untitle_string(title))
 
 
-def make_association_panel(target, features, target_type='continuous', features_type='continuous',
+def make_association_panel(target, features, target_name=None, target_type='continuous', features_type='continuous',
                            n_jobs=1, features_ascending=False, n_features=0.95, n_samplings=30, n_permutations=30,
                            title=None, plot_colname=False, filepath_prefix=None):
     """
@@ -82,6 +82,7 @@ def make_association_panel(target, features, target_type='continuous', features_
     Compute p-val and FDR (BH) for all features. And plot the result.
     :param target: pandas Series; (n_samples); must have name and index matching features's column names
     :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
+    :param target_name: str;
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param features_type: str; {'continuous', 'categorical', 'binary'}
     :param n_jobs: int; number of jobs to parallelize
@@ -100,6 +101,9 @@ def make_association_panel(target, features, target_type='continuous', features_
     #
     if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
         features = DataFrame(features).T
+
+    if target_name:  # Set target name
+        target.name = target_name
 
     # Keep only columns shared by target and features
     shared = target.index & features.columns
@@ -205,8 +209,7 @@ def make_association_panel(target, features, target_type='continuous', features_
 
 
 def associate(target, features, function=information_coefficient, n_jobs=1, features_ascending=False,
-              n_features=0.95, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30,
-              filepath=None):
+              n_features=0.95, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30, filepath=None):
     """
     Compute: score_i = function(target, feature_i).
     Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
@@ -750,8 +753,8 @@ def _read_bundle(data_bundle):
 # ======================================================================================================================
 # Comparison panel
 # ======================================================================================================================
-def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False,
-                           title=None, filepath_prefix=None):
+def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
+                           filepath_prefix=None):
     """
     Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
     :param matrix1: pandas DataFrame or numpy 2D arrays;
