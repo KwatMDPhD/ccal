@@ -37,13 +37,15 @@ def make_association_panels(target, features_bundle, target_name=None, target_ty
     :param target: pandas Series; (n_elements); must have indices
     :param features_bundle: list of lists;
         [
-            [name
-            dataframe_or_filepath (to .gct),
-            data_type,
-            is_ascending,
-            (optional) index_axis,
-            (optional) index,
-            (optional) index_alias],
+            [
+                data_name,
+                dataframe_or_filepath (to .gct),
+                data_type,
+                is_ascending,
+                (optional) index_axis,
+                (optional) index,
+                (optional) index_alias
+            ],
             ...
         ]
     :param target_name: str;
@@ -541,19 +543,23 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
     :param target: pandas Series; (n_elements); must have indices
     :param features_bundle: list;
         [
-            [name
-            dataframe_or_filepath (to .gct),
-            data_type,
-            is_ascending,
-            (optional) index_axis,
-            (optional) index,
-            (optional) index_alias],
+            [
+                data_name,
+                dataframe_or_filepath (to .gct),
+                data_type,
+                is_ascending,
+                (optional) index_axis,
+                (optional) index,
+                (optional) index_alias
+            ],
             ...
         ]
     :param annotations_bundle:
         [
-            [name
-            dataframe_or_filepath (to annotation .gct)],
+            [
+                data_name,
+                dataframe_or_filepath (to annotation .gct)
+            ],
             ...
         ]
     :param target_type: str;
@@ -613,10 +619,13 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
                                                                                                         features.shape[
                                                                                                             1]))
 
-        # Read corresponding annotations
+        # Read corresponding annotations file
         annotations = read_csv([a[1] for a in annotations_bundle if a[0] == features_name][0], sep='\t', index_col=0)
+        # Keep only features in the features dataframe
         annotations = annotations.ix[features.index, :].sort_values('score', ascending=features_dict['is_ascending'])
-        features = features.ix[annotations.index, :]
+        if any features_dict['alias']:  # Use alias as index
+            features.index = features_dict['alias']
+            annotations.index = features_dict['alias']
 
         # Set up axes
         r_i += 1
@@ -681,25 +690,34 @@ def _read_bundle(data_bundle):
     Read data bundle.
     :param data_bundle: list;
         [
-            [name
-            dataframe_or_filepath (to .gct),
-            data_type,
-            is_ascending,
-            (optional) index_axis,
-            (optional) index,
-            (optional) index_alias],
+            [
+                data_name,
+                dataframe_or_filepath (to .gct),
+                data_type,
+                is_ascending,
+                (optional) index_axis,
+                (optional) index,
+                (optional) index_alias
+            ],
             ...
         ]
-    :return: dict; {name: {dataframe: DataFrame,
-                    data_type: str,
-                    is_ascending: bool}}
+    :return: dict;
+        {
+            name: {
+                dataframe: DataFrame,
+                data_type: str,
+                is_ascending: bool
+                alias: list
+            }
+            ...
+        }
     """
 
     dicts = {}
 
     # Read all annotations
-    for name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, index_alias in data_bundle:
-        print_log('Reading {} ...'.format(name))
+    for data_name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, index_alias in data_bundle:
+        print_log('Reading {} ...'.format(data_name))
         print_log('\tData: {}.'.format(type(dataframe_or_filepath)))
         print_log('\tData type: {}.'.format(data_type))
         print_log('\tIs ascending: {}.'.format(is_ascending))
@@ -707,13 +725,16 @@ def _read_bundle(data_bundle):
         print_log('\tIndex: {}.'.format(index))
         print_log('\tIndex alias: {}.'.format(index_alias))
 
-        dicts[name] = {}
+        dicts[data_name] = {}
 
         # Read data type
-        dicts[name]['data_type'] = data_type
+        dicts[data_name]['data_type'] = data_type
 
         # Read whether reverse make_association_panel or not
-        dicts[name]['is_ascending'] = is_ascending
+        dicts[data_name]['is_ascending'] = is_ascending
+
+        # Read alias for index
+        dicts[data_name]['alias'] = index_alias
 
         # Read DataFrame
         if isinstance(dataframe_or_filepath, DataFrame):
@@ -725,12 +746,10 @@ def _read_bundle(data_bundle):
 
         # Limit to specified features
         if index:  # Extract
-
             if index_axis == 0:  # By row
                 df = df.ix[index, :]
                 if isinstance(df, Series):
                     df = DataFrame(df).T
-
             elif index_axis == 1:  # By column
                 df = df.ix[:, index]
                 if isinstance(df, Series):
@@ -740,14 +759,9 @@ def _read_bundle(data_bundle):
             else:
                 raise ValueError('index_axis (6th in the list) must be either 0 (row) or 1 (column).')
 
-            if index_alias:  # Use aliases instead of index
-                if isinstance(index_alias, str):  # Wrap string with list
-                    index_alias = [index_alias]
-                df.index = index_alias
+        dicts[data_name]['dataframe'] = df
 
-        dicts[name]['dataframe'] = df
-
-        print_log('\tRead {} features & {} samples.'.format(*dicts[name]['dataframe'].shape))
+        print_log('\tRead {} features & {} samples.'.format(*dicts[data_name]['dataframe'].shape))
 
     return dicts
 
