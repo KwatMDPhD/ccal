@@ -623,7 +623,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         annotations = read_csv([a[1] for a in annotations_bundle if a[0] == features_name][0], sep='\t', index_col=0)
         # Keep only features in the features dataframe
         annotations = annotations.ix[features.index, :].sort_values('score', ascending=features_dict['is_ascending'])
-        if any features_dict['alias']:  # Use alias as index
+        if any(features_dict['alias']):  # Use alias as index
             features.index = features_dict['alias']
             annotations.index = features_dict['alias']
 
