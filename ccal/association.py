@@ -13,13 +13,15 @@ Authors:
 
 from math import ceil, sqrt
 
-from numpy import array, sum, unique, isnan
+from numpy import array, sum, mean, unique, isnan
 from numpy.random import shuffle, choice
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
 from statsmodels.sandbox.stats.multicomp import multipletests
 from matplotlib.pyplot import figure, subplot
 from matplotlib.gridspec import GridSpec
+from matplotlib.colors import Normalize
+from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, title_string, untitle_string, information_coefficient, \
@@ -44,7 +46,7 @@ def make_association_panels(target, features_bundle, target_name=None, target_ty
                 is_ascending,
                 (optional) index_axis,
                 (optional) index,
-                (optional) index_alias
+                (optional) alias
             ],
             ...
         ]
@@ -550,7 +552,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
                 is_ascending,
                 (optional) index_axis,
                 (optional) index,
-                (optional) index_alias
+                (optional) alias
             ],
             ...
         ]
@@ -563,6 +565,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
             ...
         ]
     :param target_type: str;
+    :param title; str;
     :param filepath: str;
     :return: None
     """
@@ -580,6 +583,8 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
     n = 0
     for features_name, features_dict in features_dicts.items():
         n += features_dict['dataframe'].shape[0] + 3
+    # Add row for color bar
+    n += 1
 
     # Set up figure
     figure(figsize=FIGURE_SIZE)
@@ -621,11 +626,14 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
 
         # Read corresponding annotations file
         annotations = read_csv([a[1] for a in annotations_bundle if a[0] == features_name][0], sep='\t', index_col=0)
-        # Keep only features in the features dataframe
+        # Keep only features in the features dataframe and sort by score
         annotations = annotations.ix[features.index, :].sort_values('score', ascending=features_dict['is_ascending'])
+        # Apply the sorted index to featuers
+        features = features.ix[annotations.index, :]
+
         if any(features_dict['alias']):  # Use alias as index
-            features.index = features_dict['alias']
-            annotations.index = features_dict['alias']
+            features.index = [features_dict['alias'][i] for i in features.index]
+            annotations.index = [features_dict['alias'][i] for i in annotations.index]
 
         # Set up axes
         r_i += 1
@@ -669,6 +677,15 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
                              '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['score', 'p-value', 'fdr']]).expandtabs(),
                              verticalalignment='center', **FONT)
 
+        # Plot colorbar
+        if r_i == n - 1:
+            colorbar_ax = subplot(gridspec[r_i:r_i + 1, 0])
+            colorbar_ax.axis('off')
+            cax, kw = make_axes(colorbar_ax, location='bottom', fraction=0.5, shrink=1, aspect=26,
+                                cmap=target_cmap, norm=Normalize(vmin=-3, vmax=3),
+                                ticks=[-3, -2, -1, 0, 1, 2, 3])
+            ColorbarBase(cax, **kw)
+
     # Save
     if filepath:
         save_plot(filepath)
@@ -697,7 +714,7 @@ def _read_bundle(data_bundle):
                 is_ascending,
                 (optional) index_axis,
                 (optional) index,
-                (optional) index_alias
+                (optional) alias
             ],
             ...
         ]
@@ -706,8 +723,8 @@ def _read_bundle(data_bundle):
             name: {
                 dataframe: DataFrame,
                 data_type: str,
-                is_ascending: bool
-                alias: list
+                is_ascending: bool,
+                alias: dict {index: alias, ... }
             }
             ...
         }
@@ -716,14 +733,14 @@ def _read_bundle(data_bundle):
     dicts = {}
 
     # Read all annotations
-    for data_name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, index_alias in data_bundle:
+    for data_name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, alias in data_bundle:
         print_log('Reading {} ...'.format(data_name))
         print_log('\tData: {}.'.format(type(dataframe_or_filepath)))
         print_log('\tData type: {}.'.format(data_type))
         print_log('\tIs ascending: {}.'.format(is_ascending))
         print_log('\tIndex axis: {}.'.format(index_axis))
         print_log('\tIndex: {}.'.format(index))
-        print_log('\tIndex alias: {}.'.format(index_alias))
+        print_log('\tAlias: {}.'.format(alias))
 
         dicts[data_name] = {}
 
@@ -734,7 +751,9 @@ def _read_bundle(data_bundle):
         dicts[data_name]['is_ascending'] = is_ascending
 
         # Read alias for index
-        dicts[data_name]['alias'] = index_alias
+        dicts[data_name]['alias'] = {}
+        for i, a in zip(index, alias):
+            dicts[data_name]['alias'][i] = a
 
         # Read DataFrame
         if isinstance(dataframe_or_filepath, DataFrame):

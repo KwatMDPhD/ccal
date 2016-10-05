@@ -39,7 +39,7 @@ from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib.cm import bwr, Paired
+from matplotlib.cm import seismic, bwr, Paired
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot
 
@@ -1416,7 +1416,15 @@ FONT_SUBTITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
 
 # Color maps
 BAD_COLOR = 'wheat'
-CMAP_CONTINUOUS = bwr
+from matplotlib.colors import ListedColormap
+colors = []
+with open('/home/cyborg/colors.txt') as f:
+    for line in f:
+        l = [int(x) for x in line.strip().split(' ')]
+        l = [x/255 for x in l] + [1]
+        colors.append(tuple(l))
+c = ListedColormap(colors)
+CMAP_CONTINUOUS = c
 CMAP_CONTINUOUS.set_bad(BAD_COLOR)
 CMAP_CATEGORICAL = Paired
 CMAP_CATEGORICAL.set_bad(BAD_COLOR)
