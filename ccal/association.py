@@ -79,8 +79,8 @@ def make_association_panels(target, features_bundle, target_name=None, target_ty
 
 
 def make_association_panel(target, features, target_name=None, target_type='continuous', features_type='continuous',
-                           n_jobs=1, features_ascending=False, n_features=0.95, n_samplings=30, n_permutations=30,
-                           title=None, plot_colname=False, filepath_prefix=None):
+                           filepath_scores=None, n_jobs=1, features_ascending=False, n_features=0.95, n_samplings=30,
+                           n_permutations=30, title=None, plot_colname=False, filepath_prefix=None):
     """
     Compute: score_i = function(target, feature_i). Compute confidence interval (CI) for n_features features.
     Compute p-val and FDR (BH) for all features. And plot the result.
@@ -89,6 +89,7 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     :param target_name: str;
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param features_type: str; {'continuous', 'categorical', 'binary'}
+    :param filepath_scores: str;
     :param n_jobs: int; number of jobs to parallelize
     :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
@@ -100,9 +101,97 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     :return: pandas DataFrame; merged features and scores
     """
 
-    #
     # Preprocess data
-    #
+    target, features = _prepare_target_and_features(target, features, target_name=target_name)
+
+    if n_features > 100 or (n_features < 1 and n_features * features.shape[0] > 100):
+        n_features = 100
+        print_log('Changed n_features to be 100 to avoid computing CI for and plotting too many features.')
+
+    # Score
+    if filepath_scores:
+        scores = read_csv(filepath_scores, sep='\t', index_col=0)
+        print_log('Using already computed scores:\n')
+        print(scores)
+    else:
+        if filepath_prefix:
+            filepath = filepath_prefix + '.txt'
+        else:
+            filepath = None
+        scores = _associate(target, features, n_jobs=n_jobs, features_ascending=features_ascending,
+                            n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
+                            filepath=filepath)
+
+    # Apply sorted score ordering to features
+    features = features.ix[scores.index, :]
+
+    # Make annotations
+    annotations = DataFrame(index=scores.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
+
+    # Add IC (0.95 confidence interval)
+    for f_i, s_moe in scores.ix[:, ['score', '0.95 moe']].iterrows():
+        if isnan(s_moe.ix['0.95 moe']):
+            a = '{0:.3f}(x.xxx)'.format(s_moe.ix['score'])
+        else:
+            a = '{0:.3f}({1:.3f})'.format(*s_moe.ix[['score', '0.95 moe']])
+        annotations.ix[f_i, 'IC(\u0394)'] = a
+
+    # Add P-val
+    if 'p-value' in scores.columns:
+        a = ['{:.2e}'.format(pv) for pv in scores.ix[:, 'p-value']]
+    else:
+        a = 'x.xxe\u00B1xx'
+    annotations.ix[:, 'P-val'] = a
+
+    # Add FDR
+    if 'fdr' in scores.columns:
+        a = ['{:.2e}'.format(fdr) for fdr in scores.ix[:, 'fdr']]
+    else:
+        a = 'x.xxe\u00B1xx'
+    annotations.ix[:, 'FDR'] = a
+
+    # Limited features to plot
+    if n_features < 1:  # Limit using percentile
+        # Limit top features
+        above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
+        print_log('Plotting {} features (> {:.02f} percentile) ...'.format(sum(above_quantile), n_features))
+
+        # Limit bottom features
+        below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
+        print_log('Plotting {} features (< {:.02f} percentile) ...'.format(sum(below_quantile), 1 - n_features))
+
+        indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
+
+    else:  # Limit using numbers assuming that scores dataframe is sorted
+        if 2 * n_features >= scores.shape[0]:
+            indices_to_plot = scores.index
+            print_log('Plotting all {} features ...'.format(scores.shape[0]))
+        else:
+            indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
+            print_log('Plotting top & bottom {} features ...'.format(n_features))
+
+    # Plot
+    if filepath_prefix:
+        filepath = filepath_prefix + '.pdf'
+    else:
+        filepath = None
+    _plot_association_panel(target, features.ix[indices_to_plot, :], annotations.ix[indices_to_plot, :],
+                            target_type=target_type, features_type=features_type,
+                            title=title, plot_colname=plot_colname, filepath=filepath)
+
+    return scores
+
+
+def _prepare_target_and_features(target, features, target_name=None):
+    """
+    Make sure target is a Series. Name target. Make sure features is a DataFrame.
+    Keep samples only in both target and features. Drop features with less than 2 unique values.
+    :param target:
+    :param features:
+    :param target_name: str;
+    :return:
+    """
+
     if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
         features = DataFrame(features).T
 
@@ -113,12 +202,12 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     shared = target.index & features.columns
     if any(shared):
         # Target is always descending from left to right
-        target = target.ix[shared].sort_values(ascending=False)
-        features = features.ix[:, target.index]
         print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
                                                                                               target.size,
                                                                                               features.shape[1],
                                                                                               len(shared)))
+        target = target.ix[shared].sort_values(ascending=False)
+        features = features.ix[:, target.index]
     else:
         raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
                                                                                                     target.size,
@@ -133,87 +222,11 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     else:
         print_log('\tKept {} features.'.format(features.shape[0]))
 
-    if n_features > 100 or (n_features < 1 and n_features * features.shape[0] > 100):
-        n_features = 100
-        print_log('Changed n_features to be 100 to avoid computing CI for and plotting too many features.')
-
-    #
-    # Score
-    #
-    if filepath_prefix:
-        filepath = filepath_prefix + '.txt'
-    else:
-        filepath = None
-    scores = associate(target, features, n_jobs=n_jobs, features_ascending=features_ascending,
-                       n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations, filepath=filepath)
-
-    # Concatenate
-    features = concat([features, scores], join_axes=[scores.index], axis=1)
-
-    #
-    # Make annotations
-    #
-    annotations = DataFrame(index=features.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
-
-    # Add IC (0.95 confidence interval)
-    for f_i, s_moe in features.ix[:, ['score', '0.95 moe']].iterrows():
-        if isnan(s_moe.ix['0.95 moe']):
-            a = '{0:.3f}(x.xxx)'.format(s_moe.ix['score'])
-        else:
-            a = '{0:.3f}({1:.3f})'.format(*s_moe.ix[['score', '0.95 moe']])
-        annotations.ix[f_i, 'IC(\u0394)'] = a
-
-    # Add P-val
-    if 'p-value' in features.columns:
-        a = ['{:.2e}'.format(pv) for pv in features.ix[:, 'p-value']]
-    else:
-        a = 'x.xxe\u00B1xx'
-    annotations.ix[:, 'P-val'] = a
-
-    # Add FDR
-    if 'fdr' in features.columns:
-        a = ['{:.2e}'.format(fdr) for fdr in features.ix[:, 'fdr']]
-    else:
-        a = 'x.xxe\u00B1xx'
-    annotations.ix[:, 'FDR'] = a
-
-    #
-    # Plot
-    #
-    # Limited features to plot
-    if n_features < 1:  # Limit using percentile
-        # Limit top features
-        above_quantile = features.ix[:, 'score'] >= features.ix[:, 'score'].quantile(n_features)
-        print_log('Plotting {} features (> {:.02f} percentile) ...'.format(sum(above_quantile), n_features))
-
-        # Limit bottom features
-        below_quantile = features.ix[:, 'score'] <= features.ix[:, 'score'].quantile(1 - n_features)
-        print_log('Plotting {} features (< {:.02f} percentile) ...'.format(sum(below_quantile), 1 - n_features))
-
-        indices_to_plot = features.index[above_quantile | below_quantile].tolist()
-
-    else:  # Limit using numbers assuming that features is sorted
-        if 2 * n_features >= features.shape[0]:
-            indices_to_plot = features.index
-            print_log('Plotting all {} features ...'.format(features.shape[0]))
-        else:
-            indices_to_plot = features.index[:n_features].tolist() + features.index[-n_features:].tolist()
-            print_log('Plotting top & bottom {} features ...'.format(n_features))
-
-    # Plot
-    if filepath_prefix:
-        filepath = filepath_prefix + '.pdf'
-    else:
-        filepath = None
-    _plot_association_panel(target, features.ix[indices_to_plot, :-len(scores.columns)],
-                            annotations.ix[indices_to_plot, :], target_type=target_type, features_type=features_type,
-                            title=title, plot_colname=plot_colname, filepath=filepath)
-
-    return scores
+    return target, features
 
 
-def associate(target, features, function=information_coefficient, n_jobs=1, features_ascending=False,
-              n_features=0.95, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30, filepath=None):
+def _associate(target, features, function=information_coefficient, n_jobs=1, features_ascending=False,
+               n_features=0.95, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30, filepath=None):
     """
     Compute: score_i = function(target, feature_i).
     Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
