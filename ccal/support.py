@@ -1418,10 +1418,12 @@ FONT_SUBTITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
 # Color maps
 BAD_COLOR = 'wheat'
 # Make continuous color map
-reds = [0.26, 0.16, 0.09, 0.16, 0.26, 1, 1, 1, 1, 1, 1]
-half_greens = [0.26, 0.09, 0.07, 0, 0]
+# reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
+# greens_half = [0.25, 0.15, 0.05, 0.2, 0.6]
+reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
+greens_half = [0.26, 0.16, 0.09, 0.26, 0.69]
 colordict = {'red': tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
-             'green': tuple([(0.1 * i, r, r) for i, r in enumerate(half_greens + [1] + list(reversed(half_greens)))]),
+             'green': tuple([(0.1 * i, r, r) for i, r in enumerate(greens_half + [1] + list(reversed(greens_half)))]),
              'blue': tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])}
 CMAP_CONTINUOUS = LinearSegmentedColormap('custom', colordict)
 CMAP_CONTINUOUS.set_bad(BAD_COLOR)
