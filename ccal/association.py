@@ -104,16 +104,19 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     # Preprocess data
     target, features = _prepare_target_and_features(target, features, target_name=target_name)
 
-    if n_features > 100 or (n_features < 1 and n_features * features.shape[0] > 100):
+    if n_features > 100 or (n_features < 1 and n_features * features.shape[0] > 100):  # Limit number of features used
         n_features = 100
         print_log('Changed n_features to be 100 to avoid computing CI for and plotting too many features.')
 
+    #
     # Score
-    if filepath_scores:
+    #
+    if filepath_scores:  # Read already computed scores
         scores = read_csv(filepath_scores, sep='\t', index_col=0)
-        print_log('Using already computed scores:\n')
-        print(scores)
-    else:
+        print_log('Using already computed scores ...')
+        print_log('\tHead: {}'.format(scores.head()))
+        print_log('\tTail: {}'.format(scores.tail()))
+    else:  # Compute score
         if filepath_prefix:
             filepath = filepath_prefix + '.txt'
         else:
@@ -122,10 +125,15 @@ def make_association_panel(target, features, target_name=None, target_type='cont
                             n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
                             filepath=filepath)
 
-    # Apply sorted score ordering to features
+    # Keep only scores with computed margin of error for plotting
+    scores = scores.ix[~scores.ix[:, '0.95 moe'].isnull(), :]
+
+    # Apply order of scores to features
     features = features.ix[scores.index, :]
 
+    #
     # Make annotations
+    #
     annotations = DataFrame(index=scores.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
 
     # Add IC (0.95 confidence interval)
@@ -150,33 +158,12 @@ def make_association_panel(target, features, target_name=None, target_type='cont
         a = 'x.xxe\u00B1xx'
     annotations.ix[:, 'FDR'] = a
 
-    # Limited features to plot
-    if n_features < 1:  # Limit using percentile
-        # Limit top features
-        above_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
-        print_log('Plotting {} features (> {:.02f} percentile) ...'.format(sum(above_quantile), n_features))
-
-        # Limit bottom features
-        below_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
-        print_log('Plotting {} features (< {:.02f} percentile) ...'.format(sum(below_quantile), 1 - n_features))
-
-        indices_to_plot = scores.index[above_quantile | below_quantile].tolist()
-
-    else:  # Limit using numbers assuming that scores dataframe is sorted
-        if 2 * n_features >= scores.shape[0]:
-            indices_to_plot = scores.index
-            print_log('Plotting all {} features ...'.format(scores.shape[0]))
-        else:
-            indices_to_plot = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
-            print_log('Plotting top & bottom {} features ...'.format(n_features))
-
     # Plot
     if filepath_prefix:
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    _plot_association_panel(target, features.ix[indices_to_plot, :], annotations.ix[indices_to_plot, :],
-                            target_type=target_type, features_type=features_type,
+    _plot_association_panel(target, features, annotations, target_type=target_type, features_type=features_type,
                             title=title, plot_colname=plot_colname, filepath=filepath)
 
     return scores
