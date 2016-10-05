@@ -39,7 +39,8 @@ from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib.cm import seismic, bwr, Paired
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.cm import Paired
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot
 
@@ -1416,15 +1417,13 @@ FONT_SUBTITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
 
 # Color maps
 BAD_COLOR = 'wheat'
-from matplotlib.colors import ListedColormap
-colors = []
-with open('/home/cyborg/colors.txt') as f:
-    for line in f:
-        l = [int(x) for x in line.strip().split(' ')]
-        l = [x/255 for x in l] + [1]
-        colors.append(tuple(l))
-c = ListedColormap(colors)
-CMAP_CONTINUOUS = c
+# Make continuous color map
+reds = [0.26, 0.16, 0.09, 0.16, 0.26, 1, 1, 1, 1, 1, 1]
+half_greens = [0.26, 0.09, 0.07, 0, 0]
+colordict = {'red': tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
+             'green': tuple([(0.1 * i, r, r) for i, r in enumerate(half_greens + [1] + list(reversed(half_greens)))]),
+             'blue': tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])}
+CMAP_CONTINUOUS = LinearSegmentedColormap('custom', colordict)
 CMAP_CONTINUOUS.set_bad(BAD_COLOR)
 CMAP_CATEGORICAL = Paired
 CMAP_CATEGORICAL.set_bad(BAD_COLOR)
