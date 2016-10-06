@@ -604,7 +604,11 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         title = 'Association Summary Panel for {}'.format(target.name)
     plot_figure_title = True
     plot_header = True
-    for features_name, features_dict in features_dicts.items():
+    for features_name in [b[0] for b in features_bundle]:
+
+        # Read feature dict
+        features_dict = features_dicts[features_name]
+
         # Read features
         features = features_dict['dataframe']
 
