@@ -79,8 +79,8 @@ def make_association_panels(target, features_bundle, target_name=None, target_ty
 
 
 def make_association_panel(target, features, target_name=None, target_type='continuous', features_type='continuous',
-                           filepath_scores=None, n_jobs=1, features_ascending=False, n_features=0.95, n_samplings=30,
-                           n_permutations=30, title=None, plot_colname=False, filepath_prefix=None):
+                           filepath_scores=None, n_jobs=1, features_ascending=False, n_features=0.95, max_n_features=30,
+                           n_samplings=30, n_permutations=30, title=None, plot_colname=False, filepath_prefix=None):
     """
     Compute: score_i = function(target, feature_i). Compute confidence interval (CI) for n_features features.
     Compute p-val and FDR (BH) for all features. And plot the result.
@@ -93,6 +93,7 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     :param n_jobs: int; number of jobs to parallelize
     :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
+    :param max_n_features: int;
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param title: str; plot title
@@ -104,8 +105,9 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     # Preprocess data
     target, features = _prepare_target_and_features(target, features, target_name=target_name)
 
-    if n_features > 100 or (n_features < 1 and n_features * features.shape[0] > 100):  # Limit number of features used
-        n_features = 100
+    if n_features > max_n_features or (n_features < 1 and n_features * features.shape[0] > max_n_features):
+        # Limit number of features used
+        n_features = max_n_features
         print_log('Changed n_features to be 100 to avoid computing CI for and plotting too many features.')
 
     #
@@ -114,8 +116,8 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     if filepath_scores:  # Read already computed scores
         scores = read_csv(filepath_scores, sep='\t', index_col=0)
         print_log('Using already computed scores ...')
-        print_log('\tHead: {}'.format(scores.head()))
-        print_log('\tTail: {}'.format(scores.tail()))
+        print_log('\tHead:\n{}\n'.format(scores.head()))
+        print_log('\tTail:\n{}\n'.format(scores.tail()))
     else:  # Compute score
         if filepath_prefix:
             filepath = filepath_prefix + '.txt'
@@ -125,8 +127,10 @@ def make_association_panel(target, features, target_name=None, target_type='cont
                             n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
                             filepath=filepath)
 
-    # Keep only scores with computed margin of error for plotting
-    scores = scores.ix[~scores.ix[:, '0.95 moe'].isnull(), :]
+    if '0.95 moe' in scores.columns:  # Keep only scores with computed margin of error for plotting
+        scores = scores.ix[~scores.ix[:, '0.95 moe'].isnull(), :]
+    else:  # Keep only top and bottom n_features features
+        scores = scores.ix[scores.index[:n_features].tolist() + scores.index[-n_features:].tolist(), :]
 
     # Apply order of scores to features
     features = features.ix[scores.index, :]
@@ -672,6 +676,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
 
         # Plot annotations
         for i, (a_i, a) in enumerate(annotations.iterrows()):
+            # TODO: add confidence interval
             features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * SPACING,
                              features_ax.axis()[3] - i * (features_ax.axis()[3] / features.shape[0]) - 0.5,
                              '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['score', 'p-value', 'fdr']]).expandtabs(),
@@ -681,6 +686,9 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         if r_i == n - 1:
             colorbar_ax = subplot(gridspec[r_i:r_i + 1, 0])
             colorbar_ax.axis('off')
+            colorbar_ax.text(colorbar_ax.axis()[1] * 0.5, colorbar_ax.axis()[3] * -5,
+                             'Standardized Target and Feature Profile',
+                             horizontalalignment='center', **FONT)
             cax, kw = make_axes(colorbar_ax, location='bottom', fraction=0.5, shrink=1, aspect=26,
                                 cmap=target_cmap, norm=Normalize(vmin=-3, vmax=3),
                                 ticks=[-3, -2, -1, 0, 1, 2, 3])
