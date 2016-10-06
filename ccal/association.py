@@ -686,7 +686,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         if r_i == n - 1:
             colorbar_ax = subplot(gridspec[r_i:r_i + 1, 0])
             colorbar_ax.axis('off')
-            colorbar_ax.text(colorbar_ax.axis()[1] * 0.5, colorbar_ax.axis()[3] * -5,
+            colorbar_ax.text(colorbar_ax.axis()[1] * 0.5, colorbar_ax.axis()[3] * -6,
                              'Standardized Target and Feature Profile',
                              horizontalalignment='center', **FONT)
             cax, kw = make_axes(colorbar_ax, location='bottom', fraction=0.5, shrink=1, aspect=26,
