@@ -56,23 +56,24 @@ def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_si
 
     # Rank normalize the input matrix by column
     matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
-    plot_clustermap(matrix, figure_size=figure_size,
-                    title='A Matrix', xlabel='Sample', ylabel='Gene', xticklabels=False, yticklabels=False)
+    plot_clustermap(matrix, figure_size=figure_size, title='Matrix to be Decomposed', xlabel='Sample', ylabel='Gene',
+                    xticklabels=False, yticklabels=False)
 
     # NMF and score, while saving a NMF result for each k
-    nmf_results, nmf_scores = nmf_and_score(matrix=matrix, ks=ks, n_clusterings=n_clusterings,
-                                            random_state=random_state)
+    nmf_results, nmf_scores = nmf_and_score(matrix, ks, n_clusterings=n_clusterings, random_state=random_state)
 
     # Make nmf directory
     directory_path = join(directory_path, 'nmf/')
     establish_filepath(directory_path)
 
-    # Save NMF scores @ nmf/scores{.pdf, .gct}
-    print_log('Saving and plotting NMF scores ...')
-    write_dictionary(nmf_scores, join(directory_path, 'scores.txt'), key_name='k', value_name='cophenetic_correlation')
+    # Save NMF scores @ nmf/cophenetic_correlations{.pdf, .gct}
+    print_log('Saving and plotting NMF cophenetic correlations ...')
+    write_dictionary(nmf_scores, join(directory_path, 'cophenetic_correlations.txt'),
+                     key_name='k', value_name='cophenetic_correlation')
     plot_x_vs_y(sorted(nmf_scores.keys()), [nmf_scores[k] for k in sorted(nmf_scores.keys())],
-                figure_size=figure_size, title='NMF Cophenetic Score vs. k', xlabel='k', ylabel='NMF Cophenetic Score',
-                dpi=dpi, filepath=join(directory_path, 'scores.pdf'))
+                figure_size=figure_size, title='NMF Cophenetic Correlation vs. k',
+                xlabel='k', ylabel='NMF Cophenetic Correlation',
+                dpi=dpi, filepath=join(directory_path, 'cophenetic_correlations.pdf'))
 
     # Save NMF results @ nmf/matrices/nmf_k{...}_{w, h}.gct
     print_log('Saving and plotting NMF results ...')
@@ -104,39 +105,60 @@ def _save_nmf_results(nmf_results, filepath_prefix):
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(h, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE, title='Clustering Labels', dpi=DPI,
-                  filepath_prefix=None):
+def define_states(h_matrix, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE, title='Clustering per k', dpi=DPI,
+                  directory_path=None):
     """
     Cluster samples using k from ks and calculate cophenetic correlation by consensus clustering.
-    :param h: pandas DataFrame; (n_features, m_samples); H matrix from NMF
+    :param h_matrix: pandas DataFrame; (n_features, m_samples); H matrix from NMF
     :param ks: iterable; iterable of int k used for NMF
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for consensus clustering
     :param figure_size: tuple;
     :param title: str; plot title
     :param dpi: int;
-    :param filepath_prefix: str; filepath_prefix_labels.gct and filepath_prefix_labels.pdf will be saved
+    :param directory_path: str; directory_filepath/distance_matrix.{txt, pdf},
+        directory_filepath/clusterings.{gct, pdf}, and
+        directory_filepath/cophenetic_correlations.{txt, pdf} will be saved
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
 
-    # Cluster
-    clusterings, scores = consensus_cluster(h, ks, max_std=max_std, n_clusterings=n_clusterings)
+    if directory_path:
+        establish_filepath(directory_path)
 
-    # Save
-    if filepath_prefix:
-        establish_filepath(filepath_prefix)
-        write_gct(clusterings, filepath_prefix + '_labels.gct')
-        write_dictionary(scores, filepath_prefix + '_clustering_scores.txt',
+    # Consensus cluster
+    distance_matrix, clusterings, cophenetic_correlations = consensus_cluster(h_matrix, ks, max_std=max_std,
+                                                                              n_clusterings=n_clusterings)
+
+    if directory_path:  # Save distance matrix, clusterings, and cophenetic correlations
+        distance_matrix.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
+        write_gct(clusterings, join(directory_path, 'clusterings.gct'))
+        write_dictionary(cophenetic_correlations, join(directory_path, 'cophenetic_correlations.txt'),
                          key_name='k', value_name='cophenetic_correlation')
 
-    # Plot
-    plot_clustering_per_k(clusterings, title=title, filepath=filepath_prefix + '_labels.pdf')
-    plot_x_vs_y(sorted(scores.keys()), [scores[k] for k in sorted(scores.keys())],
-                figure_size=figure_size, title='Consensus Clustering Cophenetic Score vs. k',
-                xlabel='k', ylabel='Consensus Clustering Cophenetic Score',
-                dpi=dpi, filepath=filepath_prefix + '_clustering_scores.pdf')
+    if directory_path:  # Make filepath to save plot for clusterings and cophenetic correlations
+        filepath_distance_matrix_plot = join(directory_path, 'distance_matrix.pdf')
+        filepath_clusterings_plot = join(directory_path, 'clusterings.pdf')
+        filepath_cophenetic_correlations_plot = join(directory_path, 'cophenetic_correlations.pdf')
+    else:
+        filepath_distance_matrix_plot = None
+        filepath_clusterings_plot = None
+        filepath_cophenetic_correlations_plot = None
 
-    return clusterings, scores
+    # Plot distance matrix
+    plot_clustermap(distance_matrix, title='Sample Distance Matrix', xlabel='Sample', ylabel='Sample',
+                    filepath=filepath_distance_matrix_plot)
+
+    # Plot clusterings
+    plot_clustering_per_k(clusterings, title=title, filepath=filepath_clusterings_plot)
+
+    # Plot cophenetic correlations
+    plot_x_vs_y(sorted(cophenetic_correlations.keys()),
+                [cophenetic_correlations[k] for k in sorted(cophenetic_correlations.keys())],
+                figure_size=figure_size, title='Consensus Clustering Cophenetic Correlations vs. k',
+                xlabel='k', ylabel='Consensus Clustering Cophenetic Score', dpi=dpi,
+                filepath=filepath_cophenetic_correlations_plot)
+
+    return clusterings, cophenetic_correlations
 
 
 # ======================================================================================================================

@@ -1134,28 +1134,35 @@ def make_network_from_edge_file(edge_file, di=False, sep='\t'):
 # ======================================================================================================================
 # Cluster
 # ======================================================================================================================
-def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
+def consensus_cluster(matrix, ks, max_std=3, distance_matrix=None, n_clusterings=50):
     """
     Consensus cluster matrix's columns into k clusters.
     :param matrix: pandas DataFrame; (n_features, m_samples)
     :param ks: iterable; list of ks used for clustering
     :param max_std: number; threshold to clip standardized values
+    :param distance_matrix: str or DataFrame;
     :param n_clusterings: int; number of clusterings for the consensus clustering
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
 
-    # '-0-' normalize by features and clip values max_std standard deviation away; then '0-1' normalize by features
-    clipped_matrix = normalize_pandas_object(matrix, method='-0-', axis=1).clip(-max_std, max_std)
-    normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
+    if distance_matrix:
+        print_log('Loading distances between samples already computed ...')
+        if isinstance(distance_matrix, str):
+            distance_matrix = read_csv(distance_matrix, sep='\t', index_col=0)
+    else:
+        # '-0-' normalize by features and clip values max_std standard deviation away; then '0-1' normalize by features
+        clipped_matrix = normalize_pandas_object(matrix, method='-0-', axis=1).clip(-max_std, max_std)
+        normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
 
-    # Make sample-distance matrix
-    print_log('Computing distance between samples ...')
-    distance_matrix = compare_matrices(normalized_matrix, normalized_matrix, information_coefficient, is_distance=True)
+        # Compute sample-distance matrix
+        print_log('Computing distances between samples, making a distance matrix ...')
+        distance_matrix = compare_matrices(normalized_matrix, normalized_matrix, information_coefficient,
+                                           is_distance=True)
 
     # Consensus cluster distance matrix
     print_log('Consensus clustering with {} clusterings ...'.format(n_clusterings))
-    consensus_clustering_labels = DataFrame(index=ks, columns=list(matrix.columns))
-    consensus_clustering_labels.index.name = 'k'
+    clusterings = DataFrame(index=ks, columns=list(matrix.columns))
+    clusterings.index.name = 'k'
     cophenetic_correlations = {}
 
     if isinstance(ks, int):
@@ -1190,13 +1197,13 @@ def consensus_cluster(matrix, ks, max_std=3, n_clusterings=50):
 
         # Cluster distance matrix to assign the final label
         ward = linkage(distances, method='ward')
-        consensus_clustering_labels.ix[k, :] = fcluster(ward, k, criterion='maxclust')
+        clusterings.ix[k, :] = fcluster(ward, k, criterion='maxclust')
 
         # Compute clustering scores, the correlation between cophenetic and Euclidean distances
         cophenetic_correlations[k] = cophenet(ward, pdist(distances))[0]
         print_log('Computed cophenetic correlations.')
 
-    return consensus_clustering_labels, cophenetic_correlations
+    return distance_matrix, clusterings, cophenetic_correlations,
 
 
 # ======================================================================================================================
