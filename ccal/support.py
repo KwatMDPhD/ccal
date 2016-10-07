@@ -358,7 +358,7 @@ def read_dictionary(filepath, sep='\t', switch=False):
     mapping = read_csv(filepath, sep=sep, names=column_names).dropna().drop_duplicates()
 
     # Sort by key
-    mapping.sort(columns='key', inplace=True)
+    mapping.sort_values('key', inplace=True)
 
     # Loop to make dictionary
     dictionary = dict()
@@ -1139,8 +1139,8 @@ def consensus_cluster(matrix, ks, max_std=3, distance_matrix=None, n_clusterings
     Consensus cluster matrix's columns into k clusters.
     :param matrix: pandas DataFrame; (n_features, m_samples)
     :param ks: iterable; list of ks used for clustering
-    :param max_std: number; threshold to clip standardized values
     :param distance_matrix: str or DataFrame;
+    :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for the consensus clustering
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """

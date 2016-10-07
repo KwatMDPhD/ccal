@@ -105,16 +105,16 @@ def _save_nmf_results(nmf_results, filepath_prefix):
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(h_matrix, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE, title='Clustering per k', dpi=DPI,
+def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE, dpi=DPI,
                   directory_path=None):
     """
     Cluster samples using k from ks and calculate cophenetic correlation by consensus clustering.
     :param h_matrix: pandas DataFrame; (n_features, m_samples); H matrix from NMF
     :param ks: iterable; iterable of int k used for NMF
+    :param distance_matrix: str or DataFrame;
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for consensus clustering
     :param figure_size: tuple;
-    :param title: str; plot title
     :param dpi: int;
     :param directory_path: str; directory_filepath/distance_matrix.{txt, pdf},
         directory_filepath/clusterings.{gct, pdf}, and
@@ -127,6 +127,7 @@ def define_states(h_matrix, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_
 
     # Consensus cluster
     distance_matrix, clusterings, cophenetic_correlations = consensus_cluster(h_matrix, ks, max_std=max_std,
+                                                                              distance_matrix=distance_matrix,
                                                                               n_clusterings=n_clusterings)
 
     if directory_path:  # Save distance matrix, clusterings, and cophenetic correlations
@@ -145,17 +146,18 @@ def define_states(h_matrix, ks, max_std=3, n_clusterings=50, figure_size=FIGURE_
         filepath_cophenetic_correlations_plot = None
 
     # Plot distance matrix
-    plot_clustermap(distance_matrix, title='Sample Distance Matrix', xlabel='Sample', ylabel='Sample',
+    plot_clustermap(distance_matrix, title='Sample Distance Matrix',
+                    xlabel='Sample', ylabel='Sample', xticklabels=False, yticklabels=False,
                     filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
-    plot_clustering_per_k(clusterings, title=title, filepath=filepath_clusterings_plot)
+    plot_clustering_per_k(clusterings, title='Clustering per k', filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlations
     plot_x_vs_y(sorted(cophenetic_correlations.keys()),
                 [cophenetic_correlations[k] for k in sorted(cophenetic_correlations.keys())],
                 figure_size=figure_size, title='Consensus Clustering Cophenetic Correlations vs. k',
-                xlabel='k', ylabel='Consensus Clustering Cophenetic Score', dpi=dpi,
+                xlabel='k', ylabel='Cophenetic Score', dpi=dpi,
                 filepath=filepath_cophenetic_correlations_plot)
 
     return clusterings, cophenetic_correlations
