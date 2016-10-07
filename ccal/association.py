@@ -234,7 +234,7 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath: str;
     :return: DataFrame; (n_features,
-                         7 ('score', '<confidence> moe', 'p-value', 'fdr (forward)', 'fdr (reverse)', and 'fdr'))
+                         7 ('score', '<confidence> moe', 'p-value', and 'fdr'))
     """
 
     #
@@ -343,7 +343,7 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
         print_log('Not computing P-value and FDR because n_perm < 1.')
     else:
         p_values_and_fdrs = DataFrame(index=scores.index,
-                                      columns=['p-value', 'fdr (forward)', 'fdr (reverse)', 'fdr'])
+                                      columns=['p-value', 'fdr'])
 
         if n_jobs == 1:  # Non-parallel computing
             print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
