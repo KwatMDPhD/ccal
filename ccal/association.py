@@ -13,7 +13,7 @@ Authors:
 
 from math import ceil, sqrt
 
-from numpy import array, sum, mean, unique, isnan
+from numpy import array, sum, unique, isnan
 from numpy.random import shuffle, choice
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
@@ -397,16 +397,15 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
         all_permutation_scores = permutation_scores.values.flatten()
         for i, (r_i, r) in enumerate(scores.iterrows()):
             # Compute global p-value
-            p_value = float(sum(all_permutation_scores > float(r.ix['score'])) / (n_permutations * features.shape[0]))
+            s = r.ix['score']
+            p_value = min(sum(all_permutation_scores >= s),
+                          sum(all_permutation_scores <= s)) / (n_permutations * features.shape[0])
             if not p_value:
                 p_value = float(1 / (n_permutations * scores.shape[0]))
             p_values_and_fdrs.ix[r_i, 'p-value'] = p_value
 
         # Compute global permutation FDRs
-        p_values_and_fdrs.ix[:, 'fdr (forward)'] = multipletests(p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
-        p_values_and_fdrs.ix[:, 'fdr (reverse)'] = \
-            multipletests(1 - p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
-        p_values_and_fdrs.ix[:, 'fdr'] = p_values_and_fdrs.ix[:, ['fdr (forward)', 'fdr (reverse)']].min(axis=1)
+        p_values_and_fdrs.ix[:, 'fdr'] = multipletests(p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
 
         # Concatenate
         scores = concat([scores, p_values_and_fdrs], join_axes=[scores.index], axis=1)
