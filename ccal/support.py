@@ -19,7 +19,7 @@ from csv import reader, writer, excel, excel_tab
 from datetime import datetime
 from math import floor, log10
 from operator import add, sub
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 
 from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, dot, isnan, argmax, average
 from numpy.linalg import pinv
@@ -1299,12 +1299,7 @@ def _nmf_and_score(args):
     print_log('\t(k={}) Counting co-clusterings of {} NMF ...'.format(k, n_clusterings))
     consensus_matrix = get_consensus(sample_x_clustering)
 
-    # Get distance matrix from consensus matrix
-    distance_matrix = 1 - consensus_matrix
-
-    cophenetic_distance_matrix = cophenet(linkage(consensus_matrix, 'average'))
-
-    nmf_score_dict[k] = pearsonr(distance_matrix, cophenetic_distance_matrix)
+    nmf_score_dict[k] = pearsonr(pdist(1 - consensus_matrix), cophenet(linkage(consensus_matrix, method='average')))
 
     print_log('\t(k={}) Computed the cophenetic correlation coefficient.'.format(k))
 
