@@ -56,6 +56,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED,
     """
 
     # Rank normalize the input matrix by column
+    # TODO: add this normalization to NMF
     matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
     plot_clustermap(matrix, figure_size=figure_size, title='Matrix to be Decomposed', xlabel='Sample', ylabel='Gene',
                     xticklabels=False, yticklabels=False)
