@@ -28,7 +28,7 @@ from seaborn import violinplot, boxplot
 from . import SEED
 from .support import EPS, print_log, establish_filepath, write_gct, write_dictionary, fit_matrix, nmf_and_score, \
     information_coefficient, normalize_pandas_object, consensus_cluster, exponential_function, mds, \
-    compute_score_and_pvalue, FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, \
+    compute_score_and_pvalue, FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, \
     plot_clustermap, plot_clustering_per_k, plot_nmf_result, plot_x_vs_y
 
 ro.conversion.py2ri = numpy2ri
@@ -40,8 +40,7 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE, dpi=DPI,
-                      directory_path=None):
+def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED, directory_path=None):
     """
     NMF matrix into W and H matrices using k from ks and calculate cophenetic correlation by consensus clustering.
     :param matrix: pandas DataFrame;
@@ -49,15 +48,13 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED,
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
     :param random_state: int;
-    :param figure_size: tuple;
-    :param dpi: int;
     :param directory_path: str; directory where nmf_k{k}_{w, h}.gct and nmf_scores.pdf will be saved
     :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and {k: cophenetic correlation}
     """
 
     # Rank normalize the input matrix by column
     matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
-    plot_clustermap(matrix, figure_size=figure_size, title='Matrix to be Decomposed', xlabel='Sample', ylabel='Gene',
+    plot_clustermap(matrix, title='Matrix to be Decomposed', xlabel='Sample', ylabel='Gene',
                     xticklabels=False, yticklabels=False)
 
     # NMF and score, while saving a NMF result for each k
@@ -73,9 +70,8 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED,
     write_dictionary(nmf_scores, join(directory_path, 'cophenetic_correlations.txt'),
                      key_name='k', value_name='cophenetic_correlation')
     plot_x_vs_y(sorted(nmf_scores.keys()), [nmf_scores[k] for k in sorted(nmf_scores.keys())],
-                figure_size=figure_size, title='NMF Cophenetic Correlation vs. k',
-                xlabel='k', ylabel='NMF Cophenetic Correlation',
-                dpi=dpi, filepath=join(directory_path, 'cophenetic_correlations.pdf'))
+                title='NMF Cophenetic Correlation vs. k', xlabel='k', ylabel='NMF Cophenetic Correlation',
+                filepath=join(directory_path, 'cophenetic_correlations.pdf'))
 
     # Save NMF results @ nmf/matrices/nmf_k{...}_{w, h}.gct
     print_log('Saving and plotting NMF results ...')
@@ -84,8 +80,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED,
     # Save NMF figures @ nmf/figures/nmf_k{...}.pdf
     for k in ks:
         print_log('\tPlotting k={} ...'.format(k))
-        plot_nmf_result(nmf_results, k, figure_size=figure_size, dpi=dpi,
-                        filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
+        plot_nmf_result(nmf_results, k, filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
 
     return nmf_results, nmf_scores
 
@@ -107,8 +102,7 @@ def _save_nmf_results(nmf_results, filepath_prefix):
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=50, figure_size=FIGURE_SIZE, dpi=DPI,
-                  directory_path=None):
+def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=50, directory_path=None):
     """
     Cluster samples using k from ks and calculate cophenetic correlation by consensus clustering.
     :param h_matrix: pandas DataFrame; (n_features, m_samples); H matrix from NMF
@@ -116,8 +110,6 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=5
     :param distance_matrix: str or DataFrame;
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of clusterings for consensus clustering
-    :param figure_size: tuple;
-    :param dpi: int;
     :param directory_path: str; directory_filepath/distance_matrix.{txt, pdf},
         directory_filepath/clusterings.{gct, pdf}, and
         directory_filepath/cophenetic_correlations.{txt, pdf} will be saved
@@ -163,8 +155,7 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=5
     # Plot cophenetic correlations
     plot_x_vs_y(sorted(cophenetic_correlations.keys()),
                 [cophenetic_correlations[k] for k in sorted(cophenetic_correlations.keys())],
-                figure_size=figure_size, title='Consensus Clustering Cophenetic Correlations vs. k',
-                xlabel='k', ylabel='Cophenetic Score', dpi=dpi,
+                title='Consensus Clustering Cophenetic Correlations vs. k', xlabel='k', ylabel='Cophenetic Score',
                 filepath=filepath_cophenetic_correlations_plot)
 
     return distance_matrix, clusterings, cophenetic_correlations
@@ -181,7 +172,7 @@ def make_oncogps_map(h_train, states_train, std_max=3,
                      n_pullratio_components=0, pullratio_factor=5,
                      n_grids=128, kde_bandwidths_factor=1,
                      annotations=(), annotation_name='', annotation_type='continuous',
-                     figure_size=FIGURE_SIZE, title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
+                     title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                      colors=None, component_markersize=13, component_markerfacecolor='#000726',
                      component_markeredgewidth=1.69,
@@ -193,7 +184,7 @@ def make_oncogps_map(h_train, states_train, std_max=3,
                      sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                      legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
                      effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
-                     effectplot_median_markeredgecolor='#FF0082', dpi=DPI, filepath=None):
+                     effectplot_median_markeredgecolor='#FF0082', filepath=None):
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states_train: iterable of int; (n_samples); sample states
@@ -216,7 +207,6 @@ def make_oncogps_map(h_train, states_train, std_max=3,
     :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
-    :param figure_size: tuple;
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
@@ -248,7 +238,6 @@ def make_oncogps_map(h_train, states_train, std_max=3,
     :param effectplot_mean_markerfacecolor: matplotlib color;
     :param effectplot_mean_markeredgecolor: matplotlib color;
     :param effectplot_median_markeredgecolor: matplotlib color;
-    :param dpi: int;
     :param filepath: str;
     :return: None
     """
@@ -288,7 +277,7 @@ def make_oncogps_map(h_train, states_train, std_max=3,
                    effectplot_type=effectplot_type, effectplot_mean_markerfacecolor=effectplot_mean_markerfacecolor,
                    effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                    effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
-                   figure_size=figure_size, dpi=dpi, filepath=filepath)
+                   filepath=filepath)
 
 
 def _make_onco_gps_elements(h_train, states_train, std_max=3,
@@ -451,7 +440,7 @@ def _get_sample_coordinates_via_pulling(component_x_coordinates, component_x_sam
 
 def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states, n_states_train,
                    annotations=(), annotation_name='', annotation_type='continuous', std_max=3,
-                   figure_size=FIGURE_SIZE, title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
+                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                    subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=None,
                    component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
                    component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
@@ -463,7 +452,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                    legend_markersize=10, legend_fontsize=11,
                    effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
                    effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
-                   dpi=DPI, filepath=None):
+                   filepath=None):
     """
     Plot Onco-GPS map.
     :param component_coordinates: pandas DataFrame; (n_components, [x, y]);
@@ -476,7 +465,6 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number; threshold to clip standardized values
-    :param figure_size: tuple;
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
@@ -508,7 +496,6 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
     :param effectplot_mean_markerfacecolor: matplotlib color;
     :param effectplot_mean_markeredgecolor: matplotlib color;
     :param effectplot_median_markeredgecolor: matplotlib color;
-    :param dpi: int;
     :param filepath: str;
     :return: None
     """
@@ -517,7 +504,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
     y_grids = linspace(0, 1, grid_probabilities.shape[1])
 
     # Set up figure and axes
-    plt.figure(figsize=figure_size)
+    plt.figure(figsize=FIGURE_SIZE)
     gridspec = GridSpec(10, 16)
     ax_title = plt.subplot(gridspec[0, :7])
     ax_title.axis([0, 1, 0, 1])
@@ -734,4 +721,4 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if filepath:
-        save_plot(filepath, dpi=dpi)
+        save_plot(filepath)
