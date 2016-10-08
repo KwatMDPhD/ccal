@@ -83,7 +83,7 @@ def make_association_panel(target, features, target_name=None, target_type='cont
                            n_samplings=30, n_permutations=30, title=None, plot_colname=False, filepath_prefix=None):
     """
     Compute: score_i = function(target, feature_i). Compute confidence interval (CI) for n_features features.
-    Compute p-val and FDR (BH) for all features. And plot the result.
+    Compute P-value and FDR (BH) for all features. And plot the result.
     :param target: pandas Series; (n_samples); must have name and index matching features's column names
     :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
     :param target_name: str;
@@ -220,7 +220,7 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
                n_features=0.95, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30, filepath=None):
     """
     Compute: score_i = function(target, feature_i).
-    Compute confidence interval (CI) for n_features features. And compute p-val and FDR (BH) for all features.
+    Compute confidence interval (CI) for n_features features. And compute P-value and FDR (BH) for all features.
     :param target: pandas Series; (n_samples); must have name and indices, matching features's column index
     :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
     :param function: function; scoring function
@@ -233,8 +233,9 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath: str;
-    :return: DataFrame; (n_features,
-                         7 ('score', '<confidence> moe', 'p-value', and 'fdr'))
+    :return: DataFrame; (n_features, 7 ('score', '<confidence> moe',
+                                        'p-value (forward)', 'p-value (reverse)', 'p-value',
+                                        'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
 
     #
@@ -343,7 +344,8 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
         print_log('Not computing P-value and FDR because n_perm < 1.')
     else:
         p_values_and_fdrs = DataFrame(index=scores.index,
-                                      columns=['p-value', 'fdr'])
+                                      columns=['p-value (forward)', 'p-value (reverse)', 'p-value',
+                                               'fdr (forward)', 'fdr (reverse)', 'fdr'])
 
         if n_jobs == 1:  # Non-parallel computing
             print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
@@ -392,27 +394,47 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
                                                                      function,
                                                                      n_permutations))])
 
-        # Compute local and global P-values
         print_log('\tComputing P-value and FDR ...')
+        # All scores
         all_permutation_scores = permutation_scores.values.flatten()
+        # TODO: update array instead of DataFrame
         for i, (r_i, r) in enumerate(scores.iterrows()):
-            # Compute global p-value
+            # This feature's score
             s = r.ix['score']
-            p_value = min(sum(all_permutation_scores >= s),
-                          sum(all_permutation_scores <= s)) / (n_permutations * features.shape[0])
-            if not p_value:
-                p_value = float(1 / (n_permutations * scores.shape[0]))
-            p_values_and_fdrs.ix[r_i, 'p-value'] = p_value
 
-        # Compute global permutation FDRs
-        p_values_and_fdrs.ix[:, 'fdr'] = multipletests(p_values_and_fdrs.ix[:, 'p-value'], method='fdr_bh')[1]
+            # Compute forward P-value
+            p_value_forward = sum(all_permutation_scores >= s) / len(all_permutation_scores)
+            if not p_value_forward:
+                p_value_forward = float(1 / len(all_permutation_scores))
+            p_values_and_fdrs.ix[r_i, 'p-value (forward)'] = p_value_forward
+
+            # Compute reverse P-value
+            p_value_reverse = sum(all_permutation_scores <= s) / len(all_permutation_scores)
+            if not p_value_reverse:
+                p_value_reverse = float(1 / len(all_permutation_scores))
+            p_values_and_fdrs.ix[r_i, 'p-value (reverse)'] = p_value_reverse
+
+        # Compute forward FDR
+        p_values_and_fdrs.ix[:, 'fdr (forward)'] = \
+            multipletests(p_values_and_fdrs.ix[:, 'p-value (forward)'], method='fdr_bh')[1]
+
+        # Compute reverse FDR
+        p_values_and_fdrs.ix[:, 'fdr (reverse)'] = \
+            multipletests(p_values_and_fdrs.ix[:, 'p-value (reverse)'], method='fdr_bh')[1]
+
+        # Creating the summary P-value and FDR
+        forward = scores.ix[:, 'score'] >= 0
+        p_values_and_fdrs.ix[:, 'p-value'] = concat([p_values_and_fdrs.ix[forward, 'p-value (forward)'],
+                                                     p_values_and_fdrs.ix[~forward, 'p-value (reverse)']])
+        p_values_and_fdrs.ix[:, 'fdr'] = concat([p_values_and_fdrs.ix[forward, 'fdr (forward)'],
+                                                 p_values_and_fdrs.ix[~forward, 'fdr (reverse)']])
 
         # Concatenate
         scores = concat([scores, p_values_and_fdrs], join_axes=[scores.index], axis=1)
 
-    # Save
-    if filepath:
-        establish_filepath(filepath)
+        # Save
+        if filepath:
+            establish_filepath(filepath)
         scores.to_csv(filepath, sep='\t')
 
     return scores

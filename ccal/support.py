@@ -108,18 +108,14 @@ def source_environment(filepath):
 # ======================================================================================================================
 # Parallel computing
 # ======================================================================================================================
-def parallelize(function, list_of_args, n_jobs=None):
+def parallelize(function, list_of_args, n_jobs=1):
     """
     Apply function on args with parallel computing using n_jobs jobs.
     :param function: function;
     :param list_of_args: list-like; function's args
-    :param n_jobs: int; if not specified, parallelize to all CPUs
+    :param n_jobs: int;
     :return: list; list of outputs returned by all jobs
     """
-
-    # Use almost all available CPUs
-    if not n_jobs:
-        n_jobs = max(cpu_count() - 1, 1)
 
     # Parallelize
     with Pool(n_jobs) as p:
@@ -786,7 +782,7 @@ def count_coclusterings(sample_x_clustering):
 
     # Count the number of co-clusterings
     for i in range(n_samples):
-        for j in range(n_samples)[i + 1:]:
+        for j in range(n_samples):  # [i + 1:]:
             for c_i in range(n_clusterings):
                 v1 = sample_x_clustering_array[i, c_i]
                 v2 = sample_x_clustering_array[j, c_i]
@@ -1134,30 +1130,25 @@ def make_network_from_edge_file(edge_file, di=False, sep='\t'):
 # ======================================================================================================================
 # Cluster
 # ======================================================================================================================
-def consensus_cluster(matrix, ks, max_std=3, distance_matrix=None, n_clusterings=50):
+def consensus_cluster(matrix, ks, distance_matrix=None, function=information_coefficient, n_clusterings=50):
     """
     Consensus cluster matrix's columns into k clusters.
     :param matrix: pandas DataFrame; (n_features, m_samples)
     :param ks: iterable; list of ks used for clustering
     :param distance_matrix: str or DataFrame;
-    :param max_std: number; threshold to clip standardized values
+    :param function: function; distance function
     :param n_clusterings: int; number of clusterings for the consensus clustering
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
 
-    if distance_matrix:
+    if isinstance(distance_matrix, DataFrame):
         print_log('Loading distances between samples already computed ...')
         if isinstance(distance_matrix, str):
             distance_matrix = read_csv(distance_matrix, sep='\t', index_col=0)
     else:
-        # '-0-' normalize by features and clip values max_std standard deviation away; then '0-1' normalize by features
-        clipped_matrix = normalize_pandas_object(matrix, method='-0-', axis=1).clip(-max_std, max_std)
-        normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
-
         # Compute sample-distance matrix
         print_log('Computing distances between samples, making a distance matrix ...')
-        distance_matrix = compare_matrices(normalized_matrix, normalized_matrix, information_coefficient,
-                                           is_distance=True)
+        distance_matrix = compare_matrices(matrix, matrix, function, is_distance=True)
 
     # Consensus cluster distance matrix
     print_log('Consensus clustering with {} clusterings ...'.format(n_clusterings))
@@ -1209,7 +1200,7 @@ def consensus_cluster(matrix, ks, max_std=3, distance_matrix=None, n_clusterings
 # ======================================================================================================================
 # NMF
 # ======================================================================================================================
-def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
+def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_jobs=1, n_clusterings=30,
                   init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
                   shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
@@ -1217,6 +1208,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param method: str; {'cophenetic_correlation'}
+    :param n_jobs: int;
     :param n_clusterings:
     :param init:
     :param solver:
@@ -1250,7 +1242,7 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_clusterings=30,
             args = [[matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_,
                      nls_max_iter, sparseness, beta, eta] for k in ks]
 
-            for nmf_result, nmf_score in parallelize(_nmf_and_score, args):
+            for nmf_result, nmf_score in parallelize(_nmf_and_score, args, n_jobs=n_jobs):
                 nmf_results.update(nmf_result)
                 nmf_scores.update(nmf_score)
         else:
@@ -1540,7 +1532,7 @@ def plot_clustering_per_k(dataframe, figure_size=FIGURE_SIZE, title='Clustering 
     :return: None
     """
 
-    a = asarray(dataframe)
+    a = array(dataframe)
     a.sort()
 
     plt.figure(figsize=figure_size)

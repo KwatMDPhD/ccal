@@ -40,12 +40,13 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE, dpi=DPI,
+def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED, figure_size=FIGURE_SIZE, dpi=DPI,
                       directory_path=None):
     """
     NMF matrix into W and H matrices using k from ks and calculate cophenetic correlation by consensus clustering.
     :param matrix: pandas DataFrame;
     :param ks: iterable; iterable of int k used for NMF
+    :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
     :param random_state: int;
     :param figure_size: tuple;
@@ -60,7 +61,8 @@ def define_components(matrix, ks, n_clusterings=30, random_state=SEED, figure_si
                     xticklabels=False, yticklabels=False)
 
     # NMF and score, while saving a NMF result for each k
-    nmf_results, nmf_scores = nmf_and_score(matrix, ks, n_clusterings=n_clusterings, random_state=random_state)
+    nmf_results, nmf_scores = nmf_and_score(matrix, ks, n_jobs=n_jobs, n_clusterings=n_clusterings,
+                                            random_state=random_state)
 
     # Make nmf directory
     directory_path = join(directory_path, 'nmf/')
@@ -122,25 +124,30 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=5
     :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
     """
 
-    if directory_path:
-        establish_filepath(directory_path)
+    # '-0-' normalize by features and clip values max_std standard deviation away; then '0-1' normalize by features
+    clipped_matrix = normalize_pandas_object(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
+    normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
 
     # Consensus cluster
-    distance_matrix, clusterings, cophenetic_correlations = consensus_cluster(h_matrix, ks, max_std=max_std,
+    distance_matrix, clusterings, cophenetic_correlations = consensus_cluster(normalized_matrix, ks,
                                                                               distance_matrix=distance_matrix,
                                                                               n_clusterings=n_clusterings)
 
-    if directory_path:  # Save distance matrix, clusterings, and cophenetic correlations
+    if directory_path:  # Save distance matrix, clusterings, and cophenetic correlations results and plots
+        establish_filepath(directory_path)
+
+        # Save results
         distance_matrix.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
         write_gct(clusterings, join(directory_path, 'clusterings.gct'))
         write_dictionary(cophenetic_correlations, join(directory_path, 'cophenetic_correlations.txt'),
                          key_name='k', value_name='cophenetic_correlation')
 
-    if directory_path:  # Make filepath to save plot for clusterings and cophenetic correlations
+        # Set up filepath to save plots
         filepath_distance_matrix_plot = join(directory_path, 'distance_matrix.pdf')
         filepath_clusterings_plot = join(directory_path, 'clusterings.pdf')
         filepath_cophenetic_correlations_plot = join(directory_path, 'cophenetic_correlations.pdf')
-    else:
+
+    else:  # Don't save results and plots
         filepath_distance_matrix_plot = None
         filepath_clusterings_plot = None
         filepath_cophenetic_correlations_plot = None
@@ -160,7 +167,7 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=5
                 xlabel='k', ylabel='Cophenetic Score', dpi=dpi,
                 filepath=filepath_cophenetic_correlations_plot)
 
-    return clusterings, cophenetic_correlations
+    return distance_matrix, clusterings, cophenetic_correlations
 
 
 # ======================================================================================================================
