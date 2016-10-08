@@ -17,7 +17,6 @@ from os.path import abspath, split, isdir, isfile, islink
 from subprocess import Popen, PIPE
 from csv import reader, writer, excel, excel_tab
 from datetime import datetime
-from math import floor, log10
 from operator import add, sub
 from multiprocessing import Pool
 
@@ -503,35 +502,6 @@ def indent_string(string, n_tabs=1):
     """
 
     return '\n'.join(['\t' * n_tabs + line for line in string.split('\n')])
-
-
-# ======================================================================================================================
-# Number
-# ======================================================================================================================
-# TODO: combine with round_significant_figure
-def round_number(number):
-    """
-    Round number to the nearest integer.
-    :param number:
-    :return:
-    """
-
-    y = round(float(number)) - 0.5
-    return int(y) + (y > 0)
-
-
-def round_significant_figure(number, n):
-    """
-    Round number to n significant figures.
-    :param number:
-    :param n:
-    :return:
-    """
-
-    if number == 0:
-        return 0
-    else:
-        return round(number, -int(floor(log10(abs(number)))) + (n - 1))
 
 
 # ======================================================================================================================
@@ -1410,16 +1380,13 @@ FIGURE_SIZE = (16, 10)
 SPACING = 0.05
 
 # Fonts
-# TODO: make plotters use these instead of manual entry
-FONT = {'rotation': 0, 'fontsize': 12, 'weight': 'bold'}
 FONT_TITLE = {'rotation': 0, 'fontsize': 26, 'weight': 'bold'}
 FONT_SUBTITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
+FONT = {'rotation': 0, 'fontsize': 12, 'weight': 'bold'}
 
 # Color maps
 BAD_COLOR = 'wheat'
 # Make continuous color map
-# reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
-# greens_half = [0.25, 0.15, 0.05, 0.2, 0.6]
 reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
 greens_half = [0.26, 0.16, 0.09, 0.26, 0.69]
 colordict = {'red': tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
@@ -1435,16 +1402,12 @@ CMAP_BINARY.set_bad(BAD_COLOR)
 DPI = 1000
 
 
-def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsize=20,
-                    row_colors=None, col_colors=None, xlabel=None, ylabel=None,
-                    xticklabels=True, yticklabels=True, xticklabels_rotation=90, yticklabels_rotation=0,
-                    dpi=DPI, filepath=None):
+def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xlabel=None, ylabel=None,
+                    xticklabels=True, yticklabels=True, xticklabels_rotation=90, yticklabels_rotation=0, filepath=None):
     """
     Plot heatmap for dataframe.
     :param dataframe: pandas DataFrame;
-    :param figure_size: tuple; (n_rows, n_cols)
     :param title: str;
-    :param title_fontsize: number;
     :param row_colors: list-like or pandas DataFrame/Series; List of colors to label for either the rows.
         Useful to evaluate whether samples within a group_iterable are clustered together.
         Can use nested lists or DataFrame for multiple color levels of labeling.
@@ -1463,26 +1426,23 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
     :param yticklabels: bool;
     :param xticklabels_rotation: number;
     :param yticklabels_rotation: number;
-    :param dpi: int;
     :param filepath: str;
     :return: None
     """
 
     # Initialize a figure
-    plt.figure(figsize=figure_size)
+    plt.figure(figsize=FIGURE_SIZE)
 
     # Plot cluster map
     clustergrid = clustermap(dataframe, xticklabels=xticklabels, yticklabels=yticklabels,
                              row_colors=row_colors, col_colors=col_colors, cmap=CMAP_CONTINUOUS)
 
     if title:  # Title
-        figuretitle_font_properties = {'fontsize': title_fontsize, 'fontweight': 'bold'}
-        plt.suptitle(title, **figuretitle_font_properties)
+        plt.suptitle(title, **FONT_TITLE)
 
     # X & Y labels
-    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
-    clustergrid.ax_heatmap.set_xlabel(xlabel, **label_font_properties)
-    clustergrid.ax_heatmap.set_ylabel(ylabel, **label_font_properties)
+    clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
+    clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE)
 
     # X & Y ticks
     for t in clustergrid.ax_heatmap.get_xticklabels():
@@ -1491,48 +1451,39 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
         t.set_rotation(yticklabels_rotation)
 
     if filepath:  # Save
-        save_plot(filepath, dpi=dpi)
+        save_plot(filepath)
 
 
-def plot_x_vs_y(x, y, figure_size=FIGURE_SIZE, title='title', title_fontsize=20, xlabel='xlabel', ylabel='ylabel',
-                dpi=DPI, filepath=None):
+def plot_x_vs_y(x, y, title='title', xlabel='xlabel', ylabel='ylabel', filepath=None):
     """
     Plot x vs y.
     :param x:
     :param y:
-    :param figure_size:
     :param title:
-    :param title_fontsize:
     :param xlabel:
     :param ylabel:
-    :param dpi:
     :param filepath:
     :return:
     """
-    plt.figure(figsize=figure_size)
+    plt.figure(figsize=FIGURE_SIZE)
 
     if title:
-        plt.suptitle(title, fontsize=title_fontsize, fontweight='bold')
+        plt.suptitle(title, **FONT_TITLE)
 
     pointplot(x, y)
 
-    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
-    plt.gca().set_xlabel(xlabel, **label_font_properties)
-    plt.gca().set_ylabel(ylabel, **label_font_properties)
+    plt.gca().set_xlabel(xlabel, **FONT_SUBTITLE)
+    plt.gca().set_ylabel(ylabel, **FONT_SUBTITLE)
 
     if filepath:
-        save_plot(filepath, dpi=dpi)
+        save_plot(filepath)
 
 
-def plot_clustering_per_k(dataframe, figure_size=FIGURE_SIZE, title='Clustering per k', title_fontsize=20, dpi=DPI,
-                          filepath=None):
+def plot_clustering_per_k(dataframe, title='Clustering per k', filepath=None):
     """
     Plot clustering matrix.
     :param dataframe: pandas DataFrame; (n_clusterings, n_samples)
-    :param figure_size: tuple; (n_rows, n_cols)
     :param title: str;
-    :param title_fontsize: number;
-    :param dpi: int;
     :param filepath: str;
     :return: None
     """
@@ -1540,28 +1491,27 @@ def plot_clustering_per_k(dataframe, figure_size=FIGURE_SIZE, title='Clustering 
     a = array(dataframe)
     a.sort()
 
-    plt.figure(figsize=figure_size)
+    plt.figure(figsize=FIGURE_SIZE)
     heatmap(DataFrame(a, index=dataframe.index), cmap=CMAP_CATEGORICAL, xticklabels=False,
             cbar_kws={'orientation': 'horizontal'})
 
     if title:
-        figuretitle_font_properties = {'fontsize': title_fontsize}
-        plt.suptitle(title, **figuretitle_font_properties)
+        plt.suptitle(title, **FONT_TITLE)
 
     plt.gca().set_xlabel('Sample')
 
     for t in plt.gca().get_yticklabels():
-        t.set_weight('bold')
+        t.set(**FONT)
 
     colorbar = plt.gca().collections[0].colorbar
     colorbar.set_ticks(list(range(1, a.max() + 1)))
 
     if filepath:
-        save_plot(filepath, dpi=dpi)
+        save_plot(filepath)
 
 
-def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=False, max_std=3,
-                    figure_size=FIGURE_SIZE, title=None, title_fontsize=20, dpi=DPI, filepath=None):
+def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=False, max_std=3, title=None,
+                    filepath=None):
     """
     Plot nmf_results dictionary (can be generated by ccal.analyze.nmf function).
     :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
@@ -1570,10 +1520,7 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
     :param h_matrix: Pandas DataFrame
     :param normalize: bool; normalize W and H matrices or not ('-0-' normalization on the component axis)
     :param max_std: number; threshold to clip standardized values
-    :param figure_size: tuple; (n_rows, n_cols)
     :param title: str;
-    :param title_fontsize: number;
-    :param dpi: int;
     :param filepath: str;
     :return: None
     """
@@ -1591,60 +1538,55 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
             filepath += '.pdf'
         pdf = PdfPages(filepath)
 
-    # Set up aesthetic properties
-    figuretitle_font_properties = {'fontsize': title_fontsize, 'fontweight': 'bold'}
-    axtitle_font_properties = {'fontsize': title_fontsize * 0.9, 'fontweight': 'bold'}
-    label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
-
     # Plot W and H
-    plt.figure(figsize=figure_size)
+    plt.figure(figsize=FIGURE_SIZE)
     gridspec = GridSpec(10, 16)
     ax_w = plt.subplot(gridspec[1:, :5])
     ax_h = plt.subplot(gridspec[3:8, 7:])
     if not title:
         title = 'NMF Result for k={}'.format(w_matrix.shape[1])
-    plt.suptitle(title, **figuretitle_font_properties)
+    plt.suptitle(title, **FONT_TITLE)
     # Plot W
     if normalize:
         w_matrix = normalize_pandas_object(w_matrix, method='-0-', axis=0).clip(-max_std, max_std)
     heatmap(w_matrix, cmap=CMAP_CONTINUOUS, yticklabels=False, ax=ax_w)
-    ax_w.set_title('W Matrix', **axtitle_font_properties)
-    ax_w.set_xlabel('Component', **label_font_properties)
-    ax_w.set_ylabel('Feature', **label_font_properties)
+    ax_w.set_title('W Matrix', **FONT_TITLE)
+    ax_w.set_xlabel('Component', **FONT_SUBTITLE)
+    ax_w.set_ylabel('Feature', **FONT_SUBTITLE)
     # Plot H
     if normalize:
         h_matrix = normalize_pandas_object(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
     heatmap(h_matrix, cmap=CMAP_CONTINUOUS, xticklabels=False, cbar_kws={'orientation': 'horizontal'}, ax=ax_h)
-    ax_h.set_title('H Matrix', **axtitle_font_properties)
-    ax_h.set_xlabel('Sample', **label_font_properties)
-    ax_h.set_ylabel('Component', **label_font_properties)
+    ax_h.set_title('H Matrix', **FONT_TITLE)
+    ax_h.set_xlabel('Sample', **FONT_SUBTITLE)
+    ax_h.set_ylabel('Component', **FONT_SUBTITLE)
     if filepath:
-        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+        plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
     # Plot cluster map for W
     clustergrid = clustermap(w_matrix, standard_scale=0, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
-    plt.suptitle('W Matrix for k={}'.format(w_matrix.shape[1]), **figuretitle_font_properties)
-    clustergrid.ax_heatmap.set_xlabel('Component', **label_font_properties)
-    clustergrid.ax_heatmap.set_ylabel('Feature', **label_font_properties)
+    plt.suptitle('W Matrix for k={}'.format(w_matrix.shape[1]), **FONT_TITLE)
+    clustergrid.ax_heatmap.set_xlabel('Component', **FONT_SUBTITLE)
+    clustergrid.ax_heatmap.set_ylabel('Feature', **FONT_SUBTITLE)
     for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set_fontweight('bold')
     for t in clustergrid.ax_heatmap.get_yticklabels():
         t.set_visible(False)
     if filepath:
-        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+        plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
     # Plot cluster map for H
     clustergrid = clustermap(h_matrix, standard_scale=1, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
-    plt.suptitle('H Matrix for k={}'.format(w_matrix.shape[1]), **figuretitle_font_properties)
-    clustergrid.ax_heatmap.set_xlabel('Sample', **label_font_properties)
-    clustergrid.ax_heatmap.set_ylabel('Component', **label_font_properties)
+    plt.suptitle('H Matrix for k={}'.format(w_matrix.shape[1]), **FONT_TITLE)
+    clustergrid.ax_heatmap.set_xlabel('Sample', **FONT_SUBTITLE)
+    clustergrid.ax_heatmap.set_ylabel('Component', **FONT_SUBTITLE)
     for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set_visible(False)
     for t in clustergrid.ax_heatmap.get_yticklabels():
         t.set_fontweight('bold')
         t.set_rotation(0)
     if filepath:
-        plt.savefig(pdf, format='pdf', dpi=dpi, bbox_inches='tight')
+        plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
     if filepath:
         pdf.close()
