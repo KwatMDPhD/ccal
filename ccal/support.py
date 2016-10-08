@@ -1468,25 +1468,29 @@ def plot_clustermap(dataframe, figure_size=FIGURE_SIZE, title=None, title_fontsi
     :return: None
     """
 
+    # Initialize a figure
     plt.figure(figsize=figure_size)
 
+    # Plot cluster map
     clustergrid = clustermap(dataframe, xticklabels=xticklabels, yticklabels=yticklabels,
                              row_colors=row_colors, col_colors=col_colors, cmap=CMAP_CONTINUOUS)
 
-    if title:
+    if title:  # Title
         figuretitle_font_properties = {'fontsize': title_fontsize, 'fontweight': 'bold'}
         plt.suptitle(title, **figuretitle_font_properties)
 
+    # X & Y labels
     label_font_properties = {'fontsize': title_fontsize * 0.81, 'fontweight': 'bold'}
-    plt.gca().set_xlabel(xlabel, **label_font_properties)
-    plt.gca().set_ylabel(ylabel, **label_font_properties)
+    clustergrid.ax_heatmap.set_xlabel(xlabel, **label_font_properties)
+    clustergrid.ax_heatmap.set_ylabel(ylabel, **label_font_properties)
 
+    # X & Y ticks
     for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set_rotation(xticklabels_rotation)
     for t in clustergrid.ax_heatmap.get_yticklabels():
         t.set_rotation(yticklabels_rotation)
 
-    if filepath:
+    if filepath:  # Save
         save_plot(filepath, dpi=dpi)
 
 
