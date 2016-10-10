@@ -1418,7 +1418,7 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
     if xlabel:
         clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
     if ylabel:
-        clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE, rotation=90)
+        clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE, rotation=-90)
 
     # X & Y ticks
     for t in clustergrid.ax_heatmap.get_xticklabels():
