@@ -380,7 +380,7 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
     # Compute component pulling power
     if component_pull_power == 'auto':
         print_log('Computing component-pull power ...')
-        fit_parameters = fit_matrix(training_h, exponential_function)
+        fit_parameters = fit_matrix(training_h, exponential_function, sort_matrix=True)
         print_log('\tModeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
         k = fit_parameters[1]
 

@@ -1023,10 +1023,10 @@ def fit_matrix(matrix, function_to_fit, axis=0, sort_matrix=False, maxfev=1000):
         matrix = matrix.T
 
     if sort_matrix:  # Sort by column
-        sort(matrix, axis=0)
+        matrix = sort(matrix, axis=0)
 
     x = array(range(matrix.shape[0]))
-    y = asarray(matrix.apply(sum, axis=1)) / matrix.shape[1]
+    y = sum(matrix, axis=1) / matrix.shape[1]
     fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
 
     return fit_parameters
