@@ -360,6 +360,7 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
     training_samples.ix[:, 'state'] = states_train
 
     # Compute pulling ratios
+    # TODO: compartmentalize
     ratios = zeros(training_h.shape[1])
     if 0 < n_pullratio_components:
         print_log('Computing component-pull ratio for each sample ...')
@@ -382,6 +383,7 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
         training_samples.ix[:, 'pullratio'] = (ratios - ratios.min()) / (ratios.max() - ratios.min()) * pullratio_factor
 
     # Compute grid probabilities and states
+    # TODO: compartmentalize
     grid_probabilities = zeros((n_grids, n_grids), dtype=float)
     grid_states = zeros((n_grids, n_grids), dtype=int)
 

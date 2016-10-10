@@ -20,7 +20,8 @@ from datetime import datetime
 from operator import add, sub
 from multiprocessing import Pool
 
-from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, dot, isnan, argmax, average
+from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, dot, isnan, sort, argmax, \
+    average
 from numpy.linalg import pinv
 from numpy.random import random_sample, random_integers, shuffle
 from pandas import Series, DataFrame, read_csv
@@ -1036,22 +1037,30 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     return DataFrame(compared_matrix, index=matrix1.index, columns=matrix2.index)
 
 
-def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
+def fit_matrix(matrix, function_to_fit, axis=0, sort_matrix=False, maxfev=1000):
     """
     Fit rows or columns of matrix to function_to_fit.
     :param matrix: pandas DataFrame;
     :param function_to_fit: function;
     :param axis: int;
+    :param sort_matrix: bool;
     :param maxfev: int;
     :return: list; fit parameters
     """
 
-    if axis == 1:
+    # Copy
+    matrix = array(matrix)
+
+    if axis == 1:  # Transpose
         matrix = matrix.T
 
+    if sort_matrix:  # Sort by column
+        sort(matrix, axis=0)
+
     x = array(range(matrix.shape[0]))
-    y = asarray(matrix.apply(sorted).apply(sum, axis=1)) / matrix.shape[1]
+    y = asarray(matrix.apply(sum, axis=1)) / matrix.shape[1]
     fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
+
     return fit_parameters
 
 
@@ -1060,7 +1069,7 @@ def fit_matrix(matrix, function_to_fit, axis=0, maxfev=1000):
 # ======================================================================================================================
 def make_network_from_similarity_matrix(similarity_matrix):
     """
-    Make graph from a similarity matrix.
+
     :param similarity_matrix:
     :return:
     """
