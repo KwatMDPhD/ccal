@@ -26,10 +26,10 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import violinplot, boxplot
 
 from . import SEED
-from .support import EPS, print_log, establish_filepath, write_gct, write_dictionary, fit_matrix, nmf_and_score, \
-    information_coefficient, normalize_pandas_object, consensus_cluster, exponential_function, mds, \
-    compute_score_and_pvalue, FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, \
-    plot_clustermap, plot_clusterings, plot_nmf_result, plot_x_vs_y
+from .support import EPS, print_log, establish_filepath, read_gct, write_gct, write_dictionary, fit_matrix, \
+    nmf_and_score, information_coefficient, normalize_pandas_object, consensus_cluster, exponential_function, mds, \
+    compute_score_and_pvalue, solve_matrix_linear_equation, FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, \
+    save_plot, plot_clustermap, plot_clusterings, plot_nmf_result, plot_x_vs_y
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -97,6 +97,45 @@ def _save_nmf_results(nmf_results, filepath_prefix):
     for k, v in nmf_results.items():
         write_gct(v['W'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
         write_gct(v['H'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
+
+
+def project_w(a_matrix, w_matrix, filepath=None):
+    """
+
+    :param a_matrix:
+    :param w_matrix:
+    :param filepath:
+    :return:
+    """
+
+    if isinstance(a_matrix, str):
+        a_matrix = read_gct(a_matrix)
+    elif not isinstance(a_matrix, DataFrame):
+        raise ValueError('A matirx must be either a DataFrame or a path to a .gct file.')
+
+    if isinstance(w_matrix, str):
+        w_matrix = read_gct(w_matrix)
+    elif not isinstance(w_matrix, DataFrame):
+        raise ValueError('W matirx must be either a DataFrame or a path to a .gct file.')
+
+    shared = set(a_matrix.index) & set(w_matrix.index)
+    a_matrix = a_matrix.ix[shared, :]
+    w_matrix = w_matrix.ix[shared, :]
+
+    a_matrix = normalize_pandas_object(a_matrix, 'rank', axis=0)
+
+    # TODO: why not rank normalize by 10000 here too?
+    w_matrix = w_matrix.apply(lambda c: c / sum(c) * 1000)
+
+    h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix)
+
+    if filepath:
+        if not filepath.endswith('.gct'):
+            filepath += '.gct'
+        establish_filepath(filepath)
+        write_gct(h_matrix, filepath)
+
+    return h_matrix
 
 
 # ======================================================================================================================

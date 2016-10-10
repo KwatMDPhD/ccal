@@ -833,7 +833,8 @@ def normalize_series(series, method='-0-', n_ranks=10000):
         else:
             return (series - series_min) / (series_max - series_min)
     elif method == 'rank':
-        return series.rank() / series.size * n_ranks
+        # NaNs are raked lowest in the ascending ranking
+        return series.rank(na_option='top') / series.size * n_ranks
 
 
 # ======================================================================================================================
