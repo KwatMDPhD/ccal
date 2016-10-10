@@ -993,8 +993,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     # Compare
     compared_matrix = empty((n_1, n_2))
     for i_1 in range(n_1):
-        if i_1 == 0 or i_1 % 10 == 0:
-            print_log('Computing association between matrices ({}/{}) ...'.format(i_1, n_1))
+        print_log('Computing association between matrices ({}/{}) ...'.format(i_1, n_1))
         for i_2 in range(n_2):
             compared_matrix[i_1, i_2] = function(m1[i_1, :], m2[i_2, :])
 
@@ -1355,9 +1354,9 @@ FIGURE_SIZE = (16, 10)
 SPACING = 0.05
 
 # Fonts
-FONT_TITLE = {'rotation': 0, 'fontsize': 26, 'weight': 'bold'}
-FONT_SUBTITLE = {'rotation': 0, 'fontsize': 20, 'weight': 'bold'}
-FONT = {'rotation': 0, 'fontsize': 12, 'weight': 'bold'}
+FONT_TITLE = {'fontsize': 26, 'weight': 'bold'}
+FONT_SUBTITLE = {'fontsize': 20, 'weight': 'bold'}
+FONT = {'fontsize': 12, 'weight': 'bold'}
 
 # Color maps
 BAD_COLOR = 'wheat'
@@ -1419,7 +1418,7 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
     if xlabel:
         clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
     if ylabel:
-        clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE)
+        clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE, rotation=90)
 
     # X & Y ticks
     for t in clustergrid.ax_heatmap.get_xticklabels():

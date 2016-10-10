@@ -821,12 +821,15 @@ def _read_bundle(data_bundle):
 # ======================================================================================================================
 # Comparison panel
 # ======================================================================================================================
-def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, axis=0, is_distance=False, title=None,
+def make_comparison_matrix(matrix1, matrix2, matrix1_name='Matrix 1', matrix2_name='Matrix 2',
+                           function=information_coefficient, axis=0, is_distance=False, title=None,
                            filepath_prefix=None):
     """
     Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
     :param matrix1: pandas DataFrame or numpy 2D arrays;
     :param matrix2: pandas DataFrame or numpy 2D arrays;
+    :param matrix1_name: str;
+    :param matrix2_name: str;
     :param function: function; association or distance function
     :param axis: int; 0 for row-wise and 1 for column-wise comparison
     :param is_distance: bool; if True, distances are computed from associations, as in 'distance = 1 - association'
@@ -847,6 +850,6 @@ def make_comparison_matrix(matrix1, matrix2, function=information_coefficient, a
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    plot_clustermap(comparison_matrix, title=title, filepath=filepath)
+    plot_clustermap(comparison_matrix, title=title, xlabel=matrix2_name, ylabel=matrix1_name, filepath=filepath)
 
     return comparison_matrix
