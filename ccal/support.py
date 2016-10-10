@@ -437,6 +437,7 @@ def title_string(string):
     :param string: str;
     :return: str;
     """
+    # TODO: Don't lowercase alrady capitalized letters; don't let KRAS to become Kras
 
     string = string.title().replace('_', ' ').replace('\n', '')
     for lowercase in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of', 'vs', 'vs']:
@@ -470,6 +471,7 @@ def clean_string(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_c
     return new_string
 
 
+# TODO: consider deleting
 def cast_string_to_int_float_bool_or_str(string):
     """
     Convert string into the following data types (return the first successful): int, float, bool, or str.
@@ -494,6 +496,7 @@ def cast_string_to_int_float_bool_or_str(string):
     return str(value)
 
 
+# TODO: consider deleting
 def indent_string(string, n_tabs=1):
     """
     Indent block of text by adding a n_tabs number of tabs (default 1) to the beginning of each line.
@@ -627,41 +630,6 @@ def group_iterable(iterable, n=2, partial_final_item=False):
             accumulator = []
     if len(accumulator) != 0 and (len(accumulator) == n or partial_final_item):
         yield accumulator
-
-
-def count_n_occurrences_of_all_items(iterable, case_sensitive=True):
-    """
-    Count the number of occurrences of items in iterable.
-    :param iterable:
-    :param case_sensitive:
-    :return: dict; a dictionary keyed by value holding the number of occurrences of that value
-    """
-
-    freq_dict = {}
-    for item in iterable:
-        if not case_sensitive:
-            item = item.lower()
-        if item not in freq_dict:
-            freq_dict[item] = 1
-        else:
-            freq_dict[item] += 1
-    return freq_dict
-
-
-def get_mode(iterable, rank=0, excluded=()):
-    """
-    Return the most common object in iterable that is not in exclude.
-    This is the default behavior, if rank is 0.
-    If rank != 0, return the <rank + 1>-most common item in iterable.
-    :param iterable:
-    :param rank:
-    :param excluded:
-    :return:
-    """
-
-    exclude_set = set(excluded)
-    return sorted([f for f in count_n_occurrences_of_all_items(iterable).items() if f[0] not in exclude_set],
-                  key=lambda x: x[1], reverse=True)[rank][0]
 
 
 def get_unique_in_order(iterable):
@@ -1448,8 +1416,10 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
         plt.suptitle(title, **FONT_TITLE)
 
     # X & Y labels
-    clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
-    clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE)
+    if xlabel:
+        clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
+    if ylabel:
+        clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE)
 
     # X & Y ticks
     for t in clustergrid.ax_heatmap.get_xticklabels():
@@ -1486,7 +1456,7 @@ def plot_x_vs_y(x, y, title='title', xlabel='xlabel', ylabel='ylabel', filepath=
         save_plot(filepath)
 
 
-def plot_clustering_per_k(dataframe, title='Clustering per k', filepath=None):
+def plot_clusterings(dataframe, title='Clustering per k', filepath=None):
     """
     Plot clustering matrix.
     :param dataframe: pandas DataFrame; (n_clusterings, n_samples)

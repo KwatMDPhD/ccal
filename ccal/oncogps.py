@@ -29,7 +29,7 @@ from . import SEED
 from .support import EPS, print_log, establish_filepath, write_gct, write_dictionary, fit_matrix, nmf_and_score, \
     information_coefficient, normalize_pandas_object, consensus_cluster, exponential_function, mds, \
     compute_score_and_pvalue, FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, \
-    plot_clustermap, plot_clustering_per_k, plot_nmf_result, plot_x_vs_y
+    plot_clustermap, plot_clusterings, plot_nmf_result, plot_x_vs_y
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -150,7 +150,7 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=5
                     filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
-    plot_clustering_per_k(clusterings, title='Clustering per k', filepath=filepath_clusterings_plot)
+    plot_clusterings(clusterings, title='Clustering per k', filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlations
     plot_x_vs_y(sorted(cophenetic_correlations.keys()),
