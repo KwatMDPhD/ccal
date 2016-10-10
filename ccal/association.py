@@ -513,7 +513,7 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
 
     # Adjust target name
     for t in target_ax.get_yticklabels():
-        t.set(**FONT)
+        t.set(rotation=0, **FONT)
 
     if target_type in ('binary', 'categorical'):  # Add binary or categorical target labels
         boundaries = [0]
@@ -551,7 +551,7 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
     heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap,
             xticklabels=plot_colname, cbar=False)
     for t in features_ax.get_yticklabels():
-        t.set(**FONT)
+        t.set(rotatio=0, **FONT)
 
     # Plot annotations
     for i, (a_i, a) in enumerate(annotations.iterrows()):
@@ -697,7 +697,7 @@ def plot_summary_association_panel(target, features_bundle, annotations_bundle, 
         heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=False,
                 cbar=False)
         for t in features_ax.get_yticklabels():
-            t.set(**FONT)
+            t.set(rotation=0, **FONT)
 
         # Plot annotations
         for i, (a_i, a) in enumerate(annotations.iterrows()):
