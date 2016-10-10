@@ -807,8 +807,6 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
     :return: pandas DataFrame or Series; normalized DataFrame or Series
     """
 
-    print_log('\'{}\' normalizing pandas object on axis={} ...'.format(method, axis))
-
     if isinstance(pandas_object, Series):  # Series
         return normalize_series(pandas_object, method=method, n_ranks=n_ranks)
 
