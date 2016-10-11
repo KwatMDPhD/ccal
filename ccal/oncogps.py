@@ -358,10 +358,11 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
         h_train = h_train.ix[:, ~samples_with_all_0_values]
         print_log('Removed {} sample(s) without any nonzero component values.'.format(sum(samples_with_all_0_values)))
 
-    print_log('Making Onco-GPS with {} components ({}), {} samples, and {} states {} ...'.format(*h_train.shape,
-                                                                                                 set(h_train.index),
-                                                                                                 len(set(states_train)),
-                                                                                                 set(states_train)))
+    print_log('Making Onco-GPS with {} components, {} samples, and {} states {} ...'.format(*h_train.shape,
+                                                                                            set(h_train.index),
+                                                                                            len(set(states_train))))
+    print_log('\tComponents: {}'.format(set(h_train.index)))
+    print_log('\tStates: {}'.format(set(states_train)))
 
     # Clip and 0-1 normalize the data
     print_log('Clipping and 0-1 normalizing rows ...')
