@@ -994,7 +994,7 @@ def compare_matrices(matrix1, matrix2, function, axis=0, is_distance=False):
     # Compare
     compared_matrix = empty((n_1, n_2))
     for i_1 in range(n_1):
-        print_log('Computing association between matrices ({}/{}) ...'.format(i_1, n_1))
+        print_log('Computing associations (axis={}) between matrices ({}/{}) ...'.format(axis, i_1, n_1))
         for i_2 in range(n_2):
             compared_matrix[i_1, i_2] = function(m1[i_1, :], m2[i_2, :])
 
@@ -1124,20 +1124,22 @@ def consensus_cluster(matrix, ks, distance_matrix=None, function=information_coe
             # Assign cluster labels to the random samples
             sample_x_clustering.iloc[random_indices, i] = ward.labels_
 
-        # Make co-clustering matrix using labels created by clusterings of randomized distance matrix
+        # Make consensus matrix using labels created by clusterings of randomized distance matrix
         print_log('\tCounting co-clusterings of {} randomized distance matrix ...'.format(n_clusterings))
-        coclusterings = get_consensus(sample_x_clustering)
+        consensus_matrix = get_consensus(sample_x_clustering)
 
-        # Convert co-clustering matrix into distance matrix
-        distances = 1 - coclusterings
+        # Convert consensus matrix into distance matrix
+        distance_matrix = 1 - consensus_matrix
+        for i in range(distance_matrix.shape[0]):
+            distance_matrix.iloc[i, i] = 0
 
-        # Cluster distance matrix to assign the final label
-        ward = linkage(distances, method='ward')
+        # Cluster <TODO: figure out if clustering consensus or distance matrix?> to assign the final label
+        ward = linkage(distance_matrix, method='ward')
         clusterings.ix[k, :] = fcluster(ward, k, criterion='maxclust')
 
-        # Compute clustering scores, the correlation between cophenetic and Euclidean distances
-        cophenetic_correlations[k] = cophenet(ward, pdist(distances))[0]
-        print_log('Computed cophenetic correlations.')
+        # Compute cophenetic correlation coefficient
+        cophenetic_correlations[k] = pearsonr(pdist(distance_matrix), cophenet(ward))[0]
+        print_log('\t(k={}) Computed the cophenetic correlation coefficient.'.format(k))
 
     return distance_matrix, clusterings, cophenetic_correlations,
 
@@ -1244,8 +1246,8 @@ def _nmf_and_score(args):
     print_log('\t(k={}) Counting co-clusterings of {} NMF ...'.format(k, n_clusterings))
     consensus_matrix = get_consensus(sample_x_clustering)
 
+    # Compute cophenetic correlation coefficient
     nmf_score_dict[k] = pearsonr(pdist(1 - consensus_matrix), cophenet(linkage(consensus_matrix, method='average')))[0]
-
     print_log('\t(k={}) Computed the cophenetic correlation coefficient.'.format(k))
 
     return nmf_result_dict, nmf_score_dict

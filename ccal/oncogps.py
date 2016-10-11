@@ -12,7 +12,7 @@ Authors:
 """
 
 from os.path import join
-from numpy import asarray, zeros, argmax, linspace
+from numpy import asarray, zeros, empty, argmax, linspace
 from pandas import DataFrame, Series, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import rpy2.robjects as ro
@@ -397,6 +397,7 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
 
     # Load sample states
     training_samples.ix[:, 'state'] = states_train
+    print_log('Loaded sample states.')
 
     # Compute pulling ratios
     # TODO: compartmentalize
@@ -422,6 +423,7 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
         training_samples.ix[:, 'pullratio'] = (ratios - ratios.min()) / (ratios.max() - ratios.min()) * pullratio_factor
 
     # Compute grid probabilities and states
+    print_log('Computing grid probabilities and states ...')
     # TODO: compartmentalize
     grid_probabilities = zeros((n_grids, n_grids), dtype=float)
     grid_states = zeros((n_grids, n_grids), dtype=int)
@@ -491,20 +493,30 @@ def _get_sample_coordinates_via_pulling(component_x_coordinates, component_x_sam
     :return: pandas DataFrame; (n_samples, [x, y])
     """
 
-    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
+    xs = empty(component_x_samples.shape[1])
+    ys = empty(component_x_samples.shape[1])
 
-    for s, c in component_x_samples.iteritems():
+    component_x_coordinates = asarray(component_x_coordinates)
+
+    for i, (s, c) in enumerate(component_x_samples.iteritems()):
+        c = asarray(c)
 
         if n_influencing_components == 'all':  # n_influencing_components = number of all components
             n_influencing_components = component_x_samples.shape[0]
 
-        c = c.mask(c < c.sort_values().iloc[-n_influencing_components], other=0)
+        else:  # Silence components that are pulling
+            threshold = sorted(c)[-n_influencing_components]
+            c[c < threshold] = 0
 
-        x = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'x']) / sum(
-            c ** component_pulling_power)
-        y = sum(c ** component_pulling_power * component_x_coordinates.ix[:, 'y']) / sum(c ** component_pulling_power)
+        x = sum(c ** component_pulling_power * component_x_coordinates[:, 0]) / sum(c ** component_pulling_power)
+        y = sum(c ** component_pulling_power * component_x_coordinates[:, 1]) / sum(c ** component_pulling_power)
 
-        sample_coordinates.ix[s, ['x', 'y']] = x, y
+        xs[i] = x
+        ys[i] = y
+
+    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
+    sample_coordinates.ix[:, 'x'] = xs
+    sample_coordinates.ix[:, 'y'] = ys
 
     return sample_coordinates
 
