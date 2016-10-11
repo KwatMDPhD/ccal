@@ -40,7 +40,7 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_jobs=1, n_clusterings=50, random_state=SEED, directory_path=None):
+def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED, directory_path=None):
     """
     NMF matrix into W and H matrices using k from ks and calculate cophenetic correlation by consensus clustering.
     :param matrix: pandas DataFrame;
