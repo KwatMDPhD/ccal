@@ -551,7 +551,7 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
     heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap,
             xticklabels=plot_colname, cbar=False)
     for t in features_ax.get_yticklabels():
-        t.set(rotatio=0, **FONT)
+        t.set(rotation=0, **FONT)
 
     # Plot annotations
     for i, (a_i, a) in enumerate(annotations.iterrows()):
