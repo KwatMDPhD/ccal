@@ -40,7 +40,7 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_jobs=1, n_clusterings=30, random_state=SEED, directory_path=None):
+def define_components(matrix, ks, n_jobs=1, n_clusterings=50, random_state=SEED, directory_path=None):
     """
     NMF matrix into W and H matrices using k from ks and calculate cophenetic correlation by consensus clustering.
     :param matrix: pandas DataFrame;
@@ -214,12 +214,12 @@ def make_oncogps_map(h_train, states_train, std_max=3,
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                      colors=None, component_markersize=13, component_markerfacecolor='#000726',
-                     component_markeredgewidth=1.69,
-                     component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
+                     component_markeredgewidth=1.69, component_markeredgecolor='#FFFFFF',
+                     component_text_position='auto', component_fontsize=16,
                      delaunay_linewidth=1, delaunay_linecolor='#000000',
                      n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
                      background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.9,
-                     sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
+                     sample_markersize=16, sample_without_annotation_markerfacecolor='#999999',
                      sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
                      legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
                      effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
