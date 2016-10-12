@@ -437,11 +437,42 @@ def title_string(string):
     :param string: str;
     :return: str;
     """
-    # TODO: Don't lowercase alrady capitalized letters; don't let KRAS to become Kras
 
-    string = string.title().replace('_', ' ').replace('\n', '')
+    # Remember indices of original uppercase letters
+    uppers = []
+    start = end = None
+    is_upper = False
+    for i, c in enumerate(string):
+        if c.isupper():
+            # print('{} is UPPER.'.format(c))
+            if is_upper:
+                end += 1
+            else:
+                is_upper = True
+                start = i
+                end = start + 1
+                # print('Start is {}.'.format(i))
+        else:
+            if is_upper:
+                is_upper = False
+                uppers.append((start, end))
+                start = None
+                end = start
+    else:
+        if start:
+            uppers.append((start, end))
+
+    # Title
+    string = string.title().replace('_', ' ')
+
+    # Upper all original uppercase letters
+    for start, end in uppers:
+        string = string[:start] + string[start: end].upper() + string[end:]
+
+    # Lower some words
     for lowercase in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of', 'vs', 'vs']:
         string = string.replace(' ' + lowercase.title() + ' ', ' ' + lowercase + ' ')
+
     return string
 
 
