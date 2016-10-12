@@ -27,9 +27,11 @@ from seaborn import violinplot, boxplot
 
 from . import SEED
 from .support import EPS, print_log, establish_filepath, read_gct, write_gct, write_dictionary, fit_matrix, \
-    nmf_and_score, information_coefficient, normalize_pandas_object, consensus_cluster, exponential_function, mds, \
-    compute_score_and_pvalue, solve_matrix_linear_equation, FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, \
-    save_plot, plot_clustermap, plot_clusterings, plot_nmf_result, plot_x_vs_y
+    nmf_consensus_cluster, information_coefficient, normalize_pandas_object, hierarchical_consensus_cluster, \
+    exponential_function, mds, \
+    compute_score_and_pvalue, solve_matrix_linear_equation, \
+    FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_clusterings, \
+    plot_nmf_result, plot_x_vs_y
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -42,14 +44,16 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED, directory_path=None):
     """
-    NMF matrix into W and H matrices using k from ks and calculate cophenetic correlation by consensus clustering.
+    NMF matrix into W and H matrices using k from ks and calculate cophenetic correlation coefficients by NMF consensus
+    clustering.
     :param matrix: pandas DataFrame;
     :param ks: iterable; iterable of int k used for NMF
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
     :param random_state: int;
     :param directory_path: str; directory where nmf_k{k}_{w, h}.gct and nmf_scores.pdf will be saved
-    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and {k: cophenetic correlation}
+    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and
+                            {k: cophenetic correlation coefficient}
     """
 
     # Rank normalize the input matrix by column
@@ -58,20 +62,20 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
                     xticklabels=False, yticklabels=False)
 
     # NMF and score, while saving a NMF result for each k
-    nmf_results, nmf_scores = nmf_and_score(matrix, ks, n_jobs=n_jobs, n_clusterings=n_clusterings,
-                                            random_state=random_state)
+    nmf_results, nmf_scores = nmf_consensus_cluster(matrix, ks, n_jobs=n_jobs, n_clusterings=n_clusterings,
+                                                    random_state=random_state)
 
     # Make nmf directory
     directory_path = join(directory_path, 'nmf/')
     establish_filepath(directory_path)
 
-    # Save NMF scores @ nmf/cophenetic_correlations{.pdf, .gct}
-    print_log('Saving and plotting NMF cophenetic correlations ...')
-    write_dictionary(nmf_scores, join(directory_path, 'cophenetic_correlations.txt'),
-                     key_name='k', value_name='cophenetic_correlation')
+    # Save NMF scores @ nmf/cophenetic_correlation_coefficients{.pdf, .gct}
+    print_log('Saving and plotting cophenetic correlation coefficients ...')
+    write_dictionary(nmf_scores, join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+                     key_name='k', value_name='cophenetic_correlation_coefficient')
     plot_x_vs_y(sorted(nmf_scores.keys()), [nmf_scores[k] for k in sorted(nmf_scores.keys())],
                 title='NMF Cophenetic Correlation vs. k', xlabel='k', ylabel='NMF Cophenetic Correlation',
-                filepath=join(directory_path, 'cophenetic_correlations.pdf'))
+                filepath=join(directory_path, 'cophenetic_correlation_coefficients.pdf'))
 
     # Save NMF results @ nmf/matrices/nmf_k{...}_{w, h}.gct
     print_log('Saving and plotting NMF results ...')
@@ -143,7 +147,8 @@ def project_w(a_matrix, w_matrix, filepath=None):
 # ======================================================================================================================
 def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100, directory_path=None):
     """
-    Cluster samples using k from ks and calculate cophenetic correlation by consensus clustering.
+    Cluster samples using k from ks and calculate cophenetic correlation coefficient by hierarchical
+    consensus clustering.
     :param h_matrix: pandas DataFrame; (n_features, m_samples); H matrix from NMF
     :param ks: iterable; iterable of int k used for NMF
     :param distance_matrix: str or DataFrame;
@@ -151,8 +156,8 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=1
     :param n_clusterings: int; number of clusterings for consensus clustering
     :param directory_path: str; directory_filepath/distance_matrix.{txt, pdf},
         directory_filepath/clusterings.{gct, pdf}, and
-        directory_filepath/cophenetic_correlations.{txt, pdf} will be saved
-    :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
+        directory_filepath/cophenetic_correlation_coefficients.{txt, pdf} will be saved
+    :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and cophenetic correlation coefficients (n_ks)
     """
 
     # '-0-' normalize by features and clip values max_std standard deviation away; then '0-1' normalize by features
@@ -160,28 +165,30 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=1
     normalized_matrix = normalize_pandas_object(clipped_matrix, method='0-1', axis=1)
 
     # Consensus cluster
-    distance_matrix, clusterings, cophenetic_correlations = consensus_cluster(normalized_matrix, ks,
-                                                                              distance_matrix=distance_matrix,
-                                                                              n_clusterings=n_clusterings)
+    distance_matrix, clusterings, cophenetic_correlation_coefficients = \
+        hierarchical_consensus_cluster(normalized_matrix, ks,
+                                       distance_matrix=distance_matrix, n_clusterings=n_clusterings)
 
-    if directory_path:  # Save distance matrix, clusterings, and cophenetic correlations results and plots
+    if directory_path:  # Save distance matrix, clusterings, and cophenetic correlation coefficients results and plots
         establish_filepath(directory_path)
 
         # Save results
         distance_matrix.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
         write_gct(clusterings, join(directory_path, 'clusterings.gct'))
-        write_dictionary(cophenetic_correlations, join(directory_path, 'cophenetic_correlations.txt'),
-                         key_name='k', value_name='cophenetic_correlation')
+        write_dictionary(cophenetic_correlation_coefficients,
+                         join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+                         key_name='k', value_name='cophenetic_correlation_coefficient')
 
         # Set up filepath to save plots
         filepath_distance_matrix_plot = join(directory_path, 'distance_matrix.pdf')
         filepath_clusterings_plot = join(directory_path, 'clusterings.pdf')
-        filepath_cophenetic_correlations_plot = join(directory_path, 'cophenetic_correlations.pdf')
+        filepath_cophenetic_correlation_coefficients_plot = join(directory_path,
+                                                                 'cophenetic_correlation_coefficients.pdf')
 
     else:  # Don't save results and plots
         filepath_distance_matrix_plot = None
         filepath_clusterings_plot = None
-        filepath_cophenetic_correlations_plot = None
+        filepath_cophenetic_correlation_coefficients_plot = None
 
     # Plot distance matrix
     plot_clustermap(distance_matrix, title='Sample Distance Matrix',
@@ -191,13 +198,13 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=1
     # Plot clusterings
     plot_clusterings(clusterings, title='Clustering per k', filepath=filepath_clusterings_plot)
 
-    # Plot cophenetic correlations
-    plot_x_vs_y(sorted(cophenetic_correlations.keys()),
-                [cophenetic_correlations[k] for k in sorted(cophenetic_correlations.keys())],
+    # Plot cophenetic correlation coefficients
+    plot_x_vs_y(sorted(cophenetic_correlation_coefficients.keys()),
+                [cophenetic_correlation_coefficients[k] for k in sorted(cophenetic_correlation_coefficients.keys())],
                 title='Consensus Clustering Cophenetic Correlations vs. k', xlabel='k', ylabel='Cophenetic Score',
-                filepath=filepath_cophenetic_correlations_plot)
+                filepath=filepath_cophenetic_correlation_coefficients_plot)
 
-    return distance_matrix, clusterings, cophenetic_correlations
+    return distance_matrix, clusterings, cophenetic_correlation_coefficients
 
 
 # ======================================================================================================================

@@ -1075,7 +1075,8 @@ def make_network_from_edge_file(edge_file, di=False, sep='\t'):
 # ======================================================================================================================
 # Cluster
 # ======================================================================================================================
-def consensus_cluster(matrix, ks, distance_matrix=None, function=information_coefficient, n_clusterings=100):
+def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=information_coefficient,
+                                   n_clusterings=100):
     """
     Consensus cluster matrix's columns into k clusters.
     :param matrix: pandas DataFrame; (n_features, m_samples)
@@ -1083,7 +1084,7 @@ def consensus_cluster(matrix, ks, distance_matrix=None, function=information_coe
     :param distance_matrix: str or DataFrame;
     :param function: function; distance function
     :param n_clusterings: int; number of clusterings for the consensus clustering
-    :return: pandas DataFrame and Series; assignment matrix (n_ks, n_samples) and the cophenetic correlations (n_ks)
+    :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and cophenetic correlation coefficients (n_ks)
     """
 
     if isinstance(distance_matrix, DataFrame):
@@ -1130,7 +1131,7 @@ def consensus_cluster(matrix, ks, distance_matrix=None, function=information_coe
 
         # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
         distance_matrix, hierarchical_clustering, cophenetic_correlation_coefficient = \
-            hierarchical_cluster_consensus_matrix(consensus_matrix)
+            _hierarchical_cluster_consensus_matrix(consensus_matrix)
         cophenetic_correlation_coefficients[k] = cophenetic_correlation_coefficient
 
         # Get labels from hierarchical clustering
@@ -1139,7 +1140,8 @@ def consensus_cluster(matrix, ks, distance_matrix=None, function=information_coe
     return distance_matrix, clusterings, cophenetic_correlation_coefficients
 
 
-def hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True, hierarchical_clustering_method='ward'):
+def _hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True,
+                                           hierarchical_clustering_method='ward'):
     """
     Hierarchical cluster consensus_matrix and compute cophenetic correlation coefficient.
     Convert consensus_matrix into distance matrix. Hierarchical cluster the distance matrix. And compute the
@@ -1168,14 +1170,13 @@ def hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True,
 # ======================================================================================================================
 # NMF
 # ======================================================================================================================
-def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_jobs=1, n_clusterings=100,
-                  init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
-                  shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
+def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
+                          init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
+                          shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
     Perform NMF with k from ks and _score each NMF decomposition.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
-    :param method: str; {'cophenetic_correlation'}
     :param n_jobs: int;
     :param n_clusterings:
     :param init:
@@ -1190,7 +1191,8 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_jobs=1, n_clust
     :param sparseness:
     :param beta:
     :param eta:
-    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and {k: cophenetic score}
+    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and
+                            {k: cophenetic correlation coefficient}
     """
 
     if isinstance(ks, int):
@@ -1199,32 +1201,26 @@ def nmf_and_score(matrix, ks, method='cophenetic_correlation', n_jobs=1, n_clust
         ks = list(set(ks))
 
     nmf_results = {}
-    nmf_scores = {}
+    cophenetic_correlation_coefficients = {}
 
-    if method == 'cophenetic_correlation':
-        print_log('Scoring NMF with cophenetic correlation of consensus-clustering ({} clusterings) ...'.format(
-            n_clusterings))
+    print_log('Computing cophenetic correlation coefficient of {} NMF consensus clusterings ...'.format(n_clusterings))
 
-        if len(ks) > 1:
-            print_log('Parallelizing ...')
-            args = [[matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_,
-                     nls_max_iter, sparseness, beta, eta] for k in ks]
+    if len(ks) > 1:
+        print_log('Parallelizing ...')
+        args = [[matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_,
+                 nls_max_iter, sparseness, beta, eta] for k in ks]
 
-            for nmf_result, nmf_score in parallelize(_nmf_and_score, args, n_jobs=n_jobs):
-                nmf_results.update(nmf_result)
-                nmf_scores.update(nmf_score)
-        else:
-            print_log('Not parallelizing ...')
-            nmf_result, nmf_score = _nmf_and_score([matrix, ks[0], n_clusterings, init, solver, tol, max_iter,
-                                                    random_state, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness,
-                                                    beta, eta])
+        for nmf_result, nmf_score in parallelize(_nmf_and_score, args, n_jobs=n_jobs):
             nmf_results.update(nmf_result)
-            nmf_scores.update(nmf_score)
-
+            cophenetic_correlation_coefficients.update(nmf_score)
     else:
-        raise ValueError('Unknown method {}.'.format(method))
+        print_log('Not parallelizing ...')
+        nmf_result, nmf_score = _nmf_and_score([matrix, ks[0], n_clusterings, init, solver, tol, max_iter, random_state,
+                                                alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta])
+        nmf_results.update(nmf_result)
+        cophenetic_correlation_coefficients.update(nmf_score)
 
-    return nmf_results, nmf_scores
+    return nmf_results, cophenetic_correlation_coefficients
 
 
 def _nmf_and_score(args):
@@ -1269,7 +1265,7 @@ def _nmf_and_score(args):
 
     # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
     distance_matrix, hierarchical_clustering, cophenetic_correlation_coefficient = \
-        hierarchical_cluster_consensus_matrix(consensus_matrix)
+        _hierarchical_cluster_consensus_matrix(consensus_matrix)
     cophenetic_correlation_coefficients[k] = cophenetic_correlation_coefficient
 
     return nmf_results, cophenetic_correlation_coefficients
@@ -1593,7 +1589,7 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
         pdf.close()
 
 
-def save_plot(filepath, dpi=DPI):
+def save_plot(filepath, dpi=DPI, suffix='.pdf'):
     """
     Establish filepath and save plot (.pdf) at dpi resolution.
     :param filepath: str;
@@ -1601,8 +1597,8 @@ def save_plot(filepath, dpi=DPI):
     :return: None
     """
 
-    if not filepath.endswith('.pdf'):
-        filepath += '.pdf'
+    if not filepath.endswith(suffix):
+        filepath += suffix
 
     establish_filepath(filepath)
 
