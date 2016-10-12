@@ -1104,6 +1104,7 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
 
     if isinstance(ks, int):
         ks = [ks]
+
     for k in ks:
         print_log('k={} ...'.format(k))
 
@@ -1126,12 +1127,13 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
             sample_x_clustering.iloc[random_indices, i] = hierarchical_clustering.labels_
 
         # Make consensus matrix using labels created by clusterings of randomized distance matrix
-        print_log('\tMaking consensus matrix from {} hierarchical clusterings of randomized distance matrix ...')
+        print_log('\tMaking consensus matrix from {} hierarchical clusterings of randomized distance matrix ...'.format(
+            n_clusterings))
         consensus_matrix = get_consensus(sample_x_clustering)
 
         # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
-        distance_matrix, hierarchical_clustering, cophenetic_correlation_coefficient = \
-            _hierarchical_cluster_consensus_matrix(consensus_matrix)
+        hierarchical_clustering, cophenetic_correlation_coefficient = \
+            _hierarchical_cluster_consensus_matrix(consensus_matrix, method='average')
         cophenetic_correlation_coefficients[k] = cophenetic_correlation_coefficient
 
         # Get labels from hierarchical clustering
@@ -1140,16 +1142,15 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
     return distance_matrix, clusterings, cophenetic_correlation_coefficients
 
 
-def _hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True,
-                                           hierarchical_clustering_method='ward'):
+def _hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True, method='ward'):
     """
     Hierarchical cluster consensus_matrix and compute cophenetic correlation coefficient.
     Convert consensus_matrix into distance matrix. Hierarchical cluster the distance matrix. And compute the
     cophenetic correlation coefficient.
     :param consensus_matrix: DataFrame;
     :param force_diagonal: bool;
-    :param hierarchical_clustering_method: str; method parameter for scipy.cluster.hierarchy.linkage
-    :return: DataFrame, ndarray, and float; distance matrix, linkage (Z), and cophenetic correlation coefficient
+    :param method: str; method parameter for scipy.cluster.hierarchy.linkage
+    :return: ndarray float; linkage (Z) and cophenetic correlation coefficient
     """
 
     # Convert consensus matrix into distance matrix
@@ -1159,12 +1160,12 @@ def _hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True
             distance_matrix.iloc[i, i] = 0
 
     # Cluster consensus matrix to assign the final label
-    hierarchical_clustering = linkage(consensus_matrix, method=hierarchical_clustering_method)
+    hierarchical_clustering = linkage(consensus_matrix, method=method)
 
     # Compute cophenetic correlation coefficient
     cophenetic_correlation_coefficient = pearsonr(pdist(distance_matrix), cophenet(hierarchical_clustering))[0]
 
-    return distance_matrix, hierarchical_clustering, cophenetic_correlation_coefficient
+    return hierarchical_clustering, cophenetic_correlation_coefficient
 
 
 # ======================================================================================================================

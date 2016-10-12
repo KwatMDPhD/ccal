@@ -210,7 +210,7 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=1
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-def make_oncogps_map(h_train, states_train, std_max=3,
+def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=3,
                      h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
                      informational_mds=True, mds_seed=SEED,
                      fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=5,
@@ -234,6 +234,7 @@ def make_oncogps_map(h_train, states_train, std_max=3,
     """
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states_train: iterable of int; (n_samples); sample states
+    :param component_coordinates: DataFrame; (n_components, 2 ('x', 'y')); component coordinates
     :param std_max: number; threshold to clip standardized values
     :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param h_test_normalization: str or None; {'as_train', 'clip_and_0-1', None}
@@ -288,8 +289,8 @@ def make_oncogps_map(h_train, states_train, std_max=3,
     :return: None
     """
 
-    cc, s, gp, gs = _make_onco_gps_elements(h_train, states_train, std_max=std_max,
-                                            h_test=h_test, h_test_normalization=h_test_normalization,
+    cc, s, gp, gs = _make_onco_gps_elements(h_train, states_train, component_coordinates=component_coordinates,
+                                            std_max=std_max, h_test=h_test, h_test_normalization=h_test_normalization,
                                             states_test=states_test,
                                             informational_mds=informational_mds, mds_seed=mds_seed,
                                             fit_min=fit_min, fit_max=fit_max,
@@ -326,7 +327,7 @@ def make_oncogps_map(h_train, states_train, std_max=3,
                    filepath=filepath)
 
 
-def _make_onco_gps_elements(h_train, states_train, std_max=3,
+def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, std_max=3,
                             h_test=None, h_test_normalization='as_train', states_test=None,
                             informational_mds=True, mds_seed=SEED,
                             fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
@@ -337,6 +338,7 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
     Compute component and sample coordinates. And compute grid probabilities and states.
     :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param states_train: iterable of int; (n_samples); sample states
+    :param component_coordinates: DataFrame; (n_components, 2 ('x', 'y')); component coordinates
     :param std_max: number; threshold to clip standardized values
     :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param h_test_normalization: str or None; {'as_train', 'clip_and_0-1', None}
@@ -365,9 +367,9 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
         h_train = h_train.ix[:, ~samples_with_all_0_values]
         print_log('Removed {} sample(s) without any nonzero component values.'.format(sum(samples_with_all_0_values)))
 
-    print_log('Making Onco-GPS with {} components, {} samples, and {} states {} ...'.format(*h_train.shape,
-                                                                                            set(h_train.index),
-                                                                                            len(set(states_train))))
+    print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h_train.shape,
+                                                                                         set(h_train.index),
+                                                                                         len(set(states_train))))
     print_log('\tComponents: {}'.format(set(h_train.index)))
     print_log('\tStates: {}'.format(set(states_train)))
 
@@ -377,13 +379,17 @@ def _make_onco_gps_elements(h_train, states_train, std_max=3,
                                          method='0-1', axis=1)
 
     # Compute component coordinates
-    if informational_mds:
-        print_log('Computing component coordinates with informational distance ...')
-        distance_function = information_coefficient
+    if not isinstance(component_coordinates, DataFrame):
+        if informational_mds:
+            print_log('Computing component coordinates with informational distance ...')
+            distance_function = information_coefficient
+        else:
+            print_log('Computing component coordinates with Euclidean distance ...')
+            distance_function = None
+        component_coordinates = mds(training_h, distance_function=distance_function, mds_seed=mds_seed,
+                                    standardize=True)
     else:
-        print_log('Computing component coordinates with Euclidean distance ...')
-        distance_function = None
-    component_coordinates = mds(training_h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
+        print_log('Using predefined component coordinates ...'.format(component_coordinates))
 
     # Compute component pulling power
     if component_pull_power == 'auto':
@@ -655,13 +661,13 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                        linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, aa=True, zorder=2)
 
     # Assign colors to states
-    if colors:
-        if not (isinstance(colors, ListedColormap) and isinstance(colors, LinearSegmentedColormap)):
-            colors = ListedColormap(colors)
     states_color = {}
-    for s in range(1, n_states_train + 1):
+    for i, s in enumerate(range(1, n_states_train + 1)):
         if colors:
-            states_color[s] = colors(s)
+            if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
+                states_color[s] = colors(s)
+            else:
+                states_color[s] = colors[i]
         else:
             states_color[s] = CMAP_CATEGORICAL(int(s / n_states_train * CMAP_CATEGORICAL.N))
 
@@ -797,12 +803,12 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
             ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
                         alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
-                        zorder=5)
+                        clip_on=False, zorder=5)
             if a < 1:
                 ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
                             markerfacecolor='none',
                             markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
-                            zorder=5)
+                            clip_on=False, zorder=5)
         # Plot sample legends
         for i, s in enumerate(range(1, n_states_train + 1)):
             y = 1 - float(1 / (n_states_train + 1)) * (i + 1)
