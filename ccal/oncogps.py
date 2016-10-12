@@ -662,11 +662,15 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
 
     # Assign colors to states
     states_color = {}
-    if colors == 'paper':
-        # TODO: " --> '
-        colors = ['#cd96cd', '#5cacee', '#43cd80', '#ffa500', '#cd5555', "#F0A5AB", "#9AC7EF", "#D6A3FC", "#FFE1DC",
-                  "#FAF2BE", "#F3C7F2", "#C6FA60", "#F970F9", "#FC8962", "#F6E370", "#F0F442", "#AED4ED", "#D9D9D9",
-                  "#FD9B85", "#7FFF00", "#FFB90F", "#6E8B3D", "#8B8878", "#7FFFD4", '#00008b', '#d2b48c', '#006400']
+    # TODO: " --> '
+    if colors == 'paper1':
+        colors = ['#cd96cd', '#5cacee', '#43cd80', '#ffa500', '#cd5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
+                  '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
+                  '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008b', '#d2b48c', '#006400']
+    if colors == 'paper2':
+        colors = ['#4292C6', '#41AB5D', '#EF3B2C', '#807DBA', '#9DDDD6', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
+                  '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
+                  '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008b', '#d2b48c', '#006400']
     for i, s in enumerate(range(1, n_states_train + 1)):
         if colors:
             if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
