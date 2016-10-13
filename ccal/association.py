@@ -563,7 +563,7 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
         save_plot(filepath)
 
 
-def plot_summary_association_panel(target, features_bundle, annotations_bundle, target_type='continuous', title=None,
+def plot_association_summary_panel(target, features_bundle, annotations_bundle, target_type='continuous', title=None,
                                    filepath=None):
     """
     Plot summary association panel.
