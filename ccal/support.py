@@ -846,7 +846,7 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
                 obj_mean = pandas_object.values.mean()
                 obj_std = pandas_object.values.std()
                 if obj_std == 0:
-                    print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
+                    # print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
                     return pandas_object / pandas_object.size
                 else:
                     return (pandas_object - obj_mean) / obj_std
@@ -855,7 +855,7 @@ def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
                 obj_min = pandas_object.values.min()
                 obj_max = pandas_object.values.max()
                 if obj_max - obj_min == 0:
-                    print_log('Not \'0-1\' normalizing (data range is 0), but \'/ size\' normalizing.')
+                    # print_log('Not \'0-1\' normalizing (data range is 0), but \'/ size\' normalizing.')
                     return pandas_object / pandas_object.size
                 else:
                     return (pandas_object - obj_min) / (obj_max - obj_min)
@@ -878,7 +878,7 @@ def normalize_series(series, method='-0-', n_ranks=10000):
         mean = series.mean()
         std = series.std()
         if std == 0:
-            print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
+            # print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
             return series / series.size
         else:
             return (series - mean) / std
@@ -886,7 +886,7 @@ def normalize_series(series, method='-0-', n_ranks=10000):
         series_min = series.min()
         series_max = series.max()
         if series_max - series_min == 0:
-            print_log('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing.')
+            # print_log('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing.')
             return series / series.size
         else:
             return (series - series_min) / (series_max - series_min)
@@ -1564,10 +1564,15 @@ def plot_clusterings(dataframe, title='Clustering per k', filepath=None):
     if title:
         plt.suptitle(title, **FONT_TITLE)
 
-    plt.gca().set_xlabel('Sample')
+    plt.gca().set_xlabel('Sample', **FONT_SUBTITLE)
+    plt.gca().set_ylabel('Number of Clusters', **FONT_SUBTITLE)
 
+    if max([len(t) for t in plt.gca().get_yticklabels()]) == 1:
+        yticklabels_rotation = 0
+    else:
+        yticklabels_rotation = 90
     for t in plt.gca().get_yticklabels():
-        t.set(**FONT)
+        t.set(rotation=yticklabels_rotation, **FONT)
 
     colorbar = plt.gca().collections[0].colorbar
     colorbar.set_ticks(list(range(1, a.max() + 1)))
