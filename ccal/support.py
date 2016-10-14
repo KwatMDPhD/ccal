@@ -1456,7 +1456,8 @@ DPI = 1000
 
 
 def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xlabel=None, ylabel=None,
-                    xticklabels=True, yticklabels=True, xticklabels_rotation=90, yticklabels_rotation=0, filepath=None):
+                    xticklabels=True, yticklabels=True, xticklabels_rotation=None, yticklabels_rotation=0,
+                    filepath=None):
     """
     Plot heatmap for dataframe.
     :param dataframe: pandas DataFrame;
@@ -1497,12 +1498,22 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
     if xlabel:
         clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
     if ylabel:
-        clustergrid.ax_heatmap.set_ylabel(ylabel, rotation=-90, **FONT_SUBTITLE)
+        clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE)
 
     # X & Y ticks
+    if not xticklabels:
+        ticks = clustergrid.ax_heatmap.get_xticklabels()
+        if any(ticks):
+            if max([len(t) for t in ticks]) == 1:
+                xticklabels_rotation = 0
+            else:
+                xticklabels_rotation = 90
     for t in clustergrid.ax_heatmap.get_xticklabels():
+        t.set(**FONT)
         t.set_rotation(xticklabels_rotation)
+
     for t in clustergrid.ax_heatmap.get_yticklabels():
+        t.set(**FONT)
         t.set_rotation(yticklabels_rotation)
 
     if filepath:  # Save
