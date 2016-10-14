@@ -65,13 +65,13 @@ def make_association_panels(target, features_bundle, target_type='continuous',
 
     # Annotate this target with each feature
     for features_name, features_dict in feature_dicts.items():
-        title = '{} vs {}'.format(target.name, features_name)
-        print_log('{} ...'.format(title_string(title)))
+        title = title_string('{} vs {}'.format(target.name, features_name))
+        print_log('{} ...'.format(title))
         make_association_panel(target, features_dict['dataframe'],
                                target_type=target_type, features_type=features_dict['data_type'],
                                n_jobs=n_jobs, features_ascending=features_dict['is_ascending'], n_features=n_features,
                                n_samplings=n_samplings, n_permutations=n_permutations,
-                               title=title_string(title), filepath_prefix=filepath_prefix + untitle_string(title))
+                               title=title, filepath_prefix=filepath_prefix + untitle_string(title))
 
 
 def make_association_panel(target, features, target_name=None, target_type='continuous', features_type='continuous',

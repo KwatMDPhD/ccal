@@ -511,7 +511,7 @@ def untitle_string(string):
     """
 
     string = str(string)
-    return string.lower().replace(' ', '_')
+    return string.lower().replace(' ', '_').replace('-', '_')
 
 
 def clean_string(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char='_'):
