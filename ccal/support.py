@@ -1605,14 +1605,14 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
     if normalize:
         w_matrix = normalize_pandas_object(w_matrix, method='-0-', axis=0).clip(-max_std, max_std)
     heatmap(w_matrix, cmap=CMAP_CONTINUOUS, yticklabels=False, ax=ax_w)
-    ax_w.set_title('W Matrix', **FONT_TITLE)
+    ax_w.set_title('W Matrix for k={}'.format(w_matrix.shape[1]), **FONT_TITLE)
     ax_w.set_xlabel('Component', **FONT_SUBTITLE)
     ax_w.set_ylabel('Feature', **FONT_SUBTITLE)
     # Plot H
     if normalize:
         h_matrix = normalize_pandas_object(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
     heatmap(h_matrix, cmap=CMAP_CONTINUOUS, xticklabels=False, cbar_kws={'orientation': 'horizontal'}, ax=ax_h)
-    ax_h.set_title('H Matrix', **FONT_TITLE)
+    ax_h.set_title('H Matrix for k={}'.format(h_matrix.shape[0]), **FONT_TITLE)
     ax_h.set_xlabel('Sample', **FONT_SUBTITLE)
     ax_h.set_ylabel('Component', **FONT_SUBTITLE)
     if filepath:
@@ -1632,7 +1632,7 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
 
     # Plot cluster map for H
     clustergrid = clustermap(h_matrix, standard_scale=1, figsize=FIGURE_SIZE, cmap=CMAP_CONTINUOUS)
-    plt.suptitle('H Matrix for k={}'.format(w_matrix.shape[1]), **FONT_TITLE)
+    plt.suptitle('H Matrix for k={}'.format(h_matrix.shape[0]), **FONT_TITLE)
     clustergrid.ax_heatmap.set_xlabel('Sample', **FONT_SUBTITLE)
     clustergrid.ax_heatmap.set_ylabel('Component', **FONT_SUBTITLE)
     for t in clustergrid.ax_heatmap.get_xticklabels():

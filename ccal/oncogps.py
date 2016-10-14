@@ -396,7 +396,7 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
         print_log('Computing component-pull power ...')
 
         if training_h.shape[0] < 4:  # Too few data points to model
-            print_log('Couldn\'t model with Ae^(kx) + C so set component_pull_power to be 1.')
+            print_log('\tCouldn\'t model with Ae^(kx) + C so set component_pull_power to be 1.')
             component_pull_power = 1
 
         else:
