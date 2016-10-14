@@ -394,13 +394,19 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
     # Compute component pulling power
     if component_pull_power == 'auto':
         print_log('Computing component-pull power ...')
-        fit_parameters = fit_matrix(training_h, exponential_function, sort_matrix=True)
-        print_log('\tModeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
-        k = fit_parameters[1]
 
-        # Linear transform
-        k_normalized = (k - fit_min) / (fit_max - fit_min)
-        component_pull_power = k_normalized * (pull_power_max - pull_power_min) + pull_power_min
+        if training_h.shape[0] < 4:  # Too few data points to model
+            print_log('Couldn\'t model with Ae^(kx) + C so set component_pull_power to be 1.')
+            component_pull_power = 1
+
+        else:
+            fit_parameters = fit_matrix(training_h, exponential_function, sort_matrix=True)
+            print_log('\tModeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
+            k = fit_parameters[1]
+
+            # Linear transform
+            k_normalized = (k - fit_min) / (fit_max - fit_min)
+            component_pull_power = k_normalized * (pull_power_max - pull_power_min) + pull_power_min
 
     # Compute sample coordinates
     print_log('Computing sample coordinates pulled by {} components with power {:.3f} ...'.format(n_pulling_components,
@@ -742,12 +748,12 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
             ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
                         alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
-                        zorder=5)
+                        clip_on=False, zorder=5)
             if a < 1:
                 ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
                             markerfacecolor='none',
                             markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
-                            zorder=5)
+                            clip_on=False, zorder=5)
         # Plot sample legends
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)

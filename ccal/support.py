@@ -39,7 +39,7 @@ from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import ListedColormap
 from matplotlib.cm import Paired
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot
@@ -397,6 +397,33 @@ def write_dictionary(dictionary, filepath, key_name, value_name, sep='\t'):
         f.write('{}\t{}\n'.format(key_name, value_name))
         for k, v in sorted(dictionary.items()):
             f.write('{}{}{}\n'.format(k, sep, v))
+
+
+def write_colormap(cmap, filepath):
+    """
+
+    :param cmap:
+    :param filepath:
+    :return:
+    """
+
+    with open(filepath, 'w') as f:
+        for i in range(cmap.N):
+            f.writelines('\t'.join([str(c) for c in cmap(i)]) + '\n')
+
+
+def read_colormap(filepath):
+    """
+
+    :param filepath:
+    :return:
+    """
+
+    rgbas = []
+    with open(filepath, 'r') as f:
+        for l in f:
+            rgbas.append([float(v) for v in l.split()])
+    return ListedColormap(rgbas)
 
 
 # ======================================================================================================================
@@ -1340,8 +1367,8 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
 
         # Return pandas DataFrame if the input matrix is also a DataFrame
         if isinstance(matrix, DataFrame):
-            w = DataFrame(w, index=matrix.index, columns=[i + 1 for i in range(k)])
-            h = DataFrame(h, index=[i + 1 for i in range(k)], columns=matrix.columns)
+            w = DataFrame(w, index=matrix.index)
+            h = DataFrame(h, columns=matrix.columns)
 
         # Save NMF results
         nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
@@ -1412,19 +1439,18 @@ FONT_SUBTITLE = {'fontsize': 20, 'weight': 'bold'}
 FONT = {'fontsize': 12, 'weight': 'bold'}
 
 # Color maps
-BAD_COLOR = 'wheat'
-# Make continuous color map
-reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
-greens_half = [0.26, 0.16, 0.09, 0.26, 0.69]
-colordict = {'red': tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
-             'green': tuple([(0.1 * i, r, r) for i, r in enumerate(greens_half + [1] + list(reversed(greens_half)))]),
-             'blue': tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])}
-CMAP_CONTINUOUS = LinearSegmentedColormap('custom', colordict)
-CMAP_CONTINUOUS.set_bad(BAD_COLOR)
+# TODO: fix path issue
+CMAP_CONTINUOUS = read_colormap('/home/cyborg/ccal/ccal/continuous.rgba')
+CMAP_CONTINUOUS.set_bad('#000000')
+
+CMAP_ASSOCIATION = read_colormap('/home/cyborg/ccal/ccal/association.rgba')
+CMAP_ASSOCIATION.set_bad('wheat')
+
 CMAP_CATEGORICAL = Paired
-CMAP_CATEGORICAL.set_bad(BAD_COLOR)
+CMAP_CATEGORICAL.set_bad('#000000')
+
 CMAP_BINARY = light_palette('black', n_colors=2, as_cmap=True)
-CMAP_BINARY.set_bad(BAD_COLOR)
+CMAP_BINARY.set_bad('wheat')
 
 DPI = 1000
 
@@ -1471,7 +1497,7 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
     if xlabel:
         clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
     if ylabel:
-        clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE)
+        clustergrid.ax_heatmap.set_ylabel(ylabel, rotation=-90, **FONT_SUBTITLE)
 
     # X & Y ticks
     for t in clustergrid.ax_heatmap.get_xticklabels():
@@ -1621,10 +1647,11 @@ def plot_nmf_result(nmf_results=None, k=None, w_matrix=None, h_matrix=None, norm
         pdf.close()
 
 
-def save_plot(filepath, dpi=DPI, suffix='.pdf'):
+def save_plot(filepath, suffix='.pdf', dpi=DPI):
     """
     Establish filepath and save plot (.pdf) at dpi resolution.
     :param filepath: str;
+    :param suffix: str;
     :param dpi: int;
     :return: None
     """

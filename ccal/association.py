@@ -26,13 +26,13 @@ from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, title_string, untitle_string, information_coefficient, \
     parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, FIGURE_SIZE, SPACING, \
-    CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, FONT_SUBTITLE, save_plot, plot_clustermap
+    CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, FONT_SUBTITLE, save_plot, plot_clustermap
 
 
 # ======================================================================================================================
 # Association panel
 # ======================================================================================================================
-def make_association_panels(target, features_bundle, target_name=None, target_type='continuous',
+def make_association_panels(target, features_bundle, target_type='continuous',
                             n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, filepath_prefix=None):
     """
     Annotate target with each feature in the features bundle.
@@ -50,7 +50,6 @@ def make_association_panels(target, features_bundle, target_name=None, target_ty
             ],
             ...
         ]
-    :param target_name: str;
     :param target_type:
     :param n_jobs: int; number of jobs to parallelize
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
@@ -63,9 +62,6 @@ def make_association_panels(target, features_bundle, target_name=None, target_ty
     # Load feature bundle
     print_log('Loading features bundle ...')
     feature_dicts = _read_bundle(features_bundle)
-
-    if target_name:  # Set target name
-        target.name = target_name
 
     # Annotate this target with each feature
     for features_name, features_dict in feature_dicts.items():
@@ -116,8 +112,6 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     if filepath_scores:  # Read already computed scores
         scores = read_csv(filepath_scores, sep='\t', index_col=0)
         print_log('Using already computed scores ...')
-        print_log('\tHead:\n{}\n'.format(scores.head()))
-        print_log('\tTail:\n{}\n'.format(scores.tail()))
     else:  # Compute score
         if filepath_prefix:
             filepath = filepath_prefix + '.txt'
@@ -726,7 +720,7 @@ def plot_association_summary_panel(target, features_bundle, annotations_bundle, 
 
 def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
     if data_type == 'continuous':
-        return normalize_pandas_object(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_CONTINUOUS
+        return normalize_pandas_object(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_ASSOCIATION
     elif data_type == 'categorical':
         return dataframe.copy(), 0, len(unique(dataframe)), CMAP_CATEGORICAL
     elif data_type == 'binary':
