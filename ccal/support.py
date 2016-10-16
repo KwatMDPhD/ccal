@@ -39,8 +39,8 @@ from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib.colors import ListedColormap
-from matplotlib.cm import Paired
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib.cm import Paired, bwr
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot
 
@@ -1440,10 +1440,15 @@ FONT = {'fontsize': 12, 'weight': 'bold'}
 
 # Color maps
 # TODO: fix path issue
-CMAP_CONTINUOUS = read_colormap('/home/cyborg/ccal/ccal/continuous.rgba')
+CMAP_CONTINUOUS = bwr
 CMAP_CONTINUOUS.set_bad('#000000')
 
-CMAP_ASSOCIATION = read_colormap('/home/cyborg/ccal/ccal/association.rgba')
+reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
+greens_half = [0.26, 0.16, 0.09, 0.26, 0.69]
+colordict = {'red': tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
+             'green': tuple([(0.1 * i, r, r) for i, r in enumerate(greens_half + [1] + list(reversed(greens_half)))]),
+             'blue': tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])}
+CMAP_ASSOCIATION = LinearSegmentedColormap('association', colordict)
 CMAP_ASSOCIATION.set_bad('wheat')
 
 CMAP_CATEGORICAL = Paired
@@ -1504,6 +1509,7 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
     if not xticklabels:
         ticks = clustergrid.ax_heatmap.get_xticklabels()
         if any(ticks):
+            raise ValueError('KWAT')
             if max([len(t) for t in ticks]) == 1:
                 xticklabels_rotation = 0
             else:
@@ -1545,37 +1551,37 @@ def plot_x_vs_y(x, y, title='title', xlabel='xlabel', ylabel='ylabel', filepath=
         save_plot(filepath)
 
 
-def plot_clusterings(dataframe, title='Clustering per k', filepath=None):
-    """
-    Plot clustering matrix.
-    :param dataframe: pandas DataFrame; (n_clusterings, n_samples)
-    :param title: str;
-    :param filepath: str;
-    :return: None
-    """
+def plot_heatmap(dataframe, normalization_method=None, normalization_axis=0, sort=False, sort_axis=0, vmin=None,
+                 vmax=None, center=None, annot=None, fmt='.2g', annot_kws=None,
+                 linewidth=0, linecolor='white', cbar=True, cbar_kws=None, square=False, mask=None,
+                 cmap=CMAP_CONTINUOUS, title=None, xlabel=None, ylabel=None, xticklabels=True, yticklabels=True,
+                 filepath=None):
+    df = dataframe.copy()
 
-    a = array(dataframe)
-    a.sort()
+    if normalization_method:
+        df = normalize_pandas_object(dataframe, normalization_method, axis=normalization_axis)
+
+    if sort:
+        df = DataFrame(asarray(df).sort(axis=sort_axis))
 
     plt.figure(figsize=FIGURE_SIZE)
-    heatmap(DataFrame(a, index=dataframe.index), cmap=CMAP_CATEGORICAL, xticklabels=False,
-            cbar_kws={'orientation': 'horizontal'})
+    heatmap(df, vmin=vmin, vmax=vmax, center=center, annot=annot, fmt=fmt, annot_kws=annot_kws,
+            linewidths=linewidth, linecolor=linecolor, cbar=cbar, cbar_kws=cbar_kws, square=square, mask=mask,
+            cmap=cmap, xticklabels=xticklabels, yticklabels=yticklabels)
 
     if title:
         plt.suptitle(title, **FONT_TITLE)
 
-    plt.gca().set_xlabel('Sample', **FONT_SUBTITLE)
-    plt.gca().set_ylabel('Number of Clusters', **FONT_SUBTITLE)
+    if xlabel:
+        plt.gca().set_xlabel(xlabel, **FONT_SUBTITLE)
+    if ylabel:
+        plt.gca().set_ylabel(ylabel, **FONT_SUBTITLE)
 
-    if max([len(t) for t in plt.gca().get_yticklabels()]) == 1:
-        yticklabels_rotation = 0
-    else:
-        yticklabels_rotation = 90
+    for t in plt.gca().get_xticklabels():
+        t.set(**FONT)
+
     for t in plt.gca().get_yticklabels():
-        t.set(rotation=yticklabels_rotation, **FONT)
-
-    colorbar = plt.gca().collections[0].colorbar
-    colorbar.set_ticks(list(range(1, a.max() + 1)))
+        t.set(**FONT)
 
     if filepath:
         save_plot(filepath)

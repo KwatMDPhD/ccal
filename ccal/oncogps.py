@@ -12,7 +12,7 @@ Authors:
 """
 
 from os.path import join
-from numpy import asarray, zeros, empty, argmax, linspace
+from numpy import asarray, zeros, empty, linspace
 from pandas import DataFrame, Series, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import rpy2.robjects as ro
@@ -217,7 +217,7 @@ def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=
                      n_pulling_components='all', component_pull_power='auto',
                      n_pullratio_components=0, pullratio_factor=5,
                      n_grids=128, kde_bandwidths_factor=1,
-                     annotations=(), annotation_name='', annotation_type='continuous',
+                     annotation=(), annotation_name='', annotation_type='continuous',
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                      colors=None, component_markersize=13, component_markerfacecolor='#000726',
@@ -251,7 +251,7 @@ def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=
     :param pullratio_factor: number;
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
-    :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
+    :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param title: str;
@@ -302,7 +302,7 @@ def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=
                                             n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
 
     _plot_onco_gps(cc, s, gp, gs, len(set(states_train)),
-                   annotations=annotations, annotation_name=annotation_name, annotation_type=annotation_type,
+                   annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
                    title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
                    subtitle_fontsize=subtitle_fontsize, subtitle_fontcolor=subtitle_fontcolor,
@@ -362,9 +362,12 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
              and grid_states (n_grids, n_grids)
     """
 
+    states_train = Series(states_train, index=h_train.columns)
+
     samples_with_all_0_values = h_train.apply(lambda col: (col == 0).all())
     if any(samples_with_all_0_values):  # Remove samples with only 0 column values
         h_train = h_train.ix[:, ~samples_with_all_0_values]
+        states_train = states_train.ix[~samples_with_all_0_values]
         print_log('Removed {} sample(s) without any nonzero component values.'.format(sum(samples_with_all_0_values)))
 
     print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h_train.shape,
@@ -378,6 +381,17 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
     training_h = normalize_pandas_object(normalize_pandas_object(h_train, method='-0-', axis=1).clip(-std_max, std_max),
                                          method='0-1', axis=1)
 
+    samples_with_all_0_values = training_h.apply(lambda col: (col == 0).all())
+    if any(samples_with_all_0_values):  # Remove samples with only 0 column values
+        training_h = training_h.ix[:, ~samples_with_all_0_values]
+        states_train = states_train.ix[~samples_with_all_0_values]
+        print_log('Removed {} sample(s) without any nonzero component values after normalization.'.format(
+            sum(samples_with_all_0_values)))
+
+    print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h_train.shape,
+                                                                                         set(h_train.index),
+                                                                                         len(set(states_train))))
+
     # Compute component coordinates
     if not isinstance(component_coordinates, DataFrame):
         if informational_mds:
@@ -390,6 +404,7 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
                                     standardize=True)
     else:
         print_log('Using predefined component coordinates ...'.format(component_coordinates))
+        component_coordinates.index = training_h.index
 
     # Compute component pulling power
     if component_pull_power == 'auto':
@@ -455,8 +470,8 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
 
     # Compute densities
     # States have 1 based-index
-    kdes = zeros((training_samples.ix[:, 'state'].unique().size + 1, n_grids, n_grids))
-    for s in sorted(training_samples.ix[:, 'state'].unique()):
+    kdes = {}
+    for s in training_samples.ix[:, 'state'].unique():
         coordinates = training_samples.ix[training_samples.ix[:, 'state'] == s, ['x', 'y']]
         kde = kde2d(asarray(coordinates.ix[:, 'x'], dtype=float), asarray(coordinates.ix[:, 'y'], dtype=float),
                     bandwidths, n=asarray([n_grids]), lims=asarray([0, 1, 0, 1]))
@@ -465,8 +480,17 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
     # Assign the best KDE probability and state for each grid
     for i in range(n_grids):
         for j in range(n_grids):
-            grid_probabilities[i, j] = max(kdes[:, j, i])
-            grid_states[i, j] = argmax(kdes[:, i, j])
+
+            grid_probability = 0
+            grid_state = None
+            for s, kde in kdes.items():
+                a_probability = kde[i, j]
+                if a_probability > grid_probability:
+                    grid_probability = a_probability
+                    grid_state = s
+
+            grid_probabilities[i, j] = grid_probability
+            grid_states[i, j] = grid_state
 
     if isinstance(h_test, DataFrame):  # Use testing samples
         print_log('Focusing on samples from testing H matrix ...')
@@ -542,7 +566,7 @@ def _get_sample_coordinates_via_pulling(component_x_coordinates, component_x_sam
 
 
 def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states, n_states_train,
-                   annotations=(), annotation_name='', annotation_type='continuous', std_max=3,
+                   annotation=(), annotation_name='', annotation_type='continuous', std_max=3,
                    title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                    subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=None,
                    component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
@@ -564,7 +588,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
     :param n_states_train: int; number of states used to create Onco-GPS
-    :param annotations: pandas Series; (n_samples); sample annotations; will color samples based on annotations
+    :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number; threshold to clip standardized values
@@ -669,15 +693,11 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
     # Assign colors to states
     states_color = {}
     # TODO: " --> '
-    if colors == 'paper1':
+    if colors == 'paper':
         colors = ['#cd96cd', '#5cacee', '#43cd80', '#ffa500', '#cd5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
                   '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
                   '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008b', '#d2b48c', '#006400']
-    if colors == 'paper2':
-        colors = ['#4292C6', '#41AB5D', '#EF3B2C', '#807DBA', '#9DDDD6', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
-                  '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
-                  '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008b', '#d2b48c', '#006400']
-    for i, s in enumerate(range(1, n_states_train + 1)):
+    for i, s in enumerate(samples.ix[:, 'state'].unique()):
         if colors:
             if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
                 states_color[s] = colors(s)
@@ -707,9 +727,9 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                     ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_mask_markersize,
                                 markerfacecolor='w', aa=True, zorder=3)
 
-    if any(annotations):  # Plot samples, annotations, sample legends, and annotation legends
-        # Set up annotations
-        a = Series(annotations)
+    if any(annotation):  # Plot samples, annotation, sample legends, and annotation legends
+        # Set up annotation
+        a = Series(annotation)
         a.index = samples.index
         # Set up annotation min, mean, max, and colormap.
         if annotation_type == 'continuous':
@@ -719,7 +739,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
             annotation_max = min(std_max, samples.ix[:, 'annotation'].max())
             cmap = CMAP_CONTINUOUS
         else:
-            samples.ix[:, 'annotation'] = annotations
+            samples.ix[:, 'annotation'] = annotation
             annotation_min = 0
             annotation_mean = int(samples.ix[:, 'annotation'].mean())
             annotation_max = int(samples.ix[:, 'annotation'].max())
@@ -757,7 +777,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
         # Plot sample legends
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
-        score, p_val = compute_score_and_pvalue(samples.ix[:, 'state'], annotations)
+        score, p_val = compute_score_and_pvalue(samples.ix[:, 'state'], annotation)
         ax_legend.set_title('{}\nIC={:.3f} (p-val={:.3f})'.format(annotation_name, score, p_val),
                             fontsize=legend_fontsize * 1.26, weight='bold')
         # Plot effect plot
@@ -796,7 +816,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
         # Plot sample markers
         l, r = ax_legend.axis()[:2]
         x = l - float((r - l) / 5)
-        for i, s in enumerate(range(1, n_states_train + 1)):
+        for i, s in enumerate(samples.ix[:, 'state'].unique()):
             c = states_color[s]
             ax_legend.plot(x, i, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
         # Plot colorbar
@@ -825,7 +845,8 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                             markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                             clip_on=False, zorder=5)
         # Plot sample legends
-        for i, s in enumerate(range(1, n_states_train + 1)):
+
+        for i, s in enumerate(samples.ix[:, 'state'].unique()):
             y = 1 - float(1 / (n_states_train + 1)) * (i + 1)
             c = states_color[s]
             ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
