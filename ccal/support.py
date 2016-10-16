@@ -20,8 +20,8 @@ from datetime import datetime
 from operator import add, sub
 from multiprocessing import Pool
 
-from numpy import finfo, array, asarray, empty, zeros, ones, sign, sum, sqrt, exp, log, dot, isnan, sort, argmax, \
-    average
+from numpy import finfo, array, asarray, empty, zeros, ones, unique, sign, sum, sqrt, exp, log, dot, isnan, sort, \
+    argmax, average
 from numpy.linalg import pinv
 from numpy.random import random_sample, random_integers, shuffle
 from pandas import Series, DataFrame, read_csv
@@ -1460,13 +1460,85 @@ CMAP_BINARY.set_bad('wheat')
 DPI = 1000
 
 
-def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xlabel=None, ylabel=None,
-                    xticklabels=True, yticklabels=True, xticklabels_rotation=None, yticklabels_rotation=0,
+def plot_heatmap(dataframe, data_type='continuous',
+                 normalization_method=None, normalization_axis=0, sort_axis=None, vmin=None, vmax=None,
+                 center=None,
+                 annot=None, fmt='.2g', annot_kws=None,
+                 linewidth=0, linecolor='white',
+                 cbar=True, cbar_kws=None,
+                 mask=None,
+                 square=False,
+                 title=None, xlabel=None, ylabel=None, xlabel_rotation=0, ylabel_rotation=90,
+                 xticklabels=True, yticklabels=True, yticklabels_rotation='auto',
+                 filepath=None):
+    df = dataframe.copy()
+
+    if normalization_method:
+        df = normalize_pandas_object(dataframe, normalization_method, axis=normalization_axis)
+
+    if sort_axis:
+        a = array(df)
+        a.sort(axis=sort_axis)
+        df = DataFrame(a)
+    plt.figure(figsize=FIGURE_SIZE)
+
+    if data_type == 'continuous':
+        cmap = CMAP_CONTINUOUS
+        cbar_kws = {'orientation': 'horizontal'}
+    elif data_type == 'categorical':
+        cmap = CMAP_CATEGORICAL
+        cbar = False
+    elif data_type == 'binary':
+        cmap = CMAP_BINARY
+        cbar = False
+    else:
+        raise ValueError('Target data type must be one of {continuous, categorical, binary}.')
+
+    heatmap(df, vmin=vmin, vmax=vmax, center=center, annot=annot, fmt=fmt, annot_kws=annot_kws,
+            linewidths=linewidth, linecolor=linecolor, cbar=cbar, cbar_kws=cbar_kws, square=square, mask=mask,
+            cmap=cmap, xticklabels=xticklabels, yticklabels=yticklabels)
+
+    if title:
+        plt.suptitle(title, **FONT_TITLE)
+
+    if xlabel:
+        plt.gca().set_xlabel(xlabel, rotation=xlabel_rotation, **FONT_SUBTITLE)
+    if ylabel:
+        plt.gca().set_ylabel(ylabel, rotation=ylabel_rotation, **FONT_SUBTITLE)
+
+    for t in plt.gca().get_xticklabels():
+        t.set(**FONT)
+
+    if yticklabels_rotation == 'auto':
+        if max([len(t.get_text()) for t in plt.gca().get_yticklabels()]) <= 1:
+            yticklabels_rotation = 0
+        else:
+            yticklabels_rotation = 90
+
+    for t in plt.gca().get_yticklabels():
+        t.set(rotation=yticklabels_rotation, **FONT)
+
+    if data_type in ('categorical', 'binary'):
+        values = unique(df.values)
+        horizontal_span = plt.gca().axis()[1]
+        vertival_span = plt.gca().axis()[3]
+        for i, v in enumerate(values):
+            x = (horizontal_span / len(values) / 2) + i * horizontal_span / len(values)
+            y = 0 - vertival_span * 0.16
+            plt.gca().plot(x, y, 'o', markersize=16, aa=True, clip_on=False)
+            plt.gca().text(x, y - vertival_span * 0.05, v, horizontalalignment='center', **FONT)
+
+    if filepath:
+        save_plot(filepath)
+
+
+def plot_clustermap(dataframe, cmap=CMAP_CONTINUOUS, row_colors=None, col_colors=None,
+                    title=None, xlabel=None, ylabel=None, xticklabels=True, yticklabels=True,
                     filepath=None):
     """
     Plot heatmap for dataframe.
     :param dataframe: pandas DataFrame;
-    :param title: str;
+    :param cmap: colormap;
     :param row_colors: list-like or pandas DataFrame/Series; List of colors to label for either the rows.
         Useful to evaluate whether samples within a group_iterable are clustered together.
         Can use nested lists or DataFrame for multiple color levels of labeling.
@@ -1479,12 +1551,11 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
         If given as a DataFrame or Series, labels for the colors are extracted from
         the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
         by their index, ensuring colors are drawn in the correct order.
+    :param title: str;
     :param xlabel: str;
     :param ylabel: str;
     :param xticklabels: bool;
     :param yticklabels: bool;
-    :param xticklabels_rotation: number;
-    :param yticklabels_rotation: number;
     :param filepath: str;
     :return: None
     """
@@ -1493,10 +1564,11 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
     plt.figure(figsize=FIGURE_SIZE)
 
     # Plot cluster map
-    clustergrid = clustermap(dataframe, xticklabels=xticklabels, yticklabels=yticklabels,
-                             row_colors=row_colors, col_colors=col_colors, cmap=CMAP_CONTINUOUS)
+    clustergrid = clustermap(dataframe, cmap=cmap, row_colors=row_colors, col_colors=col_colors,
+                             xticklabels=xticklabels, yticklabels=yticklabels, )
 
-    if title:  # Title
+    # Title
+    if title:
         plt.suptitle(title, **FONT_TITLE)
 
     # X & Y labels
@@ -1506,23 +1578,13 @@ def plot_clustermap(dataframe, title=None, row_colors=None, col_colors=None, xla
         clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE)
 
     # X & Y ticks
-    if not xticklabels:
-        ticks = clustergrid.ax_heatmap.get_xticklabels()
-        if any(ticks):
-            raise ValueError('KWAT')
-            if max([len(t) for t in ticks]) == 1:
-                xticklabels_rotation = 0
-            else:
-                xticklabels_rotation = 90
     for t in clustergrid.ax_heatmap.get_xticklabels():
         t.set(**FONT)
-        t.set_rotation(xticklabels_rotation)
-
     for t in clustergrid.ax_heatmap.get_yticklabels():
         t.set(**FONT)
-        t.set_rotation(yticklabels_rotation)
 
-    if filepath:  # Save
+    # Save
+    if filepath:
         save_plot(filepath)
 
 
@@ -1546,42 +1608,6 @@ def plot_x_vs_y(x, y, title='title', xlabel='xlabel', ylabel='ylabel', filepath=
 
     plt.gca().set_xlabel(xlabel, **FONT_SUBTITLE)
     plt.gca().set_ylabel(ylabel, **FONT_SUBTITLE)
-
-    if filepath:
-        save_plot(filepath)
-
-
-def plot_heatmap(dataframe, normalization_method=None, normalization_axis=0, sort=False, sort_axis=0, vmin=None,
-                 vmax=None, center=None, annot=None, fmt='.2g', annot_kws=None,
-                 linewidth=0, linecolor='white', cbar=True, cbar_kws=None, square=False, mask=None,
-                 cmap=CMAP_CONTINUOUS, title=None, xlabel=None, ylabel=None, xticklabels=True, yticklabels=True,
-                 filepath=None):
-    df = dataframe.copy()
-
-    if normalization_method:
-        df = normalize_pandas_object(dataframe, normalization_method, axis=normalization_axis)
-
-    if sort:
-        df = DataFrame(asarray(df).sort(axis=sort_axis))
-
-    plt.figure(figsize=FIGURE_SIZE)
-    heatmap(df, vmin=vmin, vmax=vmax, center=center, annot=annot, fmt=fmt, annot_kws=annot_kws,
-            linewidths=linewidth, linecolor=linecolor, cbar=cbar, cbar_kws=cbar_kws, square=square, mask=mask,
-            cmap=cmap, xticklabels=xticklabels, yticklabels=yticklabels)
-
-    if title:
-        plt.suptitle(title, **FONT_TITLE)
-
-    if xlabel:
-        plt.gca().set_xlabel(xlabel, **FONT_SUBTITLE)
-    if ylabel:
-        plt.gca().set_ylabel(ylabel, **FONT_SUBTITLE)
-
-    for t in plt.gca().get_xticklabels():
-        t.set(**FONT)
-
-    for t in plt.gca().get_yticklabels():
-        t.set(**FONT)
 
     if filepath:
         save_plot(filepath)

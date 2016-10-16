@@ -30,7 +30,7 @@ from .support import EPS, print_log, establish_filepath, read_gct, write_gct, wr
     nmf_consensus_cluster, information_coefficient, normalize_pandas_object, hierarchical_consensus_cluster, \
     exponential_function, mds, \
     compute_score_and_pvalue, solve_matrix_linear_equation, \
-    FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_clusterings, \
+    FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, \
     plot_nmf_result, plot_x_vs_y
 
 ro.conversion.py2ri = numpy2ri
