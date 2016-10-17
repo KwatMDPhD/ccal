@@ -31,7 +31,7 @@ from .support import EPS, print_log, establish_filepath, read_gct, write_gct, wr
     exponential_function, mds, \
     compute_score_and_pvalue, solve_matrix_linear_equation, \
     FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, \
-    plot_nmf_result, plot_x_vs_y
+    plot_nmf, plot_x_vs_y
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -84,7 +84,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
     # Save NMF figures @ nmf/figures/nmf_k{...}.pdf
     for k in ks:
         print_log('\tPlotting k={} ...'.format(k))
-        plot_nmf_result(nmf_results, k, filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
+        plot_nmf(nmf_results, k, filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
 
     return nmf_results, nmf_scores
 
