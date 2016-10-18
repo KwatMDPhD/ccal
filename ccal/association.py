@@ -681,7 +681,10 @@ def plot_association_summary_panel(target, features_bundle, annotations_bundle, 
 
         # Plot target
         heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
-                xticklabels=False, yticklabels=False, cbar=False)
+                xticklabels=False, yticklabels=True, cbar=False)
+        for t in target_ax.get_yticklabels():
+            pass
+            # t.set(rotation=0)
 
         if plot_header:  # Plot header only for the 1st target axis
             target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,

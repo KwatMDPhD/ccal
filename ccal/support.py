@@ -41,6 +41,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from matplotlib.cm import Paired, bwr
+from matplotlib.colorbar import make_axes, Normalize, ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot
 
@@ -1461,10 +1462,10 @@ DPI = 1000
 
 def plot_heatmap(dataframe, data_type='continuous',
                  normalization_method=None, normalization_axis=0, sort_axis=None, vmin=None, vmax=None,
+                 row_annotation=(), column_annotation=(),
                  center=None,
                  annot=None, fmt='.2g', annot_kws=None,
                  linewidth=0, linecolor='white',
-                 cbar=True, cbar_kws=None,
                  mask=None,
                  square=False,
                  title=None, xlabel=None, ylabel=None, xlabel_rotation=0, ylabel_rotation=90,
@@ -1479,14 +1480,14 @@ def plot_heatmap(dataframe, data_type='continuous',
     :param sort_axis:
     :param vmin:
     :param vmax:
+    :param row_annotation:
+    :param column_annotation:
     :param center:
     :param annot:
     :param fmt:
     :param annot_kws:
     :param linewidth:
     :param linecolor:
-    :param cbar:
-    :param cbar_kws:
     :param mask:
     :param square:
     :param title:
@@ -1504,42 +1505,69 @@ def plot_heatmap(dataframe, data_type='continuous',
     df = dataframe.copy()
 
     if normalization_method:
-        df = normalize_pandas_object(dataframe, normalization_method, axis=normalization_axis)
+        df = normalize_pandas_object(df, normalization_method, axis=normalization_axis)
+    values = unique(df.values)
 
-    if sort_axis:
+    if any(row_annotation) or any(column_annotation):
+        if any(row_annotation):
+            if isinstance(row_annotation, Series):
+                if not any(row_annotation.index & df.index):
+                    row_annotation.index = df.index
+            else:
+                row_annotation = Series(row_annotation, index=df.index)
+
+            row_annotation.sort_values(inplace=True)
+            df = df.ix[row_annotation.index, :]
+
+        if any(column_annotation):
+            column_annotation = Series(column_annotation, index=df.columns)
+            column_annotation.sort_values(inplace=True)
+            df = df.ix[:, column_annotation.index]
+    elif sort_axis in (0, 1):
         a = array(df)
         a.sort(axis=sort_axis)
         df = DataFrame(a)
+
     plt.figure(figsize=FIGURE_SIZE)
-
-    if data_type == 'continuous':
-        cmap = CMAP_CONTINUOUS
-        cbar_kws = {'orientation': 'horizontal'}
-    elif data_type == 'categorical':
-        cmap = CMAP_CATEGORICAL
-        cbar = False
-    elif data_type == 'binary':
-        cmap = CMAP_BINARY
-        cbar = False
-    else:
-        raise ValueError('Target data type must be one of {continuous, categorical, binary}.')
-
-    heatmap(df, vmin=vmin, vmax=vmax, center=center, annot=annot, fmt=fmt, annot_kws=annot_kws,
-            linewidths=linewidth, linecolor=linecolor, cbar=cbar, cbar_kws=cbar_kws, square=square, mask=mask,
-            cmap=cmap, xticklabels=xticklabels, yticklabels=yticklabels)
 
     if title:
         plt.suptitle(title, **FONT_TITLE)
 
-    if xlabel:
-        plt.gca().set_xlabel(xlabel, rotation=xlabel_rotation, **FONT_SUBTITLE)
-    if ylabel:
-        plt.gca().set_ylabel(ylabel, rotation=ylabel_rotation, **FONT_SUBTITLE)
+    gridspec = GridSpec(10, 10)
 
-    for t in plt.gca().get_xticklabels():
+    ax_top = plt.subplot(gridspec[0:1, 2:-2])
+    ax_center = plt.subplot(gridspec[1:8, 2:-2])
+    ax_bottom = plt.subplot(gridspec[8:10, 2:-2])
+    ax_left = plt.subplot(gridspec[1:8, 1:2])
+    ax_right = plt.subplot(gridspec[1:8, 8:9])
+
+    ax_top.axis('off')
+    ax_bottom.axis('off')
+    ax_left.axis('off')
+    ax_right.axis('off')
+
+    if data_type == 'continuous':
+        cmap = CMAP_CONTINUOUS
+    elif data_type == 'categorical':
+        cmap = CMAP_CATEGORICAL
+    elif data_type == 'binary':
+        cmap = CMAP_BINARY
+    else:
+        raise ValueError('Target data type must be one of {continuous, categorical, binary}.')
+
+    heatmap(df, vmin=vmin, vmax=vmax, center=center, annot=annot, fmt=fmt, annot_kws=annot_kws,
+            linewidths=linewidth, linecolor=linecolor, cbar=False, square=square, mask=mask,
+            cmap=cmap, xticklabels=xticklabels, yticklabels=yticklabels, ax=ax_center)
+
+    if xlabel:
+        ax_center.set_xlabel(xlabel, rotation=xlabel_rotation, **FONT_SUBTITLE)
+    if ylabel:
+        ax_center.set_ylabel(ylabel, rotation=ylabel_rotation, **FONT_SUBTITLE)
+
+    for t in ax_center.get_xticklabels():
         t.set(**FONT)
 
-    yticks = plt.gca().get_yticklabels()
+    yticks = ax_center.get_yticklabels()
     if any(yticks):
         if yticklabels_rotation == 'auto':
             if max([len(t.get_text()) for t in yticks]) <= 1:
@@ -1550,14 +1578,37 @@ def plot_heatmap(dataframe, data_type='continuous',
             t.set(rotation=yticklabels_rotation, **FONT)
 
     if data_type in ('categorical', 'binary'):
-        values = unique(df.values)
-        horizontal_span = plt.gca().axis()[1]
-        vertival_span = plt.gca().axis()[3]
-        for i, v in enumerate(values):
-            x = (horizontal_span / len(values) / 2) + i * horizontal_span / len(values)
-            y = 0 - vertival_span * 0.16
-            plt.gca().plot(x, y, 'o', markersize=16, aa=True, clip_on=False)
-            plt.gca().text(x, y - vertival_span * 0.05, v, horizontalalignment='center', **FONT)
+        if len(values) < 30:
+            horizontal_span = ax_center.axis()[1]
+            vertival_span = ax_center.axis()[3]
+            for i, v in enumerate(values):
+                x = (horizontal_span / len(values) / 2) + i * horizontal_span / len(values)
+                y = 0 - vertival_span * 0.09
+                ax_center.plot(x, y, 'o', markersize=16, aa=True, clip_on=False)
+                ax_center.text(x, y - vertival_span * 0.05, v, horizontalalignment='center', **FONT)
+
+    if data_type == 'continuous':
+        cax, kw = make_axes(ax_bottom, location='bottom', fraction=0.16,
+                            cmap=CMAP_CONTINUOUS,
+                            norm=Normalize(values.min(), values.max()),
+                            ticks=[values.min(), values.mean(), values.max()])
+        ColorbarBase(cax, **kw)
+
+    if any(row_annotation):
+        if len(set(row_annotation)) <= 2:
+            cmap = CMAP_BINARY
+        else:
+            cmap = CMAP_CATEGORICAL
+        heatmap(DataFrame(row_annotation), ax=ax_right, cbar=False, xticklabels=False, yticklabels=False,
+                cmap=cmap)
+
+    if any(column_annotation):
+        if len(set(column_annotation)) <= 2:
+            cmap = CMAP_BINARY
+        else:
+            cmap = CMAP_CATEGORICAL
+        heatmap(DataFrame(column_annotation).T, ax=ax_top, cbar=False, xticklabels=False, yticklabels=False,
+                cmap=cmap)
 
     if filepath:
         save_plot(filepath)
