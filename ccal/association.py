@@ -683,8 +683,7 @@ def plot_association_summary_panel(target, features_bundle, annotations_bundle, 
         heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
                 xticklabels=False, yticklabels=True, cbar=False)
         for t in target_ax.get_yticklabels():
-            pass
-            # t.set(rotation=0)
+            t.set(rotation=0, **FONT)
 
         if plot_header:  # Plot header only for the 1st target axis
             target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
@@ -710,14 +709,11 @@ def plot_association_summary_panel(target, features_bundle, annotations_bundle, 
         if r_i == n - 1:
             colorbar_ax = subplot(gridspec[r_i:r_i + 1, 0])
             colorbar_ax.axis('off')
-            colorbar_ax.text(colorbar_ax.axis()[1] * 0.5, colorbar_ax.axis()[3] * -6,
-                             'Standardized Target and Feature Profile',
-                             horizontalalignment='center', **FONT)
-            cax, kw = make_axes(colorbar_ax, location='bottom', fraction=0.5, shrink=1, aspect=26,
-                                cmap=target_cmap, norm=Normalize(vmin=-3, vmax=3),
-                                ticks=[-3, -2, -1, 0, 1, 2, 3])
+            cax, kw = make_axes(colorbar_ax, location='bottom', pad=0.026, fraction=0.26, shrink=2.6, aspect=26,
+                                cmap=target_cmap, ticks=[])
             ColorbarBase(cax, **kw)
-
+            cax.text(cax.axis()[1] * 0.5, cax.axis()[3] * -2.6, 'Standardized Profile for Target and Features',
+                     horizontalalignment='center', **FONT)
     # Save
     if filepath:
         save_plot(filepath)

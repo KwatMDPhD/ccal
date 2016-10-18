@@ -39,9 +39,9 @@ from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 from matplotlib.cm import Paired, bwr
-from matplotlib.colorbar import make_axes, Normalize, ColorbarBase
+from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot
 
