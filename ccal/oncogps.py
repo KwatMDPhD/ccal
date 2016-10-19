@@ -29,7 +29,7 @@ from . import SEED
 from .support import EPS, print_log, establish_filepath, read_gct, write_gct, write_dictionary, fit_matrix, \
     nmf_consensus_cluster, information_coefficient, normalize_pandas_object, hierarchical_consensus_cluster, \
     exponential_function, mds, \
-    compute_score_and_pvalue, solve_matrix_linear_equation, \
+    compute_association_and_pvalue, solve_matrix_linear_equation, \
     FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, \
     plot_nmf, plot_x_vs_y
 
@@ -196,7 +196,7 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=1
                     filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
-    plot_clusterings(clusterings, title='Clustering per k', filepath=filepath_clusterings_plot)
+    plot_heatmap(clusterings, sort_axis=1, data_type='categorical', title='Clustering per k', filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients
     plot_x_vs_y(sorted(cophenetic_correlation_coefficients.keys()),
@@ -777,7 +777,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
         # Plot sample legends
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
-        score, p_val = compute_score_and_pvalue(samples.ix[:, 'state'], annotation)
+        score, p_val = compute_association_and_pvalue(samples.ix[:, 'state'], annotation)
         ax_legend.set_title('{}\nIC={:.3f} (p-val={:.3f})'.format(annotation_name, score, p_val),
                             fontsize=legend_fontsize * 1.26, weight='bold')
         # Plot effect plot

@@ -43,7 +43,7 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 from matplotlib.cm import Paired, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
-from seaborn import light_palette, heatmap, clustermap, pointplot
+from seaborn import light_palette, heatmap, clustermap, pointplot, boxplot, violinplot, set_style, despine
 
 from . import VERBOSE, SEED
 
@@ -998,7 +998,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
 # ======================================================================================================================
 # Association
 # ======================================================================================================================
-def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
+def compute_association_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
     """
     Compute function(x, y) and p-value using permutation test.
     :param x: array-like;
@@ -1019,7 +1019,14 @@ def compute_score_and_pvalue(x, y, function=information_coefficient, n_permutati
         permutation_scores[p] = function(x, shuffled_target)
 
     # Compute p-value
-    p_val = sum(permutation_scores > score) / n_permutations
+    if 0 <= score:
+        p_val = sum(permutation_scores >= score) / n_permutations
+    else:
+        p_val = sum(permutation_scores <= score) / n_permutations
+
+    if p_val == 0:
+        p_val = 1 / n_permutations
+
     return score, p_val
 
 
@@ -1694,6 +1701,60 @@ def plot_x_vs_y(x, y, title='title', xlabel='xlabel', ylabel='ylabel', filepath=
 
     if filepath:
         save_plot(filepath)
+
+
+def plot_box_or_violine(target, features, features_name, feature_names=(), box_or_violine='violine',
+                        title=None, xlabel=None, ylabel=None,
+                        filepath_prefix=None):
+    """
+
+    :param target:
+    :param features:
+    :param features_name:
+    :param feature_names:
+    :param box_or_violine:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param filepath_prefix:
+    :return:
+    """
+
+    set_style('whitegrid')
+    for r_i, r in features.ix[feature_names, :].iterrows():
+        common_r = r.ix[target.index]
+
+        plt.figure(figsize=FIGURE_SIZE)
+        if not title:
+            title = '{} {}'.format(features_name, r_i)
+        plt.suptitle(title, **FONT_TITLE)
+        if box_or_violine == 'violine':
+            violinplot(x=target, y=common_r)
+        if box_or_violine == 'box':
+            boxplot(x=target, y=common_r)
+        despine(left=True)
+        score, pval = compute_association_and_pvalue(asarray(target),
+                                                     asarray(common_r),
+                                                     n_permutations=1000)
+        l, r, b, t = plt.gca().axis()
+        plt.gca().text((l + r) / 2, t + 0.016 * t, 'Score = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
+                       horizontalalignment='center', **FONT_SUBTITLE)
+
+        if not xlabel:
+            xlabel = plt.gca().get_xlabel()
+        plt.gca().set_xlabel(xlabel, **FONT_SUBTITLE)
+
+        if not ylabel:
+            ylabel = plt.gca().get_ylabel()
+        plt.gca().set_ylabel(ylabel, **FONT_SUBTITLE)
+
+        for t in plt.gca().get_xticklabels():
+            t.set(**FONT)
+        for t in plt.gca().get_yticklabels():
+            t.set(**FONT)
+
+    if filepath_prefix:
+        save_plot(filepath_prefix + '{}.pdf'.format(untitle_string(title)))
 
 
 def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=True, max_std=3, title=None,

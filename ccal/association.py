@@ -20,7 +20,6 @@ from scipy.stats import norm
 from statsmodels.sandbox.stats.multicomp import multipletests
 from matplotlib.pyplot import figure, subplot
 from matplotlib.gridspec import GridSpec
-from matplotlib.colors import Normalize
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import heatmap
 
