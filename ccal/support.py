@@ -190,6 +190,22 @@ def convert_csv_to_tsv(filepath):
         w.writerow(line)
 
 
+def load_gct(matrix):
+    """
+
+    :param matrix:
+    :return:
+    """
+
+    if isinstance(matrix, str):  # Read .gct from a filepath
+        matrix = read_gct(matrix)
+
+    elif not isinstance(matrix, DataFrame):  # .gct is not a filepath or DataFrame
+        raise ValueError('Matix must be either a DataFrame or a path to a .gct file.')
+
+    return matrix
+
+
 def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, column_name=None):
     """
     Read a .gct (filepath) and convert it into a pandas DataFrame.
@@ -235,17 +251,17 @@ def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, colum
     return df
 
 
-def write_gct(pandas_object, filepath, descriptions=None):
+def write_gct(matrix, filepath, descriptions=None):
     """
-    Write a pandas_object to a filepath as a .gct file.
-    :param pandas_object: pandas DataFrame or Serires; (n_samples, m_features)
-    :param filepath: str;
-    :param descriptions: iterable; (n_rows of pandas_object); description column for the .gct
+    Establish .gct filepath and write matrix to it.
+    :param matrix: pandas DataFrame or Serires; (n_samples, m_features)
+    :param filepath: str; filepath; adds .gct suffix if missing
+    :param descriptions: iterable; (n_samples); description column
     :return: None
     """
 
     # Copy
-    obj = pandas_object.copy()
+    obj = matrix.copy()
 
     # Work with only DataFrame
     if isinstance(obj, Series):
@@ -265,6 +281,7 @@ def write_gct(pandas_object, filepath, descriptions=None):
     # Save as .gct
     if not filepath.endswith('.gct'):
         filepath += '.gct'
+    establish_filepath(filepath)
     with open(filepath, 'w') as f:
         f.writelines('#1.2\n{}\t{}\n'.format(obj.shape[0], obj.shape[1] - 1))
         obj.to_csv(f, sep='\t')
@@ -1327,12 +1344,12 @@ def _nmf_and_score(args):
         sample_x_clustering.iloc[:, i] = argmax(asarray(nmf_result['H']), axis=0)
 
     # Make consensus matrix using NMF labels
-    print_log('\t(k={}) Making consensus matrix from {} NMF ...'.format(k))
+    print_log('\t(k={}) Making consensus matrix from {} NMF ...'.format(k, n_clusterings))
     consensus_matrix = get_consensus(sample_x_clustering)
 
     # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
-    distance_matrix, hierarchical_clustering, cophenetic_correlation_coefficient = \
-        _hierarchical_cluster_consensus_matrix(consensus_matrix)
+    hierarchical_clustering, cophenetic_correlation_coefficient = _hierarchical_cluster_consensus_matrix(
+        consensus_matrix)
     cophenetic_correlation_coefficients[k] = cophenetic_correlation_coefficient
 
     return nmf_results, cophenetic_correlation_coefficients

@@ -26,7 +26,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import violinplot, boxplot
 
 from . import SEED
-from .support import EPS, print_log, establish_filepath, read_gct, write_gct, write_dictionary, fit_matrix, \
+from .support import EPS, print_log, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
     nmf_consensus_cluster, information_coefficient, normalize_pandas_object, hierarchical_consensus_cluster, \
     exponential_function, mds, \
     compute_association_and_pvalue, solve_matrix_linear_equation, \
@@ -51,56 +51,69 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
     :param random_state: int;
-    :param directory_path: str; directory where nmf_k{k}_{w, h}.gct and nmf_scores.pdf will be saved
-    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and
-                            {k: cophenetic correlation coefficient}
+    :param directory_path: str; directory path where
+            cophenetic_correlation_coefficients{.pdf, .gct}
+            matrices/nmf_k{k}_{w, h}.gct
+            figures/nmf_k{k}_{w, h}.pdf
+        will be saved.
+    :return: dict and dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
+                            {k: Cophenetic Correlation Coefficient}
     """
 
     # Rank normalize the input matrix by column
+    # TODO: try changing n_ranks (choose automatically)
     matrix = normalize_pandas_object(matrix, method='rank', n_ranks=10000, axis=0)
-    plot_clustermap(matrix, title='Matrix to be Decomposed', xlabel='Sample', ylabel='Gene',
+    plot_clustermap(matrix, title='(Rank-normalized) Matrix to be Decomposed', xlabel='Sample', ylabel='Feature',
                     xticklabels=False, yticklabels=False)
 
-    # NMF and score, while saving a NMF result for each k
-    nmf_results, nmf_scores = nmf_consensus_cluster(matrix, ks, n_jobs=n_jobs, n_clusterings=n_clusterings,
-                                                    random_state=random_state)
+    # NMF consensus cluster (while saving 1 NMF result per k)
+    nmf_results, cophenetic_correlation_coefficient = nmf_consensus_cluster(matrix, ks,
+                                                                            n_jobs=n_jobs, n_clusterings=n_clusterings,
+                                                                            random_state=random_state)
 
-    # Make nmf directory
+    # Make NMF directory, where
+    #     cophenetic_correlation_coefficients{.pdf, .gct}
+    #     matrices/nmf_k{k}_{w, h}.gct
+    #     figures/nmf_k{k}_{w, h}.pdf
+    # will be saved
     directory_path = join(directory_path, 'nmf/')
     establish_filepath(directory_path)
 
-    # Save NMF scores @ nmf/cophenetic_correlation_coefficients{.pdf, .gct}
+    # Save and plot NMF cophenetic correlation coefficients
     print_log('Saving and plotting cophenetic correlation coefficients ...')
-    write_dictionary(nmf_scores, join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+    write_dictionary(cophenetic_correlation_coefficient,
+                     join(directory_path, 'cophenetic_correlation_coefficients.txt'),
                      key_name='k', value_name='cophenetic_correlation_coefficient')
-    plot_x_vs_y(sorted(nmf_scores.keys()), [nmf_scores[k] for k in sorted(nmf_scores.keys())],
-                title='NMF Cophenetic Correlation vs. k', xlabel='k', ylabel='NMF Cophenetic Correlation',
+    plot_x_vs_y(sorted(cophenetic_correlation_coefficient.keys()),
+                [cophenetic_correlation_coefficient[k] for k in sorted(cophenetic_correlation_coefficient.keys())],
+                title='NMF Cophenetic Correlation Coefficient vs. k',
+                xlabel='k', ylabel='NMF Cophenetic Correlation Coefficient',
                 filepath=join(directory_path, 'cophenetic_correlation_coefficients.pdf'))
 
-    # Save NMF results @ nmf/matrices/nmf_k{...}_{w, h}.gct
+    # Save and plot NMF results
     print_log('Saving and plotting NMF results ...')
-    _save_nmf_results(nmf_results, join(directory_path, 'matrices', ''))
+    _save_nmf(nmf_results, join(directory_path, 'matrices', ''))
 
-    # Save NMF figures @ nmf/figures/nmf_k{...}.pdf
+    # Save NMF figures
     for k in ks:
         print_log('\tPlotting k={} ...'.format(k))
         plot_nmf(nmf_results, k, filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
 
-    return nmf_results, nmf_scores
+    return nmf_results, cophenetic_correlation_coefficient
 
 
-def _save_nmf_results(nmf_results, filepath_prefix):
+def _save_nmf(nmf_results, filepath_prefix):
     """
-    Save nmf_results.
-    :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
-    :param filepath_prefix: str; filepath_prefix_nmf_k{k}_{w, h}.gct and  will be saved
+    Save NMF results.
+    :param nmf_results: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
+                              {k: Cophenetic Correlation Coefficient}
+    :param filepath_prefix: str; filepath_prefix_nmf_k{k}_{w, h}.gct and will be saved
     :return: None
     """
 
-    establish_filepath(filepath_prefix)
     for k, v in nmf_results.items():
-        write_gct(v['W'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
-        write_gct(v['H'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
+        write_gct(v['w'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
+        write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
 
 
 def project_w(a_matrix, w_matrix, filepath=None):
@@ -112,31 +125,27 @@ def project_w(a_matrix, w_matrix, filepath=None):
     :return:
     """
 
-    if isinstance(a_matrix, str):
-        a_matrix = read_gct(a_matrix)
-    elif not isinstance(a_matrix, DataFrame):
-        raise ValueError('A matirx must be either a DataFrame or a path to a .gct file.')
+    # Load A and W matrices
+    a_matrix = load_gct(a_matrix)
+    w_matrix = load_gct(w_matrix)
 
-    if isinstance(w_matrix, str):
-        w_matrix = read_gct(w_matrix)
-    elif not isinstance(w_matrix, DataFrame):
-        raise ValueError('W matirx must be either a DataFrame or a path to a .gct file.')
-
+    # Keep only indices shared by both
     shared = set(a_matrix.index) & set(w_matrix.index)
     a_matrix = a_matrix.ix[shared, :]
     w_matrix = w_matrix.ix[shared, :]
 
-    a_matrix = normalize_pandas_object(a_matrix, 'rank', axis=0)
+    # Rank normalize the A matrix by column
+    # TODO: try changing n_ranks (choose automatically)
+    a_matrix = normalize_pandas_object(a_matrix, 'rank', n_ranks=10000, axis=0)
 
-    # TODO: why not rank normalize by 10000 here too?
+    # Normalize the W matrix by column
+    # TODO: improve the normalization (why this normalization?)
     w_matrix = w_matrix.apply(lambda c: c / sum(c) * 1000)
 
+    # Solve W * H = A
     h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix)
 
-    if filepath:
-        if not filepath.endswith('.gct'):
-            filepath += '.gct'
-        establish_filepath(filepath)
+    if filepath:  # Save H matrix
         write_gct(h_matrix, filepath)
 
     return h_matrix
@@ -196,7 +205,8 @@ def define_states(h_matrix, ks, distance_matrix=None, max_std=3, n_clusterings=1
                     filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
-    plot_heatmap(clusterings, sort_axis=1, data_type='categorical', title='Clustering per k', filepath=filepath_clusterings_plot)
+    plot_heatmap(clusterings, sort_axis=1, data_type='categorical', title='Clustering per k',
+                 filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients
     plot_x_vs_y(sorted(cophenetic_correlation_coefficients.keys()),
