@@ -1341,7 +1341,7 @@ def _nmf_and_score(args):
             print_log('\t\t(k={}) Saved the 1st NMF decomposition.'.format(k))
 
         # Column labels are the row index holding the highest value
-        sample_x_clustering.iloc[:, i] = argmax(asarray(nmf_result['H']), axis=0)
+        sample_x_clustering.iloc[:, i] = argmax(asarray(nmf_result['h']), axis=0)
 
     # Make consensus matrix using NMF labels
     print_log('\t(k={}) Making consensus matrix from {} NMF ...'.format(k, n_clusterings))
@@ -1396,7 +1396,7 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
             h = DataFrame(h, columns=matrix.columns)
 
         # Save NMF results
-        nmf_results[k] = {'W': w, 'H': h, 'ERROR': err}
+        nmf_results[k] = {'w': w, 'h': h, 'e': err}
 
     return nmf_results
 
@@ -1791,8 +1791,8 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=T
 
     # Check for W and H matrix
     if isinstance(nmf_results, dict) and k:
-        w_matrix = nmf_results[k]['W']
-        h_matrix = nmf_results[k]['H']
+        w_matrix = nmf_results[k]['w']
+        h_matrix = nmf_results[k]['h']
     elif not (isinstance(w_matrix, DataFrame) and isinstance(h_matrix, DataFrame)):
         raise ValueError('Need either: 1) NMF result ({k: {W:w, H:h, ERROR:error}) and k; or 2) W and H matrices.')
 
