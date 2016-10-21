@@ -28,10 +28,10 @@ from seaborn import violinplot, boxplot
 from . import SEED
 from .support import EPS, print_log, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
     nmf_consensus_cluster, information_coefficient, normalize_pandas_object, hierarchical_consensus_cluster, \
-    exponential_function, mds, \
-    compute_association_and_pvalue, solve_matrix_linear_equation, \
-    FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, \
-    plot_nmf, plot_x_vs_y
+    exponential_function, mds, compute_association_and_pvalue, solve_matrix_linear_equation, \
+    drop_value_from_dataframe, \
+    FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, plot_nmf, \
+    plot_x_vs_y
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -44,7 +44,7 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED, directory_path=None):
     """
-    NMF-consensus cluster samples (matrix columns) and compute cophenetic correlation coefficients, and save 1 NMF
+    NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
     :param matrix: DataFrame; (n_rows, n_columns)
     :param ks: iterable; iterable of int k used for NMF
@@ -206,7 +206,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
                     filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
-    plot_heatmap(clusterings, sort_axis=1, data_type='categorical', title='Clustering per k',
+    plot_heatmap(clusterings, sort_axis=1, data_type='categorical', title='Clustering per k', xticklabels=False,
                  filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients
@@ -222,8 +222,8 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=3,
-                     h_test=None, h_test_normalization='clip_and_0-1', states_test=None,
+def make_oncogps_map(training_h, training_states, component_coordinates=None, std_max=3,
+                     testing_h=None, testing_h_normalization='clip_and_0-1', testing_states=None,
                      informational_mds=True, mds_seed=SEED,
                      fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=5,
                      n_pulling_components='all', component_pull_power='auto',
@@ -244,13 +244,13 @@ def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=
                      effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
                      effectplot_median_markeredgecolor='#FF0082', filepath=None):
     """
-    :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param states_train: iterable of int; (n_samples); sample states
+    :param training_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param training_states: iterable of int; (n_samples); sample states
     :param component_coordinates: DataFrame; (n_components, 2 ('x', 'y')); component coordinates
     :param std_max: number; threshold to clip standardized values
-    :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param h_test_normalization: str or None; {'as_train', 'clip_and_0-1', None}
-    :param states_test: iterable of int; (n_samples); sample states
+    :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param testing_h_normalization: str or None; {'as_train', 'clip_and_0-1', None}
+    :param testing_states: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param fit_min: number;
@@ -301,9 +301,11 @@ def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=
     :return: None
     """
 
-    cc, s, gp, gs = _make_onco_gps_elements(h_train, states_train, component_coordinates=component_coordinates,
-                                            std_max=std_max, h_test=h_test, h_test_normalization=h_test_normalization,
-                                            states_test=states_test,
+    # Compute coordinates of components and samples and compute sample probabilities and states at each grid.
+    cc, s, gp, gs = _make_onco_gps_elements(training_h, training_states, component_coordinates=component_coordinates,
+                                            std_max=std_max,
+                                            testing_h=testing_h, testing_h_normalization=testing_h_normalization,
+                                            testing_states=testing_states,
                                             informational_mds=informational_mds, mds_seed=mds_seed,
                                             fit_min=fit_min, fit_max=fit_max,
                                             pull_power_min=pull_power_min, pull_power_max=pull_power_max,
@@ -313,7 +315,7 @@ def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=
                                             pullratio_factor=pullratio_factor,
                                             n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
 
-    _plot_onco_gps(cc, s, gp, gs, len(set(states_train)),
+    _plot_onco_gps(cc, s, gp, gs, len(set(training_states)),
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
                    title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
@@ -339,22 +341,23 @@ def make_oncogps_map(h_train, states_train, component_coordinates=None, std_max=
                    filepath=filepath)
 
 
-def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, std_max=3,
-                            h_test=None, h_test_normalization='as_train', states_test=None,
+# TODO: allow non-int state labels
+def _make_onco_gps_elements(training_h, training_states, component_coordinates=None, std_max=3,
+                            testing_h=None, testing_h_normalization='as_train', testing_states=None,
                             informational_mds=True, mds_seed=SEED,
                             fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
                             n_pulling_components='all', component_pull_power='auto',
                             n_pullratio_components=0, pullratio_factor=5,
                             n_grids=128, kde_bandwidths_factor=1):
     """
-    Compute component and sample coordinates. And compute grid probabilities and states.
-    :param h_train: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param states_train: iterable of int; (n_samples); sample states
-    :param component_coordinates: DataFrame; (n_components, 2 ('x', 'y')); component coordinates
+    Compute coordinates of components and samples and compute sample probabilities and states at each grid.
+    :param training_h: pandas DataFrame; (n_nmf_components, n_samples); NMF H matrix
+    :param training_states: iterable of int; (n_samples); sample states
+    :param component_coordinates: DataFrame; (n_nmf_components, 2 ('x', 'y')); component coordinates
     :param std_max: number; threshold to clip standardized values
-    :param h_test: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param h_test_normalization: str or None; {'as_train', 'clip_and_0-1', None}
-    :param states_test: iterable of int; (n_samples); sample states
+    :param testing_h: pandas DataFrame; (n_nmf_components, n_samples); NMF H matrix
+    :param testing_h_normalization: str or None; {'as_train', 'clip_and_0-1', None}
+    :param testing_states: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param fit_min: number;
@@ -363,46 +366,36 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
     :param pull_power_max: number;
     :param n_pulling_components: int; [1, n_components]; number of components influencing a sample's coordinate
     :param component_pull_power: str or number; power to raise components' influence on each sample
-    :param n_pullratio_components: number; number if int; percentile if float & < 1
+    :param n_pullratio_components: number; number if int; percentile if < 1
     :param pullratio_factor: number;
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
-    :return: pandas DataFrame, DataFrame, numpy array, and numpy array;
-             component_coordinates (n_components, [x, y]),
-             samples (n_samples, [x, y, state, annotation]),
-             grid_probabilities (n_grids, n_grids),
-             and grid_states (n_grids, n_grids)
+    :return: DataFrame, DataFrame, array, and array;
+                 component_coordinates (n_components, [x, y]),
+                 samples (n_samples, [x, y, state]),
+                 grid_probabilities (n_grids, n_grids),
+                 and grid_states (n_grids, n_grids)
     """
 
-    states_train = Series(states_train, index=h_train.columns)
+    # Convert sample-state labels into Series matching corresponding sample
+    training_states = Series(training_states, index=training_h.columns)
 
-    samples_with_all_0_values = h_train.apply(lambda col: (col == 0).all())
-    if any(samples_with_all_0_values):  # Remove samples with only 0 column values
-        h_train = h_train.ix[:, ~samples_with_all_0_values]
-        states_train = states_train.ix[~samples_with_all_0_values]
-        print_log('Removed {} sample(s) without any nonzero component values.'.format(sum(samples_with_all_0_values)))
-
-    print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h_train.shape,
-                                                                                         set(h_train.index),
-                                                                                         len(set(states_train))))
-    print_log('\tComponents: {}'.format(set(h_train.index)))
-    print_log('\tStates: {}'.format(set(states_train)))
+    training_h = drop_value_from_dataframe(training_h, 0)
+    training_states = training_states.ix[training_h.columns]
 
     # Clip and 0-1 normalize the data
-    print_log('Clipping and 0-1 normalizing rows ...')
-    training_h = normalize_pandas_object(normalize_pandas_object(h_train, method='-0-', axis=1).clip(-std_max, std_max),
-                                         method='0-1', axis=1)
+    print_log('Clipping std and 0-1 normalizing rows ...')
+    training_h = normalize_pandas_object(
+        normalize_pandas_object(training_h, method='-0-', axis=1).clip(-std_max, std_max),
+        method='0-1', axis=1)
 
-    samples_with_all_0_values = training_h.apply(lambda col: (col == 0).all())
-    if any(samples_with_all_0_values):  # Remove samples with only 0 column values
-        training_h = training_h.ix[:, ~samples_with_all_0_values]
-        states_train = states_train.ix[~samples_with_all_0_values]
-        print_log('Removed {} sample(s) without any nonzero component values after normalization.'.format(
-            sum(samples_with_all_0_values)))
+    training_h = drop_value_from_dataframe(training_h, 0)
+    training_states = training_states.ix[training_h.columns]
 
-    print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h_train.shape,
-                                                                                         set(h_train.index),
-                                                                                         len(set(states_train))))
+    print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*training_h.shape,
+                                                                                         len(set(training_states))))
+    print_log('\tComponents: {}'.format(set(training_h.index)))
+    print_log('\tStates: {}'.format(set(training_states)))
 
     # Compute component coordinates
     if not isinstance(component_coordinates, DataFrame):
@@ -443,7 +436,7 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
                                                            component_pulling_power=component_pull_power)
 
     # Load sample states
-    training_samples.ix[:, 'state'] = states_train
+    training_samples.ix[:, 'state'] = training_states
     print_log('Loaded sample states.')
 
     # Compute pulling ratios
@@ -504,33 +497,33 @@ def _make_onco_gps_elements(h_train, states_train, component_coordinates=None, s
             grid_probabilities[i, j] = grid_probability
             grid_states[i, j] = grid_state
 
-    if isinstance(h_test, DataFrame):  # Use testing samples
+    if isinstance(testing_h, DataFrame):  # Use testing samples
         print_log('Focusing on samples from testing H matrix ...')
 
         # Normalize testing H
-        if h_test_normalization == 'as_train':  # Normalize as done on h_train using the same normalizing factors
-            testing_h = h_test
-            for r_i, r in h_train.iterrows():
+        if testing_h_normalization == 'as_train':  # Normalize as done on h_train using the same normalizing factors
+            testing_h = testing_h
+            for r_i, r in training_h.iterrows():
                 if r.std() == 0:
                     testing_h.ix[r_i, :] = testing_h.ix[r_i, :] / r.size()
                 else:
                     testing_h.ix[r_i, :] = (testing_h.ix[r_i, :] - r.mean()) / r.std()
 
-        elif h_test_normalization == 'clip_and_0-1':  # Normalize as done on h_train
+        elif testing_h_normalization == 'clip_and_0-1':  # Normalize as done on h_train
             testing_h = normalize_pandas_object(
-                normalize_pandas_object(h_test, method='-0-', axis=1).clip(-std_max, std_max), method='0-1', axis=1)
+                normalize_pandas_object(testing_h, method='-0-', axis=1).clip(-std_max, std_max), method='0-1', axis=1)
 
-        elif not h_test_normalization:  # Not normalizing
-            testing_h = h_test
+        elif not testing_h_normalization:  # Not normalizing
+            testing_h = testing_h
 
         else:
-            raise ValueError('Unknown normalization method for testing H {}.'.format(h_test_normalization))
+            raise ValueError('Unknown normalization method for testing H {}.'.format(testing_h_normalization))
 
         # Compute testing-sample coordinates
         testing_samples = _get_sample_coordinates_via_pulling(component_coordinates, testing_h,
                                                               n_influencing_components=n_pulling_components,
                                                               component_pulling_power=component_pull_power)
-        testing_samples.ix[:, 'state'] = states_test
+        testing_samples.ix[:, 'state'] = testing_states
 
         return component_coordinates, testing_samples, grid_probabilities, grid_states
 

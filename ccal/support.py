@@ -765,6 +765,27 @@ def flatten_nested_iterables(nested_iterable, list_type=(list, tuple)):
     return type_(nested_iterable)
 
 
+def drop_value_from_dataframe(dataframe, value, axis=0):
+    """
+
+    :param dataframe:
+    :param value:
+    :param axis:
+    :return:
+    """
+
+    if axis == 0:
+        dropped = (dataframe == value).all(axis=0)
+        if any(dropped):
+            print('Removed {} column index(ices) whoes values are all {}.'.format(sum(dropped), value))
+        return dataframe.ix[:, ~dropped]
+    elif axis == 1:
+        dropped = (dataframe == value).all(axis=1)
+        if any(dropped):
+            print('Removed {} row index(ices) whoes values are all {}.'.format(sum(dropped), value))
+        return dataframe.ix[~dropped, :]
+
+
 def drop_nan_columns(arrays):
     """
     Keep only not-NaN column positions in all arrays.
