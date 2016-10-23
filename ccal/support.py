@@ -830,28 +830,29 @@ def get_consensus(sample_x_clustering):
     return DataFrame(coclusterings, index=sample_x_clustering.index, columns=sample_x_clustering.index)
 
 
-def mds(dataframe, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
+def mds(matrix, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
     """
-    Multidimentional scale rows of pandas_object from <n_cols>D into 2D.
-    :param dataframe: pandas DataFrame; (n_points, n_dimentions)
+    Multidimentional-scale rows of matrix from <n_cols>D into 2D.
+    :param matrix: DataFrame; (n_points, n_dimentions)
     :param distance_function: function; capable of computing the distance between 2 vectors
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param n_init: int;
     :param max_iter: int;
     :param standardize: bool;
-    :return: pandas DataFrame; (n_points, 2 ('x', 'y'))
+    :return: DataFrame; (n_points, 2 ('x', 'y'))
     """
 
     if distance_function:  # Use precomputed distances
         mds_obj = MDS(dissimilarity='precomputed', random_state=mds_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds_obj.fit_transform(compare_matrices(dataframe, dataframe, distance_function,
-                                                             is_distance=True, axis=1))
+        coordinates = mds_obj.fit_transform(
+            compare_matrices(matrix, matrix, distance_function, is_distance=True, axis=1))
+
     else:  # Use Euclidean distances
         mds_obj = MDS(random_state=mds_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds_obj.fit_transform(dataframe)
+        coordinates = mds_obj.fit_transform(matrix)
 
     # Convert to DataFrame
-    coordinates = DataFrame(coordinates, index=dataframe.index, columns=['x', 'y'])
+    coordinates = DataFrame(coordinates, index=matrix.index, columns=['x', 'y'])
 
     if standardize:  # Rescale coordinates between 0 and 1
         coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)

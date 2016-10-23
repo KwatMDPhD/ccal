@@ -308,19 +308,17 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
                                                                                        informational_mds=informational_mds,
                                                                                        mds_seed=mds_seed,
                                                                                        fit_min=fit_min, fit_max=fit_max,
-                                                                                       pull_power_min=pull_power_min,
-                                                                                       pull_power_max=pull_power_max,
+                                                                                       power_min=pull_power_min,
+                                                                                       power_max=pull_power_max,
                                                                                        n_pulling_components=n_pulling_components,
-                                                                                       component_pull_power=component_pull_power,
-                                                                                       n_pullratio_components=n_pullratio_components,
+                                                                                       power=component_pull_power,
+                                                                                       component_ratio=n_pullratio_components,
                                                                                        pullratio_factor=pullratio_factor,
                                                                                        n_grids=n_grids,
                                                                                        kde_bandwidths_factor=kde_bandwidths_factor)
     if training_h:
-        testing_samples = load_testing_samples(training_h, components, testing_h, testing_states,
-                                               testing_h_normalization, std_max, n_pulling_components, pp)
-
-
+        testing_samples = _load_testing_samples(training_h, components, testing_h, testing_states,
+                                                testing_h_normalization, std_max, n_pulling_components, pp)
 
     _plot_onco_gps(components, samples, grid_probabilities, grid_states,
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
@@ -351,9 +349,9 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
 # TODO: allow non-int state labels
 def _make_onco_gps_elements(h, states, components=None, std_max=3,
                             informational_mds=True, mds_seed=SEED,
-                            fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
-                            n_pulling_components='all', component_pull_power='auto',
-                            n_pullratio_components=0, pullratio_factor=5,
+                            fit_min=0, fit_max=2, power_min=1, power_max=3,
+                            n_pulling_components='all', power='auto',
+                            component_ratio=0, pullratio_factor=5,
                             n_grids=128, kde_bandwidths_factor=1):
     """
     Compute coordinates of components and samples and compute sample probabilities and states at each grid.
@@ -365,123 +363,182 @@ def _make_onco_gps_elements(h, states, components=None, std_max=3,
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param fit_min: number;
     :param fit_max: number;
-    :param pull_power_min: number;
-    :param pull_power_max: number;
+    :param power_min: number;
+    :param power_max: number;
     :param n_pulling_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param component_pull_power: str or number; power to raise components' influence on each sample
-    :param n_pullratio_components: number; number if int; percentile if < 1
+    :param power: str or number; power to raise components' influence on each sample
+    :param component_ratio: number; number if int; percentile if < 1
     :param pullratio_factor: number;
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :return: DataFrame, DataFrame, array, and array;
-                 component_coordinates (n_components, [x, y]),
+                 components (n_components, [x, y]),
                  samples (n_samples, [x, y, state]),
                  grid_probabilities (n_grids, n_grids),
                  and grid_states (n_grids, n_grids)
     """
 
-    #
     # Preprocess
-    #
-    # Convert sample-state labels into Series matching corresponding sample
-    states = Series(states, index=h.columns)
-
-    # Drop columns with all-0 values before the normalization
-    h = drop_value_from_dataframe(h, 0)
-
-    # Clip by standard deviation and 0-1 normalize the data
-    print_log('Clipping std > {} and 0-1 normalizing rows ...'.format(std_max))
-    h = normalize_pandas_object(normalize_pandas_object(h, method='-0-', axis=1).clip(-std_max, std_max), method='0-1',
-                                axis=1)
-
-    # Drop columns with all-0 values after the normalization
-    h = drop_value_from_dataframe(h, 0)
-
-    states = states.ix[h.columns]
-
-    #
-    # Log
-    #
+    h, states = _process_h_and_states(h, states, std_max=std_max)
     print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h.shape, len(set(states))))
     print_log('\tComponents: {}'.format(set(h.index)))
     print_log('\tStates: {}'.format(set(states)))
 
-    #
-    # Component coordinates
-    #
-    if not isinstance(components, DataFrame):  # Compute component coordinates
-        if informational_mds:  # Use informational computation
-            print_log('Computing component coordinates with informational distance ...')
+    # Compute component coordinates
+    if isinstance(components, DataFrame):
+        print_log('Using predefined component coordinates ...'.format(components))
+        # TODO: enforce matched index
+        components.index = h.index
+    else:
+        if informational_mds:
+            print_log('Computing component coordinates using informational metric ...')
             distance_function = information_coefficient
-
-        else:  # Use Euclidean computation
-            print_log('Computing component coordinates with Euclidean distance ...')
+        else:
+            print_log('Computing component coordinates using Euclidean metric ...')
             distance_function = None
-
         components = mds(h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
 
-    else:  # Use predefined component coordinates
-        print_log('Using predefined component coordinates ...'.format(components))
-        components.index = h.index
-
-    #
-    # Sample coordinates
-    #
-    # Compute component-pull power
-    if component_pull_power == 'auto':
-        print_log('Computing component-pull power ...')
-
-        if h.shape[0] < 4:  # Too few data points to model
-            print_log('\tCouldn\'t model with Ae^(kx) + C so set component_pull_power to be 1.')
-            component_pull_power = 1
-
-        else:  # Fit component magnitudes of samples to exponential function
-            fit_parameters = fit_matrix(h, exponential_function, sort_matrix=True)
-            print_log('\tModeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
-            k = fit_parameters[1]
-
-            # Linear transform
-            k_normalized = (k - fit_min) / (fit_max - fit_min)
-            component_pull_power = k_normalized * (pull_power_max - pull_power_min) + pull_power_min
-
-    # Compute sample coordinates
-    print_log('Computing sample coordinates pulled by {} components with power {:.3f} ...'.format(n_pulling_components,
-                                                                                                  component_pull_power))
-    samples = _get_sample_coordinates(components, h, n_influencing_components=n_pulling_components,
-                                      power=component_pull_power)
-
-    # Load sample states
+    samples = DataFrame(index=h.columns, columns=['x', 'y', 'state', 'component_ratio'])
     samples.ix[:, 'state'] = states
 
-    #
-    # Pull ratios
-    #
-    # Compute component-pull ratios
-    ratios = zeros(h.shape[1])
-    if 0 < n_pullratio_components:
-        print_log('Computing component-pull ratio for each sample ...')
+    # Compute sample coordinates
+    if power == 'auto':
+        print_log('Computing component-pull power ...')
+        if h.shape[0] < 4:
+            print_log('\tToo few data points; couldn\'t model with Ae^(kx) + C.')
+            power = 1
+        else:
+            power = _compute_component_power(h, fit_min, fit_max, power_min, power_max)
 
-        if n_pullratio_components < 1:  # if n_pullratio_components is a fraction, compute its respective number
-            n_pullratio_components = h.shape[0] * n_pullratio_components
+    print_log('Computing sample coordinates using {} components and {:.3f} power ...'.format(n_pulling_components,
+                                                                                             power))
+    samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(components, h,
+                                                            n_influencing_components=n_pulling_components, power=power)
 
-        # Compute component-pull ration for each sample (column)
-        for i, (c_idx, c) in enumerate(h.iteritems()):
-            # Sort column
-            c_sorted = c.sort_values(ascending=False)
+    if component_ratio:
+        print_log('Computing compunent ratios ...')
+        samples.ix[:, 'component_ratio'] = _compute_component_ratio(h, n_pulling_components)
+    else:
+        samples.ix[:, 'component_ratio'] = 1
 
-            # Pull ratio is the ratio between the sum of top n_pullratio_components components and the sum of the rest
-            # of the components
-            ratio = c.sum() * float(c_sorted[:n_pullratio_components].sum() /
-                                    max(c_sorted[n_pullratio_components:].sum(), EPS))
-            ratios[i] = ratio
-
-        # 0-1 normalize and rescale the ratio
-        samples.ix[:, 'pullratio'] = (ratios - ratios.min()) / (ratios.max() - ratios.min()) * pullratio_factor
-
-    #
-    # Grid probabilities and states
-    #
     print_log('Computing grid probabilities and states ...')
+    grid_probabilities, grid_states = _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_factor)
+
+    return components, samples, grid_probabilities, grid_states, power
+
+
+def _process_h_and_states(h, states, std_max=3):
+    """
+    Make sure states is Series.
+    Normalize h.
+    Drop 0 samples.
+    :param h: DataFrame;
+    :param states: iterable; iterable of int
+    :param std_max: number;
+    :return: DataFrame, Series; h and states
+    """
+
+    # Convert sample-state labels into Series matching corresponding sample
+    states = Series(states, index=h.columns)
+
+    # Drop columns with all-0 values
+    h = drop_value_from_dataframe(h, 0)
+
+    # Clip by standard deviation and 0-1 normalize the data
+    h = normalize_pandas_object(h, method='-0-', axis=1).clip(-std_max, std_max)
+    h = normalize_pandas_object(h, method='0-1', axis=1)
+
+    # Drop columns with all-0 values
+    h = drop_value_from_dataframe(h, 0)
+
+    states = states.ix[h.columns]
+
+    return h, states
+
+
+def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
+    """
+    Compute component power by fitting component magnitudes of samples to exponential function.
+    :param h: DataFrame;
+    :param fit_min: number;
+    :param fit_max: number;
+    :param power_min: number;
+    :param power_max: number;
+    :return: float
+    """
+
+    fit_parameters = fit_matrix(h, exponential_function, sort_matrix=True)
+    k = fit_parameters[1]
+
+    # Linear transform
+    k_zero_to_one = (k - fit_min) / (fit_max - fit_min)
+    k_rescaled = k_zero_to_one * (power_max - power_min) + power_min
+
+    return k_rescaled
+
+
+def _compute_component_ratio(h, n):
+    """
+    Compute the ratio between the sum of the top-n component values and the sum of the rest of the component values.
+    :param h: DataFrame;
+    :param n: number;
+    :return: array;
+    """
+
+    ratios = zeros(h.shape[1])
+
+    if n < 1:  # If n is a fraction, compute its respective number
+        n = h.shape[0] * n
+
+    # Compute pull ratio for each sample (column)
+    for i, (c_idx, c) in enumerate(h.iteritems()):
+        c_sorted = c.sort_values(ascending=False)
+        ratios[i] = c_sorted[:n].sum() / max(c_sorted[n:].sum(), EPS) * c.sum()
+
+    return ratios
+
+
+def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_influencing_components='all', power=1):
+    """
+    Compute sample coordinates based on component coordinates (components pull samples).
+    :param component_x_coordinates: pandas DataFrame; (n_points, 2 [x, y])
+    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
+    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param power: str or number; power to raise components' influence on each sample
+    :return: pandas DataFrame; (n_samples, [x, y])
+    """
+
+    component_x_coordinates = asarray(component_x_coordinates)
+
+    sample_coordinates = empty((component_x_samples.shape[1], 2))
+
+    if n_influencing_components == 'all':  # n_influencing_components = number of all components
+        n_influencing_components = component_x_samples.shape[0]
+
+    for i, (_, c) in enumerate(component_x_samples.iteritems()):
+        c = asarray(c)
+
+        # Silence components that are not pulling
+        threshold = sorted(c)[-n_influencing_components]
+        c[c < threshold] = 0
+
+        x = sum(c ** power * component_x_coordinates[:, 0]) / sum(c ** power)
+        y = sum(c ** power * component_x_coordinates[:, 1]) / sum(c ** power)
+
+        sample_coordinates[i] = x, y
+
+    return sample_coordinates
+
+
+def _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_factor):
+    """
+
+    :param samples:
+    :param n_grids:
+    :param kde_bandwidths_factor:
+    :return:
+    """
+
     grid_probabilities = zeros((n_grids, n_grids), dtype=float)
     grid_states = zeros((n_grids, n_grids), dtype=int)
 
@@ -514,11 +571,11 @@ def _make_onco_gps_elements(h, states, components=None, std_max=3,
             grid_probabilities[i, j] = grid_probability
             grid_states[i, j] = grid_state
 
-    return components, samples, grid_probabilities, grid_states, component_pull_power
+    return grid_probabilities, grid_states
 
 
-def load_testing_samples(training_h, components, testing_h, testing_states,
-                         normalization, std_max, n_pulling_components, component_pull_power):
+def _load_testing_samples(training_h, components, testing_h, testing_states,
+                          normalization, std_max, n_pulling_components, component_pull_power):
     print_log('Loading testing samples ...')
 
     # Normalize
@@ -534,51 +591,13 @@ def load_testing_samples(training_h, components, testing_h, testing_states,
             normalize_pandas_object(testing_h, method='-0-', axis=1).clip(-std_max, std_max), method='0-1', axis=1)
 
     # Compute sample coordinates
-    samples = _get_sample_coordinates(components, testing_h, n_influencing_components=n_pulling_components,
-                                      power=component_pull_power)
+    samples = _compute_sample_coordinates(components, testing_h, n_influencing_components=n_pulling_components,
+                                          power=component_pull_power)
 
     # Load testing-sample states
     samples.ix[:, 'state'] = testing_states
 
     return samples
-
-
-def _get_sample_coordinates(component_x_coordinates, component_x_samples, n_influencing_components='all', power=1):
-    """
-    Compute sample coordinates based on component coordinates (components pull samples).
-    :param component_x_coordinates: pandas DataFrame; (n_points, 2 [x, y])
-    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
-    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param power: str or number; power to raise components' influence on each sample
-    :return: pandas DataFrame; (n_samples, [x, y])
-    """
-
-    xs = empty(component_x_samples.shape[1])
-    ys = empty(component_x_samples.shape[1])
-
-    component_x_coordinates = asarray(component_x_coordinates)
-
-    for i, (s, c) in enumerate(component_x_samples.iteritems()):
-        c = asarray(c)
-
-        if n_influencing_components == 'all':  # n_influencing_components = number of all components
-            n_influencing_components = component_x_samples.shape[0]
-
-        else:  # Silence components that are pulling
-            threshold = sorted(c)[-n_influencing_components]
-            c[c < threshold] = 0
-
-        x = sum(c ** power * component_x_coordinates[:, 0]) / sum(c ** power)
-        y = sum(c ** power * component_x_coordinates[:, 1]) / sum(c ** power)
-
-        xs[i] = x
-        ys[i] = y
-
-    sample_coordinates = DataFrame(index=component_x_samples.columns, columns=['x', 'y'])
-    sample_coordinates.ix[:, 'x'] = xs
-    sample_coordinates.ix[:, 'y'] = ys
-
-    return sample_coordinates
 
 
 def _plot_onco_gps(components, samples, grid_probabilities, grid_states,
