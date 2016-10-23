@@ -12,7 +12,7 @@ Authors:
 """
 
 from os.path import join
-from numpy import asarray, zeros, empty, linspace
+from numpy import asarray, zeros, empty, linspace, nansum
 from pandas import DataFrame, Series, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import rpy2.robjects as ro
@@ -310,10 +310,10 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
                                                           component_ratio,
                                                           128, kde_bandwidths_factor)
     if isinstance(testing_h, DataFrame):
+        print_log('Loading testing samples ...')
         testing_h = _normalize_testing_h(testing_h, testing_h_normalization, training_h, std_max)
         samples = _load_samples(testing_h, testing_states,
-                                power, fit_min, fit_max, power_min, power_max, n_pulls,
-                                components,
+                                power, fit_min, fit_max, power_min, power_max, n_pulls, components,
                                 component_ratio)
 
     _plot_onco_gps(components, samples, gp, gs, len(set(training_states)),
@@ -375,7 +375,14 @@ def _make_onco_gps_elements(h, states, std_max,
     """
 
     # Preprocess
-    h, states = _process_h_and_states(h, states, std_max)
+
+    # Convert sample-state labels into Series matching corresponding sample
+    states = Series(states, index=h.columns)
+
+    # Normalize and drop all-0 samples
+    h = _process_h(h, std_max)
+    states = states.ix[h.columns]
+
     print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h.shape, len(set(states))))
     print_log('\tComponents: {}'.format(set(h.index)))
     print_log('\tStates: {}'.format(set(states)))
@@ -394,7 +401,8 @@ def _make_onco_gps_elements(h, states, std_max,
             distance_function = None
         components = mds(h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
 
-    samples = _load_samples(h, states, power, fit_min, fit_max, power_min, power_max, n_pulls, components,
+    samples = _load_samples(h, states,
+                            power, fit_min, fit_max, power_min, power_max, n_pulls, components,
                             component_ratio)
 
     print_log('Computing grid probabilities and states ...')
@@ -403,33 +411,39 @@ def _make_onco_gps_elements(h, states, std_max,
     return components, samples, grid_probabilities, grid_states
 
 
-def _process_h_and_states(h, states, std_max):
+def _process_h(h, std_max):
     """
     Make sure states is Series.
     Normalize h.
     Drop 0 samples.
     :param h: DataFrame;
-    :param states: iterable; iterable of int
     :param std_max: number;
     :return: DataFrame, Series; h and states
     """
 
-    # Convert sample-state labels into Series matching corresponding sample
-    states = Series(states, index=h.columns)
+    # Drop columns with all-0 values
+    h = drop_value_from_dataframe(h, 0)
+
+    # Clip by standard deviation and 0-1 normalize
+    h = _normalize_h(h, std_max)
 
     # Drop columns with all-0 values
     h = drop_value_from_dataframe(h, 0)
 
-    # Clip by standard deviation and 0-1 normalize the data
+    return h
+
+
+def _normalize_h(h, std_max):
+    """
+    Clip by standard deviation and 0-1 normalize the rows of H matrix.
+    :param h:
+    :param std_max:
+    :return:
+    """
+
     h = normalize_pandas_object(h, '-0-', axis=1).clip(-std_max, std_max)
     h = normalize_pandas_object(h, '0-1', axis=1)
-
-    # Drop columns with all-0 values
-    h = drop_value_from_dataframe(h, 0)
-
-    states = states.ix[h.columns]
-
-    return h, states
+    return h
 
 
 def _load_samples(h, states, power, fit_min, fit_max, power_min, power_max, n_pulls, components, component_ratio):
@@ -447,7 +461,6 @@ def _load_samples(h, states, power, fit_min, fit_max, power_min, power_max, n_pu
     :param component_ratio:
     :return: DataFrame;
     """
-
     samples = DataFrame(index=h.columns, columns=['x', 'y', 'state', 'component_ratio'])
     samples.ix[:, 'state'] = states
 
@@ -517,8 +530,8 @@ def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_
         threshold = sorted(c)[-n_influencing_components]
         c[c < threshold] = 0
 
-        x = sum(c ** power * component_x_coordinates[:, 0]) / sum(c ** power)
-        y = sum(c ** power * component_x_coordinates[:, 1]) / sum(c ** power)
+        x = nansum(c ** power * component_x_coordinates[:, 0]) / nansum(c ** power)
+        y = nansum(c ** power * component_x_coordinates[:, 1]) / nansum(c ** power)
 
         sample_coordinates[i] = x, y
 
@@ -599,6 +612,9 @@ def _normalize_testing_h(testing_h, normalization, training_h, std_max):
     :param std_max:
     :return:
     """
+
+    # Normalize and drop all-0 samples
+    testing_h = _process_h(testing_h, std_max)
 
     if normalization == 'exact_as_training':  # Normalize as done on training H using the same normalizing factors
         for r_i, r in training_h.iterrows():
