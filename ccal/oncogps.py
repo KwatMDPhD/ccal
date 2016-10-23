@@ -13,7 +13,7 @@ Authors:
 
 from os.path import join
 from numpy import asarray, zeros, empty, linspace
-from pandas import DataFrame, Series, isnull
+from pandas import DataFrame, Series, concat, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
@@ -377,49 +377,58 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
                  and grid_states (n_grids, n_grids)
     """
 
+    #
+    # Preprocess
+    #
     # Convert sample-state labels into Series matching corresponding sample
     training_states = Series(training_states, index=training_h.columns)
 
+    # Drop columns with all-0 values before the normalization
     training_h = drop_value_from_dataframe(training_h, 0)
-    training_states = training_states.ix[training_h.columns]
-
-    # Clip and 0-1 normalize the data
-    print_log('Clipping std and 0-1 normalizing rows ...')
+    # Clip by standard deviation and 0-1 normalize the data
+    print_log('Clipping std > {} and 0-1 normalizing rows ...'.format(std_max))
     training_h = normalize_pandas_object(
         normalize_pandas_object(training_h, method='-0-', axis=1).clip(-std_max, std_max),
         method='0-1', axis=1)
-
+    # Drop columns with all-0 values after the normalization
     training_h = drop_value_from_dataframe(training_h, 0)
+
     training_states = training_states.ix[training_h.columns]
 
+    #
+    # Log
+    #
     print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*training_h.shape,
                                                                                          len(set(training_states))))
     print_log('\tComponents: {}'.format(set(training_h.index)))
     print_log('\tStates: {}'.format(set(training_states)))
 
-    # Compute component coordinates
-    if not isinstance(component_coordinates, DataFrame):
-        if informational_mds:
+    #
+    # Component coordinates
+    #
+    if not isinstance(component_coordinates, DataFrame):  # Compute component coordinates
+        if informational_mds:  # Use informational computation
             print_log('Computing component coordinates with informational distance ...')
             distance_function = information_coefficient
-        else:
+        else:  # Use Euclidean computation
             print_log('Computing component coordinates with Euclidean distance ...')
             distance_function = None
         component_coordinates = mds(training_h, distance_function=distance_function, mds_seed=mds_seed,
                                     standardize=True)
-    else:
+    else:  # Use predefined component coordinates
         print_log('Using predefined component coordinates ...'.format(component_coordinates))
         component_coordinates.index = training_h.index
 
+    #
+    # Sample coordinates
+    #
     # Compute component pulling power
     if component_pull_power == 'auto':
         print_log('Computing component-pull power ...')
-
         if training_h.shape[0] < 4:  # Too few data points to model
             print_log('\tCouldn\'t model with Ae^(kx) + C so set component_pull_power to be 1.')
             component_pull_power = 1
-
-        else:
+        else:  # Fit component magnitudes of samples to exponential function
             fit_parameters = fit_matrix(training_h, exponential_function, sort_matrix=True)
             print_log('\tModeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
             k = fit_parameters[1]
@@ -431,16 +440,20 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
     # Compute sample coordinates
     print_log('Computing sample coordinates pulled by {} components with power {:.3f} ...'.format(n_pulling_components,
                                                                                                   component_pull_power))
-    training_samples = _get_sample_coordinates_via_pulling(component_coordinates, training_h,
-                                                           n_influencing_components=n_pulling_components,
-                                                           component_pulling_power=component_pull_power)
+    samples = _get_sample_coordinates(component_coordinates, training_h,
+                                      n_influencing_components=n_pulling_components,
+                                      power=component_pull_power)
 
-    # Load sample states
-    training_samples.ix[:, 'state'] = training_states
-    print_log('Loaded sample states.')
+    #
+    # Training-sample states
+    #
+    samples.ix[:, 'state'] = training_states
+    print_log('Loaded training-sample states.')
 
+    #
+    # Pulling ratios
+    #
     # Compute pulling ratios
-    # TODO: compartmentalize
     ratios = zeros(training_h.shape[1])
     if 0 < n_pullratio_components:
         print_log('Computing component-pull ratio for each sample ...')
@@ -460,24 +473,23 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
             ratios[i] = ratio
 
         # 0-1 normalize and rescale the ratio
-        training_samples.ix[:, 'pullratio'] = (ratios - ratios.min()) / (ratios.max() - ratios.min()) * pullratio_factor
+        samples.ix[:, 'pullratio'] = (ratios - ratios.min()) / (ratios.max() - ratios.min()) * pullratio_factor
 
-    # Compute grid probabilities and states
+    #
+    # Grid probabilities and states
+    #
     print_log('Computing grid probabilities and states ...')
-    # TODO: compartmentalize
     grid_probabilities = zeros((n_grids, n_grids), dtype=float)
     grid_states = zeros((n_grids, n_grids), dtype=int)
 
-    # Get KDE for each state using bandwidth created from all states' x & y coordinates
     # Compute bandwidths created from all states' x & y coordinates and rescale them
-    bandwidths = asarray([bcv(asarray(training_samples.ix[:, 'x'].tolist()))[0],
-                          bcv(asarray(training_samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
+    bandwidths = asarray([bcv(asarray(samples.ix[:, 'x'].tolist()))[0],
+                          bcv(asarray(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
 
-    # Compute densities
-    # States have 1 based-index
+    # KDE for each state using bandwidth created from all states' x & y coordinates
     kdes = {}
-    for s in training_samples.ix[:, 'state'].unique():
-        coordinates = training_samples.ix[training_samples.ix[:, 'state'] == s, ['x', 'y']]
+    for s in samples.ix[:, 'state'].unique():
+        coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
         kde = kde2d(asarray(coordinates.ix[:, 'x'], dtype=float), asarray(coordinates.ix[:, 'y'], dtype=float),
                     bandwidths, n=asarray([n_grids]), lims=asarray([0, 1, 0, 1]))
         kdes[s] = asarray(kde[2])
@@ -486,6 +498,7 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
     for i in range(n_grids):
         for j in range(n_grids):
 
+            # Find the maximum probability and its state
             grid_probability = 0
             grid_state = None
             for s, kde in kdes.items():
@@ -494,13 +507,17 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
                     grid_probability = a_probability
                     grid_state = s
 
+            # Assign the maximum probability and its state
             grid_probabilities[i, j] = grid_probability
             grid_states[i, j] = grid_state
 
-    if isinstance(testing_h, DataFrame):  # Use testing samples
-        print_log('Focusing on samples from testing H matrix ...')
+    #
+    # Testing data
+    #
+    if isinstance(testing_h, DataFrame):  # Load testing samples
+        print_log('Loading samples from testing data (testing_h) ...')
 
-        # Normalize testing H
+        # Normalize
         if testing_h_normalization == 'as_train':  # Normalize as done on h_train using the same normalizing factors
             testing_h = testing_h
             for r_i, r in training_h.iterrows():
@@ -508,37 +525,32 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
                     testing_h.ix[r_i, :] = testing_h.ix[r_i, :] / r.size()
                 else:
                     testing_h.ix[r_i, :] = (testing_h.ix[r_i, :] - r.mean()) / r.std()
-
         elif testing_h_normalization == 'clip_and_0-1':  # Normalize as done on h_train
             testing_h = normalize_pandas_object(
                 normalize_pandas_object(testing_h, method='-0-', axis=1).clip(-std_max, std_max), method='0-1', axis=1)
-
         elif not testing_h_normalization:  # Not normalizing
             testing_h = testing_h
-
         else:
             raise ValueError('Unknown normalization method for testing H {}.'.format(testing_h_normalization))
 
         # Compute testing-sample coordinates
-        testing_samples = _get_sample_coordinates_via_pulling(component_coordinates, testing_h,
-                                                              n_influencing_components=n_pulling_components,
-                                                              component_pulling_power=component_pull_power)
+        testing_samples = _get_sample_coordinates(component_coordinates, testing_h,
+                                                  n_influencing_components=n_pulling_components,
+                                                  power=component_pull_power)
         testing_samples.ix[:, 'state'] = testing_states
 
-        return component_coordinates, testing_samples, grid_probabilities, grid_states
+        samples = concat([samples, testing_samples])
 
-    else:
-        return component_coordinates, training_samples, grid_probabilities, grid_states
+    return component_coordinates, samples, grid_probabilities, grid_states
 
 
-def _get_sample_coordinates_via_pulling(component_x_coordinates, component_x_samples,
-                                        n_influencing_components='all', component_pulling_power=1):
+def _get_sample_coordinates(component_x_coordinates, component_x_samples, n_influencing_components='all', power=1):
     """
-    Compute sample coordinates based on component coordinates, which pull samples.
-    :param component_x_coordinates: pandas DataFrame; (n_points, [x, y])
+    Compute sample coordinates based on component coordinates (components pull samples).
+    :param component_x_coordinates: pandas DataFrame; (n_points, 2 [x, y])
     :param component_x_samples: pandas DataFrame; (n_points, n_samples)
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param component_pulling_power: str or number; power to raise components' influence on each sample
+    :param power: str or number; power to raise components' influence on each sample
     :return: pandas DataFrame; (n_samples, [x, y])
     """
 
@@ -557,8 +569,8 @@ def _get_sample_coordinates_via_pulling(component_x_coordinates, component_x_sam
             threshold = sorted(c)[-n_influencing_components]
             c[c < threshold] = 0
 
-        x = sum(c ** component_pulling_power * component_x_coordinates[:, 0]) / sum(c ** component_pulling_power)
-        y = sum(c ** component_pulling_power * component_x_coordinates[:, 1]) / sum(c ** component_pulling_power)
+        x = sum(c ** power * component_x_coordinates[:, 0]) / sum(c ** power)
+        y = sum(c ** power * component_x_coordinates[:, 1]) / sum(c ** power)
 
         xs[i] = x
         ys[i] = y
