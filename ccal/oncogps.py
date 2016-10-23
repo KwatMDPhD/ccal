@@ -222,8 +222,8 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-def make_oncogps_map(training_h, training_states, component_coordinates=None, std_max=3,
-                     testing_h=None, testing_h_normalization='clip_and_0-1', testing_states=None,
+def make_oncogps_map(training_h, training_states, components=None, std_max=3,
+                     testing_h=None, testing_h_normalization='exact_as_training', testing_states=None,
                      informational_mds=True, mds_seed=SEED,
                      fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=5,
                      n_pulling_components='all', component_pull_power='auto',
@@ -246,7 +246,7 @@ def make_oncogps_map(training_h, training_states, component_coordinates=None, st
     """
     :param training_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param training_states: iterable of int; (n_samples); sample states
-    :param component_coordinates: DataFrame; (n_components, 2 ('x', 'y')); component coordinates
+    :param components: DataFrame; (n_components, 2 ('x', 'y')); component coordinates
     :param std_max: number; threshold to clip standardized values
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param testing_h_normalization: str or None; {'as_train', 'clip_and_0-1', None}
@@ -301,21 +301,28 @@ def make_oncogps_map(training_h, training_states, component_coordinates=None, st
     :return: None
     """
 
-    # Compute coordinates of components and samples and compute sample probabilities and states at each grid.
-    cc, s, gp, gs = _make_onco_gps_elements(training_h, training_states, component_coordinates=component_coordinates,
-                                            std_max=std_max,
-                                            testing_h=testing_h, testing_h_normalization=testing_h_normalization,
-                                            testing_states=testing_states,
-                                            informational_mds=informational_mds, mds_seed=mds_seed,
-                                            fit_min=fit_min, fit_max=fit_max,
-                                            pull_power_min=pull_power_min, pull_power_max=pull_power_max,
-                                            n_pulling_components=n_pulling_components,
-                                            component_pull_power=component_pull_power,
-                                            n_pullratio_components=n_pullratio_components,
-                                            pullratio_factor=pullratio_factor,
-                                            n_grids=n_grids, kde_bandwidths_factor=kde_bandwidths_factor)
+    # Compute coordinates of components and samples and compute sample probabilities and states at each grid
+    components, samples, grid_probabilities, grid_states, pp = _make_onco_gps_elements(training_h, training_states,
+                                                                                       components=components,
+                                                                                       std_max=std_max,
+                                                                                       informational_mds=informational_mds,
+                                                                                       mds_seed=mds_seed,
+                                                                                       fit_min=fit_min, fit_max=fit_max,
+                                                                                       pull_power_min=pull_power_min,
+                                                                                       pull_power_max=pull_power_max,
+                                                                                       n_pulling_components=n_pulling_components,
+                                                                                       component_pull_power=component_pull_power,
+                                                                                       n_pullratio_components=n_pullratio_components,
+                                                                                       pullratio_factor=pullratio_factor,
+                                                                                       n_grids=n_grids,
+                                                                                       kde_bandwidths_factor=kde_bandwidths_factor)
+    if training_h:
+        testing_samples = load_testing_samples(training_h, components, testing_h, testing_states,
+                                               testing_h_normalization, std_max, n_pulling_components, pp)
 
-    _plot_onco_gps(cc, s, gp, gs, len(set(training_states)),
+
+
+    _plot_onco_gps(components, samples, grid_probabilities, grid_states,
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
                    title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
@@ -342,8 +349,7 @@ def make_oncogps_map(training_h, training_states, component_coordinates=None, st
 
 
 # TODO: allow non-int state labels
-def _make_onco_gps_elements(training_h, training_states, component_coordinates=None, std_max=3,
-                            testing_h=None, testing_h_normalization='as_train', testing_states=None,
+def _make_onco_gps_elements(h, states, components=None, std_max=3,
                             informational_mds=True, mds_seed=SEED,
                             fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=3,
                             n_pulling_components='all', component_pull_power='auto',
@@ -351,13 +357,10 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
                             n_grids=128, kde_bandwidths_factor=1):
     """
     Compute coordinates of components and samples and compute sample probabilities and states at each grid.
-    :param training_h: pandas DataFrame; (n_nmf_components, n_samples); NMF H matrix
-    :param training_states: iterable of int; (n_samples); sample states
-    :param component_coordinates: DataFrame; (n_nmf_components, 2 ('x', 'y')); component coordinates
+    :param h: pandas DataFrame; (n_nmf_components, n_samples); NMF H matrix
+    :param states: iterable of int; (n_samples); sample states
+    :param components: DataFrame; (n_nmf_components, 2 ('x', 'y')); component coordinates
     :param std_max: number; threshold to clip standardized values
-    :param testing_h: pandas DataFrame; (n_nmf_components, n_samples); NMF H matrix
-    :param testing_h_normalization: str or None; {'as_train', 'clip_and_0-1', None}
-    :param testing_states: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param fit_min: number;
@@ -381,55 +384,59 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
     # Preprocess
     #
     # Convert sample-state labels into Series matching corresponding sample
-    training_states = Series(training_states, index=training_h.columns)
+    states = Series(states, index=h.columns)
 
     # Drop columns with all-0 values before the normalization
-    training_h = drop_value_from_dataframe(training_h, 0)
+    h = drop_value_from_dataframe(h, 0)
+
     # Clip by standard deviation and 0-1 normalize the data
     print_log('Clipping std > {} and 0-1 normalizing rows ...'.format(std_max))
-    training_h = normalize_pandas_object(
-        normalize_pandas_object(training_h, method='-0-', axis=1).clip(-std_max, std_max),
-        method='0-1', axis=1)
-    # Drop columns with all-0 values after the normalization
-    training_h = drop_value_from_dataframe(training_h, 0)
+    h = normalize_pandas_object(normalize_pandas_object(h, method='-0-', axis=1).clip(-std_max, std_max), method='0-1',
+                                axis=1)
 
-    training_states = training_states.ix[training_h.columns]
+    # Drop columns with all-0 values after the normalization
+    h = drop_value_from_dataframe(h, 0)
+
+    states = states.ix[h.columns]
 
     #
     # Log
     #
-    print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*training_h.shape,
-                                                                                         len(set(training_states))))
-    print_log('\tComponents: {}'.format(set(training_h.index)))
-    print_log('\tStates: {}'.format(set(training_states)))
+    print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h.shape, len(set(states))))
+    print_log('\tComponents: {}'.format(set(h.index)))
+    print_log('\tStates: {}'.format(set(states)))
 
     #
     # Component coordinates
     #
-    if not isinstance(component_coordinates, DataFrame):  # Compute component coordinates
+    if not isinstance(components, DataFrame):  # Compute component coordinates
         if informational_mds:  # Use informational computation
             print_log('Computing component coordinates with informational distance ...')
             distance_function = information_coefficient
+
         else:  # Use Euclidean computation
             print_log('Computing component coordinates with Euclidean distance ...')
             distance_function = None
-        component_coordinates = mds(training_h, distance_function=distance_function, mds_seed=mds_seed,
-                                    standardize=True)
+
+        components = mds(h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
+
     else:  # Use predefined component coordinates
-        print_log('Using predefined component coordinates ...'.format(component_coordinates))
-        component_coordinates.index = training_h.index
+        print_log('Using predefined component coordinates ...'.format(components))
+        components.index = h.index
 
     #
     # Sample coordinates
     #
-    # Compute component pulling power
+    # Compute component-pull power
     if component_pull_power == 'auto':
         print_log('Computing component-pull power ...')
-        if training_h.shape[0] < 4:  # Too few data points to model
+
+        if h.shape[0] < 4:  # Too few data points to model
             print_log('\tCouldn\'t model with Ae^(kx) + C so set component_pull_power to be 1.')
             component_pull_power = 1
+
         else:  # Fit component magnitudes of samples to exponential function
-            fit_parameters = fit_matrix(training_h, exponential_function, sort_matrix=True)
+            fit_parameters = fit_matrix(h, exponential_function, sort_matrix=True)
             print_log('\tModeled columns by {}e^({}x) + {}.'.format(*fit_parameters))
             k = fit_parameters[1]
 
@@ -440,29 +447,25 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
     # Compute sample coordinates
     print_log('Computing sample coordinates pulled by {} components with power {:.3f} ...'.format(n_pulling_components,
                                                                                                   component_pull_power))
-    samples = _get_sample_coordinates(component_coordinates, training_h,
-                                      n_influencing_components=n_pulling_components,
+    samples = _get_sample_coordinates(components, h, n_influencing_components=n_pulling_components,
                                       power=component_pull_power)
 
-    #
-    # Training-sample states
-    #
-    samples.ix[:, 'state'] = training_states
-    print_log('Loaded training-sample states.')
+    # Load sample states
+    samples.ix[:, 'state'] = states
 
     #
-    # Pulling ratios
+    # Pull ratios
     #
-    # Compute pulling ratios
-    ratios = zeros(training_h.shape[1])
+    # Compute component-pull ratios
+    ratios = zeros(h.shape[1])
     if 0 < n_pullratio_components:
         print_log('Computing component-pull ratio for each sample ...')
 
         if n_pullratio_components < 1:  # if n_pullratio_components is a fraction, compute its respective number
-            n_pullratio_components = training_h.shape[0] * n_pullratio_components
+            n_pullratio_components = h.shape[0] * n_pullratio_components
 
         # Compute component-pull ration for each sample (column)
-        for i, (c_idx, c) in enumerate(training_h.iteritems()):
+        for i, (c_idx, c) in enumerate(h.iteritems()):
             # Sort column
             c_sorted = c.sort_values(ascending=False)
 
@@ -511,37 +514,33 @@ def _make_onco_gps_elements(training_h, training_states, component_coordinates=N
             grid_probabilities[i, j] = grid_probability
             grid_states[i, j] = grid_state
 
-    #
-    # Testing data
-    #
-    if isinstance(testing_h, DataFrame):  # Load testing samples
-        print_log('Loading samples from testing data (testing_h) ...')
+    return components, samples, grid_probabilities, grid_states, component_pull_power
 
-        # Normalize
-        if testing_h_normalization == 'as_train':  # Normalize as done on h_train using the same normalizing factors
-            testing_h = testing_h
-            for r_i, r in training_h.iterrows():
-                if r.std() == 0:
-                    testing_h.ix[r_i, :] = testing_h.ix[r_i, :] / r.size()
-                else:
-                    testing_h.ix[r_i, :] = (testing_h.ix[r_i, :] - r.mean()) / r.std()
-        elif testing_h_normalization == 'clip_and_0-1':  # Normalize as done on h_train
-            testing_h = normalize_pandas_object(
-                normalize_pandas_object(testing_h, method='-0-', axis=1).clip(-std_max, std_max), method='0-1', axis=1)
-        elif not testing_h_normalization:  # Not normalizing
-            testing_h = testing_h
-        else:
-            raise ValueError('Unknown normalization method for testing H {}.'.format(testing_h_normalization))
 
-        # Compute testing-sample coordinates
-        testing_samples = _get_sample_coordinates(component_coordinates, testing_h,
-                                                  n_influencing_components=n_pulling_components,
-                                                  power=component_pull_power)
-        testing_samples.ix[:, 'state'] = testing_states
+def load_testing_samples(training_h, components, testing_h, testing_states,
+                         normalization, std_max, n_pulling_components, component_pull_power):
+    print_log('Loading testing samples ...')
 
-        samples = concat([samples, testing_samples])
+    # Normalize
+    if normalization == 'exact_as_training':  # Normalize as done on training H using the same normalizing factors
+        for r_i, r in training_h.iterrows():
+            if r.std() == 0:
+                testing_h.ix[r_i, :] = testing_h.ix[r_i, :] / r.size()
+            else:
+                testing_h.ix[r_i, :] = (testing_h.ix[r_i, :] - r.mean()) / r.std()
 
-    return component_coordinates, samples, grid_probabilities, grid_states
+    elif normalization == 'as_training':  # Normalize as done on training H
+        testing_h = normalize_pandas_object(
+            normalize_pandas_object(testing_h, method='-0-', axis=1).clip(-std_max, std_max), method='0-1', axis=1)
+
+    # Compute sample coordinates
+    samples = _get_sample_coordinates(components, testing_h, n_influencing_components=n_pulling_components,
+                                      power=component_pull_power)
+
+    # Load testing-sample states
+    samples.ix[:, 'state'] = testing_states
+
+    return samples
 
 
 def _get_sample_coordinates(component_x_coordinates, component_x_samples, n_influencing_components='all', power=1):
@@ -582,7 +581,7 @@ def _get_sample_coordinates(component_x_coordinates, component_x_samples, n_infl
     return sample_coordinates
 
 
-def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_states, n_states_train,
+def _plot_onco_gps(components, samples, grid_probabilities, grid_states,
                    annotation=(), annotation_name='', annotation_type='continuous', std_max=3,
                    title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                    subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=None,
@@ -599,12 +598,11 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                    filepath=None):
     """
     Plot Onco-GPS map.
-    :param component_coordinates: pandas DataFrame; (n_components, [x, y]);
+    :param components: pandas DataFrame; (n_components, [x, y]);
         output from _make_onco_gps_elements
     :param samples: pandas DataFrame; (n_samples, [x, y, state])
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
-    :param n_states_train: int; number of states used to create Onco-GPS
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
@@ -644,9 +642,14 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
     :return: None
     """
 
+    n_training_states = sum(samples.ix[:, 'category'] == 'training')
+
     x_grids = linspace(0, 1, grid_probabilities.shape[0])
     y_grids = linspace(0, 1, grid_probabilities.shape[1])
 
+    #
+    # Figure and axes
+    #
     # Set up figure and axes
     plt.figure(figsize=FIGURE_SIZE)
     gridspec = GridSpec(10, 16)
@@ -662,54 +665,63 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
     ax_legend = plt.subplot(gridspec[1:, 14:])
     ax_legend.axis('off')
 
-    # Plot title
+    #
+    # Title
+    #
     ax_title.text(0, 0.9, title, fontsize=title_fontsize, color=title_fontcolor, weight='bold')
-    ax_title.text(0, 0.39,
-                  '{} samples, {} components, and {} states'.format(samples.shape[0], component_coordinates.shape[0],
-                                                                    n_states_train),
+    ax_title.text(0, 0.39, '{} samples, {} components, and {} states'.format(samples.shape[0], components.shape[0],
+                                                                             n_training_states),
                   fontsize=subtitle_fontsize, color=subtitle_fontcolor, weight='bold')
 
+    #
+    # Components
+    #
     # Plot components and their labels
-    ax_map.plot(component_coordinates.ix[:, 'x'], component_coordinates.ix[:, 'y'], marker='D',
-                linestyle='',
+    ax_map.plot(components.ix[:, 'x'], components.ix[:, 'y'], marker='D', linestyle='',
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
-                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor, clip_on=False,
-                aa=True, zorder=6)
+                markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor,
+                clip_on=False, aa=True, zorder=6)
+
     # Compute convexhull
-    convexhull = ConvexHull(component_coordinates)
+    convexhull = ConvexHull(components)
     convexhull_region = Path(convexhull.points[convexhull.vertices])
+
     # Put labels on top or bottom of the component markers
     component_text_verticalshift = -0.03
-    for i in component_coordinates.index:
+    for i in components.index:
         if component_text_position == 'auto':
-
-            if convexhull_region.contains_point((component_coordinates.ix[i, 'x'],
-                                                 component_coordinates.ix[i, 'y'] + component_text_verticalshift)):
+            if convexhull_region.contains_point((components.ix[i, 'x'],
+                                                 components.ix[i, 'y'] + component_text_verticalshift)):
                 component_text_verticalshift *= -1
+
         elif component_text_position == 'top':
             component_text_verticalshift *= -1
+
         elif component_text_position == 'bottom':
             pass
-        x, y = component_coordinates.ix[i, 'x'], component_coordinates.ix[
-            i, 'y'] + component_text_verticalshift
 
-        ax_map.text(x, y, i,
-                    fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
+        x, y = components.ix[i, 'x'], components.ix[i, 'y'] + component_text_verticalshift
+        ax_map.text(x, y, i, fontsize=component_fontsize, color=component_markerfacecolor, weight='bold',
                     horizontalalignment='center', verticalalignment='center', zorder=6)
 
     # Plot Delaunay triangulation
-    delaunay = Delaunay(component_coordinates)
+    delaunay = Delaunay(components)
     ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, zorder=4)
 
+    #
+    # Contours
+    #
     # Plot contours
     if n_contours > 0:
         ax_map.contour(x_grids, y_grids, grid_probabilities, n_contours, corner_mask=True,
                        linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha, aa=True, zorder=2)
 
+    #
+    # State colors
+    #
     # Assign colors to states
     states_color = {}
-    # TODO: " --> '
     if colors == 'paper':
         colors = ['#cd96cd', '#5cacee', '#43cd80', '#ffa500', '#cd5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
                   '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
@@ -721,8 +733,11 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
             else:
                 states_color[s] = colors[i]
         else:
-            states_color[s] = CMAP_CATEGORICAL(int(s / n_states_train * CMAP_CATEGORICAL.N))
+            states_color[s] = CMAP_CATEGORICAL(int(s / n_training_states * CMAP_CATEGORICAL.N))
 
+    #
+    # Background
+    #
     # Plot background
     if background_markersize > 0:
         grid_probabilities_min = grid_probabilities.min()
@@ -744,11 +759,15 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                     ax_map.plot(x_grids[i], y_grids[j], marker='s', markersize=background_mask_markersize,
                                 markerfacecolor='w', aa=True, zorder=3)
 
+    #
+    # Annotation
+    #
     if any(annotation):  # Plot samples, annotation, sample legends, and annotation legends
         # Set up annotation
         a = Series(annotation)
         a.index = samples.index
-        # Set up annotation min, mean, max, and colormap.
+
+        # Set up annotation min, mean, max, and colormap
         if annotation_type == 'continuous':
             samples.ix[:, 'annotation'] = normalize_pandas_object(a, method='-0-').clip(-std_max, std_max)
             annotation_min = max(-std_max, samples.ix[:, 'annotation'].min())
@@ -827,7 +846,7 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
         # Set up y label, ticks, and lines
         ax_legend.set_ylabel('')
         ax_legend.set_yticklabels(
-            ['State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)) for s in range(1, n_states_train + 1)],
+            ['State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)) for s in range(1, n_training_states + 1)],
             fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
         # Plot sample markers
@@ -844,7 +863,6 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
             ColorbarBase(cax, **kw)
 
     else:  # Plot samples and sample legends
-        ax_legend.axis([0, 1, 0, 1])
         # Plot samples
         for idx, s in samples.iterrows():
             c = states_color[s.ix['state']]
@@ -861,10 +879,11 @@ def _plot_onco_gps(component_coordinates, samples, grid_probabilities, grid_stat
                             markerfacecolor='none',
                             markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
                             clip_on=False, zorder=5)
-        # Plot sample legends
 
+        # Plot sample legends
+        ax_legend.axis([0, 1, 0, 1])
         for i, s in enumerate(samples.ix[:, 'state'].unique()):
-            y = 1 - float(1 / (n_states_train + 1)) * (i + 1)
+            y = 1 - float(1 / (n_training_states + 1)) * (i + 1)
             c = states_color[s]
             ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
             ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)),
