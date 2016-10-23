@@ -121,7 +121,7 @@ def solve_for_components(a_matrix, w_matrix, filepath_prefix=None):
     Get H matrix of a_matrix in the space of w_matrix by solving W * H = A for H.
     :param a_matrix: str or DataFrame; (n_rows, n_columns)
     :param w_matrix: str or DataFrame; (n_rows, k)
-    :param filepath_prefix: str;
+    :param filepath_prefix: str; filepath_prefix_solved_nmf_h_k{}.{.gct, .pdf} will be saved
     :return: DataFrame; (k, n_columns)
     """
 
