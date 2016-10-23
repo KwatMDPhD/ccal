@@ -225,9 +225,8 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 def make_oncogps_map(training_h, training_states, components=None, std_max=3,
                      testing_h=None, testing_h_normalization='exact_as_training', testing_states=None,
                      informational_mds=True, mds_seed=SEED,
-                     fit_min=0, fit_max=2, pull_power_min=1, pull_power_max=5,
-                     n_pulling_components='all', component_pull_power='auto',
-                     n_pullratio_components=0, pullratio_factor=5,
+                     power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
+                     n_pulls=None, component_ratio=0,
                      n_grids=128, kde_bandwidths_factor=1,
                      annotation=(), annotation_name='', annotation_type='continuous',
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
@@ -244,23 +243,22 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
                      effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
                      effectplot_median_markeredgecolor='#FF0082', filepath=None):
     """
-    :param training_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param training_h: DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param training_states: iterable of int; (n_samples); sample states
-    :param components: DataFrame; (n_components, 2 ('x', 'y')); component coordinates
+    :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param std_max: number; threshold to clip standardized values
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param testing_h_normalization: str or None; {'as_train', 'clip_and_0-1', None}
     :param testing_states: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :param power: str or number; power to raise components' influence on each sample
     :param fit_min: number;
     :param fit_max: number;
-    :param pull_power_min: number;
-    :param pull_power_max: number;
-    :param n_pulling_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param component_pull_power: str or number; power to raise components' influence on each sample
-    :param n_pullratio_components: number; number if int; percentile if float & < 1
-    :param pullratio_factor: number;
+    :param power_min: number;
+    :param power_max: number;
+    :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param component_ratio: number; number if int; percentile if float & < 1
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
@@ -298,27 +296,26 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
     :param effectplot_mean_markeredgecolor: matplotlib color;
     :param effectplot_median_markeredgecolor: matplotlib color;
     :param filepath: str;
-    :return: None
+    :return:
     """
 
     # Compute coordinates of components and samples and compute sample probabilities and states at each grid
-    components, samples, grid_probabilities, grid_states, pp = _make_onco_gps_elements(training_h, training_states,
-                                                                                       components=components,
-                                                                                       std_max=std_max,
-                                                                                       informational_mds=informational_mds,
-                                                                                       mds_seed=mds_seed,
-                                                                                       fit_min=fit_min, fit_max=fit_max,
-                                                                                       power_min=pull_power_min,
-                                                                                       power_max=pull_power_max,
-                                                                                       n_pulling_components=n_pulling_components,
-                                                                                       power=component_pull_power,
-                                                                                       component_ratio=n_pullratio_components,
-                                                                                       pullratio_factor=pullratio_factor,
-                                                                                       n_grids=n_grids,
-                                                                                       kde_bandwidths_factor=kde_bandwidths_factor)
+    components, samples, grid_probabilities, grid_states, p = _make_onco_gps_elements(training_h, training_states,
+                                                                                      components=components,
+                                                                                      std_max=std_max,
+                                                                                      informational_mds=informational_mds,
+                                                                                      mds_seed=mds_seed,
+                                                                                      fit_min=fit_min, fit_max=fit_max,
+                                                                                      power_min=power_min,
+                                                                                      power_max=power_max,
+                                                                                      n_pulls=n_pulls,
+                                                                                      power=power,
+                                                                                      component_ratio=component_ratio,
+                                                                                      n_grids=n_grids,
+                                                                                      kde_bandwidths_factor=kde_bandwidths_factor)
     if training_h:
         testing_samples = _load_testing_samples(training_h, components, testing_h, testing_states,
-                                                testing_h_normalization, std_max, n_pulling_components, pp)
+                                                testing_h_normalization, std_max, n_pulls, p)
 
     _plot_onco_gps(components, samples, grid_probabilities, grid_states,
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
@@ -350,8 +347,8 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
 def _make_onco_gps_elements(h, states, components=None, std_max=3,
                             informational_mds=True, mds_seed=SEED,
                             fit_min=0, fit_max=2, power_min=1, power_max=3,
-                            n_pulling_components='all', power='auto',
-                            component_ratio=0, pullratio_factor=5,
+                            n_pulls=None, power=None,
+                            component_ratio=0,
                             n_grids=128, kde_bandwidths_factor=1):
     """
     Compute coordinates of components and samples and compute sample probabilities and states at each grid.
@@ -365,15 +362,14 @@ def _make_onco_gps_elements(h, states, components=None, std_max=3,
     :param fit_max: number;
     :param power_min: number;
     :param power_max: number;
-    :param n_pulling_components: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
     :param power: str or number; power to raise components' influence on each sample
     :param component_ratio: number; number if int; percentile if < 1
-    :param pullratio_factor: number;
     :param n_grids: int;
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :return: DataFrame, DataFrame, array, and array;
-                 components (n_components, [x, y]),
-                 samples (n_samples, [x, y, state]),
+                 components (n_components, 2 [x, y]),
+                 samples (n_samples, 4 [x, y, state, component_ratio]),
                  grid_probabilities (n_grids, n_grids),
                  and grid_states (n_grids, n_grids)
     """
@@ -402,22 +398,21 @@ def _make_onco_gps_elements(h, states, components=None, std_max=3,
     samples.ix[:, 'state'] = states
 
     # Compute sample coordinates
-    if power == 'auto':
-        print_log('Computing component-pull power ...')
+    if not power:
+        print_log('Computing component power ...')
         if h.shape[0] < 4:
-            print_log('\tToo few data points; couldn\'t model with Ae^(kx) + C.')
+            print_log('\tToo few data points to model with Ae^(kx) + C.')
             power = 1
         else:
             power = _compute_component_power(h, fit_min, fit_max, power_min, power_max)
 
-    print_log('Computing sample coordinates using {} components and {:.3f} power ...'.format(n_pulling_components,
+    print_log('Computing sample coordinates using {} components and {:.3f} power ...'.format(n_pulls,
                                                                                              power))
-    samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(components, h,
-                                                            n_influencing_components=n_pulling_components, power=power)
+    samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(components, h, n_pulls, power)
 
     if component_ratio:
-        print_log('Computing compunent ratios ...')
-        samples.ix[:, 'component_ratio'] = _compute_component_ratio(h, n_pulling_components)
+        print_log('Computing component ratios ...')
+        samples.ix[:, 'component_ratio'] = _compute_component_ratio(h, n_pulls)
     else:
         samples.ix[:, 'component_ratio'] = 1
 
@@ -427,7 +422,7 @@ def _make_onco_gps_elements(h, states, components=None, std_max=3,
     return components, samples, grid_probabilities, grid_states, power
 
 
-def _process_h_and_states(h, states, std_max=3):
+def _process_h_and_states(h, states, std_max):
     """
     Make sure states is Series.
     Normalize h.
@@ -498,21 +493,21 @@ def _compute_component_ratio(h, n):
     return ratios
 
 
-def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_influencing_components='all', power=1):
+def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_influencing_components, power):
     """
     Compute sample coordinates based on component coordinates (components pull samples).
-    :param component_x_coordinates: pandas DataFrame; (n_points, 2 [x, y])
-    :param component_x_samples: pandas DataFrame; (n_points, n_samples)
+    :param component_x_coordinates: DataFrame; (n_points, 2 [x, y])
+    :param component_x_samples: DataFrame; (n_points, n_samples)
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param power: str or number; power to raise components' influence on each sample
-    :return: pandas DataFrame; (n_samples, [x, y])
+    :param power: number; power to raise components' influence on each sample
+    :return: DataFrame; (n_samples, 2 [x, y])
     """
 
     component_x_coordinates = asarray(component_x_coordinates)
 
     sample_coordinates = empty((component_x_samples.shape[1], 2))
 
-    if n_influencing_components == 'all':  # n_influencing_components = number of all components
+    if not n_influencing_components:  # n_influencing_components = number of all components
         n_influencing_components = component_x_samples.shape[0]
 
     for i, (_, c) in enumerate(component_x_samples.iteritems()):
@@ -617,12 +612,12 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states,
                    filepath=None):
     """
     Plot Onco-GPS map.
-    :param components: pandas DataFrame; (n_components, [x, y]);
+    :param components: DataFrame; (n_components, [x, y]);
         output from _make_onco_gps_elements
-    :param samples: pandas DataFrame; (n_samples, [x, y, state])
+    :param samples: DataFrame; (n_samples, [x, y, state])
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
-    :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
+    :param annotation: Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param std_max: number; threshold to clip standardized values
