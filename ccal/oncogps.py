@@ -13,7 +13,7 @@ Authors:
 
 from os.path import join
 from numpy import asarray, zeros, empty, linspace
-from pandas import DataFrame, Series, concat, isnull
+from pandas import DataFrame, Series, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
@@ -295,23 +295,23 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
     :param effectplot_mean_markeredgecolor: matplotlib color;
     :param effectplot_median_markeredgecolor: matplotlib color;
     :param filepath: str;
-    :return:
+    :return: DataFrame and DataFrame; components and samples
     """
 
     # Compute coordinates of components and samples and compute sample probabilities and states at each grid
-    C, S, GP, GS, P = _make_onco_gps_elements(training_h, training_states, std_max,
-                                              components, informational_mds, mds_seed,
-                                              power, fit_min, fit_max, power_min, power_max, n_pulls,
-                                              component_ratio,
-                                              128, kde_bandwidths_factor)
-    if training_h:
+    components, samples, gp, gs = _make_onco_gps_elements(training_h, training_states, std_max,
+                                                          components, informational_mds, mds_seed,
+                                                          power, fit_min, fit_max, power_min, power_max, n_pulls,
+                                                          component_ratio,
+                                                          128, kde_bandwidths_factor)
+    if isinstance(testing_h, DataFrame):
         testing_h = _normalize_testing_h(testing_h, testing_h_normalization, training_h, std_max)
-        TS = _load_samples(testing_h, testing_states,
-                           power, fit_min, fit_max, power_min, power_max, n_pulls,
-                           C,
-                           component_ratio)
+        samples = _load_samples(testing_h, testing_states,
+                                power, fit_min, fit_max, power_min, power_max, n_pulls,
+                                components,
+                                component_ratio)
 
-    _plot_onco_gps(C, S, GP, GS,
+    _plot_onco_gps(components, samples, gp, gs, len(set(training_states)),
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
                    title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
@@ -335,6 +335,8 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
                    effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                    effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
                    filepath=filepath)
+
+    return components, samples
 
 
 # TODO: allow non-int state labels
@@ -380,10 +382,10 @@ def _make_onco_gps_elements(h, states, std_max,
         components.index = h.index
     else:
         if informational_mds:
-            print_log('Computing component coordinates using informational metric ...')
+            print_log('Computing component coordinates using informational distance ...')
             distance_function = information_coefficient
         else:
-            print_log('Computing component coordinates using Euclidean metric ...')
+            print_log('Computing component coordinates using Euclidean distance ...')
             distance_function = None
         components = mds(h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
 
@@ -393,7 +395,7 @@ def _make_onco_gps_elements(h, states, std_max,
     print_log('Computing grid probabilities and states ...')
     grid_probabilities, grid_states = _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_factor)
 
-    return components, samples, grid_probabilities, grid_states, power
+    return components, samples, grid_probabilities, grid_states
 
 
 def _process_h_and_states(h, states, std_max):
@@ -448,7 +450,7 @@ def _load_samples(h, states, power, fit_min, fit_max, power_min, power_max, n_pu
     if not power:
         print_log('Computing component power ...')
         if h.shape[0] < 4:
-            print_log('\tToo few data points to model with Ae^(kx) + C.')
+            print_log('\tCould\'t model with Ae^(kx) + C; too few data points.')
             power = 1
         else:
             power = _compute_component_power(h, fit_min, fit_max, power_min, power_max)
@@ -528,7 +530,7 @@ def _compute_component_ratio(h, n):
 
     ratios = zeros(h.shape[1])
 
-    if n < 1:  # If n is a fraction, compute its respective number
+    if n and n < 1:  # If n is a fraction, compute its respective number
         n = h.shape[0] * n
 
     # Compute pull ratio for each sample (column)
@@ -607,7 +609,7 @@ def _normalize_testing_h(testing_h, normalization, training_h, std_max):
     return testing_h
 
 
-def _plot_onco_gps(components, samples, grid_probabilities, grid_states,
+def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_training_states,
                    annotation=(), annotation_name='', annotation_type='continuous', std_max=3,
                    title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                    subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=None,
@@ -667,8 +669,6 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states,
     :param filepath: str;
     :return: None
     """
-
-    n_training_states = sum(samples.ix[:, 'category'] == 'training')
 
     x_grids = linspace(0, 1, grid_probabilities.shape[0])
     y_grids = linspace(0, 1, grid_probabilities.shape[1])
@@ -752,7 +752,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states,
         colors = ['#cd96cd', '#5cacee', '#43cd80', '#ffa500', '#cd5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
                   '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
                   '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008b', '#d2b48c', '#006400']
-    for i, s in enumerate(samples.ix[:, 'state'].unique()):
+    for i, s in enumerate(range(1, n_training_states + 1)):
         if colors:
             if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
                 states_color[s] = colors(s)
