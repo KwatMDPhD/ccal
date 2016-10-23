@@ -148,6 +148,8 @@ def solve_for_components(a_matrix, w_matrix, filepath=None):
     if filepath:  # Save H matrix
         write_gct(h_matrix, filepath)
 
+    plot_nmf(w_matrix=w_matrix, h_matrix=h_matrix)
+
     return h_matrix
 
 
