@@ -410,6 +410,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                    effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                    effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
                    filepath=filepath)
+    return training_h, testing_h
 
 
 # ======================================================================================================================
@@ -470,18 +471,23 @@ def _normalize_h(h, std_max, normalizing_h=None):
     """
 
     if isinstance(normalizing_h, DataFrame):  # Normalize using statistics from normalizing-H matrix
+        # print('USING NORMALING_H: A')
+        # print(normalizing_h.iloc[:, :3])
         # -0-
         for r_i, r in normalizing_h.iterrows():
             mean = r.mean()
             std = r.std()
             if std == 0:
                 h.ix[r_i, :] = h.ix[r_i, :] / r.size
+                normalizing_h.ix[r_i, :] = r / r.size
             else:
                 h.ix[r_i, :] = (h.ix[r_i, :] - mean) / std
+                normalizing_h.ix[r_i, :] = (r - mean) / std
 
         # Clip
         h = h.clip(-std_max, std_max)
-
+        # print('USING NORMALING_H: B')
+        # print(normalizing_h.iloc[:, :3])
         # 0-1
         for r_i, r in normalizing_h.iterrows():
             r_min = r.min()
@@ -496,8 +502,13 @@ def _normalize_h(h, std_max, normalizing_h=None):
         h = normalize_pandas(h, '-0-', axis=1)
         # Clip
         h = h.clip(-std_max, std_max)
+        # print('NOT USING NORMALING_H: B')
+        # print(h.iloc[:, :3])
         # 0-1
         h = normalize_pandas(h, '0-1', axis=1)
+
+    # print('\nNORMALIZED')
+    # print(h.iloc[:, :3])
 
     return h
 
@@ -930,22 +941,20 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
             ColorbarBase(cax, **kw)
 
     else:  # Plot samples and sample legends
+        print(ax_map.axis())
         # Plot samples
         for idx, s in samples.iterrows():
+            print(idx, s)
+            x = s.ix['x']
+            y = s.ix['y']
             c = states_color[s.ix['state']]
-            if 'pullratio' in samples.columns:
-                a = samples.ix[idx, 'pullratio']
-            else:
-                a = 1
-            ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize, markerfacecolor=c,
-                        alpha=a,
-                        markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
-                        clip_on=False, zorder=5)
-            if a < 1:
-                ax_map.plot(s.ix['x'], s.ix['y'], marker='o', markersize=sample_markersize,
-                            markerfacecolor='none',
-                            markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor, aa=True,
-                            clip_on=False, zorder=5)
+            a = s.ix['component_ratio']
+
+            ax_map.plot(x, y, marker='o', markersize=sample_markersize, markerfacecolor=c, alpha=a,
+                        markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
+                        aa=True, clip_on=False, zorder=5)
+
+            ax_map.text(x, y, idx, weight='bold')
 
         # Plot sample legends
         ax_legend.axis([0, 1, 0, 1])
