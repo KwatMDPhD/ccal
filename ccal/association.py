@@ -24,7 +24,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, title_string, untitle_string, information_coefficient, \
-    parallelize, get_unique_in_order, normalize_pandas_object, compare_matrices, FIGURE_SIZE, SPACING, \
+    parallelize, get_unique_in_order, normalize_pandas, compare_matrices, FIGURE_SIZE, SPACING, \
     CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, FONT_SUBTITLE, save_plot, plot_clustermap
 
 
@@ -720,7 +720,7 @@ def plot_association_summary_panel(target, features_bundle, annotations_bundle, 
 
 def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
     if data_type == 'continuous':
-        return normalize_pandas_object(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_ASSOCIATION
+        return normalize_pandas(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_ASSOCIATION
     elif data_type == 'categorical':
         return dataframe.copy(), 0, len(unique(dataframe)), CMAP_CATEGORICAL
     elif data_type == 'binary':

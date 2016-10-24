@@ -855,7 +855,7 @@ def mds(matrix, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=100
     coordinates = DataFrame(coordinates, index=matrix.index, columns=['x', 'y'])
 
     if standardize:  # Rescale coordinates between 0 and 1
-        coordinates = normalize_pandas_object(coordinates, method='0-1', axis=0)
+        coordinates = normalize_pandas(coordinates, method='0-1', axis=0)
 
     return coordinates
 
@@ -864,48 +864,48 @@ def mds(matrix, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=100
 # Normalization
 # ======================================================================================================================
 # TODO: make sure the normalization when size == 0 or range == 0 is correct
-def normalize_pandas_object(pandas_object, method, axis=None, n_ranks=10000):
+def normalize_pandas(dataframe, method, axis=None, n_ranks=10000):
     """
     Normalize a pandas object.
-    :param pandas_object: pandas DataFrame or Series;
+    :param dataframe: DataFrame or Series;
     :param method: str; normalization type; {'-0-', '0-1', 'rank'}
     :param n_ranks: number; normalization factor for rank normalization: rank / size * n_ranks
     :param axis: int; None for global, 0 for by-column, and 1 for by-row normalization
-    :return: pandas DataFrame or Series; normalized DataFrame or Series
+    :return: DataFrame or Series; normalized DataFrame or Series
     """
 
-    if isinstance(pandas_object, Series):  # Series
-        return normalize_series(pandas_object, method=method, n_ranks=n_ranks)
+    if isinstance(dataframe, Series):  # Series
+        return normalize_series(dataframe, method, n_ranks=n_ranks)
 
-    elif isinstance(pandas_object, DataFrame):  # DataFrame
+    elif isinstance(dataframe, DataFrame):
         if axis == 0 or axis == 1:  # Normalize by axis (Series)
-            return pandas_object.apply(normalize_series, **{'method': method, 'n_ranks': n_ranks}, axis=axis)
+            return dataframe.apply(normalize_series, **{'method': method, 'n_ranks': n_ranks}, axis=axis)
 
         else:  # Normalize globally
             if method == '-0-':
-                obj_mean = pandas_object.values.mean()
-                obj_std = pandas_object.values.std()
+                obj_mean = dataframe.values.mean()
+                obj_std = dataframe.values.std()
                 if obj_std == 0:
                     # print_log('Not \'-0-\' normalizing (standard deviation is 0), but \'/ size\' normalizing.')
-                    return pandas_object / pandas_object.size
+                    return dataframe / dataframe.size
                 else:
-                    return (pandas_object - obj_mean) / obj_std
+                    return (dataframe - obj_mean) / obj_std
 
             elif method == '0-1':
-                obj_min = pandas_object.values.min()
-                obj_max = pandas_object.values.max()
+                obj_min = dataframe.values.min()
+                obj_max = dataframe.values.max()
                 if obj_max - obj_min == 0:
                     # print_log('Not \'0-1\' normalizing (data range is 0), but \'/ size\' normalizing.')
-                    return pandas_object / pandas_object.size
+                    return dataframe / dataframe.size
                 else:
-                    return (pandas_object - obj_min) / (obj_max - obj_min)
+                    return (dataframe - obj_min) / (obj_max - obj_min)
 
             elif method == 'rank':
                 # TODO: implement global rank normalization
                 raise ValueError('Normalizing combination of \'rank\' & axis=\'all\' has not been implemented yet.')
 
 
-def normalize_series(series, method='-0-', n_ranks=10000):
+def normalize_series(series, method, n_ranks=10000):
     """
     Normalize a pandas series.
     :param series: pandas Series;
@@ -1551,7 +1551,7 @@ def plot_heatmap(dataframe, data_type='continuous',
     df = dataframe.copy()
 
     if normalization_method:
-        df = normalize_pandas_object(df, normalization_method, axis=normalization_axis)
+        df = normalize_pandas(df, normalization_method, axis=normalization_axis)
     values = unique(df.values)
 
     if any(row_annotation) or any(column_annotation):
@@ -1836,7 +1836,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=T
 
     # Plot W
     if normalize:
-        w_matrix = normalize_pandas_object(w_matrix, method='-0-', axis=0).clip(-max_std, max_std)
+        w_matrix = normalize_pandas(w_matrix, method='-0-', axis=0).clip(-max_std, max_std)
     heatmap(w_matrix, cmap=CMAP_CONTINUOUS, yticklabels=False, ax=ax_w)
     ax_w.set_title('W Matrix for k={}'.format(w_matrix.shape[1]), **FONT_TITLE)
     ax_w.set_xlabel('Component', **FONT_SUBTITLE)
@@ -1846,7 +1846,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=T
 
     # Plot H
     if normalize:
-        h_matrix = normalize_pandas_object(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
+        h_matrix = normalize_pandas(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
     heatmap(h_matrix, cmap=CMAP_CONTINUOUS, xticklabels=False, cbar_kws={'orientation': 'horizontal'}, ax=ax_h)
     ax_h.set_title('H Matrix for k={}'.format(h_matrix.shape[0]), **FONT_TITLE)
     ax_h.set_xlabel('Sample', **FONT_SUBTITLE)

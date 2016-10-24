@@ -27,7 +27,7 @@ from seaborn import violinplot, boxplot
 
 from . import SEED
 from .support import EPS, print_log, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
-    nmf_consensus_cluster, information_coefficient, normalize_pandas_object, hierarchical_consensus_cluster, \
+    nmf_consensus_cluster, information_coefficient, normalize_pandas, hierarchical_consensus_cluster, \
     exponential_function, mds, compute_association_and_pvalue, solve_matrix_linear_equation, \
     drop_value_from_dataframe, \
     FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, plot_nmf, \
@@ -62,7 +62,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
 
     # Rank normalize the input matrix by column
     # TODO: try changing n_ranks (choose automatically)
-    matrix = normalize_pandas_object(matrix, 'rank', n_ranks=10000, axis=0)
+    matrix = normalize_pandas(matrix, 'rank', n_ranks=10000, axis=0)
     plot_clustermap(matrix, title='(Rank-normalized) Matrix to be Decomposed', xlabel='Sample', ylabel='Feature',
                     xticklabels=False, yticklabels=False)
 
@@ -136,7 +136,7 @@ def solve_for_components(a_matrix, w_matrix, filepath_prefix=None):
 
     # Rank normalize the A matrix by column
     # TODO: try changing n_ranks (choose automatically)
-    a_matrix = normalize_pandas_object(a_matrix, 'rank', n_ranks=10000, axis=0)
+    a_matrix = normalize_pandas(a_matrix, 'rank', n_ranks=10000, axis=0)
 
     # Normalize the W matrix by column
     # TODO: improve the normalization (why this normalization?)
@@ -176,9 +176,9 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
     """
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
-    matrix = normalize_pandas_object(normalize_pandas_object(matrix, '-0-', axis=1).clip(-max_std,
-                                                                                         max_std),
-                                     method='0-1', axis=1)
+    matrix = normalize_pandas(normalize_pandas(matrix, '-0-', axis=1).clip(-max_std,
+                                                                           max_std),
+                              method='0-1', axis=1)
 
     # Hierarchical-consensus cluster
     distance_matrix, clusterings, cophenetic_correlation_coefficients = \
@@ -253,7 +253,7 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
     :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param std_max: number; threshold to clip standardized values
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param testing_h_normalization: str or None; {'as_train', 'clip_and_0-1', None}
+    :param testing_h_normalization: str or None; {'exact_as_train', None}
     :param testing_states: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
@@ -302,23 +302,62 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
     :param filepath: str;
     :return: DataFrame and DataFrame; components and samples
     """
+    raw_training_h = training_h.copy()
 
-    # Compute coordinates of components and samples and compute sample probabilities and states at each grid
-    components, samples, gp, gs = _make_onco_gps_elements(training_h, training_states, std_max,
-                                                          components, informational_mds, mds_seed,
-                                                          power, fit_min, fit_max, power_min, power_max, n_pulls,
-                                                          component_ratio,
-                                                          128, kde_bandwidths_factor)
+    # Preprocess training-H matrix and training states
+    training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
+
+    print_log('Training Onco-GPS with {} components, {} samples, and {} states ...'.format(*training_h.shape,
+                                                                                           len(set(training_states))))
+    print_log('\tComponents: {}'.format(set(training_h.index)))
+    print_log('\tTraining states: {}'.format(set(training_states)))
+
+    # Compute component coordinates
+    if isinstance(components, DataFrame):
+        print_log('Using predefined component coordinates ...'.format(components))
+        # TODO: enforce matched index
+        components.index = training_h.index
+    else:
+        if informational_mds:
+            print_log('Computing component coordinates using informational distance ...')
+            distance_function = information_coefficient
+        else:
+            print_log('Computing component coordinates using Euclidean distance ...')
+            distance_function = None
+        components = mds(training_h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
+
+    if not n_pulls:  # n_pulls = number of all components
+        n_pulls = training_h.shape[0]
+
+    if not power:
+        print_log('Computing component power ...')
+        if training_h.shape[0] < 4:
+            print_log('\tCould\'t model with Ae^(kx) + C; too few data points.')
+            power = 1
+        else:
+            power = _compute_component_power(training_h, fit_min, fit_max, power_min, power_max)
+
+    # Process samples
+    # TODO: refactor meaningfully
+    training_samples = _process_samples(training_h, training_states, components, n_pulls, power, component_ratio)
+
+    print_log('Computing grid probabilities and states ...')
+    grid_probabilities, grid_states = _compute_grid_probabilities_and_states(training_samples, 128,
+                                                                             kde_bandwidths_factor)
+
     if isinstance(testing_h, DataFrame):
-        print_log('Loading testing samples ...')
-        testing_h = _normalize_testing_h(testing_h, testing_h_normalization, training_h, std_max)
-        print('*****************\ntesting_h after\n')
-        print(testing_h)
-        samples = _load_samples(testing_h, testing_states,
-                                power, fit_min, fit_max, power_min, power_max, n_pulls, components,
-                                component_ratio)
+        print_log('Testing Onco-GPS with {} samples and {} states ...'.format(testing_h.shape[1],
+                                                                              len(set(testing_states))))
+        print_log('\tTesting states: {}'.format(set(training_states)))
 
-    _plot_onco_gps(components, samples, gp, gs, len(set(training_states)),
+        testing_h, testing_states, = _process_h_and_states(testing_h, testing_states, std_max,
+                                                           training_h=raw_training_h)
+        testing_samples = _process_samples(testing_h, testing_states, components, n_pulls, power, component_ratio)
+        samples = testing_samples
+    else:
+        samples = training_samples
+
+    _plot_onco_gps(components, samples, grid_probabilities, grid_states, len(set(training_states)),
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
                    title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
@@ -346,161 +385,86 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
     return components, samples
 
 
-# TODO: allow non-int state labels
-def _make_onco_gps_elements(h, states, std_max,
-                            components, informational_mds, mds_seed,
-                            power, fit_min, fit_max, power_min, power_max, n_pulls,
-                            component_ratio,
-                            n_grids, kde_bandwidths_factor):
+# ======================================================================================================================
+# Process H matrix and states
+# ======================================================================================================================
+def _process_h_and_states(h, states, std_max, training_h=None):
     """
-    Compute coordinates of components and samples and compute sample probabilities and states at each grid.
-    :param h: pandas DataFrame; (n_nmf_components, n_samples); NMF H matrix
-    :param states: iterable of int; (n_samples); sample states
-    :param components: DataFrame; (n_nmf_components, 2 ('x', 'y')); component coordinates
-    :param std_max: number; threshold to clip standardized values
-    :param informational_mds: bool; use informational MDS or not
-    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
-    :param power: str or number; power to raise components' influence on each sample
-    :param fit_min: number;
-    :param fit_max: number;
-    :param power_min: number;
-    :param power_max: number;
-    :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param component_ratio: number; number if int; percentile if < 1
-    :param n_grids: int;
-    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
-    :return: DataFrame, DataFrame, array, and array;
-                 components (n_components, 2 [x, y]),
-                 samples (n_samples, 4 [x, y, state, component_ratio]),
-                 grid_probabilities (n_grids, n_grids),
-                 and grid_states (n_grids, n_grids)
+    Process H matrix and states.
+    :param h: DataFrame; (n_components, n_samples); H matrix
+    :param states: iterable of ints;
+    :param std_max: number;
+    :param training_h: DataFrame; (n_components, m_samples);
+    :return: DataFrame and Series; processed H matrix and states
     """
 
-    # Preprocess
-
-    # Convert sample-state labels into Series matching corresponding sample
+    # Convert sample-state labels, which match sample, into Series
     states = Series(states, index=h.columns)
 
-    # Normalize and drop all-0 samples
-    h = _process_h(h, std_max)
-    print('************************************************88')
-    print('training_h after _process\n')
-    print(h)
+    # Normalize H matrix and drop all-0 samples
+    h = _process_h(h, std_max, training_h=training_h)
+
+    # Drop all-0 samples from states too
     states = states.ix[h.columns]
 
-    print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h.shape, len(set(states))))
-    print_log('\tComponents: {}'.format(set(h.index)))
-    print_log('\tStates: {}'.format(set(states)))
-
-    # Compute component coordinates
-    if isinstance(components, DataFrame):
-        print_log('Using predefined component coordinates ...'.format(components))
-        # TODO: enforce matched index
-        components.index = h.index
-    else:
-        if informational_mds:
-            print_log('Computing component coordinates using informational distance ...')
-            distance_function = information_coefficient
-        else:
-            print_log('Computing component coordinates using Euclidean distance ...')
-            distance_function = None
-        components = mds(h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
-
-    print('*****************8\ntraining_h\n')
-    print(h)
-    samples = _load_samples(h, states,
-                            power, fit_min, fit_max, power_min, power_max, n_pulls, components,
-                            component_ratio)
-
-    print_log('Computing grid probabilities and states ...')
-    grid_probabilities, grid_states = _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_factor)
-
-    return components, samples, grid_probabilities, grid_states
+    return h, states
 
 
-def _process_h(h, std_max):
+def _process_h(h, std_max, training_h=None):
     """
-    Make sure states is Series.
-    Normalize h.
-    Drop 0 samples.
-    :param h: DataFrame;
+    Normalize H matrix and drop all-0 samples.
+    :param h: DataFrame; (n_components, n_samples); H matrix
     :param std_max: number;
-    :return: DataFrame, Series; h and states
+    :param training_h: DataFrame; (n_components, m_samples);
+    :return: DataFrame; (n_components, n_samples); Normalized H matrix
     """
 
-    # Drop columns with all-0 values
+    # Drop all-0 samples
     h = drop_value_from_dataframe(h, 0)
 
     # Clip by standard deviation and 0-1 normalize
-    h = _normalize_h(h, std_max)
+    h = _normalize_h(h, std_max, training_h=training_h)
 
-    # Drop columns with all-0 values
+    # Drop all-0 samples
     h = drop_value_from_dataframe(h, 0)
 
     return h
 
 
-def _normalize_h(h, std_max):
+# TODO: consider making a general function in support.py that normalizes with other matrix's values
+def _normalize_h(h, std_max, training_h=None):
     """
     Clip by standard deviation and 0-1 normalize the rows of H matrix.
-    :param h:
-    :param std_max:
-    :return:
+    :param h: DataFrame; (n_components, n_samples); H matrix
+    :param std_max: number;
+    :param training_h: DataFrame; (n_components, m_samples);
+    :return: DataFrame; (n_components, n_samples); Normalized H matrix
     """
 
-    h = normalize_pandas_object(h, '-0-', axis=1).clip(-std_max, std_max)
-    h = normalize_pandas_object(h, '0-1', axis=1)
-    return h
+    if isinstance(training_h, DataFrame):  # Normalize using statistics from training-H matrix
+        for r_i, r in training_h.iterrows():
+            mean = r.mean()
+            std = r.std()
+            if std == 0:
+                h.ix[r_i, :] = h.ix[r_i, :] / r.size
+            else:
+                h.ix[r_i, :] = (h.ix[r_i, :] - mean) / std
 
+    else:  # Normalize using statistics from H matrix
+        h = normalize_pandas(h, '-0-', axis=1)
 
-def _load_samples(h, states, power, fit_min, fit_max, power_min, power_max, n_pulls, components, component_ratio):
-    """
-
-    :param h:
-    :param states:
-    :param power:
-    :param fit_min:
-    :param fit_max:
-    :param power_min:
-    :param power_max:
-    :param n_pulls:
-    :param components:
-    :param component_ratio:
-    :return: DataFrame;
-    """
-    samples = DataFrame(index=h.columns, columns=['x', 'y', 'state', 'component_ratio'])
-    samples.ix[:, 'state'] = states
-
-    # Compute sample coordinates
-    if not power:
-        print_log('Computing component power ...')
-        if h.shape[0] < 4:
-            print_log('\tCould\'t model with Ae^(kx) + C; too few data points.')
-            power = 1
-        else:
-            power = _compute_component_power(h, fit_min, fit_max, power_min, power_max)
-
-    print_log('Computing sample coordinates using {} components and {:.3f} power ...'.format(n_pulls, power))
-    samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(components, h, n_pulls, power)
-
-    if component_ratio and 0 < component_ratio:
-        print_log('Computing component ratios ...')
-        samples.ix[:, 'component_ratio'] = _compute_component_ratio(h, n_pulls)
-    else:
-        samples.ix[:, 'component_ratio'] = 1
-
-    return samples
+    return normalize_pandas(h.clip(-std_max, std_max), '0-1', axis=1)
 
 
 def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
     """
-    Compute component power by fitting component magnitudes of samples to exponential function.
+    Compute component power by fitting component magnitudes of samples to the exponential function.
     :param h: DataFrame;
     :param fit_min: number;
     :param fit_max: number;
     :param power_min: number;
     :param power_max: number;
-    :return: float
+    :return: float; power
     """
 
     fit_parameters = fit_matrix(h, exponential_function, sort_matrix=True)
@@ -513,6 +477,35 @@ def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
     return k_rescaled
 
 
+# ======================================================================================================================
+# Process samples
+# ======================================================================================================================
+def _process_samples(h, states, components, n_pulls, power, component_ratio):
+    """
+
+    :param h:
+    :param states:
+    :param components:
+    :param n_pulls:
+    :param power:
+    :param component_ratio:
+    :return: DataFrame; (n_samples, 4 [x, y, state, component_ratio])
+    """
+    samples = DataFrame(index=h.columns, columns=['x', 'y', 'state', 'component_ratio'])
+    samples.ix[:, 'state'] = states
+
+    print_log('Computing sample coordinates using {} components and {:.3f} power ...'.format(n_pulls, power))
+    samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(components, h, n_pulls, power)
+
+    if component_ratio and 0 < component_ratio:
+        print_log('Computing component ratios ...')
+        samples.ix[:, 'component_ratio'] = _compute_component_ratios(h, component_ratio)
+    else:
+        samples.ix[:, 'component_ratio'] = 1
+
+    return samples
+
+
 def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_influencing_components, power):
     """
     Compute sample coordinates based on component coordinates (components pull samples).
@@ -520,15 +513,12 @@ def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_
     :param component_x_samples: DataFrame; (n_points, n_samples)
     :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
     :param power: number; power to raise components' influence on each sample
-    :return: DataFrame; (n_samples, 2 [x, y])
+    :return: DataFrame; (n_samples, 2 [x, y]); sample_coordinates
     """
 
     component_x_coordinates = asarray(component_x_coordinates)
 
     sample_coordinates = empty((component_x_samples.shape[1], 2))
-
-    if not n_influencing_components:  # n_influencing_components = number of all components
-        n_influencing_components = component_x_samples.shape[0]
 
     for i, (_, c) in enumerate(component_x_samples.iteritems()):
         c = asarray(c)
@@ -545,12 +535,12 @@ def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_
     return sample_coordinates
 
 
-def _compute_component_ratio(h, n):
+def _compute_component_ratios(h, n):
     """
     Compute the ratio between the sum of the top-n component values and the sum of the rest of the component values.
     :param h: DataFrame;
     :param n: number;
-    :return: array;
+    :return: array; ratios
     """
 
     ratios = zeros(h.shape[1])
@@ -566,6 +556,9 @@ def _compute_component_ratio(h, n):
     return ratios
 
 
+# ======================================================================================================================
+# Compute grid probabilities and states
+# ======================================================================================================================
 def _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_factor):
     """
 
@@ -610,36 +603,9 @@ def _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_fact
     return grid_probabilities, grid_states
 
 
-def _normalize_testing_h(testing_h, normalization, training_h, std_max):
-    """
-
-    :param testing_h:
-    :param normalization:
-    :param training_h:
-    :param std_max:
-    :return:
-    """
-
-    # Normalize and drop all-0 samples
-    testing_h = _process_h(testing_h, std_max)
-    print('************************************************88')
-    print('testing_h after _process\n')
-    print(testing_h)
-
-    if normalization == 'exact_as_training':  # Normalize as done on training H using the same normalizing factors
-        for r_i, r in training_h.iterrows():
-            if r.std() == 0:
-                testing_h.ix[r_i, :] = testing_h.ix[r_i, :] / r.size()
-            else:
-                testing_h.ix[r_i, :] = (testing_h.ix[r_i, :] - r.mean()) / r.std()
-
-    elif normalization == 'as_training':  # Normalize as done on training H
-        testing_h = normalize_pandas_object(testing_h, '-0-', axis=1).clip(-std_max, std_max)
-        testing_h = normalize_pandas_object(testing_h, '0-1', axis=1)
-
-    return testing_h
-
-
+# ======================================================================================================================
+# Plot Onco-GPS map
+# ======================================================================================================================
 def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_training_states,
                    annotation=(), annotation_name='', annotation_type='continuous', std_max=3,
                    title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
@@ -826,7 +792,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
 
         # Set up annotation min, mean, max, and colormap
         if annotation_type == 'continuous':
-            samples.ix[:, 'annotation'] = normalize_pandas_object(a, '-0-').clip(-std_max, std_max)
+            samples.ix[:, 'annotation'] = normalize_pandas(a, '-0-').clip(-std_max, std_max)
             annotation_min = max(-std_max, samples.ix[:, 'annotation'].min())
             annotation_mean = samples.ix[:, 'annotation'].mean()
             annotation_max = min(std_max, samples.ix[:, 'annotation'].max())
