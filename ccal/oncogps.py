@@ -146,7 +146,7 @@ def solve_for_components(w_matrix, a_matrix, filepath_prefix=None):
     w_matrix = w_matrix.apply(lambda c: c / sum(c) * 1000)
 
     # Solve W * H = A
-    print_log('Solving for components: W({}x{}) * H = A ({}x{}) ...'.format(*w_matrix.shape, *a_matrix.shape))
+    print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(*w_matrix.shape, *a_matrix.shape))
     h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix)
 
     if filepath_prefix:  # Save H matrix
@@ -308,7 +308,22 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     :param filepath: str;
     :return: DataFrame and DataFrame; components and samples
     """
-    raw_training_h = training_h.copy()
+
+    # Make sure the index is str (better for .ix)
+    training_h.index = training_h.index.astype(str)
+
+    if isinstance(testing_h, DataFrame):
+        if not testing_h_normalization:
+            normalize_training_h = False
+            normalizing_h = None
+        elif testing_h_normalization == 'using_training':
+            normalize_training_h = True
+            normalizing_h = training_h.copy()
+        elif testing_h_normalization == 'as_training':
+            normalize_training_h = True
+            normalizing_h = None
+        else:
+            raise ValueError('testing_h_normalization must be one of {using_training, as_training, None}.')
 
     # Preprocess training-H matrix and training states
     training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
@@ -341,7 +356,11 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
             print_log('\tCould\'t model with Ae^(kx) + C; too few data points.')
             power = 1
         else:
-            power = _compute_component_power(training_h, fit_min, fit_max, power_min, power_max)
+            try:
+                power = _compute_component_power(training_h, fit_min, fit_max, power_min, power_max)
+            except RuntimeError as e:
+                print_log('\tCould\'t model with Ae^(kx) + C; {}.'.format(e))
+                power = 1
 
     # Process samples
     # TODO: refactor meaningfully
@@ -352,22 +371,14 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                                                                              kde_bandwidths_factor)
 
     if isinstance(testing_h, DataFrame):
+        # Make sure the index is str (better for .ix)
+        testing_h.index = testing_h.index.astype(str)
+
         print_log('Testing Onco-GPS with {} samples and {} states ...'.format(testing_h.shape[1],
                                                                               len(set(testing_states))))
         print_log('\tTesting states: {}'.format(set(training_states)))
 
         print_log('\tTesting normalization: {}'.format(testing_h_normalization))
-        if not testing_h_normalization:
-            normalize_training_h = False
-            normalizing_h = None
-        elif testing_h_normalization == 'using_training':
-            normalize_training_h = True
-            normalizing_h = raw_training_h
-        elif testing_h_normalization == 'as_training':
-            normalize_training_h = True
-            normalizing_h = None
-        else:
-            raise ValueError('testing_h_normalization must be one of {using_training, as_training, None}.')
 
         testing_h, testing_states, = _process_h_and_states(testing_h, testing_states, std_max,
                                                            normalize=normalize_training_h, normalizing_h=normalizing_h)
@@ -400,8 +411,6 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                    effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                    effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
                    filepath=filepath)
-
-    return training_h, testing_h, components, samples
 
 
 # ======================================================================================================================
