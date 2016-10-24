@@ -227,42 +227,41 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-def make_oncogps_map(training_h, training_states, components=None, std_max=3,
-                     testing_h=None, testing_h_normalization='using_training', testing_states=None,
+def make_oncogps_map(training_h, training_states, std_max=3, components=None,
+                     testing_h=None, testing_states=None, testing_h_normalization='using_training',
                      informational_mds=True, mds_seed=SEED,
-                     power=None, fit_min=0, fit_max=2, power_min=1, power_max=5, n_pulls=None,
-                     component_ratio=0,
-                     kde_bandwidths_factor=1,
+                     n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
+                     component_ratio=0, kde_bandwidths_factor=1,
                      annotation=(), annotation_name='', annotation_type='continuous',
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                     colors=None, component_markersize=13, component_markerfacecolor='#000726',
+                     colors=None, component_markersize=16, component_markerfacecolor='#000726',
                      component_markeredgewidth=1.69, component_markeredgecolor='#FFFFFF',
-                     component_text_position='auto', component_fontsize=16,
-                     delaunay_linewidth=1, delaunay_linecolor='#000000',
+                     component_text_position='auto', component_fontsize=22,
+                     delaunay_linewidth=1.26, delaunay_linecolor='#000000',
                      n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
                      background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.9,
-                     sample_markersize=16, sample_without_annotation_markerfacecolor='#999999',
-                     sample_markeredgewidth=0.81, sample_markeredgecolor='#000000',
-                     legend_markersize=10, legend_fontsize=11, effectplot_type='violine',
+                     sample_markersize=22, sample_without_annotation_markerfacecolor='#999999',
+                     sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
+                     legend_markersize=22, legend_fontsize=16, effectplot_type='violine',
                      effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
                      effectplot_median_markeredgecolor='#FF0082', filepath=None):
     """
     :param training_h: DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param training_states: iterable of int; (n_samples); sample states
-    :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param std_max: number; threshold to clip standardized values
+    :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param testing_h_normalization: str or None; {using_training, as_training, None}
     :param testing_states: iterable of int; (n_samples); sample states
+    :param testing_h_normalization: str or None; {using_training, as_training, None}
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param power: str or number; power to raise components' influence on each sample
     :param fit_min: number;
     :param fit_max: number;
     :param power_min: number;
-    :param power_max: number;
     :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param power_max: number;
     :param component_ratio: number; number if int; percentile if float & < 1
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
@@ -921,7 +920,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
         for i, s in enumerate(samples.ix[:, 'state'].unique()):
             y = 1 - float(1 / (n_training_states + 1)) * (i + 1)
             c = states_color[s]
-            ax_legend.plot(0.16, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
+            ax_legend.plot(0.12, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
             ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
