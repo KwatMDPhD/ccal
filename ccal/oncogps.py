@@ -350,15 +350,17 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
                                                                               len(set(testing_states))))
         print_log('\tTesting states: {}'.format(set(training_states)))
 
-        if testing_h_normalization == 'using_training':
+        if not testing_h_normalization:
+            normalize_training_h = False
+            normalizing_h = None
+        elif testing_h_normalization == 'using_training':
             normalize_training_h = True
             normalizing_h = raw_training_h
         elif testing_h_normalization == 'as_training':
             normalize_training_h = True
             normalizing_h = None
         else:
-            normalize_training_h = False
-            normalizing_h = None
+            raise ValueError('testing_h_normalization must be one of {using_training, as_training, None}.')
 
         testing_h, testing_states, = _process_h_and_states(testing_h, testing_states, std_max,
                                                            normalize=normalize_training_h, normalizing_h=normalizing_h)
