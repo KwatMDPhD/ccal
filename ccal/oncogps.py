@@ -313,6 +313,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     training_h.index = training_h.index.astype(str)
 
     if isinstance(testing_h, DataFrame):
+        print_log('\tTesting normalization: {}'.format(testing_h_normalization))
         if not testing_h_normalization:
             normalize_training_h = False
             normalizing_h = None
@@ -377,8 +378,6 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
         print_log('Testing Onco-GPS with {} samples and {} states ...'.format(testing_h.shape[1],
                                                                               len(set(testing_states))))
         print_log('\tTesting states: {}'.format(set(training_states)))
-
-        print_log('\tTesting normalization: {}'.format(testing_h_normalization))
 
         testing_h, testing_states, = _process_h_and_states(testing_h, testing_states, std_max,
                                                            normalize=normalize_training_h, normalizing_h=normalizing_h)
@@ -470,7 +469,8 @@ def _normalize_h(h, std_max, normalizing_h=None):
     :return: DataFrame; (n_components, n_samples); Normalized H matrix
     """
 
-    if isinstance(normalizing_h, DataFrame):  # Normalize using statistics from training-H matrix
+    if isinstance(normalizing_h, DataFrame):  # Normalize using statistics from normalizing-H matrix
+        # -0-
         for r_i, r in normalizing_h.iterrows():
             mean = r.mean()
             std = r.std()
@@ -479,10 +479,27 @@ def _normalize_h(h, std_max, normalizing_h=None):
             else:
                 h.ix[r_i, :] = (h.ix[r_i, :] - mean) / std
 
-    else:  # Normalize using statistics from H matrix
-        h = normalize_pandas(h, '-0-', axis=1)
+        # Clip
+        h = h.clip(-std_max, std_max)
 
-    return normalize_pandas(h.clip(-std_max, std_max), '0-1', axis=1)
+        # 0-1
+        for r_i, r in normalizing_h.iterrows():
+            r_min = r.min()
+            r_max = r.max()
+            if r_max - r_min == 0:
+                h.ix[r_i, :] = h.ix[r_i, :] / r.size
+            else:
+                h.ix[r_i, :] = (h.ix[r_i, :] - r_min) / (r_max - r_min)
+
+    else:  # Normalize using statistics from H matrix
+        # -0-
+        h = normalize_pandas(h, '-0-', axis=1)
+        # Clip
+        h = h.clip(-std_max, std_max)
+        # 0-1
+        h = normalize_pandas(h, '0-1', axis=1)
+
+    return h
 
 
 def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
@@ -560,7 +577,6 @@ def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_
         y = nansum(c ** power * component_x_coordinates[:, 1]) / nansum(c ** power)
 
         sample_coordinates[i] = x, y
-
     return sample_coordinates
 
 
@@ -652,9 +668,8 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
                    filepath=None):
     """
     Plot Onco-GPS map.
-    :param components: DataFrame; (n_components, [x, y]);
-        output from _make_onco_gps_elements
-    :param samples: DataFrame; (n_samples, [x, y, state])
+    :param components: DataFrame; (n_components, 2 [x, y]);
+    :param samples: DataFrame; (n_samples, 3 [x, y, state, component_ratio]);
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
     :param annotation: Series; (n_samples); sample annotation; will color samples based on annotation
