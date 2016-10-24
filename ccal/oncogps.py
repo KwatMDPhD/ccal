@@ -228,7 +228,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 # Make Onco-GPS map
 # ======================================================================================================================
 def make_oncogps_map(training_h, training_states, components=None, std_max=3,
-                     testing_h=None, testing_h_normalization='exact_as_training', testing_states=None,
+                     testing_h=None, testing_h_normalization='using_training', testing_states=None,
                      informational_mds=True, mds_seed=SEED,
                      power=None, fit_min=0, fit_max=2, power_min=1, power_max=5, n_pulls=None,
                      component_ratio=0,
@@ -253,7 +253,7 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
     :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param std_max: number; threshold to clip standardized values
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
-    :param testing_h_normalization: str or None; {'exact_as_train', None}
+    :param testing_h_normalization: str or None; {using_training, as_training, None}
     :param testing_states: iterable of int; (n_samples); sample states
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
@@ -350,8 +350,18 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
                                                                               len(set(testing_states))))
         print_log('\tTesting states: {}'.format(set(training_states)))
 
+        if testing_h_normalization == 'using_training':
+            normalize_training_h = True
+            normalizing_h = raw_training_h
+        elif testing_h_normalization == 'as_training':
+            normalize_training_h = True
+            normalizing_h = None
+        else:
+            normalize_training_h = False
+            normalizing_h = None
+
         testing_h, testing_states, = _process_h_and_states(testing_h, testing_states, std_max,
-                                                           training_h=raw_training_h)
+                                                           normalize=normalize_training_h, normalizing_h=normalizing_h)
         testing_samples = _process_samples(testing_h, testing_states, components, n_pulls, power, component_ratio)
         samples = testing_samples
     else:
@@ -388,13 +398,13 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
 # ======================================================================================================================
 # Process H matrix and states
 # ======================================================================================================================
-def _process_h_and_states(h, states, std_max, training_h=None):
+def _process_h_and_states(h, states, std_max, normalize=True, normalizing_h=None):
     """
     Process H matrix and states.
     :param h: DataFrame; (n_components, n_samples); H matrix
     :param states: iterable of ints;
     :param std_max: number;
-    :param training_h: DataFrame; (n_components, m_samples);
+    :param normalizing_h: DataFrame; (n_components, m_samples);
     :return: DataFrame and Series; processed H matrix and states
     """
 
@@ -402,7 +412,7 @@ def _process_h_and_states(h, states, std_max, training_h=None):
     states = Series(states, index=h.columns)
 
     # Normalize H matrix and drop all-0 samples
-    h = _process_h(h, std_max, training_h=training_h)
+    h = _process_h(h, std_max, normalize=normalize, normalizing_h=normalizing_h)
 
     # Drop all-0 samples from states too
     states = states.ix[h.columns]
@@ -410,39 +420,40 @@ def _process_h_and_states(h, states, std_max, training_h=None):
     return h, states
 
 
-def _process_h(h, std_max, training_h=None):
+def _process_h(h, std_max, normalize=True, normalizing_h=None):
     """
     Normalize H matrix and drop all-0 samples.
     :param h: DataFrame; (n_components, n_samples); H matrix
     :param std_max: number;
-    :param training_h: DataFrame; (n_components, m_samples);
+    :param normalizing_h: DataFrame; (n_components, m_samples);
     :return: DataFrame; (n_components, n_samples); Normalized H matrix
     """
 
     # Drop all-0 samples
     h = drop_value_from_dataframe(h, 0)
 
-    # Clip by standard deviation and 0-1 normalize
-    h = _normalize_h(h, std_max, training_h=training_h)
+    if normalize:
+        # Clip by standard deviation and 0-1 normalize
+        h = _normalize_h(h, std_max, normalizing_h=normalizing_h)
 
-    # Drop all-0 samples
-    h = drop_value_from_dataframe(h, 0)
+        # Drop all-0 samples
+        h = drop_value_from_dataframe(h, 0)
 
     return h
 
 
 # TODO: consider making a general function in support.py that normalizes with other matrix's values
-def _normalize_h(h, std_max, training_h=None):
+def _normalize_h(h, std_max, normalizing_h=None):
     """
     Clip by standard deviation and 0-1 normalize the rows of H matrix.
     :param h: DataFrame; (n_components, n_samples); H matrix
     :param std_max: number;
-    :param training_h: DataFrame; (n_components, m_samples);
+    :param normalizing_h: DataFrame; (n_components, m_samples);
     :return: DataFrame; (n_components, n_samples); Normalized H matrix
     """
 
-    if isinstance(training_h, DataFrame):  # Normalize using statistics from training-H matrix
-        for r_i, r in training_h.iterrows():
+    if isinstance(normalizing_h, DataFrame):  # Normalize using statistics from training-H matrix
+        for r_i, r in normalizing_h.iterrows():
             mean = r.mean()
             std = r.std()
             if std == 0:
