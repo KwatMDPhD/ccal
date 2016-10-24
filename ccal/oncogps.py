@@ -116,23 +116,26 @@ def _save_nmf(nmf_results, filepath_prefix):
         write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
 
 
-def solve_for_components(a_matrix, w_matrix, filepath_prefix=None):
+def solve_for_components(w_matrix, a_matrix, filepath_prefix=None):
     """
     Get H matrix of a_matrix in the space of w_matrix by solving W * H = A for H.
-    :param a_matrix: str or DataFrame; (n_rows, n_columns)
     :param w_matrix: str or DataFrame; (n_rows, k)
+    :param a_matrix: str or DataFrame; (n_rows, n_columns)
     :param filepath_prefix: str; filepath_prefix_solved_nmf_h_k{}.{gct, pdf} will be saved
     :return: DataFrame; (k, n_columns)
     """
 
     # Load A and W matrices
-    a_matrix = load_gct(a_matrix)
     w_matrix = load_gct(w_matrix)
+    a_matrix = load_gct(a_matrix)
 
     # Keep only indices shared by both
     common_indices = set(a_matrix.index) & set(w_matrix.index)
-    a_matrix = a_matrix.ix[common_indices, :]
     w_matrix = w_matrix.ix[common_indices, :]
+    a_matrix = a_matrix.ix[common_indices, :]
+
+    # Average duplicates in A matrix
+    a_matrix = a_matrix.groupby(level=0).mean()
 
     # Rank normalize the A matrix by column
     # TODO: try changing n_ranks (choose automatically)
@@ -143,6 +146,7 @@ def solve_for_components(a_matrix, w_matrix, filepath_prefix=None):
     w_matrix = w_matrix.apply(lambda c: c / sum(c) * 1000)
 
     # Solve W * H = A
+    print_log('Solving for components: W({}x{}) * H = A ({}x{}) ...'.format(*w_matrix.shape, *a_matrix.shape))
     h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix)
 
     if filepath_prefix:  # Save H matrix
@@ -172,7 +176,10 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
             clusterings.{gct, pdf}
             cophenetic_correlation_coefficients.{txt, pdf}
         will be saved
-    :return: DataFrame and Series; assignment matrix (n_ks, n_columns) and cophenetic correlation coefficients (n_ks)
+    :return: DataFrame, DataFrame, and Series;
+        distance_matrix (n_samples, n_samples),
+        clusterings (n_ks, n_columns), and
+        cophenetic correlation coefficients (n_ks)
     """
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
@@ -349,6 +356,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                                                                               len(set(testing_states))))
         print_log('\tTesting states: {}'.format(set(training_states)))
 
+        print_log('\tTesting normalization: {}'.format(testing_h_normalization))
         if not testing_h_normalization:
             normalize_training_h = False
             normalizing_h = None
@@ -393,7 +401,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                    effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
                    filepath=filepath)
 
-    return components, samples
+    return training_h, testing_h, components, samples
 
 
 # ======================================================================================================================
