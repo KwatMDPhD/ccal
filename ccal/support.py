@@ -1568,7 +1568,7 @@ def plot_heatmap(dataframe, data_type='continuous',
     elif sort_axis in (0, 1):
         a = array(df)
         a.sort(axis=sort_axis)
-        df = DataFrame(a)
+        df = DataFrame(a, index=df.index)
 
     plt.figure(figsize=FIGURE_SIZE)
 
