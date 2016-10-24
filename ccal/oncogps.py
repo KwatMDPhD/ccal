@@ -312,6 +312,8 @@ def make_oncogps_map(training_h, training_states, components=None, std_max=3,
     if isinstance(testing_h, DataFrame):
         print_log('Loading testing samples ...')
         testing_h = _normalize_testing_h(testing_h, testing_h_normalization, training_h, std_max)
+        print('*****************\ntesting_h after\n')
+        print(testing_h)
         samples = _load_samples(testing_h, testing_states,
                                 power, fit_min, fit_max, power_min, power_max, n_pulls, components,
                                 component_ratio)
@@ -381,6 +383,9 @@ def _make_onco_gps_elements(h, states, std_max,
 
     # Normalize and drop all-0 samples
     h = _process_h(h, std_max)
+    print('************************************************88')
+    print('training_h after _process\n')
+    print(h)
     states = states.ix[h.columns]
 
     print_log('Making Onco-GPS with {} components, {} samples, and {} states ...'.format(*h.shape, len(set(states))))
@@ -401,6 +406,8 @@ def _make_onco_gps_elements(h, states, std_max,
             distance_function = None
         components = mds(h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
 
+    print('*****************8\ntraining_h\n')
+    print(h)
     samples = _load_samples(h, states,
                             power, fit_min, fit_max, power_min, power_max, n_pulls, components,
                             component_ratio)
@@ -615,6 +622,9 @@ def _normalize_testing_h(testing_h, normalization, training_h, std_max):
 
     # Normalize and drop all-0 samples
     testing_h = _process_h(testing_h, std_max)
+    print('************************************************88')
+    print('testing_h after _process\n')
+    print(testing_h)
 
     if normalization == 'exact_as_training':  # Normalize as done on training H using the same normalizing factors
         for r_i, r in training_h.iterrows():
