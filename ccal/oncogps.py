@@ -24,7 +24,7 @@ from rpy2.robjects.numpy2ri import numpy2ri
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
-from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap
+from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap, ColorConverter
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import violinplot, boxplot
 
@@ -784,38 +784,16 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     states_color = {}
     # TODO: remove
     if colors == 'paper':
-        colors = [[0.80392157, 0.58823529, 0.80392157, 1.],
-                  [0.36078431, 0.6745098, 0.93333333, 1.],
-                  [0.2627451, 0.80392157, 0.50196078, 1.],
-                  [1., 0.64705882, 0., 1.],
-                  [0.80392157, 0.33333333, 0.33333333, 1.],
-                  [0.94117647, 0.64705882, 0.67058824, 1.],
-                  [0.60392157, 0.78039216, 0.9372549, 1.],
-                  [0.83921569, 0.63921569, 0.98823529, 1.],
-                  [1., 0.88235294, 0.8627451, 1.],
-                  [0.98039216, 0.94901961, 0.74509804, 1.],
-                  [0.95294118, 0.78039216, 0.94901961, 1.],
-                  [0.77647059, 0.98039216, 0.37647059, 1.],
-                  [0.97647059, 0.43921569, 0.97647059, 1.],
-                  [0.98823529, 0.5372549, 0.38431373, 1.],
-                  [0.96470588, 0.89019608, 0.43921569, 1.],
-                  [0.94117647, 0.95686275, 0.25882353, 1.],
-                  [0.68235294, 0.83137255, 0.92941176, 1.],
-                  [0.85098039, 0.85098039, 0.85098039, 1.],
-                  [0.99215686, 0.60784314, 0.52156863, 1.],
-                  [0.49803922, 1., 0., 1.],
-                  [1., 0.7254902, 0.05882353, 1.],
-                  [0.43137255, 0.54509804, 0.23921569, 1.],
-                  [0.54509804, 0.53333333, 0.47058824, 1.],
-                  [0.49803922, 1., 0.83137255, 1.],
-                  [0., 0., 0.54509804, 1.],
-                  [0.82352941, 0.70588235, 0.54901961, 1.],
-                  [0., 0.39215686, 0., 1.]]
+        colors = ['#CD96CD', '#5CACEE', '#43CD80', '#FFA500', '#CD5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
+                  '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
+                  '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008B', '#D2B48C', '#006400']
     for i, s in enumerate(range(1, n_training_states + 1)):
         if colors:
             if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
                 states_color[s] = colors(s)
             else:
+                color_converter = ColorConverter()
+                colors = color_converter.to_rgba_array(colors)
                 states_color[s] = colors[i]
         else:
             states_color[s] = CMAP_CATEGORICAL(int(s / n_training_states * CMAP_CATEGORICAL.N))
