@@ -245,7 +245,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                      annotation=(), annotation_name='', annotation_type='continuous',
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                     colors=None, component_markersize=16, component_markerfacecolor='#000726',
+                     colors=(), component_markersize=16, component_markerfacecolor='#000726',
                      component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
                      component_text_position='auto', component_fontsize=22,
                      delaunay_linewidth=1, delaunay_linecolor='#000000',
@@ -387,6 +387,13 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
         samples = training_samples
 
     print_log('Plotting ...')
+
+    # TODO: remove
+    if colors == 'paper':
+        colors = ['#CD96CD', '#5CACEE', '#43CD80', '#FFA500', '#CD5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
+                  '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
+                  '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008B', '#D2B48C', '#006400']
+
     _plot_onco_gps(components, samples, grid_probabilities, grid_states, len(set(training_states)),
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
@@ -655,7 +662,7 @@ def _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_fact
 def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_training_states,
                    annotation=(), annotation_name='', annotation_type='continuous', std_max=3,
                    title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=None,
+                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=(),
                    component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
                    component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
                    delaunay_linewidth=1, delaunay_linecolor='#000000', max_background_saturation=0.66,
@@ -682,7 +689,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     :param title_fontcolor: matplotlib color;
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
-    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or list;
+    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
@@ -781,22 +788,16 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
                    aa=True, clip_on=False, zorder=4)
 
     # Assign colors to states
-    states_color = {}
-    # TODO: remove
-    if colors == 'paper':
-        colors = ['#CD96CD', '#5CACEE', '#43CD80', '#FFA500', '#CD5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
-                  '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
-                  '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008B', '#D2B48C', '#006400']
+    state_colors = {}
+    color_converter = ColorConverter()
     for i, s in enumerate(range(1, n_training_states + 1)):
-        if colors:
-            if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
-                states_color[s] = colors(s)
-            else:
-                color_converter = ColorConverter()
-                colors = color_converter.to_rgba_array(colors)
-                states_color[s] = colors[i]
+        if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
+            state_colors[s] = colors(s)
+        elif len(colors) > 0:
+            colors = color_converter.to_rgba_array(colors)
+            state_colors[s] = colors[i]
         else:
-            states_color[s] = CMAP_CATEGORICAL(int(s / n_training_states * CMAP_CATEGORICAL.N))
+            state_colors[s] = CMAP_CATEGORICAL(int(s / n_training_states * CMAP_CATEGORICAL.N))
 
     # Plot background
     grid_probabilities_min = grid_probabilities.min()
@@ -807,7 +808,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     for i in range(grid_probabilities.shape[0]):
         for j in range(grid_probabilities.shape[1]):
             if convexhull_region.contains_point((x_grids[i], y_grids[j])):
-                rgba = states_color[grid_states[i, j]]
+                rgba = state_colors[grid_states[i, j]]
                 hsv = rgb_to_hsv(*rgba[:3])
                 a = (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
                 image[j, i] = hsv_to_rgb(hsv[0], a * max_background_saturation, hsv[2])
@@ -896,7 +897,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
 
         # Plot effect plot
         if effectplot_type == 'violine':
-            violinplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=states_color, scale='count',
+            violinplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=state_colors, scale='count',
                        inner=None, orient='h', ax=ax_legend, clip_on=False)
             boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], showbox=False, showmeans=True,
                     medianprops={'marker': 'o',
@@ -906,7 +907,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
         elif effectplot_type == 'box':
-            boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=states_color, showmeans=True,
+            boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=state_colors, showmeans=True,
                     medianprops={'marker': 'o',
                                  'markerfacecolor': effectplot_mean_markerfacecolor,
                                  'markeredgewidth': 0.9,
@@ -935,7 +936,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
         l, r = ax_legend.axis()[:2]
         x = l - float((r - l) / 5)
         for i, s in enumerate(samples.ix[:, 'state'].unique()):
-            c = states_color[s]
+            c = state_colors[s]
             ax_legend.plot(x, i, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
 
         # Plot color bar
@@ -951,7 +952,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
-            c = states_color[s.ix['state']]
+            c = state_colors[s.ix['state']]
             ax_map.plot(x, y, marker='o',
                         markersize=sample_markersize, markerfacecolor=c,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
@@ -961,7 +962,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
         ax_legend.axis([0, 1, 0, 1])
         for i, s in enumerate(range(1, n_training_states + 1)):
             y = 1 - float(1 / (n_training_states + 1)) * (i + 1)
-            c = states_color[s]
+            c = state_colors[s]
             ax_legend.plot(0.12, y, marker='o',
                            markersize=legend_markersize, markerfacecolor=c,
                            aa=True, clip_on=False)
