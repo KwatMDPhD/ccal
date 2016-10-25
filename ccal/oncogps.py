@@ -246,9 +246,9 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                      colors=None, component_markersize=16, component_markerfacecolor='#000726',
-                     component_markeredgewidth=1.69, component_markeredgecolor='#FFFFFF',
+                     component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
                      component_text_position='auto', component_fontsize=22,
-                     delaunay_linewidth=1.26, delaunay_linecolor='#000000',
+                     delaunay_linewidth=1, delaunay_linecolor='#000000',
                      n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
                      sample_markersize=19, sample_without_annotation_markerfacecolor='#999999',
                      sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
@@ -295,9 +295,6 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     :param contour_linewidth: number;
     :param contour_linecolor: matplotlib color;
     :param contour_alpha: float; [0, 1]
-    :param background_markersize: number; set to 0 to disable drawing backgrounds
-    :param background_mask_markersize: number; set to 0 to disable masking
-    :param background_max_alpha: float; [0, 1]; the maximum background alpha (transparency)
     :param sample_markersize: number;
     :param sample_without_annotation_markerfacecolor: matplotlib color;
     :param sample_markeredgewidth: number;
