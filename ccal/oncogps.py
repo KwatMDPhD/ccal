@@ -147,7 +147,7 @@ def solve_for_components(w_matrix, a_matrix, filepath_prefix=None):
 
     # Solve W * H = A
     print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(*w_matrix.shape, *a_matrix.shape))
-    h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix)
+    h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix, method='pinv')
 
     if filepath_prefix:  # Save H matrix
         write_gct(h_matrix, filepath_prefix + '_solved_nmf_h_k{}.gct'.format(h_matrix.shape[0]))
@@ -410,7 +410,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                    effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                    effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
                    filepath=filepath)
-    return training_h, testing_h
+    return training_h, testing_h, components, samples, grid_probabilities, grid_states
 
 
 # ======================================================================================================================
