@@ -12,7 +12,10 @@ Authors:
 """
 
 from os.path import join
-from numpy import asarray, zeros, empty, linspace, nansum
+
+from colorsys import rgb_to_hsv, hsv_to_rgb
+import numpy as np
+from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum
 from pandas import DataFrame, Series, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import rpy2.robjects as ro
@@ -238,7 +241,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                      testing_h=None, testing_states=None, testing_h_normalization='using_training',
                      informational_mds=True, mds_seed=SEED,
                      n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
-                     component_ratio=0, kde_bandwidths_factor=1,
+                     component_ratio=0, n_grids=100, kde_bandwidths_factor=1,
                      annotation=(), annotation_name='', annotation_type='continuous',
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
@@ -247,7 +250,6 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                      component_text_position='auto', component_fontsize=22,
                      delaunay_linewidth=1.26, delaunay_linecolor='#000000',
                      n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                     background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.9,
                      sample_markersize=19, sample_without_annotation_markerfacecolor='#999999',
                      sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
                      legend_markersize=22, legend_fontsize=16, effectplot_type='violine',
@@ -270,6 +272,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
     :param power_max: number;
     :param component_ratio: number; number if int; percentile if float & < 1
+    :param n_grids: int; number of grids; larger the n_grids, higher the resolution
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
@@ -331,8 +334,8 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
 
     print_log('Training Onco-GPS with {} components, {} samples, and {} states ...'.format(*training_h.shape,
                                                                                            len(set(training_states))))
-    print_log('\tComponents: {}'.format(set(training_h.index)))
-    print_log('\tTraining states: {}'.format(set(training_states)))
+    print_log('\tComponents: {}.'.format(set(training_h.index)))
+    print_log('\tTraining states: {}.'.format(set(training_states)))
 
     # Compute component coordinates
     if isinstance(components, DataFrame):
@@ -368,7 +371,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     training_samples = _process_samples(training_h, training_states, components, n_pulls, power, component_ratio)
 
     print_log('Computing grid probabilities and states ...')
-    grid_probabilities, grid_states = _compute_grid_probabilities_and_states(training_samples, 128,
+    grid_probabilities, grid_states = _compute_grid_probabilities_and_states(training_samples, n_grids,
                                                                              kde_bandwidths_factor)
 
     if isinstance(testing_h, DataFrame):
@@ -386,6 +389,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     else:
         samples = training_samples
 
+    print_log('Plotting ...')
     _plot_onco_gps(components, samples, grid_probabilities, grid_states, len(set(training_states)),
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
@@ -400,8 +404,6 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                    n_contours=n_contours,
                    contour_linewidth=contour_linewidth, contour_linecolor=contour_linecolor,
                    contour_alpha=contour_alpha,
-                   background_markersize=background_markersize, background_mask_markersize=background_mask_markersize,
-                   background_max_alpha=background_max_alpha,
                    sample_markersize=sample_markersize,
                    sample_without_annotation_markerfacecolor=sample_without_annotation_markerfacecolor,
                    sample_markeredgewidth=sample_markeredgewidth, sample_markeredgecolor=sample_markeredgecolor,
@@ -659,9 +661,8 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
                    subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=None,
                    component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
                    component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
-                   delaunay_linewidth=1, delaunay_linecolor='#000000',
+                   delaunay_linewidth=1, delaunay_linecolor='#000000', max_background_saturation=0.66,
                    n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                   background_markersize=5.55, background_mask_markersize=7, background_max_alpha=0.9,
                    sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
                    sample_markeredgewidth=0.81, sample_markeredgecolor='#000000', plot_sample_names=False,
                    legend_markersize=10, legend_fontsize=11,
@@ -674,6 +675,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     :param samples: DataFrame; (n_samples, 3 [x, y, state, component_ratio]);
     :param grid_probabilities: numpy 2D array; (n_grids, n_grids)
     :param grid_states: numpy 2D array; (n_grids, n_grids)
+    :param n_training_states: int; number of training-sample states
     :param annotation: Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
@@ -696,13 +698,11 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     :param contour_linewidth: number;
     :param contour_linecolor: matplotlib color;
     :param contour_alpha: float; [0, 1]
-    :param background_markersize: number; set to 0 to disable drawing backgrounds
-    :param background_mask_markersize: number; set to 0 to disable masking
-    :param background_max_alpha: float; [0, 1]; the maximum background alpha (transparency)
     :param sample_markersize: number;
     :param sample_without_annotation_markerfacecolor: matplotlib color;
     :param sample_markeredgewidth: number;
     :param sample_markeredgecolor: matplotlib color;
+    :param plot_sample_names: bool; plot sample names or not
     :param legend_markersize: number;
     :param legend_fontsize: number;
     :param effectplot_type: str; {'violine', 'box'}
@@ -741,7 +741,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     ax_legend.axis('off')
 
     # Plot title
-    ax_title.text(0, 0.92, title,
+    ax_title.text(0, 1, title,
                   fontsize=title_fontsize, weight='bold', color=title_fontcolor)
     ax_title.text(0, 0.6, '{} samples, {} components, and {} states'.format(samples.shape[0],
                                                                             components.shape[0],
@@ -759,7 +759,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     convexhull_region = Path(convexhull.points[convexhull.vertices])
 
     # Put labels on top or bottom of the component markers
-    vertical_shift = -0.06
+    vertical_shift = -0.03
     for i in components.index:
         # Compute vertical shift
         if component_text_position == 'auto':
@@ -783,19 +783,37 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
                    linewidth=delaunay_linewidth, color=delaunay_linecolor,
                    aa=True, clip_on=False, zorder=4)
 
-    # Plot contours
-    if n_contours > 0:
-        ax_map.contour(x_grids, y_grids, grid_probabilities, n_contours, corner_mask=True,
-                       linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha,
-                       aa=True, clip_on=False, zorder=2)
-
     # Assign colors to states
     states_color = {}
     # TODO: remove
     if colors == 'paper':
-        colors = ['#CD96CD', '#5CACEE', '#43CD80', '#FFA500', '#CD5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
-                  '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
-                  '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008B', '#D2B48C', '#006400']
+        colors = [[0.80392157, 0.58823529, 0.80392157, 1.],
+                  [0.36078431, 0.6745098, 0.93333333, 1.],
+                  [0.2627451, 0.80392157, 0.50196078, 1.],
+                  [1., 0.64705882, 0., 1.],
+                  [0.80392157, 0.33333333, 0.33333333, 1.],
+                  [0.94117647, 0.64705882, 0.67058824, 1.],
+                  [0.60392157, 0.78039216, 0.9372549, 1.],
+                  [0.83921569, 0.63921569, 0.98823529, 1.],
+                  [1., 0.88235294, 0.8627451, 1.],
+                  [0.98039216, 0.94901961, 0.74509804, 1.],
+                  [0.95294118, 0.78039216, 0.94901961, 1.],
+                  [0.77647059, 0.98039216, 0.37647059, 1.],
+                  [0.97647059, 0.43921569, 0.97647059, 1.],
+                  [0.98823529, 0.5372549, 0.38431373, 1.],
+                  [0.96470588, 0.89019608, 0.43921569, 1.],
+                  [0.94117647, 0.95686275, 0.25882353, 1.],
+                  [0.68235294, 0.83137255, 0.92941176, 1.],
+                  [0.85098039, 0.85098039, 0.85098039, 1.],
+                  [0.99215686, 0.60784314, 0.52156863, 1.],
+                  [0.49803922, 1., 0., 1.],
+                  [1., 0.7254902, 0.05882353, 1.],
+                  [0.43137255, 0.54509804, 0.23921569, 1.],
+                  [0.54509804, 0.53333333, 0.47058824, 1.],
+                  [0.49803922, 1., 0.83137255, 1.],
+                  [0., 0., 0.54509804, 1.],
+                  [0.82352941, 0.70588235, 0.54901961, 1.],
+                  [0., 0.39215686, 0., 1.]]
     for i, s in enumerate(range(1, n_training_states + 1)):
         if colors:
             if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
@@ -806,27 +824,35 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
             states_color[s] = CMAP_CATEGORICAL(int(s / n_training_states * CMAP_CATEGORICAL.N))
 
     # Plot background
-    if background_markersize > 0:
-        grid_probabilities_min = grid_probabilities.min()
-        grid_probabilities_max = grid_probabilities.max()
-        grid_probabilities_range = grid_probabilities_max - grid_probabilities_min
-        for i in range(grid_probabilities.shape[0]):
-            for j in range(grid_probabilities.shape[1]):
-                if convexhull_region.contains_point((x_grids[i], y_grids[j])):
-                    c = states_color[grid_states[i, j]]
-                    a = min(background_max_alpha,
-                            (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range)
-                    ax_map.plot(x_grids[i], y_grids[j], marker='s',
-                                markersize=background_markersize, markerfacecolor=c, alpha=a,
-                                aa=True, clip_on=False, zorder=1)
-    # Plot background mask
-    if background_mask_markersize > 0:
-        for i in range(grid_probabilities.shape[0]):
-            for j in range(grid_probabilities.shape[1]):
-                if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
-                    ax_map.plot(x_grids[i], y_grids[j], marker='s',
-                                markersize=background_mask_markersize, markerfacecolor='w',
-                                aa=True, clip_on=False, zorder=3)
+    grid_probabilities_min = grid_probabilities.min()
+    grid_probabilities_max = grid_probabilities.max()
+    grid_probabilities_range = grid_probabilities_max - grid_probabilities_min
+
+    image = ones((*grid_probabilities.shape, 3))
+    for i in range(grid_probabilities.shape[0]):
+        for j in range(grid_probabilities.shape[1]):
+            if convexhull_region.contains_point((x_grids[i], y_grids[j])):
+                rgba = states_color[grid_states[i, j]]
+                hsv = rgb_to_hsv(*rgba[:3])
+                a = (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
+                image[j, i] = hsv_to_rgb(hsv[0], a * max_background_saturation, hsv[2])
+    ax_map.imshow(image,
+                  origin='lower', aspect='auto', extent=ax_map.axis(),
+                  clip_on=False, zorder=1)
+
+    mask = zeros_like(grid_probabilities, dtype=bool)
+    for i in range(grid_probabilities.shape[0]):
+        for j in range(grid_probabilities.shape[1]):
+            if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
+                mask[i, j] = True
+    z = np.ma.array(grid_probabilities, mask=mask)
+
+    # Plot contours
+    ax_map.contour(z.transpose(), n_contours,
+                   origin='lower', aspect='auto', extent=ax_map.axis(),
+                   corner_mask=True,
+                   linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha,
+                   aa=True, clip_on=False, zorder=2)
 
     if any(annotation):  # Plot samples, annotation, sample legends, and annotation legends
         # Set up annotation
@@ -894,7 +920,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
                             fontsize=legend_fontsize * 1.26, weight='bold')
 
         # Plot effect plot
-        if effectplot_type == 'violine':  # Plot violine plot
+        if effectplot_type == 'violine':
             violinplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=states_color, scale='count',
                        inner=None, orient='h', ax=ax_legend, clip_on=False)
             boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], showbox=False, showmeans=True,
@@ -904,7 +930,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
                                  'markeredgecolor': effectplot_mean_markeredgecolor},
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
-        elif effectplot_type == 'box':  # Plot box plot
+        elif effectplot_type == 'box':
             boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=states_color, showmeans=True,
                     medianprops={'marker': 'o',
                                  'markerfacecolor': effectplot_mean_markerfacecolor,
@@ -922,19 +948,22 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
         ax_legend.axvline(annotation_min, color='#000000', ls='-', alpha=0.16, aa=True, clip_on=False)
         ax_legend.axvline(annotation_mean, color='#000000', ls='-', alpha=0.39, aa=True, clip_on=False)
         ax_legend.axvline(annotation_max, color='#000000', ls='-', alpha=0.16, aa=True, clip_on=False)
+
         # Set up y label, ticks, and lines
         ax_legend.set_ylabel('')
         ax_legend.set_yticklabels(
             ['State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)) for s in range(1, n_training_states + 1)],
             fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
+
         # Plot sample markers
         l, r = ax_legend.axis()[:2]
         x = l - float((r - l) / 5)
         for i, s in enumerate(samples.ix[:, 'state'].unique()):
             c = states_color[s]
             ax_legend.plot(x, i, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
-        # Plot colorbar
+
+        # Plot color bar
         if annotation_type == 'continuous':
             cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16,
                                 cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
