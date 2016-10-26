@@ -230,7 +230,6 @@ def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, colum
         else:
             raise ValueError('Column 1 has more than 1 extra space around \'Name\'. Please strip it.')
     df.set_index('Name', inplace=True)
-    df.index = df.index.astype(str)
 
     # Check if the 2nd column is 'Description'; is so drop it as necessary
     if c2 != 'Description':

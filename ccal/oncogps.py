@@ -237,39 +237,41 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-def make_oncogps_map(training_h, training_states, std_max=3, components=None,
+def make_oncogps_map(training_h, training_states, std_max=3,
                      testing_h=None, testing_states=None, testing_h_normalization='using_training',
-                     informational_mds=True, mds_seed=SEED,
+                     components=None, informational_mds=True, mds_seed=SEED,
                      n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
                      component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
                      annotation=(), annotation_name='', annotation_type='continuous',
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                     colors=(), component_markersize=16, component_markerfacecolor='#000726',
+                     component_markersize=16, component_markerfacecolor='#000726',
                      component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
                      component_text_position='auto', component_fontsize=22,
                      delaunay_linewidth=1, delaunay_linecolor='#000000',
+                     colors=(), bad_color='#999999', max_background_saturation=1,
                      n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                     sample_markersize=19, sample_without_annotation_markerfacecolor='#999999',
-                     sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
+                     sample_markersize=19, sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
+                     plot_sample_names=False,
                      legend_markersize=22, legend_fontsize=16, effectplot_type='violine',
                      effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
-                     effectplot_median_markeredgecolor='#FF0082', filepath=None):
+                     effectplot_median_markeredgecolor='#FF0082',
+                     filepath=None):
     """
     :param training_h: DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param training_states: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
-    :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param testing_states: iterable of int; (n_samples); sample states
     :param testing_h_normalization: str or None; {using_training, as_training, None}
+    :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
     :param power: str or number; power to raise components' influence on each sample
     :param fit_min: number;
     :param fit_max: number;
     :param power_min: number;
-    :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
     :param power_max: number;
     :param component_ratio: number; number if int; percentile if float & < 1
     :param n_grids: int; number of grids; larger the n_grids, higher the resolution
@@ -277,12 +279,13 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+
+    Plotting arguments:
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
-    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or list;
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
@@ -291,14 +294,17 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     :param component_fontsize: number;
     :param delaunay_linewidth: number;
     :param delaunay_linecolor: matplotlib color;
+    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
+    :param bad_color: matplotlib color;
+    :param max_background_saturation: float; [0, 1]
     :param n_contours: int; set to 0 to disable drawing contours
     :param contour_linewidth: number;
     :param contour_linecolor: matplotlib color;
     :param contour_alpha: float; [0, 1]
     :param sample_markersize: number;
-    :param sample_without_annotation_markerfacecolor: matplotlib color;
     :param sample_markeredgewidth: number;
     :param sample_markeredgecolor: matplotlib color;
+    :param plot_sample_names: bool; plot sample names or not
     :param legend_markersize: number;
     :param legend_fontsize: number;
     :param effectplot_type: str; {'violine', 'box'}
@@ -306,7 +312,7 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
     :param effectplot_mean_markeredgecolor: matplotlib color;
     :param effectplot_median_markeredgecolor: matplotlib color;
     :param filepath: str;
-    :return: DataFrame and DataFrame; components and samples
+    :return: None
     """
 
     # Make sure the index is str (better for .ix)
@@ -394,29 +400,28 @@ def make_oncogps_map(training_h, training_states, std_max=3, components=None,
                   '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
                   '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008B', '#D2B48C', '#006400']
 
-    _plot_onco_gps(components, samples, grid_probabilities, grid_states, len(set(training_states)),
+    _plot_onco_gps(components=components, samples=samples, grid_probabilities=grid_probabilities,
+                   grid_states=grid_states, n_training_states=len(set(training_states)),
                    annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
                    std_max=std_max,
                    title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
                    subtitle_fontsize=subtitle_fontsize, subtitle_fontcolor=subtitle_fontcolor,
-                   colors=colors,
                    component_markersize=component_markersize, component_markerfacecolor=component_markerfacecolor,
                    component_markeredgewidth=component_markeredgewidth,
                    component_markeredgecolor=component_markeredgecolor,
                    component_text_position=component_text_position, component_fontsize=component_fontsize,
                    delaunay_linewidth=delaunay_linewidth, delaunay_linecolor=delaunay_linecolor,
-                   n_contours=n_contours,
-                   contour_linewidth=contour_linewidth, contour_linecolor=contour_linecolor,
+                   colors=colors, bad_color=bad_color, max_background_saturation=max_background_saturation,
+                   n_contours=n_contours, contour_linewidth=contour_linewidth, contour_linecolor=contour_linecolor,
                    contour_alpha=contour_alpha,
                    sample_markersize=sample_markersize,
-                   sample_without_annotation_markerfacecolor=sample_without_annotation_markerfacecolor,
                    sample_markeredgewidth=sample_markeredgewidth, sample_markeredgecolor=sample_markeredgecolor,
+                   plot_sample_names=plot_sample_names,
                    legend_markersize=legend_markersize, legend_fontsize=legend_fontsize,
                    effectplot_type=effectplot_type, effectplot_mean_markerfacecolor=effectplot_mean_markerfacecolor,
                    effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                    effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
                    filepath=filepath)
-    return training_h, testing_h, components, samples, grid_probabilities, grid_states
 
 
 # ======================================================================================================================
@@ -659,20 +664,22 @@ def _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_fact
 # ======================================================================================================================
 # Plot Onco-GPS map
 # ======================================================================================================================
-def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_training_states,
-                   annotation=(), annotation_name='', annotation_type='continuous', std_max=3,
-                   title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-                   subtitle_fontsize=16, subtitle_fontcolor='#FF0039', colors=(),
-                   component_markersize=13, component_markerfacecolor='#000726', component_markeredgewidth=1.69,
-                   component_markeredgecolor='#FFFFFF', component_text_position='auto', component_fontsize=16,
-                   delaunay_linewidth=1, delaunay_linecolor='#000000', max_background_saturation=0.66,
-                   n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                   sample_markersize=12, sample_without_annotation_markerfacecolor='#999999',
-                   sample_markeredgewidth=0.81, sample_markeredgecolor='#000000', plot_sample_names=False,
-                   legend_markersize=10, legend_fontsize=11,
-                   effectplot_type='violine', effectplot_mean_markerfacecolor='#FFFFFF',
-                   effectplot_mean_markeredgecolor='#FF0082', effectplot_median_markeredgecolor='#FF0082',
-                   filepath=None):
+def _plot_onco_gps(components, samples,
+                   grid_probabilities, grid_states, n_training_states,
+                   annotation, annotation_name, annotation_type,
+                   std_max,
+                   title, title_fontsize, title_fontcolor,
+                   subtitle_fontsize, subtitle_fontcolor,
+                   component_markersize, component_markerfacecolor,
+                   component_markeredgewidth, component_markeredgecolor, component_text_position, component_fontsize,
+                   delaunay_linewidth, delaunay_linecolor,
+                   colors, bad_color, max_background_saturation,
+                   n_contours, contour_linewidth, contour_linecolor, contour_alpha,
+                   sample_markersize, sample_markeredgewidth, sample_markeredgecolor, plot_sample_names,
+                   legend_markersize, legend_fontsize,
+                   effectplot_type, effectplot_mean_markerfacecolor,
+                   effectplot_mean_markeredgecolor, effectplot_median_markeredgecolor,
+                   filepath):
     """
     Plot Onco-GPS map.
     :param components: DataFrame; (n_components, 2 [x, y]);
@@ -689,7 +696,6 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     :param title_fontcolor: matplotlib color;
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
-    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
@@ -698,12 +704,14 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
     :param component_fontsize: number;
     :param delaunay_linewidth: number;
     :param delaunay_linecolor: matplotlib color;
+    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
+    :param bad_color: matplotlib color;
+    :param max_background_saturation: float; [0, 1]
     :param n_contours: int; set to 0 to disable drawing contours
     :param contour_linewidth: number;
     :param contour_linecolor: matplotlib color;
     :param contour_alpha: float; [0, 1]
     :param sample_markersize: number;
-    :param sample_without_annotation_markerfacecolor: matplotlib color;
     :param sample_markeredgewidth: number;
     :param sample_markeredgecolor: matplotlib color;
     :param plot_sample_names: bool; plot sample names or not
@@ -874,7 +882,7 @@ def _plot_onco_gps(components, samples, grid_probabilities, grid_states, n_train
             x = s.ix['x']
             y = s.ix['y']
             if isnull(s.ix['annotation']):
-                c = sample_without_annotation_markerfacecolor
+                c = bad_color
             else:
                 if annotation_type == 'continuous':
                     c = cmap(s.ix['annotation'])
