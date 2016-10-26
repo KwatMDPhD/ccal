@@ -119,11 +119,12 @@ def _save_nmf(nmf_results, filepath_prefix):
         write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
 
 
-def solve_for_components(w_matrix, a_matrix, filepath_prefix=None):
+def solve_for_components(w_matrix, a_matrix, method='nnls', filepath_prefix=None):
     """
     Get H matrix of a_matrix in the space of w_matrix by solving W * H = A for H.
     :param w_matrix: str or DataFrame; (n_rows, k)
     :param a_matrix: str or DataFrame; (n_rows, n_columns)
+    :param method: str; {nnls, pinv}
     :param filepath_prefix: str; filepath_prefix_solved_nmf_h_k{}.{gct, pdf} will be saved
     :return: DataFrame; (k, n_columns)
     """
@@ -150,7 +151,7 @@ def solve_for_components(w_matrix, a_matrix, filepath_prefix=None):
 
     # Solve W * H = A
     print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(*w_matrix.shape, *a_matrix.shape))
-    h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix, method='pinv')
+    h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix, method=method)
 
     if filepath_prefix:  # Save H matrix
         write_gct(h_matrix, filepath_prefix + '_solved_nmf_h_k{}.gct'.format(h_matrix.shape[0]))
