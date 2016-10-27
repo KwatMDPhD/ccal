@@ -16,7 +16,7 @@ from os.path import join
 from colorsys import rgb_to_hsv, hsv_to_rgb
 import numpy as np
 from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum
-from pandas import DataFrame, Series, isnull
+from pandas import DataFrame, Series, read_csv, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
@@ -35,6 +35,7 @@ from .support import EPS, print_log, establish_filepath, load_gct, write_gct, wr
     drop_value_from_dataframe, \
     FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, plot_nmf, \
     plot_x_vs_y
+from .association import make_association_panel
 
 ro.conversion.py2ri = numpy2ri
 mass = importr('MASS')
@@ -119,12 +120,14 @@ def _save_nmf(nmf_results, filepath_prefix):
         write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
 
 
-def solve_for_components(w_matrix, a_matrix, method='nnls', filepath_prefix=None):
+def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_rows_of_a_matrix=True,
+                         filepath_prefix=None):
     """
     Get H matrix of a_matrix in the space of w_matrix by solving W * H = A for H.
     :param w_matrix: str or DataFrame; (n_rows, k)
     :param a_matrix: str or DataFrame; (n_rows, n_columns)
     :param method: str; {nnls, pinv}
+    :param average_duplicated_rows_of_a_matrix: bool; Average duplicate rows of the A matrix or not
     :param filepath_prefix: str; filepath_prefix_solved_nmf_h_k{}.{gct, pdf} will be saved
     :return: DataFrame; (k, n_columns)
     """
@@ -132,14 +135,13 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', filepath_prefix=None
     # Load A and W matrices
     w_matrix = load_gct(w_matrix)
     a_matrix = load_gct(a_matrix)
+    if average_duplicated_rows_of_a_matrix:  # Average duplicate rows of the A matrix
+        a_matrix = a_matrix.groupby(level=0).mean()
 
     # Keep only indices shared by both
     common_indices = set(a_matrix.index) & set(w_matrix.index)
     w_matrix = w_matrix.ix[common_indices, :]
     a_matrix = a_matrix.ix[common_indices, :]
-
-    # Average duplicates in A matrix
-    a_matrix = a_matrix.groupby(level=0).mean()
 
     # Rank normalize the A matrix by column
     # TODO: try changing n_ranks (choose automatically)
@@ -162,6 +164,86 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', filepath_prefix=None
     plot_nmf(w_matrix=w_matrix, h_matrix=h_matrix, filepath=plot_filepath)
 
     return h_matrix
+
+
+def select_features_and_nmf(testing, training,
+                            target, target_type='categorical', feature_scores=None,
+                            testing_name='Testing', training_name='Training', row_name='Feature', column_name='Sample',
+                            n_jobs=1, n_samplings=30, n_permutations=30,
+                            n_top_features=0.05, n_bottom_features=0.05,
+                            ks=(), n_clusterings=30,
+                            directory_path=None, feature_scores_filename_prefix='feature_scores'):
+    """
+
+    :param testing:
+    :param training:
+    :param target:
+    :param target_type:
+    :param feature_scores:
+    :param testing_name:
+    :param training_name:
+    :param row_name:
+    :param column_name:
+    :param n_jobs:
+    :param n_samplings:
+    :param n_permutations:
+    :param n_top_features:
+    :param n_bottom_features:
+    :param ks:
+    :param n_clusterings:
+    :param directory_path:
+    :param feature_scores_filename_prefix:
+    :return:
+    """
+
+    # Plot training
+    plot_heatmap(training, normalization_method='-0-', normalization_axis=1,
+                 column_annotation=target,
+                 title=training_name,
+                 xlabel=column_name, ylabel=row_name, yticklabels=False)
+
+    if not feature_scores:  # Compute feature scores
+        feature_scores = make_association_panel(target, training,
+                                                target_type=target_type,
+                                                n_jobs=n_jobs, n_samplings=n_samplings,
+                                                n_permutations=n_permutations,
+                                                filepath_prefix=join(directory_path,
+                                                                     feature_scores_filename_prefix))
+    else:  # Read feature scores from a file
+        # TODO: plot with computed scores
+        if not isinstance(feature_scores, DataFrame):
+            feature_scores = read_csv(feature_scores, sep='\t', index_col=0)
+
+    # Select features
+    if n_top_features < 1:
+        n_top_features = n_top_features * feature_scores.shape[0]
+    if n_bottom_features < 1:
+        n_bottom_features = n_bottom_features * feature_scores.shape[0]
+    features = feature_scores.index[:n_top_features] | feature_scores.index[-n_bottom_features:]
+
+    # Plot training with selected features
+    plot_heatmap(training.ix[features, :], normalization_method='-0-', normalization_axis=1,
+                 column_annotation=target,
+                 title='{} with Selected {}s'.format(training_name, row_name),
+                 xlabel=column_name, ylabel=row_name,
+                 yticklabels=False)
+
+    # Plot testing with selected features
+    testing = testing.ix[testing.index & features, :]
+    print_log('Selected testing {} testing features.'.format(testing.shape[0]))
+    plot_heatmap(testing, normalization_method='-0-', normalization_axis=1,
+                 title='{} with Selected {}'.format(testing_name, row_name),
+                 xlabel=column_name, ylabel=row_name,
+                 xticklabels=False, yticklabels=False)
+
+    # NMF
+    nmf_results, cophenetic_correlation_coefficients = define_components(testing,
+                                                                         ks,
+                                                                         n_jobs=n_jobs,
+                                                                         n_clusterings=n_clusterings,
+                                                                         directory_path=directory_path)
+
+    return nmf_results, cophenetic_correlation_coefficients
 
 
 # ======================================================================================================================

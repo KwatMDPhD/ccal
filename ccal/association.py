@@ -177,12 +177,11 @@ def _prepare_target_and_features(target, features, target_name=None):
     :param target_name: str;
     :return:
     """
-
     if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
         features = DataFrame(features).T
 
-    if target_name:  # Set target name
-        target.name = target_name
+    if not isinstance(target, Series):  # Convert target into a Series
+        target = Series(target, name=target_name, index=features.columns)
 
     # Keep only columns shared by target and features
     shared = target.index & features.columns
