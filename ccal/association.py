@@ -31,7 +31,7 @@ from .support import print_log, establish_filepath, read_gct, title_string, unti
 # ======================================================================================================================
 # Association panel
 # ======================================================================================================================
-def make_association_panels(target, features_bundle, target_type='continuous',
+def make_association_panels(target, features_bundle, target_ascending=False, target_type='continuous',
                             n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, filepath_prefix=None):
     """
     Annotate target with each feature in the features bundle.
@@ -49,6 +49,7 @@ def make_association_panels(target, features_bundle, target_type='continuous',
             ],
             ...
         ]
+    :param target_ascending: bool;
     :param target_type:
     :param n_jobs: int; number of jobs to parallelize
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
@@ -69,13 +70,15 @@ def make_association_panels(target, features_bundle, target_type='continuous',
         if filepath_prefix:
             filepath_prefix += untitle_string(title)
         make_association_panel(target, features_dict['dataframe'],
-                               target_type=target_type, features_type=features_dict['data_type'],
+                               target_ascending=target_ascending, target_type=target_type,
+                               features_type=features_dict['data_type'],
                                n_jobs=n_jobs, features_ascending=features_dict['is_ascending'], n_features=n_features,
                                n_samplings=n_samplings, n_permutations=n_permutations,
                                title=title, filepath_prefix=filepath_prefix)
 
 
-def make_association_panel(target, features, target_name=None, target_type='continuous', features_type='continuous',
+def make_association_panel(target, features, target_ascending=False, target_name=None,
+                           target_type='continuous', features_type='continuous',
                            filepath_scores=None, n_jobs=1, features_ascending=False, n_features=0.95, max_n_features=30,
                            n_samplings=30, n_permutations=30, title=None, plot_colname=False, filepath_prefix=None):
     """
@@ -83,6 +86,7 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     Compute P-value and FDR (BH) for all features. And plot the result.
     :param target: pandas Series; (n_samples); must have name and index matching features's column names
     :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
+    :param target_ascending: bool;
     :param target_name: str;
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param features_type: str; {'continuous', 'categorical', 'binary'}
@@ -100,7 +104,8 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     """
 
     # Preprocess data
-    target, features = _prepare_target_and_features(target, features, target_name=target_name)
+    target, features = _prepare_target_and_features(target, features, target_ascending=target_ascending,
+                                                    target_name=target_name)
 
     if n_features > max_n_features or (n_features < 1 and n_features * features.shape[0] > max_n_features):
         # Limit number of features used
@@ -168,12 +173,13 @@ def make_association_panel(target, features, target_name=None, target_type='cont
     return scores
 
 
-def _prepare_target_and_features(target, features, target_name=None):
+def _prepare_target_and_features(target, features, target_ascending=False, target_name=None):
     """
     Make sure target is a Series. Name target. Make sure features is a DataFrame.
     Keep samples only in both target and features. Drop features with less than 2 unique values.
-    :param target:
-    :param features:
+    :param target: Series or iterable;
+    :param features: DataFrame or Series;
+    :param target_ascending: bool;
     :param target_name: str;
     :return:
     """
@@ -182,6 +188,7 @@ def _prepare_target_and_features(target, features, target_name=None):
 
     if not isinstance(target, Series):  # Convert target into a Series
         target = Series(target, name=target_name, index=features.columns)
+        target.sort_values(ascending=target_ascending, inplace=True)
 
     # Keep only columns shared by target and features
     shared = target.index & features.columns
