@@ -232,7 +232,6 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
                                         'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
 
-
     #
     # Compute: score_i = function(target, feature_i).
     #
@@ -427,10 +426,10 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
         # Concatenate
         scores = concat([scores, p_values_and_fdrs], join_axes=[scores.index], axis=1)
 
-        # Save
-        if filepath:
-            establish_filepath(filepath)
-        scores.to_csv(filepath, sep='\t')
+    # Save
+    if filepath:
+        establish_filepath(filepath)
+    scores.to_csv(filepath, sep='\t')
 
     return scores
 
