@@ -49,7 +49,7 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
             ],
             ...
         ]
-    :param target_ascending: bool;
+    :param target_ascending: bool; target is ascending from left to right or not
     :param target_type:
     :param n_jobs: int; number of jobs to parallelize
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
