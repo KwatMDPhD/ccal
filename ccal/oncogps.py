@@ -132,6 +132,8 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
     :return: DataFrame; (k, n_columns)
     """
 
+    # TODO: add collapsing
+
     # Load A and W matrices
     w_matrix = load_gct(w_matrix)
     a_matrix = load_gct(a_matrix)
@@ -171,7 +173,7 @@ def select_features_and_nmf(testing, training,
                             testing_name='Testing', training_name='Training', row_name='Feature', column_name='Sample',
                             n_jobs=1, n_samplings=30, n_permutations=30,
                             n_top_features=0.05, n_bottom_features=0.05,
-                            ks=(), n_clusterings=30,
+                            ks=(), n_clusterings=100,
                             directory_path=None, feature_scores_filename_prefix='feature_scores'):
     """
 
