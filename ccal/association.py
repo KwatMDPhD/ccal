@@ -188,7 +188,6 @@ def _prepare_target_and_features(target, features, target_ascending=False, targe
 
     if not isinstance(target, Series):  # Convert target into a Series
         target = Series(target, name=target_name, index=features.columns)
-        target.sort_values(ascending=target_ascending, inplace=True)
 
     # Keep only columns shared by target and features
     shared = target.index & features.columns
@@ -198,7 +197,7 @@ def _prepare_target_and_features(target, features, target_ascending=False, targe
                                                                                               target.size,
                                                                                               features.shape[1],
                                                                                               len(shared)))
-        target = target.ix[shared].sort_values(ascending=False)
+        target = target.ix[shared].sort_values(ascending=target_ascending)
         features = features.ix[:, target.index]
     else:
         raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
