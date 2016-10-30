@@ -11,6 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
+from os.path import join
 from math import ceil, sqrt
 
 from numpy import array, sum, unique, isnan
@@ -32,7 +33,7 @@ from .support import print_log, establish_filepath, read_gct, title_string, unti
 # Association panel
 # ======================================================================================================================
 def make_association_panels(target, features_bundle, target_ascending=False, target_type='continuous',
-                            n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, filepath_prefix=None):
+                            n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, directory_path=None):
     """
     Annotate target with each feature in the features bundle.
     :param target: pandas Series; (n_elements); must have indices
@@ -55,7 +56,7 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
-    :param filepath_prefix: str; filepath_prefix_annotation_name.txt and filepath_prefix_annotation_name.pdf are saved
+    :param directory_path: str; directory_path/target_name_vs_features_name.{txt, pdf} will be saved.
     :return: None
     """
 
@@ -67,8 +68,8 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
     for features_name, features_dict in feature_dicts.items():
         title = title_string('{} vs {}'.format(target.name, features_name))
         print_log('{} ...'.format(title))
-        if filepath_prefix:
-            filepath_prefix += untitle_string(title)
+        if directory_path:
+            filepath_prefix = join(directory_path, untitle_string(title))
         make_association_panel(target, features_dict['dataframe'],
                                target_ascending=target_ascending, target_type=target_type,
                                features_type=features_dict['data_type'],
