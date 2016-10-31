@@ -323,7 +323,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 # Make Onco-GPS map
 # ======================================================================================================================
 def make_oncogps_map(training_h, training_states, std_max=3,
-                     testing_h=None, testing_states=None, testing_h_normalization='using_training',
+                     testing_h=None, testing_states=None, testing_h_normalization='using_training_h',
                      components=None, informational_mds=True, mds_seed=SEED,
                      n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
                      component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
@@ -348,7 +348,7 @@ def make_oncogps_map(training_h, training_states, std_max=3,
     :param std_max: number; threshold to clip standardized values
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param testing_states: iterable of int; (n_samples); sample states
-    :param testing_h_normalization: str or None; {using_training, as_training, None}
+    :param testing_h_normalization: str or None; {'using_training_h', 'using_testing_h', None}
     :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
@@ -408,14 +408,14 @@ def make_oncogps_map(training_h, training_states, std_max=3,
         if not testing_h_normalization:
             normalize_training_h = False
             normalizing_h = None
-        elif testing_h_normalization == 'using_training':
+        elif testing_h_normalization == 'using_training_h':
             normalize_training_h = True
             normalizing_h = training_h.copy()
-        elif testing_h_normalization == 'as_training':
+        elif testing_h_normalization == 'using_testing_h':
             normalize_training_h = True
             normalizing_h = None
         else:
-            raise ValueError('testing_h_normalization must be one of {using_training, as_training, None}.')
+            raise ValueError('testing_h_normalization must be one of {using_training_h, using_testing_h, None}.')
 
     # Preprocess training-H matrix and training states
     training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
