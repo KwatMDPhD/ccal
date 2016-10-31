@@ -170,7 +170,7 @@ def make_association_panel(target, features, target_ascending=False, target_name
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    print(filepath_prefix)
+    print(filepath)
     _plot_association_panel(target, features, annotations, target_type=target_type, features_type=features_type,
                             title=title, plot_colname=plot_colname, filepath=filepath)
 
