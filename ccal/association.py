@@ -70,6 +70,8 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
         print_log('{} ...'.format(title))
         if directory_path:
             filepath_prefix = join(directory_path, untitle_string(title))
+        else:
+            filepath_prefix = None
         make_association_panel(target, features_dict['dataframe'],
                                target_ascending=target_ascending, target_type=target_type,
                                features_type=features_dict['data_type'],
