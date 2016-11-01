@@ -348,6 +348,37 @@ def write_gmt(pandas_object, filepath, descriptions=None):
     obj.to_csv(filepath, sep='\t')
 
 
+def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=None):
+    """
+    Write dataframe to filepath.
+    :param dataframe: DataFrame;
+    :param filepath: str;
+    :param gene_column: str; column name
+    :param score_column: str; column name
+    :param comment: str; comments; '# comments' is added to the beginning of the file
+    :return: None
+    """
+
+    df = dataframe.copy()
+
+    if gene_column:
+        df = df.reindex_axis(gene_column)
+
+    if not score_column:
+        score_column = df.columns[0]
+
+    s = df.ix[:, score_column]
+    s = s.sort_values(ascending=False)
+
+    if not filepath.endswith('.rnk'):
+        filepath += '.rnk'
+
+    with open(filepath, 'w') as f:
+        if comment:
+            f.writelines('# {}\n'.format(comment))
+        s.to_csv(f, sep='\t', header=False)
+
+
 def read_dictionary(filepath, sep='\t', switch=False):
     """
     Make a dictionary from mapping_file: key<sep>value.
