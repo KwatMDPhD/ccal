@@ -353,8 +353,8 @@ def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=
     Write dataframe to filepath.
     :param dataframe: DataFrame;
     :param filepath: str;
-    :param gene_column: str; column name
-    :param score_column: str; column name
+    :param gene_column: str; column name; dataframe index is the default
+    :param score_column: str; column name; 1st column is the default
     :param comment: str; comments; '# comments' is added to the beginning of the file
     :return: None
     """
