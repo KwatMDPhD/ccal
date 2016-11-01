@@ -32,11 +32,11 @@ from .support import print_log, establish_filepath, read_gct, title_string, unti
 # ======================================================================================================================
 # Association panel
 # ======================================================================================================================
-def make_association_panels(target, features_bundle, target_ascending=False, target_type='continuous',
+def make_association_panels(target, features_bundle, target_ascending=False, target_name=None, target_type='continuous',
                             n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, directory_path=None):
     """
-    Annotate target with each feature in the features bundle.
-    :param target: pandas Series; (n_elements); must have indices
+    Annotate target with each features in the features bundle.
+    :param target: Series; (n_elements); must have indices
     :param features_bundle: list of lists;
         [
             [
@@ -51,6 +51,7 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
             ...
         ]
     :param target_ascending: bool; target is ascending from left to right or not
+    :param target_name: str;
     :param target_type: str;
     :param n_jobs: int; number of jobs to parallelize
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
@@ -73,70 +74,80 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
         else:
             filepath_prefix = None
         make_association_panel(target, features_dict['dataframe'],
-                               target_ascending=target_ascending, target_type=target_type,
+                               target_ascending=target_ascending,
+                               n_jobs=n_jobs, features_ascending=features_dict['is_ascending'],
+                               n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
+                               target_name=target_name, target_type=target_type,
                                features_type=features_dict['data_type'],
-                               n_jobs=n_jobs, features_ascending=features_dict['is_ascending'], n_features=n_features,
-                               n_samplings=n_samplings, n_permutations=n_permutations,
-                               title=title, filepath_prefix=filepath_prefix)
+                               title=title,
+                               filepath_prefix=filepath_prefix)
 
 
-def make_association_panel(target, features, target_ascending=False, target_name=None,
-                           target_type='continuous', features_type='continuous',
-                           filepath_scores=None, n_jobs=1, features_ascending=False, n_features=0.95, max_n_features=30,
-                           n_samplings=30, n_permutations=30, title=None, plot_colname=False, filepath_prefix=None):
+def make_association_panel(target, features, filepath_scores=None,
+                           target_ascending=False,
+                           n_jobs=1, features_ascending=False,
+                           n_features=0.95, max_n_features=30, n_samplings=30, n_permutations=30,
+                           target_name=None, target_type='continuous',
+                           features_type='continuous',
+                           title=None, plot_colname=False,
+                           filepath_prefix=None):
     """
     Compute: score_i = function(target, feature_i). Compute confidence interval (CI) for n_features features.
     Compute P-value and FDR (BH) for all features. And plot the result.
-    :param target: pandas Series; (n_samples); must have name and index matching features's column names
-    :param features: pandas DataFrame; (n_features, n_samples); must have index and column names
-    :param target_ascending: bool;
-    :param target_name: str;
-    :param target_type: str; {'continuous', 'categorical', 'binary'}
-    :param features_type: str; {'continuous', 'categorical', 'binary'}
+    :param target: Series; (n_samples); must have name and index matching features's column names
+    :param features: DataFrame; (n_features, n_samples); must have index and column names
     :param filepath_scores: str;
+    :param target_ascending: bool;
     :param n_jobs: int; number of jobs to parallelize
     :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param max_n_features: int;
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
+    :param target_name: str;
+    :param target_type: str; {'continuous', 'categorical', 'binary'}
+    :param features_type: str; {'continuous', 'categorical', 'binary'}
     :param title: str; plot title
     :param plot_colname: bool; plot column names below the plot or not
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
-    :return: pandas DataFrame; merged features and scores
+    :return: DataFrame; n_features association scores (n_features, 7 ('score', '<confidence> moe',
+                                                       'p-value (forward)', 'p-value (reverse)', 'p-value',
+                                                       'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
 
-    # Preprocess data
-    target, features = _prepare_target_and_features(target, features, target_ascending=target_ascending,
-                                                    target_name=target_name)
-
-    if n_features > max_n_features or (n_features < 1 and n_features * features.shape[0] > max_n_features):
-        # Limit number of features used
-        n_features = max_n_features
-        print_log('Changed n_features to be 100 to avoid computing CI for and plotting too many features.')
+    if max_n_features:  # Limit number of features to calculate mergin of error and plot
+        if n_features > max_n_features or (n_features < 1 and n_features * features.shape[0] > max_n_features):
+            n_features = max_n_features
+            print_log('Changed n_features to be 100 to avoid computing CI for and plotting too many features.')
 
     #
     # Score
     #
     if filepath_scores:  # Read already computed scores
+        # Process target and features as compute_association does
+        target, features = _prepare_target_and_features(target, features, target_ascending=target_ascending)
+
         scores = read_csv(filepath_scores, sep='\t', index_col=0)
         print_log('Using already computed scores ...')
+
     else:  # Compute score
         if filepath_prefix:
             filepath = filepath_prefix + '.txt'
         else:
             filepath = None
-        scores = _associate(target, features, n_jobs=n_jobs, features_ascending=features_ascending,
-                            n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
-                            filepath=filepath)
-
-    if '0.95 moe' in scores.columns:  # Keep only scores with computed margin of error for plotting
-        scores = scores.ix[~scores.ix[:, '0.95 moe'].isnull(), :]
-    else:  # Keep only top and bottom n_features features
-        scores = scores.ix[scores.index[:n_features].tolist() + scores.index[-n_features:].tolist(), :]
+        scores = compute_association(target, features,
+                                     target_ascending=target_ascending,
+                                     n_jobs=n_jobs, features_ascending=features_ascending,
+                                     n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
+                                     filepath=filepath)
 
     # Apply order of scores to features
     features = features.ix[scores.index, :]
+
+    if '0.95 moe' in scores.columns:  # Plot only those with computed margin of error
+        scores = scores.ix[~scores.ix[:, '0.95 moe'].isnull(), :]
+    else:  # Keep only top and bottom n_features features
+        scores = scores.ix[scores.index[:n_features].tolist() + scores.index[-n_features:].tolist(), :]
 
     #
     # Make annotations
@@ -170,79 +181,44 @@ def make_association_panel(target, features, target_ascending=False, target_name
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    _plot_association_panel(target, features, annotations, target_type=target_type, features_type=features_type,
+    _plot_association_panel(target, features, annotations,
+                            target_name=target_name, target_type=target_type,
+                            features_type=features_type,
                             title=title, plot_colname=plot_colname, filepath=filepath)
 
     return scores
 
 
-def _prepare_target_and_features(target, features, target_ascending=False, target_name=None):
-    """
-    Make sure target is a Series. Name target. Make sure features is a DataFrame.
-    Keep samples only in both target and features. Drop features with less than 2 unique values.
-    :param target: Series or iterable;
-    :param features: DataFrame or Series;
-    :param target_ascending: bool;
-    :param target_name: str;
-    :return:
-    """
-    if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
-        features = DataFrame(features).T
-
-    if not isinstance(target, Series):  # Convert target into a Series
-        target = Series(target, name=target_name, index=features.columns)
-
-    # Keep only columns shared by target and features
-    shared = target.index & features.columns
-    if any(shared):
-        # Target is always descending from left to right
-        print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
-                                                                                              target.size,
-                                                                                              features.shape[1],
-                                                                                              len(shared)))
-        target = target.ix[shared].sort_values(ascending=target_ascending)
-        features = features.ix[:, target.index]
-    else:
-        raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
-                                                                                                    target.size,
-                                                                                                    features.shape[1]))
-
-    # Drop features having less than 2 unique values
-    min_n_unique_values = 2
-    print_log('Dropping features with less than {} unique values ...'.format(min_n_unique_values))
-    features = features.ix[features.apply(lambda f: len(set(f)), axis=1) >= min_n_unique_values]
-    if features.empty:
-        raise ValueError('No feature has at least {} unique values.'.format(min_n_unique_values))
-    else:
-        print_log('\tKept {} features.'.format(features.shape[0]))
-
-    return target, features
-
-
-def _associate(target, features, function=information_coefficient, n_jobs=1, features_ascending=False,
-               n_features=0.95, min_n_per_job=100, n_samplings=30, confidence=0.95, n_permutations=30, filepath=None):
+def compute_association(target, features, function=information_coefficient, target_ascending=False,
+                        n_jobs=1, min_n_per_job=100, features_ascending=False,
+                        n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
+                        filepath=None):
     """
     Compute: score_i = function(target, feature_i).
     Compute confidence interval (CI) for n_features features. And compute P-value and FDR (BH) for all features.
-    :param target: pandas Series; (n_samples); must have name and indices, matching features's column index
-    :param features: pandas DataFrame; (n_features, n_samples); must have row and column indices
+    :param target: Series; (n_samples); must have name and indices, matching features's column index
+    :param features: DataFrame; (n_features, n_samples); must have row and column indices
     :param function: function; scoring function
+    :param target_ascending: bool; target is ascending or not
     :param n_jobs: int; number of jobs to parallelize
+    :param min_n_per_job: int; minimum number of n per job for parallel computing
     :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
-    :param min_n_per_job: int; minimum number of n per job for parallel computing
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath: str;
-    :return: DataFrame; (n_features, 7 ('score', '<confidence> moe',
-                                        'p-value (forward)', 'p-value (reverse)', 'p-value',
-                                        'fdr (forward)', 'fdr (reverse)', 'fdr'))
+    :return: DataFrame; association scores (n_features, 7 ('score', '<confidence> moe',
+                                            'p-value (forward)', 'p-value (reverse)', 'p-value',
+                                            'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
 
+    # Preprocess data
+    target, features = _prepare_target_and_features(target, features, target_ascending=target_ascending)
+
     #
-    # Compute: score_i = function(target, feature_i).
+    # Compute: score_i = function(target, feature_i)
     #
     if n_jobs == 1:  # Non-parallel computing
         print_log('Scoring ...')
@@ -443,12 +419,56 @@ def _associate(target, features, function=information_coefficient, n_jobs=1, fea
     return scores
 
 
+def _prepare_target_and_features(target, features, target_ascending=False):
+    """
+    Make sure target is a Series and features a DataFrame.
+    Keep samples only in both target and features.
+    Drop features with less than 2 unique values.
+    :param target: Series or iterable;
+    :param features: DataFrame or Series;
+    :param target_ascending: bool;
+    :return: Series and DataFrame;
+    """
+
+    if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
+        features = DataFrame(features).T
+
+    if not isinstance(target, Series):  # Convert target into a Series
+        target = Series(target, index=features.columns)
+
+    # Keep only columns shared by target and features
+    shared = target.index & features.columns
+    if any(shared):
+        # Target is always descending from left to right
+        print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
+                                                                                              target.size,
+                                                                                              features.shape[1],
+                                                                                              len(shared)))
+        target = target.ix[shared].sort_values(ascending=target_ascending)
+        features = features.ix[:, target.index]
+    else:
+        raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
+                                                                                                    target.size,
+                                                                                                    features.shape[1]))
+
+    # Drop features having less than 2 unique values
+    min_n_unique_values = 2
+    print_log('Dropping features with less than {} unique values ...'.format(min_n_unique_values))
+    features = features.ix[features.apply(lambda f: len(set(f)), axis=1) >= min_n_unique_values]
+    if features.empty:
+        raise ValueError('No feature has at least {} unique values.'.format(min_n_unique_values))
+    else:
+        print_log('\tKept {} features.'.format(features.shape[0]))
+
+    return target, features
+
+
 def _score(args):
     """
     Compute: ith score = function(target, ith feature).
     :param args: list-like;
         (DataFrame (n_features, m_samples); features, Series (m_samples); target, function)
-    :return: pandas DataFrame; (n_features, 1 ('score'))
+    :return: DataFrame; (n_features, 1 ('score'))
     """
 
     t, f, func = args
@@ -463,7 +483,7 @@ def _permute_and_score(args):
          DataFrame (n_features, m_samples); features,
          function,
          int; n_permutations)
-    :return: pandas DataFrame; (n_features, n_permutations)
+    :return: DataFrame; (n_features, n_permutations)
     """
 
     t, f, func, n_perms = args
@@ -477,13 +497,16 @@ def _permute_and_score(args):
     return scores
 
 
-def _plot_association_panel(target, features, annotations, target_type='continuous', features_type='continuous',
+def _plot_association_panel(target, features, annotations,
+                            target_name=None, target_type='continuous',
+                            features_type='continuous',
                             title=None, plot_colname=False, filepath=None):
     """
     Plot association panel.
-    :param target: pandas Series; (n_elements); must have indices matching features's columns
-    :param features: pandas DataFrame; (n_features, n_elements); must have indices and columns
-    :param annotations: pandas DataFrame; (n_features, n_annotations); must have indices matching features's index
+    :param target: Series; (n_elements); must have indices matching features's columns
+    :param features: DataFrame; (n_features, n_elements); must have indices and columns
+    :param annotations: DataFrame; (n_features, n_annotations); must have indices matching features's index
+    :param target_name: str;
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param features_type: str; {'continuous', 'categorical', 'binary'}
     :param title: str;
@@ -494,6 +517,8 @@ def _plot_association_panel(target, features, annotations, target_type='continuo
 
     # Prepare target for plotting
     target, target_min, target_max, target_cmap = _prepare_data_for_plotting(target, target_type)
+    if target_name:
+        target.name = target_name
 
     # Prepare features for plotting
     features, features_min, features_max, features_cmap = _prepare_data_for_plotting(features, features_type)
@@ -570,7 +595,7 @@ def plot_association_summary_panel(target, features_bundle, annotations_bundle, 
                                    filepath=None):
     """
     Plot summary association panel.
-    :param target: pandas Series; (n_elements); must have indices
+    :param target: Series; (n_elements); must have indices
     :param features_bundle: list;
         [
             [
@@ -828,8 +853,8 @@ def make_comparison_matrix(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_l
                            filepath_prefix=None):
     """
     Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
-    :param matrix1: pandas DataFrame or numpy 2D arrays;
-    :param matrix2: pandas DataFrame or numpy 2D arrays;
+    :param matrix1: DataFrame or numpy 2D arrays;
+    :param matrix2: DataFrame or numpy 2D arrays;
     :param matrix1_label: str;
     :param matrix2_label: str;
     :param function: function; association or distance function
@@ -837,7 +862,7 @@ def make_comparison_matrix(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_l
     :param is_distance: bool; if True, distances are computed from associations, as in 'distance = 1 - association'
     :param title: str; plot title
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
-    :return: pandas DataFrame; association or distance matrix
+    :return: DataFrame; association or distance matrix
     """
 
     # Compute association or distance matrix, which is returned at the end
