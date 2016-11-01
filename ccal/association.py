@@ -190,9 +190,9 @@ def compute_association(target, features, function=information_coefficient,
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath: str;
-    :return: DataFrame; (n_features, 8 ('score', '<confidence> moe',
-                         'p-value (forward)', 'p-value (reverse)', 'p-value',
-                         'fdr (forward)', 'fdr (reverse)', 'fdr'))
+    :return: Series, DataFrame, DataFrame; (n_features, 8 ('score', '<confidence> moe',
+                                            'p-value (forward)', 'p-value (reverse)', 'p-value',
+                                            'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
 
     # Make sure target is a Series and features a DataFrame
