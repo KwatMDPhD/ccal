@@ -14,7 +14,7 @@ Authors:
 from os.path import join
 from math import ceil, sqrt
 
-from numpy import array, sum, unique, isnan
+from numpy import array, sum, unique
 from numpy.random import shuffle, choice
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
@@ -25,8 +25,9 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import heatmap
 
 from .support import print_log, establish_filepath, read_gct, title_string, untitle_string, information_coefficient, \
-    parallelize, get_unique_in_order, normalize_pandas, compare_matrices, FIGURE_SIZE, SPACING, \
-    CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, FONT_SUBTITLE, save_plot, plot_clustermap
+    parallelize, get_unique_in_order, normalize_pandas, compare_matrices, get_top_and_bottom_indices, \
+    FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, FONT_SUBTITLE, save_plot, \
+    plot_clustermap
 
 
 # ======================================================================================================================
@@ -87,7 +88,7 @@ def make_association_panel(target, features,
                            filepath_scores=None,
                            target_ascending=False,
                            n_jobs=1, features_ascending=False,
-                           n_features=0.95, max_n_features=30, n_samplings=30, n_permutations=30,
+                           n_features=0.95, max_n_features=50, n_samplings=30, n_permutations=30,
                            target_name=None, target_type='continuous',
                            features_type='continuous',
                            title=None, plot_colname=False,
@@ -113,75 +114,49 @@ def make_association_panel(target, features,
     :param title: str; plot title
     :param plot_colname: bool; plot column names below the plot or not
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
-    :return: DataFrame; n_features association scores (n_features, 7 ('score', '<confidence> moe',
-                                                       'p-value (forward)', 'p-value (reverse)', 'p-value',
-                                                       'fdr (forward)', 'fdr (reverse)', 'fdr'))
+    :return: None
     """
 
-    if max_n_features:  # Limit number of features to calculate mergin of error and plot
-        if n_features > max_n_features or (n_features < 1 and n_features * features.shape[0] > max_n_features):
-            n_features = max_n_features
-            print_log('Changed n_features to be 100 to avoid computing CI for and plotting too many features.')
-
-    #
     # Score
-    #
-    if filepath_scores:  # Read already computed scores
-        # Process target and features as compute_association does
-        target, features = _prepare_target_and_features(target, features, target_ascending=target_ascending)
-
-        scores = read_csv(filepath_scores, sep='\t', index_col=0)
+    if filepath_scores:  # Read already computed scores; might have been calculated with a different number of samples
         print_log('Using already computed scores ...')
 
+        # Make sure target is a Series and features a DataFrame
+        # Keep samples found in both target and features
+        # Drop features with less than 2 unique values
+        target, features = _preprocess_target_and_features(target, features, target_ascending=target_ascending)
+
+        scores = read_csv(filepath_scores, sep='\t', index_col=0)
+
     else:  # Compute score
+
         if filepath_prefix:
             filepath = filepath_prefix + '.txt'
         else:
             filepath = None
-        scores = compute_association(target, features,
-                                     target_ascending=target_ascending,
-                                     n_jobs=n_jobs, features_ascending=features_ascending,
-                                     n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
-                                     filepath=filepath)
 
-    print_log('Plotting ...')
+        target, features, scores = compute_association(target, features,
+                                                       target_ascending=target_ascending,
+                                                       n_jobs=n_jobs, features_ascending=features_ascending,
+                                                       n_features=n_features, n_samplings=n_samplings,
+                                                       n_permutations=n_permutations,
+                                                       filepath=filepath)
 
-    # Apply order of scores to features
-    features = features.ix[scores.index, :]
+    # Keep only scores and features to plot
+    indices_to_plot = get_top_and_bottom_indices(scores, 'score', n_features, max_n=max_n_features)
+    scores = scores.ix[indices_to_plot, :]
+    features = features.ix[indices_to_plot, :]
 
-    if '0.95 moe' in scores.columns:  # Plot only those with computed margin of error
-        scores = scores.ix[~scores.ix[:, '0.95 moe'].isnull(), :]
-    else:  # Keep only top and bottom n_features features
-        scores = scores.ix[scores.index[:n_features].tolist() + scores.index[-n_features:].tolist(), :]
-
-    #
-    # Make annotations
-    #
+    print_log('Making annotations ...')
     annotations = DataFrame(index=scores.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
 
-    # Add IC (0.95 confidence interval)
-    for f_i, s_moe in scores.ix[:, ['score', '0.95 moe']].iterrows():
-        if isnan(s_moe.ix['0.95 moe']):
-            a = '{0:.3f}(x.xxx)'.format(s_moe.ix['score'])
-        else:
-            a = '{0:.3f}({1:.3f})'.format(*s_moe.ix[['score', '0.95 moe']])
-        annotations.ix[f_i, 'IC(\u0394)'] = a
+    # Add IC (0.95 confidence interval), P-val, and FDR
+    annotations.ix[:, 'IC(\u0394)'] = scores.ix[:, ['score', '0.95 moe']].apply(lambda s: '{0:.3f}({1:.3f})'.format(*s),
+                                                                                axis=1)
+    annotations.ix[:, 'P-val'] = scores.ix[:, 'p-value'].apply('{:.2e}'.format)
+    annotations.ix[:, 'FDR'] = scores.ix[:, 'fdr'].apply('{:.2e}'.format)
 
-    # Add P-val
-    if 'p-value' in scores.columns:
-        a = ['{:.2e}'.format(pv) for pv in scores.ix[:, 'p-value']]
-    else:
-        a = 'x.xxe\u00B1xx'
-    annotations.ix[:, 'P-val'] = a
-
-    # Add FDR
-    if 'fdr' in scores.columns:
-        a = ['{:.2e}'.format(fdr) for fdr in scores.ix[:, 'fdr']]
-    else:
-        a = 'x.xxe\u00B1xx'
-    annotations.ix[:, 'FDR'] = a
-
-    # Plot
+    print_log('Plotting ...')
     if filepath_prefix:
         filepath = filepath_prefix + '.pdf'
     else:
@@ -191,11 +166,10 @@ def make_association_panel(target, features,
                             features_type=features_type,
                             title=title, plot_colname=plot_colname, filepath=filepath)
 
-    return scores
-
 
 # TODO: make empty DataFrame to absorb the results instead of concatenation
-def compute_association(target, features, function=information_coefficient, target_ascending=False,
+def compute_association(target, features, function=information_coefficient,
+                        target_ascending=False,
                         n_jobs=1, min_n_per_job=100, features_ascending=False,
                         n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
                         filepath=None):
@@ -216,13 +190,19 @@ def compute_association(target, features, function=information_coefficient, targ
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath: str;
-    :return: DataFrame; association scores (n_features, 7 ('score', '<confidence> moe',
-                                            'p-value (forward)', 'p-value (reverse)', 'p-value',
-                                            'fdr (forward)', 'fdr (reverse)', 'fdr'))
+    :return: DataFrame; (n_features, 8 ('score', '<confidence> moe',
+                         'p-value (forward)', 'p-value (reverse)', 'p-value',
+                         'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
 
-    # Preprocess data
-    target, features = _prepare_target_and_features(target, features, target_ascending=target_ascending)
+    # Make sure target is a Series and features a DataFrame
+    # Keep samples found in both target and features
+    # Drop features with less than 2 unique values
+    target, features = _preprocess_target_and_features(target, features, target_ascending=target_ascending)
+
+    results = DataFrame(index=features.index, columns=['score', '{} moe'.format(confidence),
+                                                       'p-value (forward)', 'p-value (reverse)', 'p-value',
+                                                       'fdr (forward)', 'fdr (reverse)', 'fdr'])
 
     #
     # Compute: score_i = function(target, feature_i)
@@ -235,7 +215,6 @@ def compute_association(target, features, function=information_coefficient, targ
 
         # Compute n per job
         n_per_job = features.shape[0] // n_jobs
-
         if n_per_job < min_n_per_job:  # n is not enough for parallel computing
             print_log('Scoring (with n_jobs=1 because n_per_job ({}) < min_n_per_job ({})) ...'.format(n_per_job,
                                                                                                        min_n_per_job))
@@ -244,7 +223,7 @@ def compute_association(target, features, function=information_coefficient, targ
         else:  # n is enough for parallel computing
             print_log('Scoring (n_jobs={}) ...'.format(n_jobs))
 
-            # Group
+            # Group args
             args = []
             leftovers = list(features.index)
             for i in range(n_jobs):
@@ -256,72 +235,48 @@ def compute_association(target, features, function=information_coefficient, targ
                     leftovers.remove(feature)
 
             # Parallelize
-            scores = concat(parallelize(_score, args, n_jobs=n_jobs))
+            scores = concat(parallelize(_score, args, n_jobs=n_jobs), verify_integrity=True)
 
             # Score leftovers
             if leftovers:
                 print_log('Scoring leftovers: {} ...'.format(leftovers))
-                scores = concat(
-                    [scores, _score((target, features.ix[leftovers, :], function))])
+                scores = concat([scores, _score((target, features.ix[leftovers, :], function))], verify_integrity=True)
 
-    # Sort by score
-    scores.sort_values('score', ascending=features_ascending, inplace=True)
+    # Load scores and sort results by scores
+    results.ix[scores.index, 'score'] = scores
+    results.sort_values('score', ascending=features_ascending, inplace=True)
 
     #
     #  Compute CI using bootstrapped distribution
     #
-    if not (isinstance(n_features, int) or isinstance(n_features, float)):
-        print_log('Not computing CI because n_features = None.')
-
-    elif n_samplings < 2:
+    if n_samplings < 2:
         print_log('Not computing CI because n_samplings < 2.')
 
     elif ceil(0.632 * features.shape[1]) < 3:
         print_log('Not computing CI because 0.632 * n_samples < 3.')
+
     else:
         print_log('Computing {} CI for using distributions built by {} bootstraps ...'.format(confidence, n_samplings))
-        if n_features < 1:  # Limit using percentile
-            # Top features
-            top_quantile = scores.ix[:, 'score'] >= scores.ix[:, 'score'].quantile(n_features)
-            print_log('\tBootstrapping {} features >= {:.3f} percentile ...'.format(sum(top_quantile),
-                                                                                    n_features))
-
-            # Bottom features
-            bottom_quantile = scores.ix[:, 'score'] <= scores.ix[:, 'score'].quantile(1 - n_features)
-            print_log('\tBootstrapping {} features <= {:.3f} percentile ...'.format(sum(bottom_quantile),
-                                                                                    1 - n_features))
-
-            indices_to_bootstrap = scores.index[top_quantile | bottom_quantile].tolist()
-
-        else:  # Limit using numbers, assuming that scores are sorted already
-            if 2 * n_features >= scores.shape[0]:  # Number of features to compute CI for > number of total features
-                indices_to_bootstrap = scores.index
-                print_log('\tBootstrapping all {} features ...'.format(scores.shape[0]))
-
-            else:
-                indices_to_bootstrap = scores.index[:n_features].tolist() + scores.index[-n_features:].tolist()
-                print_log('\tBootstrapping top & bottom {} features ...'.format(n_features))
-
-        confidence_intervals = DataFrame(index=indices_to_bootstrap, columns=['{} moe'.format(confidence)])
+        indices_to_bootstrap = get_top_and_bottom_indices(results, 'score', n_features)
 
         # Bootstrap: for n_sampling times, randomly choose 63.2% of the samples, score, and build score distribution
         sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
         for c_i in sampled_scores:
-            # Randomize
+            # Random sample
             ramdom_samples = choice(features.columns.tolist(), int(ceil(0.632 * features.shape[1]))).tolist()
-            sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
             sampled_target = target.ix[ramdom_samples]
+            sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
+
             # Score
-            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda f: function(f, sampled_target), axis=1)
+            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda f: function(sampled_target, f), axis=1)
 
         # Compute scores' confidence intervals using bootstrapped score distributions
         # TODO: improve confidence interval calculation
         z_critical = norm.ppf(q=confidence)
-        confidence_intervals.ix[:, '{} moe'.format(confidence)] = sampled_scores.apply(
-            lambda f: z_critical * (f.std() / sqrt(n_samplings)), axis=1)
 
-        # Concatenate
-        scores = concat([scores, confidence_intervals], join_axes=[scores.index], axis=1)
+        # Load confidence interval
+        results.ix[sampled_scores.index, '{} moe'.format(confidence)] = sampled_scores.apply(
+            lambda f: z_critical * (f.std() / sqrt(n_samplings)), axis=1)
 
     #
     # Compute P-values and FDRs by sores against permuted target
@@ -329,10 +284,6 @@ def compute_association(target, features, function=information_coefficient, targ
     if n_permutations < 1:
         print_log('Not computing P-value and FDR because n_perm < 1.')
     else:
-        p_values_and_fdrs = DataFrame(index=scores.index,
-                                      columns=['p-value (forward)', 'p-value (reverse)', 'p-value',
-                                               'fdr (forward)', 'fdr (reverse)', 'fdr'])
-
         if n_jobs == 1:  # Non-parallel computing
             print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
             permutation_scores = _permute_and_score((target, features, function, n_permutations))
@@ -347,17 +298,13 @@ def compute_association(target, features, function=information_coefficient, targ
                           '(with n_jobs=1 because n_per_jobs ({}) < min_n_jobs ({})) ...'.format(n_permutations,
                                                                                                  n_per_job,
                                                                                                  min_n_per_job))
-                permutation_scores = _permute_and_score((target,
-                                                         features,
-                                                         function,
-                                                         n_permutations))
+                permutation_scores = _permute_and_score((target, features, function, n_permutations))
 
             else:  # n is enough for parallel computing
-                print_log('Computing P-value & FDR by scoring against {} permuted targets'
-                          '(n_jobs={}) ...'.format(n_permutations,
-                                                   n_jobs))
+                print_log('Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.format(
+                    n_permutations, n_jobs))
 
-                # Group
+                # Group args
                 args = []
                 leftovers = list(features.index)
                 for i in range(n_jobs):
@@ -369,22 +316,18 @@ def compute_association(target, features, function=information_coefficient, targ
                         leftovers.remove(feature)
 
                 # Parallelize
-                permutation_scores = concat(parallelize(_permute_and_score, args, n_jobs=n_jobs))
+                permutation_scores = concat(parallelize(_permute_and_score, args, n_jobs=n_jobs), verify_integrity=True)
 
                 # Handle leftovers
                 if leftovers:
                     print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
-                    permutation_scores = concat([permutation_scores,
-                                                 _permute_and_score((target,
-                                                                     features.ix[leftovers, :],
-                                                                     function,
-                                                                     n_permutations))])
+                    permutation_scores = concat([permutation_scores, _permute_and_score(
+                        (target, features.ix[leftovers, :], function, n_permutations))], verify_integrity=True)
 
         print_log('\tComputing P-value and FDR ...')
         # All scores
         all_permutation_scores = permutation_scores.values.flatten()
-        # TODO: update array instead of DataFrame
-        for i, (r_i, r) in enumerate(scores.iterrows()):
+        for i, (r_i, r) in enumerate(results.iterrows()):
             # This feature's score
             s = r.ix['score']
 
@@ -392,48 +335,44 @@ def compute_association(target, features, function=information_coefficient, targ
             p_value_forward = sum(all_permutation_scores >= s) / len(all_permutation_scores)
             if not p_value_forward:
                 p_value_forward = float(1 / len(all_permutation_scores))
-            p_values_and_fdrs.ix[r_i, 'p-value (forward)'] = p_value_forward
+            results.ix[r_i, 'p-value (forward)'] = p_value_forward
 
             # Compute reverse P-value
             p_value_reverse = sum(all_permutation_scores <= s) / len(all_permutation_scores)
             if not p_value_reverse:
                 p_value_reverse = float(1 / len(all_permutation_scores))
-            p_values_and_fdrs.ix[r_i, 'p-value (reverse)'] = p_value_reverse
+            results.ix[r_i, 'p-value (reverse)'] = p_value_reverse
 
         # Compute forward FDR
-        p_values_and_fdrs.ix[:, 'fdr (forward)'] = \
-            multipletests(p_values_and_fdrs.ix[:, 'p-value (forward)'], method='fdr_bh')[1]
+        results.ix[:, 'fdr (forward)'] = multipletests(results.ix[:, 'p-value (forward)'], method='fdr_bh')[1]
 
         # Compute reverse FDR
-        p_values_and_fdrs.ix[:, 'fdr (reverse)'] = \
-            multipletests(p_values_and_fdrs.ix[:, 'p-value (reverse)'], method='fdr_bh')[1]
+        results.ix[:, 'fdr (reverse)'] = multipletests(results.ix[:, 'p-value (reverse)'], method='fdr_bh')[1]
 
         # Creating the summary P-value and FDR
-        forward = scores.ix[:, 'score'] >= 0
-        p_values_and_fdrs.ix[:, 'p-value'] = concat([p_values_and_fdrs.ix[forward, 'p-value (forward)'],
-                                                     p_values_and_fdrs.ix[~forward, 'p-value (reverse)']])
-        p_values_and_fdrs.ix[:, 'fdr'] = concat([p_values_and_fdrs.ix[forward, 'fdr (forward)'],
-                                                 p_values_and_fdrs.ix[~forward, 'fdr (reverse)']])
-
-        # Concatenate
-        scores = concat([scores, p_values_and_fdrs], join_axes=[scores.index], axis=1)
+        forward = results.ix[:, 'score'] >= 0
+        results.ix[:, 'p-value'] = concat([results.ix[forward, 'p-value (forward)'], results.ix[~forward,
+                                                                                                'p-value (reverse)']])
+        results.ix[:, 'fdr'] = concat([results.ix[forward, 'fdr (forward)'], results.ix[~forward,
+                                                                                        'fdr (reverse)']])
 
     # Save
     if filepath:
         establish_filepath(filepath)
-    scores.to_csv(filepath, sep='\t')
+        results.to_csv(filepath, sep='\t')
 
-    return scores
+    return target, features, results
 
 
-def _prepare_target_and_features(target, features, target_ascending=False):
+def _preprocess_target_and_features(target, features, target_ascending=False, min_n_unique_values=2):
     """
     Make sure target is a Series and features a DataFrame.
-    Keep samples only in both target and features.
+    Keep samples found in both target and features.
     Drop features with less than 2 unique values.
     :param target: Series or iterable;
     :param features: DataFrame or Series;
     :param target_ascending: bool;
+    :param min_n_unique_values: int;
     :return: Series and DataFrame;
     """
 
@@ -446,7 +385,6 @@ def _prepare_target_and_features(target, features, target_ascending=False):
     # Keep only columns shared by target and features
     shared = target.index & features.columns
     if any(shared):
-        # Target is always descending from left to right
         print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
                                                                                               target.size,
                                                                                               features.shape[1],
@@ -459,7 +397,6 @@ def _prepare_target_and_features(target, features, target_ascending=False):
                                                                                                     features.shape[1]))
 
     # Drop features having less than 2 unique values
-    min_n_unique_values = 2
     print_log('Dropping features with less than {} unique values ...'.format(min_n_unique_values))
     features = features.ix[features.apply(lambda f: len(set(f)), axis=1) >= min_n_unique_values]
     if features.empty:
@@ -472,14 +409,13 @@ def _prepare_target_and_features(target, features, target_ascending=False):
 
 def _score(args):
     """
-    Compute: ith score = function(target, ith feature).
-    :param args: list-like;
-        (DataFrame (n_features, m_samples); features, Series (m_samples); target, function)
-    :return: DataFrame; (n_features, 1 ('score'))
+    Compute: score_i = function(target, feature_i)
+    :param args: list-like; [DataFrame (n_features, m_samples); features, Series (m_samples); target, function]
+    :return: Series; (n_features)
     """
 
     t, f, func = args
-    return DataFrame(f.apply(lambda a_f: func(t, a_f), axis=1), index=f.index, columns=['score'], dtype=float)
+    return f.apply(lambda a_f: func(t, a_f), axis=1)
 
 
 def _permute_and_score(args):
@@ -507,7 +443,8 @@ def _permute_and_score(args):
 def _plot_association_panel(target, features, annotations,
                             target_name=None, target_type='continuous',
                             features_type='continuous',
-                            title=None, plot_colname=False, filepath=None):
+                            title=None, plot_colname=False,
+                            filepath=None):
     """
     Plot association panel.
     :param target: Series; (n_elements); must have indices matching features's columns

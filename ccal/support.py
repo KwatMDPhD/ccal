@@ -887,6 +887,35 @@ def mds(matrix, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=100
     return coordinates
 
 
+def get_top_and_bottom_indices(dataframe, column_name, threshold, max_n=None):
+    """
+
+    :param dataframe: DataFrame;
+    :param column_name: str;
+    :param threshold: number; quantile if < 1; ranking number if >= 1
+    :return: list; list of indices
+    """
+
+    if threshold < 1:
+        column = dataframe.ix[:, column_name]
+
+        is_top = column >= column.quantile(threshold)
+        is_bottom = column <= column.quantile(1 - threshold)
+
+        top_and_bottom = dataframe.index[is_top | is_bottom].tolist()
+
+        if max_n and max_n < len(top_and_bottom):
+            threshold = max_n // 2
+
+    if 1 <= threshold:
+        if 2 * threshold <= dataframe.shape[0]:
+            top_and_bottom = dataframe.index[:threshold].tolist() + dataframe.index[-threshold:].tolist()
+        else:
+            top_and_bottom = dataframe.index
+
+    return top_and_bottom
+
+
 # ======================================================================================================================
 # Normalization
 # ======================================================================================================================
