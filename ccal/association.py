@@ -144,6 +144,8 @@ def make_association_panel(target, features,
                                      n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
                                      filepath=filepath)
 
+    print_log('Plotting ...')
+
     # Apply order of scores to features
     features = features.ix[scores.index, :]
 
@@ -192,6 +194,7 @@ def make_association_panel(target, features,
     return scores
 
 
+# TODO: make empty DataFrame to absorb the results instead of concatenation
 def compute_association(target, features, function=information_coefficient, target_ascending=False,
                         n_jobs=1, min_n_per_job=100, features_ascending=False,
                         n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
