@@ -83,7 +83,8 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
                                filepath_prefix=filepath_prefix)
 
 
-def make_association_panel(target, features, filepath_scores=None,
+def make_association_panel(target, features,
+                           filepath_scores=None,
                            target_ascending=False,
                            n_jobs=1, features_ascending=False,
                            n_features=0.95, max_n_features=30, n_samplings=30, n_permutations=30,
@@ -92,8 +93,10 @@ def make_association_panel(target, features, filepath_scores=None,
                            title=None, plot_colname=False,
                            filepath_prefix=None):
     """
-    Compute: score_i = function(target, feature_i). Compute confidence interval (CI) for n_features features.
-    Compute P-value and FDR (BH) for all features. And plot the result.
+    Compute: score_i = function(target, feature_i) for all features.
+    Compute confidence interval (CI) for n_features features.
+    Compute P-value and FDR (BH) for all features.
+    Finally plot the result.
     :param target: Series; (n_samples); must have name and index matching features's column names
     :param features: DataFrame; (n_features, n_samples); must have index and column names
     :param filepath_scores: str;
@@ -194,8 +197,9 @@ def compute_association(target, features, function=information_coefficient, targ
                         n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
                         filepath=None):
     """
-    Compute: score_i = function(target, feature_i).
-    Compute confidence interval (CI) for n_features features. And compute P-value and FDR (BH) for all features.
+    Compute: score_i = function(target, feature_i) for all features.
+    Compute confidence interval (CI) for n_features features.
+    Compute P-value and FDR (BH) for all features.
     :param target: Series; (n_samples); must have name and indices, matching features's column index
     :param features: DataFrame; (n_features, n_samples); must have row and column indices
     :param function: function; scoring function
