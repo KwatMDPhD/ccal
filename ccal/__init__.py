@@ -18,7 +18,7 @@ seed(SEED)
 
 VERBOSE = True
 
-from .support import read_gct, write_gct, write_rnk, read_gmt, write_gmt
+from .support import read_gct, write_gct, write_rnk
 from .oncogps import define_components, solve_for_components, define_states, make_oncogps_map
 from .association import compute_association, make_association_panel, make_association_panels, \
     plot_association_summary_panel, make_comparison_matrix
