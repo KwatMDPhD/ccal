@@ -144,27 +144,29 @@ def make_association_panel(target, features,
 
     # Keep only scores and features to plot
     indices_to_plot = get_top_and_bottom_indices(scores, 'score', n_features, max_n=max_n_features)
-    scores = scores.ix[indices_to_plot, :]
-    features = features.ix[indices_to_plot, :]
+    scores_to_plot = scores.ix[indices_to_plot, :]
+    features_to_plot = features.ix[indices_to_plot, :]
 
     print_log('Making annotations ...')
-    annotations = DataFrame(index=scores.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
+    annotations = DataFrame(index=scores_to_plot.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
 
     # Add IC (0.95 confidence interval), P-val, and FDR
-    annotations.ix[:, 'IC(\u0394)'] = scores.ix[:, ['score', '0.95 moe']].apply(lambda s: '{0:.3f}({1:.3f})'.format(*s),
-                                                                                axis=1)
-    annotations.ix[:, 'P-val'] = scores.ix[:, 'p-value'].apply('{:.2e}'.format)
-    annotations.ix[:, 'FDR'] = scores.ix[:, 'fdr'].apply('{:.2e}'.format)
+    annotations.ix[:, 'IC(\u0394)'] = scores_to_plot.ix[:, ['score', '0.95 moe']].apply(
+        lambda s: '{0:.3f}({1:.3f})'.format(*s), axis=1)
+    annotations.ix[:, 'P-val'] = scores_to_plot.ix[:, 'p-value'].apply('{:.2e}'.format)
+    annotations.ix[:, 'FDR'] = scores_to_plot.ix[:, 'fdr'].apply('{:.2e}'.format)
 
     print_log('Plotting ...')
     if filepath_prefix:
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    _plot_association_panel(target, features, annotations,
+    _plot_association_panel(target, features_to_plot, annotations,
                             target_name=target_name, target_type=target_type,
                             features_type=features_type,
                             title=title, plot_colname=plot_colname, filepath=filepath)
+
+    return target, features, scores
 
 
 # TODO: make empty DataFrame to absorb the results instead of concatenation
@@ -385,10 +387,9 @@ def _preprocess_target_and_features(target, features, target_ascending=False, mi
     # Keep only columns shared by target and features
     shared = target.index & features.columns
     if any(shared):
-        print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
-                                                                                              target.size,
-                                                                                              features.shape[1],
-                                                                                              len(shared)))
+        print_log('Target ({} cols) and features ({} cols) have {} shared columns.'.format(target.size,
+                                                                                           features.shape[1],
+                                                                                           len(shared)))
         target = target.ix[shared].sort_values(ascending=target_ascending)
         features = features.ix[:, target.index]
     else:
