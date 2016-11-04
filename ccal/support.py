@@ -724,7 +724,7 @@ def flatten_nested_iterables(nested_iterable, list_type=(list, tuple)):
             else:
                 nested_iterable[i:i + 1] = nested_iterable[i]
         i += 1
-    return type_(nested_iterable)
+    return nested_iterable
 
 
 def drop_value_from_dataframe(dataframe, value, axis=0):
