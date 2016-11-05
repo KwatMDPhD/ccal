@@ -748,6 +748,29 @@ def drop_value_from_dataframe(dataframe, value, axis=0):
         return dataframe.ix[~dropped, :]
 
 
+def shuffle_dataframe(dataframe, axis=0):
+    """
+
+    :param dataframe: DataFrame;
+    :param axis: int;
+    :return: DataFrame;
+    """
+
+    df = dataframe.copy()
+
+    if axis == 0:
+        for c_i, col in df.iteritems():
+            # Shuffle in place
+            shuffle(col)
+
+    elif axis == 1:
+        for r_i, row in df.iterrows():
+            # Shuffle in place
+            shuffle(row)
+
+    return df
+
+
 def drop_nan_columns(arrays):
     """
     Keep only not-NaN column positions in all arrays.
