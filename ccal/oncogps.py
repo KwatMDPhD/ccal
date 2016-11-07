@@ -82,7 +82,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
     # will be saved
     if directory_path:
         # Make NMF parent directory
-        directory_path = join(directory_path, 'nmf/')
+        directory_path = join(directory_path, 'nmf', '')
         establish_filepath(directory_path)
 
         print_log('Saving NMF decompositions and cophenetic correlation coefficients ...')
@@ -285,15 +285,14 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
     """
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
-    matrix = normalize_pandas(normalize_pandas(matrix, '-0-', axis=1).clip(-max_std,
-                                                                           max_std),
-                              method='0-1', axis=1)
+    matrix = normalize_pandas(normalize_pandas(matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
 
     # Hierarchical-consensus cluster
     distance_matrix, clusterings, cophenetic_correlation_coefficients = \
         hierarchical_consensus_cluster(matrix, ks, distance_matrix=distance_matrix, n_clusterings=n_clusterings)
 
     if directory_path:  # Save and plot distance matrix, clusterings, and cophenetic correlation coefficients
+        directory_path = join(directory_path, 'clusterings', '')
         establish_filepath(directory_path)
 
         # Save results
