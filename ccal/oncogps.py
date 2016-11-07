@@ -274,9 +274,9 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of hierarchical clusterings for consensus clustering
     :param directory_path: str; directory path where
-            distance_matrix.{txt, pdf}
-            clusterings.{gct, pdf}
-            cophenetic_correlation_coefficients.{txt, pdf}
+            clusterings/distance_matrix.{txt, pdf}
+            clusterings/clusterings.{gct, pdf}
+            clusterings/cophenetic_correlation_coefficients.{txt, pdf}
         will be saved
     :return: DataFrame, DataFrame, and Series;
         distance_matrix (n_samples, n_samples),
