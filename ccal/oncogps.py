@@ -80,35 +80,49 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
     #     matrices/nmf_k{k}_{w, h}.gct
     #     figures/nmf_k{k}_{w, h}.pdf
     # will be saved
-    directory_path = join(directory_path, 'nmf/')
-    establish_filepath(directory_path)
+    if directory_path:
+        # Make NMF parent directory
+        directory_path = join(directory_path, 'nmf/')
+        establish_filepath(directory_path)
 
-    # Save and plot NMF cophenetic correlation coefficients
-    print_log('Saving and plotting cophenetic correlation coefficients ...')
-    write_dictionary(cophenetic_correlation_coefficient,
-                     join(directory_path, 'cophenetic_correlation_coefficients.txt'),
-                     key_name='k', value_name='cophenetic_correlation_coefficient')
+        print_log('Saving NMF decompositions and cophenetic correlation coefficients ...')
+        # Save NMF decompositions
+        _save_nmf(nmf_results, join(directory_path, 'matrices', ''))
+        # Save cophenetic correlation coefficients
+        write_dictionary(cophenetic_correlation_coefficient,
+                         join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+                         key_name='k', value_name='cophenetic_correlation_coefficient')
+
+        # Saving filepath for cophenetic correlation coefficients figure
+        filepath_ccc_pdf = join(directory_path, 'cophenetic_correlation_coefficients.pdf')
+
+    else:
+        # Not saving cophenetic correlation coefficients figure
+        filepath_ccc_pdf = None
+
+    print_log('Plotting NMF decompositions and cophenetic correlation coefficients ...')
+    # Plot cophenetic correlation coefficients
     plot_x_vs_y(sorted(cophenetic_correlation_coefficient.keys()),
                 [cophenetic_correlation_coefficient[k] for k in sorted(cophenetic_correlation_coefficient.keys())],
                 title='NMF Cophenetic Correlation Coefficient vs. k',
                 xlabel='k', ylabel='NMF Cophenetic Correlation Coefficient',
-                filepath=join(directory_path, 'cophenetic_correlation_coefficients.pdf'))
-
-    # Save and plot NMF results
-    print_log('Saving and plotting NMF results ...')
-    _save_nmf(nmf_results, join(directory_path, 'matrices', ''))
-
-    # Save NMF figures
+                filepath=filepath_ccc_pdf)
+    # Plot NMF decompositions
     for k in ks:
         print_log('\tPlotting k={} ...'.format(k))
-        plot_nmf(nmf_results, k, filepath=join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k)))
+        if directory_path:
+            filepath_nmf = join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k))
+        else:
+            filepath_nmf = None
+
+        plot_nmf(nmf_results, k, filepath=filepath_nmf)
 
     return nmf_results, cophenetic_correlation_coefficient
 
 
 def _save_nmf(nmf_results, filepath_prefix):
     """
-    Save NMF results.
+    Save NMF decompositions.
     :param nmf_results: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
                               {k: Cophenetic Correlation Coefficient}
     :param filepath_prefix: str; filepath_prefix_nmf_k{k}_{w, h}.gct and will be saved
