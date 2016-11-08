@@ -32,7 +32,7 @@ from . import SEED
 from .support import EPS, print_log, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
     nmf_consensus_cluster, information_coefficient, normalize_pandas, hierarchical_consensus_cluster, \
     exponential_function, mds, compute_association_and_pvalue, solve_matrix_linear_equation, \
-    drop_value_from_dataframe, \
+    drop_uniform_slice_from_dataframe, \
     FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, plot_nmf, \
     plot_x_vs_y
 from .association import make_association_panel
@@ -414,6 +414,7 @@ def make_oncogps_map(training_h, training_states, std_max=3,
     """
 
     # Make sure the index is str (better for .ix)
+    # TODO: consider deleting
     training_h.index = training_h.index.astype(str)
 
     if isinstance(testing_h, DataFrame):
@@ -487,8 +488,15 @@ def make_oncogps_map(training_h, training_states, std_max=3,
                                                            normalize=normalize_training_h, normalizing_h=normalizing_h)
         testing_samples = _process_samples(testing_h, testing_states, components, n_pulls, power, component_ratio)
         samples = testing_samples
+
+        if any(annotation):  # Make sure annotation is Series and keep selected samples
+            annotation = _process_annotation(annotation, testing_h.columns)
+
     else:
         samples = training_samples
+
+        if any(annotation):  # Make sure annotation is Series and keep selected samples
+            annotation = _process_annotation(annotation, training_h.columns)
 
     print_log('Plotting ...')
 
@@ -557,14 +565,14 @@ def _process_h(h, std_max, normalize=True, normalizing_h=None):
     """
 
     # Drop all-0 samples
-    h = drop_value_from_dataframe(h, 0)
+    h = drop_uniform_slice_from_dataframe(h, 0)
 
     if normalize:
         # Clip by standard deviation and 0-1 normalize
         h = _normalize_h(h, std_max, normalizing_h=normalizing_h)
 
         # Drop all-0 samples
-        h = drop_value_from_dataframe(h, 0)
+        h = drop_uniform_slice_from_dataframe(h, 0)
 
     return h
 
@@ -760,6 +768,26 @@ def _compute_grid_probabilities_and_states(samples, n_grids, kde_bandwidths_fact
 
 
 # ======================================================================================================================
+# Process annotations
+# ======================================================================================================================
+def _process_annotation(annotation, ordered_indices):
+    """
+
+    :param annotation:
+    :param ordered_indices:
+    :return:
+    """
+
+    if isinstance(annotation, Series):
+        annotation = annotation.ix[ordered_indices]
+    else:
+        annotation = Series(annotation)
+        annotation.index = ordered_indices
+
+    return annotation
+
+
+# ======================================================================================================================
 # Plot Onco-GPS map
 # ======================================================================================================================
 def _plot_onco_gps(components, samples,
@@ -936,32 +964,44 @@ def _plot_onco_gps(components, samples,
                    linewidths=contour_linewidth, colors=contour_linecolor, alpha=contour_alpha,
                    aa=True, clip_on=False, zorder=2)
 
-    if any(annotation):  # Plot samples, annotation, sample legends, and annotation legends
-        # Set up annotation
-        a = Series(annotation)
-        a.index = samples.index
+    if isinstance(annotation, Series):  # Plot samples, annotation, sample legends, and annotation legends
+        samples.ix[:, 'annotation'] = annotation
 
         # Set up annotation min, mean, max, and colormap
         if annotation_type == 'continuous':
+            if annotation.dtype == object:
+                raise TypeError('Continuous annotation values must be numbers (float, int, etc).')
 
             # Normalize annotation
-            samples.ix[:, 'annotation'] = normalize_pandas(a, '-0-').clip(-std_max, std_max)
+            samples.ix[:, 'annotation_value'] = normalize_pandas(samples.ix[:, 'annotation'], '-0-').clip(-std_max,
+                                                                                                          std_max)
 
             # Get annotation statistics
-            annotation_min = max(-std_max, samples.ix[:, 'annotation'].min())
-            annotation_mean = samples.ix[:, 'annotation'].mean()
-            annotation_max = min(std_max, samples.ix[:, 'annotation'].max())
+            annotation_min = max(-std_max, samples.ix[:, 'annotation_value'].min())
+            annotation_mean = samples.ix[:, 'annotation_value'].mean()
+            annotation_max = min(std_max, samples.ix[:, 'annotation_value'].max())
 
             # Set color map
             cmap = CMAP_CONTINUOUS
 
         else:  # Annotation is categorical or binary
-            samples.ix[:, 'annotation'] = annotation
+
+            if annotation.dtype == object:  # Convert str annotation to value
+                a_to_value = {}
+                value_to_a = {}
+                for a_i, a in enumerate(annotation.dropna().sort_values().unique()):
+                    # 1-to-1 map
+                    a_to_value[a] = a_i
+                    value_to_a[a_i] = a
+                samples.ix[:, 'annotation_value'] = annotation.apply(a_to_value.get)
+
+            else:
+                samples.ix[:, 'annotation_value'] = samples.ix[:, 'annotation']
 
             # Get annotation statistics
             annotation_min = 0
-            annotation_mean = int(samples.ix[:, 'annotation'].mean())
-            annotation_max = int(samples.ix[:, 'annotation'].max())
+            annotation_mean = int(samples.ix[:, 'annotation_value'].mean())
+            annotation_max = int(samples.ix[:, 'annotation_value'].max())
 
             # Set color map
             if annotation_type == 'categorical':
@@ -969,7 +1009,7 @@ def _plot_onco_gps(components, samples,
             elif annotation_type == 'binary':
                 cmap = CMAP_BINARY
             else:
-                raise ValueError('Annotation type must be one of {continuous, categorical, binary}.')
+                raise ValueError('annotation_type must be one of {continuous, categorical, binary}.')
 
         # Get annotation range
         annotation_range = annotation_max - annotation_min
@@ -979,15 +1019,15 @@ def _plot_onco_gps(components, samples,
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
-            if isnull(s.ix['annotation']):
+            if isnull(s.ix['annotation_value']):
                 c = bad_color
             else:
                 if annotation_type == 'continuous':
-                    c = cmap(s.ix['annotation'])
+                    c = cmap(s.ix['annotation_value'])
                 elif annotation_type in ('categorical', 'binary'):
-                    c = cmap((s.ix['annotation'] - annotation_min) / annotation_range)
+                    c = cmap((s.ix['annotation_value'] - annotation_min) / annotation_range)
                 else:
-                    raise ValueError('Annotation type must be one of {continuous, categorical, binary}.')
+                    raise ValueError('annotation_type must be one of {continuous, categorical, binary}.')
 
             ax_map.plot(x, y, marker='o',
                         markersize=sample_markersize, markerfacecolor=c,
@@ -997,15 +1037,17 @@ def _plot_onco_gps(components, samples,
         # Plot sample legends
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
-        score, p_val = compute_association_and_pvalue(annotation, samples.ix[:, 'state'])
+        score, p_val = compute_association_and_pvalue(samples.ix[:, 'annotation_value'], samples.ix[:, 'state'])
         ax_legend.set_title('{}\nIC={:.3f} (p-val={:.3f})'.format(annotation_name, score, p_val),
                             fontsize=legend_fontsize * 1.26, weight='bold')
 
         # Plot effect plot
         if effectplot_type == 'violine':
-            violinplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=state_colors, scale='count',
+            violinplot(x=samples.ix[:, 'annotation_value'], y=samples.ix[:, 'state'],
+                       palette=state_colors, scale='count',
                        inner=None, orient='h', ax=ax_legend, clip_on=False)
-            boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], showbox=False, showmeans=True,
+            boxplot(x=samples.ix[:, 'annotation_value'], y=samples.ix[:, 'state'],
+                    showbox=False, showmeans=True,
                     medianprops={'marker': 'o',
                                  'markerfacecolor': effectplot_mean_markerfacecolor,
                                  'markeredgewidth': 0.9,
@@ -1013,7 +1055,8 @@ def _plot_onco_gps(components, samples,
                     meanprops={'color': effectplot_median_markeredgecolor}, orient='h', ax=ax_legend)
 
         elif effectplot_type == 'box':
-            boxplot(x=samples.ix[:, 'annotation'], y=samples.ix[:, 'state'], palette=state_colors, showmeans=True,
+            boxplot(x=samples.ix[:, 'annotation_value'], y=samples.ix[:, 'state'],
+                    palette=state_colors, showmeans=True,
                     medianprops={'marker': 'o',
                                  'markerfacecolor': effectplot_mean_markerfacecolor,
                                  'markeredgewidth': 0.9,
@@ -1024,7 +1067,11 @@ def _plot_onco_gps(components, samples,
 
         # Set up x label, ticks, and lines
         ax_legend.set_xlabel('')
-        ax_legend.set_xticks([annotation_min, annotation_mean, annotation_max])
+
+        xticks = [annotation_min, annotation_mean, annotation_max]
+        ax_legend.set_xticks(xticks)
+        if annotation.dtype == object:  # Convert str annotation to value
+            ax_legend.set_xticklabels([value_to_a[a] for a in xticks])
         for t in ax_legend.get_xticklabels():
             t.set(rotation=90, size=legend_fontsize * 0.9, weight='bold')
         ax_legend.axvline(annotation_min, color='#000000', ls='-', alpha=0.16, aa=True, clip_on=False)
