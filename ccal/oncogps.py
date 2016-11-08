@@ -1043,6 +1043,7 @@ def _plot_onco_gps(components, samples,
 
         # Plot effect plot
         if effectplot_type == 'violine':
+            print(state_colors)
             violinplot(x=samples.ix[:, 'annotation_value'], y=samples.ix[:, 'state'],
                        palette=state_colors, scale='count',
                        inner=None, orient='h', ax=ax_legend, clip_on=False)
@@ -1088,7 +1089,7 @@ def _plot_onco_gps(components, samples,
         # Plot sample markers
         l, r = ax_legend.axis()[:2]
         x = l - float((r - l) / 5)
-        for i, s in enumerate(samples.ix[:, 'state'].unique()):
+        for i, s in enumerate(samples.ix[:, 'state'].sort_values().unique()):
             c = state_colors[s]
             ax_legend.plot(x, i, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
 
