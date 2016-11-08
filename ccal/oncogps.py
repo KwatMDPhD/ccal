@@ -1034,6 +1034,19 @@ def _plot_onco_gps(components, samples,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
                         aa=True, clip_on=False, zorder=5)
 
+        if annotation.dtype == object:
+            for i, a in enumerate(sorted(a_to_value, reverse=True)):
+                v = a_to_value.get(a)
+                x = 1 - float(1 / (len(a_to_value) + 1)) * (i + 1)
+                y = -0.1
+                c = cmap((v - annotation_min) / annotation_range)
+
+                ax_map.plot(x, y, marker='o',
+                            markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
+                ax_map.text(x, y - 0.03, a,
+                            fontsize=legend_fontsize, weight='bold', color=title_fontcolor,
+                            rotation=90, horizontalalignment='center', verticalalignment='top')
+
         # Plot sample legends
         ax_legend.axis('on')
         ax_legend.patch.set_visible(False)
@@ -1043,7 +1056,6 @@ def _plot_onco_gps(components, samples,
 
         # Plot effect plot
         if effectplot_type == 'violine':
-            print(state_colors)
             violinplot(x=samples.ix[:, 'annotation_value'], y=samples.ix[:, 'state'],
                        palette=state_colors, scale='count',
                        inner=None, orient='h', ax=ax_legend, clip_on=False)
