@@ -12,6 +12,7 @@ from os import mkdir, environ
 from os.path import abspath, split, isdir, isfile, islink
 from subprocess import Popen, PIPE
 from csv import reader, writer, excel, excel_tab
+import gzip
 from datetime import datetime
 from operator import add, sub
 from multiprocessing import Pool
@@ -20,7 +21,7 @@ from numpy import finfo, array, asarray, empty, zeros, ones, unique, sign, sum, 
     argmax, average
 from numpy.linalg import pinv
 from numpy.random import random_sample, random_integers, shuffle
-from pandas import Series, DataFrame, read_csv
+from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import pearsonr
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster, cophenet
@@ -404,6 +405,58 @@ def read_colormap(filepath):
         for l in f:
             rgbas.append([float(v) for v in l.split()])
     return ListedColormap(rgbas)
+
+
+def load_geo_annotations(filepath, annotation_names):
+    """
+    Parse rows of GEO file.
+    If the 1st column (annotation name) matches any of the annotation names in annotation_names,
+    split the row by '\t' and save the split list as a row in the dataframe to returned.
+    :param filepath: str; filepath to a GEO file (.txt or .gz)
+    :param annotation_names: iterable; list of str
+    :return DataFrame; (n_matched_annotation_names, n_tabs (n_samples))
+    """
+
+    df = DataFrame()
+
+    # Open GEO file
+    if filepath.endswith('.gz'):
+        f = gzip.open(filepath)
+    else:
+        f = open(filepath)
+
+    # Parse rows
+    for line in f.readlines():
+
+        if isinstance(line, bytes):
+            line = line.decode()
+
+        if any([line.startswith(a_n) for a_n in annotation_names]):  # Annotation name matches
+
+            # Parse row
+            split = line.strip().split('\t')
+            name = split[0]
+            annotation = [s[1:-1] for s in split[1:]]
+
+            # Avoid same names
+            i = 2
+            formatter = '_${}'
+            while name in df.columns:
+                name = name.split(formatter.format(i - 1))[0] + formatter.format(i)
+                i += 1
+
+            # Make Series
+            s = Series(annotation, name=name)
+
+            # Concatenate to DataFrame
+            df = concat([df, s], axis=1)
+
+        # Open GEO file
+        f.close()
+
+    df = df.T
+
+    return df
 
 
 # ======================================================================================================================
