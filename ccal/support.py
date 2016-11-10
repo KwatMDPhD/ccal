@@ -284,6 +284,28 @@ def write_gct(matrix, filepath, descriptions=None):
         obj.to_csv(f, sep='\t')
 
 
+def read_gmt(filepath, drop_description=True, collapse=False):
+    """
+    Read .gmt.
+    :param filepath: str; filepath to a .gmt file
+    :param drop_description: bool; drop Desctiption column (2nd column) or not
+    :param collapse: bool; collapse into a list of unique genes or not
+    :return: DataFrame or array; (n_gene_sets, size of the largest gene set) or (1, n_unique genes)
+    """
+
+    gmt = read_csv(filepath, sep='\t', index_col=0, header=None)
+    gmt.index.name = 'gene_set_name'
+    gmt.columns = ['Description'] + ['Gene {}'.format(i) for i in range(gmt.shape[1] - 1)]
+
+    if drop_description or collapse:
+        gmt.drop('Description', axis=1, inplace=True)
+
+    if collapse:
+        return unique(gmt.unstack().dropna().values)
+    else:
+        return gmt
+
+
 def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=None):
     """
     Write dataframe to filepath.
