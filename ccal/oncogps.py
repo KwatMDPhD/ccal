@@ -1025,7 +1025,10 @@ def _plot_onco_gps(components, samples,
                 if annotation_type == 'continuous':
                     c = cmap(s.ix['annotation_value'])
                 elif annotation_type in ('categorical', 'binary'):
-                    c = cmap((s.ix['annotation_value'] - annotation_min) / annotation_range)
+                    if annotation_range:
+                        c = cmap((s.ix['annotation_value'] - annotation_min) / annotation_range)
+                    else:
+                        c = cmap(0)
                 else:
                     raise ValueError('annotation_type must be one of {continuous, categorical, binary}.')
 
@@ -1039,7 +1042,10 @@ def _plot_onco_gps(components, samples,
                 v = a_to_value.get(a)
                 x = 1 - float(1 / (len(a_to_value) + 1)) * (i + 1)
                 y = -0.1
-                c = cmap((v - annotation_min) / annotation_range)
+                if annotation_range:
+                    c = cmap((v - annotation_min) / annotation_range)
+                else:
+                    c = cmap(0)
 
                 ax_map.plot(x, y, marker='o',
                             markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
