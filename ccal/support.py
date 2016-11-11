@@ -429,7 +429,7 @@ def read_colormap(filepath):
     return ListedColormap(rgbas)
 
 
-def load_geo_annotations(filepath, annotation_names):
+def load_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!Sample_characteristics_ch1')):
     """
     Parse rows of GEO file.
     If the 1st column (annotation name) matches any of the annotation names in annotation_names,
@@ -473,10 +473,15 @@ def load_geo_annotations(filepath, annotation_names):
             # Concatenate to DataFrame
             df = concat([df, s], axis=1)
 
-        # Open GEO file
-        f.close()
+    # Close GEO file
+    f.close()
 
     df = df.T
+
+    if '!Sample_geo_accession' in annotation_names:  # Set columns indices to be sample accessions
+        df.columns = df.ix['!Sample_geo_accession', :]
+        df.columns.name = 'GEO Sample Accession'
+        df.drop('!Sample_geo_accession', inplace=True)
 
     return df
 
