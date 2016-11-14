@@ -340,7 +340,7 @@ def make_oncogps_map(training_h, training_states, std_max=3,
                      components=None, informational_mds=True, mds_seed=SEED,
                      n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
                      component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
-                     xxx=None,
+                     samples_to_plot=None,
                      annotation=(), annotation_name='', annotation_type='continuous',
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
@@ -375,6 +375,7 @@ def make_oncogps_map(training_h, training_states, std_max=3,
     :param component_ratio: number; number if int; percentile if float & < 1
     :param n_grids: int; number of grids; larger the n_grids, higher the resolution
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
+    :param samples_to_plot: indexer; (n_training_samples), (n_testing_samples), or (n_sample_indices)
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
@@ -499,8 +500,8 @@ def make_oncogps_map(training_h, training_states, std_max=3,
         if any(annotation):  # Make sure annotation is Series and keep selected samples
             annotation = _process_annotation(annotation, training_h.columns)
 
-    if xxx:  # Limit samples to be plotted
-        samples = samples.ix[xxx, :]
+    if samples_to_plot:  # Limit samples to be plotted
+        samples = samples.ix[samples_to_plot, :]
 
     print_log('Plotting ...')
 
