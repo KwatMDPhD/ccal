@@ -340,6 +340,7 @@ def make_oncogps_map(training_h, training_states, std_max=3,
                      components=None, informational_mds=True, mds_seed=SEED,
                      n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
                      component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
+                     xxx=None,
                      annotation=(), annotation_name='', annotation_type='continuous',
                      title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                      subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
@@ -497,6 +498,9 @@ def make_oncogps_map(training_h, training_states, std_max=3,
 
         if any(annotation):  # Make sure annotation is Series and keep selected samples
             annotation = _process_annotation(annotation, training_h.columns)
+
+    if xxx:  # Limit samples to be plotted
+        samples = samples.ix[xxx, :]
 
     print_log('Plotting ...')
 
