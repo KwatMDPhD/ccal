@@ -665,6 +665,20 @@ def dict_merge_with_function(function, dict_1, dict_2):
     return new_dict
 
 
+def merge_dicts(*dicts):
+    """
+    Shallow copy and merge dicts into a new dict; precedence goes to key value pairs in latter dict.
+    :param dicts: iterable of dict;
+    :return: dict;
+    """
+
+    merged = {}
+    for d in dicts:
+        merged.update(d)
+
+    return merged
+
+
 def dict_add(dict_1, dict_2):
     """
     Add dict_1 and dict_2.
