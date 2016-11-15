@@ -29,7 +29,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import violinplot, boxplot
 
 from . import SEED
-from .support import EPS, print_log, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
+from .support import EPS, print_log, read_gct, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
     nmf_consensus_cluster, information_coefficient, normalize_pandas, hierarchical_consensus_cluster, \
     exponential_function, mds, compute_association_and_pvalue, solve_matrix_linear_equation, \
     drop_uniform_slice_from_dataframe, \
@@ -50,7 +50,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
-    :param matrix: DataFrame; (n_rows, n_columns)
+    :param matrix: DataFrame or str; (n_rows, n_columns) or filepath to a .gct file
     :param ks: iterable; iterable of int k used for NMF
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
@@ -63,6 +63,9 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
     :return: dict and dict; {k: {w: W matrix (n_rows, k), h: H matrix (k, n_columns), e: Reconstruction Error}} and
                             {k: Cophenetic Correlation Coefficient}
     """
+
+    if isinstance(matrix, str):  # Read form a .gct file
+        matrix = read_gct(matrix)
 
     # Rank normalize the input matrix by column
     # TODO: try changing n_ranks (choose automatically)

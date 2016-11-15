@@ -589,12 +589,11 @@ def clean_string(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_c
     return new_string
 
 
-# TODO: consider deleting
 def cast_string_to_int_float_bool_or_str(string):
     """
     Convert string into the following data types (return the first successful): int, float, bool, or str.
-    :param string:
-    :return:
+    :param string: str;
+    :return: int, float, bool, or str;
     """
 
     value = string.strip()
