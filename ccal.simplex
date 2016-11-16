@@ -1,0 +1,38 @@
+{
+  "version": "",
+  "library_path": "/Users/ckmah/Documents/ccal/",
+  "tasks": [
+    {
+      "library_name": "ccal",
+      "label": "CCAL - Define Components",
+      "function_name": "define_components",
+      "required_args": [
+        {
+          "arg_name": "matrix",
+          "label": "Expression Matrix",
+          "description": "This is an argument description for Expression Matrix."
+        },
+        {
+          "arg_name": "ks",
+          "label": "Numbers of Components",
+          "description": "This is an argument description for Number of Components."
+        }
+      ],
+      "optional_args": [ {
+        "arg_name": "n_clusterings",
+        "label": "Number of Consensus Clusterings",
+        "description": "This is an argument description for Number of Consensus Clusterings."
+      }],
+      "return_names": [
+        {
+          "label": "NMF Result Dictionary",
+          "description": "This is the description for the returned NMF Result Dictionary."
+        },
+        {
+          "label": "Cophenetic Correlation Coefficients",
+          "description": "This is the description for the returned Cophentic Correlation Coefficients."
+        }
+      ]
+    }
+  ]
+}
