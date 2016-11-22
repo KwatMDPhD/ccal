@@ -137,6 +137,21 @@ def _save_nmf(nmf_results, filepath_prefix):
         write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
 
 
+def get_w_or_h_matrix(nmf_results, k, w_or_h):
+    """
+    Get W or H matrix from nmf_results.
+    :param nmf_results: dict;
+    :param k: int;
+    :param w_or_h: str; 'w', 'W', 'H', or 'h'
+    :return: DataFrame; W or H matrix for this k
+    """
+    w_or_h = w_or_h.strip()
+    if w_or_h not in ('w', 'W', 'H', 'h'):
+        raise TypeError('w_or_h must be one of {w, W, H, h}.')
+
+    return nmf_results[k][w_or_h.lower()]
+
+
 def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_rows_of_a_matrix=True,
                          filepath_prefix=None):
     """
