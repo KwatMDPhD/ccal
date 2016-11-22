@@ -287,6 +287,9 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         cophenetic correlation coefficients (n_ks)
     """
 
+    if isinstance(matrix, str):  # Read form a .gct file
+        matrix = read_gct(matrix)
+
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
     matrix = normalize_pandas(normalize_pandas(matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
 
