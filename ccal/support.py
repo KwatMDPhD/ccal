@@ -1300,6 +1300,9 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
     :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and cophenetic correlation coefficients (n_ks)
     """
 
+    if isinstance(ks, int):
+        ks = [ks]
+
     if isinstance(distance_matrix, DataFrame):
         print_log('Loading distances between samples already computed ...')
         if isinstance(distance_matrix, str):
@@ -1314,9 +1317,6 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
     clusterings = DataFrame(index=ks, columns=list(matrix.columns))
     clusterings.index.name = 'k'
     cophenetic_correlation_coefficients = {}
-
-    if isinstance(ks, int):
-        ks = [ks]
 
     for k in ks:
         print_log('k={} ...'.format(k))

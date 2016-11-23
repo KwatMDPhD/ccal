@@ -110,6 +110,10 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
                 title='NMF Cophenetic Correlation Coefficient vs. k',
                 xlabel='k', ylabel='NMF Cophenetic Correlation Coefficient',
                 filepath=filepath_ccc_pdf)
+
+    if isinstance(ks, int):
+        ks = [ks]
+
     # Plot NMF decompositions
     for k in ks:
         print_log('\tPlotting k={} ...'.format(k))
