@@ -24,7 +24,4 @@ from .oncogps import define_components, get_w_or_h_matrix, solve_for_components,
 from .association import compute_association, make_association_panel, make_association_panels, \
     plot_association_summary_panel, make_comparison_matrix
 
-print('=' * 80)
-print('=' * 17 + ' Computational Cancer Analysis Library (CCAL) ' + '=' * 17)
-print('=' * 80)
 print('Planted a random seed: {}.'.format(SEED))
