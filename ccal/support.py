@@ -18,7 +18,7 @@ from operator import add, sub
 from multiprocessing import Pool
 
 from numpy import finfo, array, asarray, empty, zeros, ones, unique, sign, sum, sqrt, exp, log, dot, isnan, sort, \
-    argmax, average
+    argmax, average, log2
 from numpy.linalg import pinv
 from numpy.random import random_sample, random_integers, shuffle
 from pandas import Series, DataFrame, read_csv, concat
@@ -1579,6 +1579,78 @@ def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None):
         return features.iloc[0, :]
     else:
         return features
+
+
+# ======================================================================================================================
+# Expression analysis
+# ======================================================================================================================
+def load_cufflinks_fpkm(filepath, signature=None):
+    """
+
+    :param filepath:
+    :param signature:
+    :return:
+    """
+
+    print('Reading {} ...'.format(filepath))
+    fpkm_tracking = read_csv(filepath, sep='\t', index_col=4)
+    print(fpkm_tracking.shape)
+
+    print('Keeping only \'FPKM\' column ...')
+    fpkm = fpkm_tracking[['FPKM']]
+    if signature:
+        fpkm.columns = ['{} FPKM'.format(signature)]
+    print(fpkm.shape)
+
+    print('Dropping rows where gene_short_name is \'-\' (transcripts without gene_short_name) ...')
+    fpkm = fpkm.ix[fpkm.index != '-', :]
+    print(fpkm.shape)
+
+    return fpkm.groupby(level=0).mean()
+
+
+def compute_fold_change(df, fpkm1_col_name, fpkm2_col_name):
+    """
+
+    :param df:
+    :param fpkm1_col_name:
+    :param fpkm2_col_name:
+    :return:
+    """
+
+    fpkms1 = df.ix[df.ix[:, fpkm1_col_name] != 0, fpkm1_col_name]
+    fpkms2 = df.ix[df.ix[:, fpkm2_col_name] != 0, fpkm2_col_name]
+
+    fpkm1_min = fpkms1.min()
+    fpkm2_min = fpkms2.min()
+    norm_factor = 1 / (fpkms2.sum() / fpkms1.sum())
+    print('FPKM1 min = {}\nFPKM2 min = {}\nNormalization factor={}'.format(fpkm1_min, fpkm2_min, norm_factor))
+
+    df['Fold Change'] = df.apply(compute_fold_change_for_a_gene, axis=1,
+                                 args=(fpkm1_col_name, fpkm2_col_name), **{'fpkm1_min': fpkm1_min,
+                                                                           'fpkm2_min': fpkm2_min,
+                                                                           'norm_factor': norm_factor})
+    df.sort_values('Fold Change', ascending=False, inplace=True)
+
+    return df
+
+
+def compute_fold_change_for_a_gene(s, fpkm1_col_name, fpkm2_col_name, fpkm1_min, fpkm2_min, norm_factor):
+    """
+
+    :param s:
+    :param fpkm1_col_name:
+    :param fpkm2_col_name:
+    :param fpkm1_min:
+    :param fpkm2_min:
+    :param norm_factor:
+    :return:
+    """
+
+    fpkm1 = max(s.ix[fpkm1_col_name], fpkm1_min)
+    fpkm2 = max(s.ix[fpkm2_col_name], fpkm2_min)
+
+    return log2(norm_factor * fpkm2 / fpkm1)
 
 
 # ======================================================================================================================
