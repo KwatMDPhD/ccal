@@ -358,6 +358,17 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
     return distance_matrix, clusterings, cophenetic_correlation_coefficients
 
 
+def get_state_labels(clusterings, k):
+    """
+    Get state labels from clusterings
+    :param clusterings: DataFrame;
+    :param k: int;
+    :return: Series;
+    """
+
+    return clusterings.ix[k, :].tolist()
+
+
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
