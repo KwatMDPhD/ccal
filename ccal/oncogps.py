@@ -360,7 +360,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 
 def get_state_labels(clusterings, k):
     """
-    Get state labels from clusterings
+    Get state labels from clusterings.
     :param clusterings: DataFrame;
     :param k: int;
     :return: Series;
