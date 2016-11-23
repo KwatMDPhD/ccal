@@ -308,11 +308,14 @@ def read_gmt(filepath, drop_description=True, collapse=False):
 
 def write_gmt(gmt, filepath):
     """
-    Write .gmt.
+    Write a gmt DataFrame to a filepath.gmt.
     :param gmt: DataFrame;
     :param filepath: str; filepath to a .gmt file
     :return: None
     """
+
+    if not filepath.endswith('gmt'):
+        filepath += '.gmt'
 
     gmt.to_csv(filepath, header=None, sep='\t')
 
