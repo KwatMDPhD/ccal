@@ -306,6 +306,17 @@ def read_gmt(filepath, drop_description=True, collapse=False):
         return gmt
 
 
+def write_gmt(gmt, filepath):
+    """
+    Write .gmt.
+    :param gmt: DataFrame;
+    :param filepath: str; filepath to a .gmt file
+    :return: None
+    """
+
+    gmt.to_csv(filepath, header=None, sep='\t')
+
+
 def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=None):
     """
     Write dataframe to filepath.
