@@ -24,7 +24,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import heatmap
 
-from .support import print_log, establish_filepath, read_gct, title_string, untitle_string, information_coefficient, \
+from .support import print_log, establish_filepath, read_gct, title_str, untitle_str, information_coefficient, \
     parallelize, get_unique_in_order, normalize_pandas, compare_matrices, get_top_and_bottom_indices, \
     FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, FONT_SUBTITLE, save_plot, \
     plot_clustermap
@@ -68,10 +68,10 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
 
     # Annotate this target with each feature
     for features_name, features_dict in feature_dicts.items():
-        title = title_string('{} vs {}'.format(target.name, features_name))
+        title = title_str('{} vs {}'.format(target.name, features_name))
         print_log('{} ...'.format(title))
         if directory_path:
-            filepath_prefix = join(directory_path, untitle_string(title))
+            filepath_prefix = join(directory_path, untitle_str(title))
         else:
             filepath_prefix = None
         make_association_panel(target, features_dict['dataframe'],

@@ -532,7 +532,7 @@ def timestamp(time_only=False):
 # ======================================================================================================================
 # String
 # ======================================================================================================================
-def title_string(string):
+def title_str(string):
     """
     Title a string.
     :param string: str;
@@ -577,7 +577,7 @@ def title_string(string):
     return string
 
 
-def untitle_string(string):
+def untitle_str(string):
     """
     Untitle a string.
     :param string: str;
@@ -588,7 +588,7 @@ def untitle_string(string):
     return string.lower().replace(' ', '_').replace('-', '_')
 
 
-def clean_string(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char='_'):
+def clean_str(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char='_'):
     """
     Return a copy of string that has all non-allowed characters replaced by a new character (default: underscore).
     :param string:
@@ -603,7 +603,7 @@ def clean_string(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_c
     return new_string
 
 
-def cast_string_to_int_float_bool_or_str(string):
+def cast_str_to_int_float_bool_or_str(string):
     """
     Convert string into the following data types (return the first successful): int, float, bool, or str.
     :param string: str;
@@ -628,7 +628,7 @@ def cast_string_to_int_float_bool_or_str(string):
 
 
 # TODO: consider deleting
-def indent_string(string, n_tabs=1):
+def indent_str(string, n_tabs=1):
     """
     Indent block of text by adding a n_tabs number of tabs (default 1) to the beginning of each line.
     :param string:
@@ -1987,7 +1987,7 @@ def plot_box_or_violine(target, features, features_name, feature_names=(), box_o
             t.set(**FONT)
 
     if filepath_prefix:
-        save_plot(filepath_prefix + '{}.pdf'.format(untitle_string(title)))
+        save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
 
 
 def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=True, max_std=3, title=None,
