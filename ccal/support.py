@@ -594,7 +594,7 @@ def clean_str(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char
     :param string:
     :param illegal_chars:
     :param replacement_char:
-    :return:
+    :return:kkkkkuu
     """
 
     new_string = str(string)

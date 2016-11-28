@@ -388,7 +388,7 @@ def make_oncogps_map(training_h, training_states, std_max=3,
                      colors=(), bad_color='#999999', max_background_saturation=1,
                      n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
                      sample_markersize=19, sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
-                     sample_name_color=None,
+                     sample_name_size=16, sample_name_color=None,
                      legend_markersize=22, legend_fontsize=16, effectplot_type='violine',
                      effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
                      effectplot_median_markeredgecolor='#FF0082',
@@ -439,6 +439,7 @@ def make_oncogps_map(training_h, training_states, std_max=3,
     :param sample_markersize: number;
     :param sample_markeredgewidth: number;
     :param sample_markeredgecolor: matplotlib color;
+    :param sample_name_size: number;
     :param sample_name_color: None or matplotlib color; not plotting sample if None
     :param legend_markersize: number;
     :param legend_fontsize: number;
@@ -562,7 +563,7 @@ def make_oncogps_map(training_h, training_states, std_max=3,
                    contour_alpha=contour_alpha,
                    sample_markersize=sample_markersize,
                    sample_markeredgewidth=sample_markeredgewidth, sample_markeredgecolor=sample_markeredgecolor,
-                   sample_name_color=sample_name_color,
+                   sample_name_size=sample_name_size, sample_name_color=sample_name_color,
                    legend_markersize=legend_markersize, legend_fontsize=legend_fontsize,
                    effectplot_type=effectplot_type, effectplot_mean_markerfacecolor=effectplot_mean_markerfacecolor,
                    effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
@@ -841,7 +842,8 @@ def _plot_onco_gps(components, samples,
                    delaunay_linewidth, delaunay_linecolor,
                    colors, bad_color, max_background_saturation,
                    n_contours, contour_linewidth, contour_linecolor, contour_alpha,
-                   sample_markersize, sample_markeredgewidth, sample_markeredgecolor, sample_name_color,
+                   sample_markersize, sample_markeredgewidth, sample_markeredgecolor,
+                   sample_name_size, sample_name_color,
                    legend_markersize, legend_fontsize,
                    effectplot_type, effectplot_mean_markerfacecolor,
                    effectplot_mean_markeredgecolor, effectplot_median_markeredgecolor,
@@ -880,6 +882,7 @@ def _plot_onco_gps(components, samples,
     :param sample_markersize: number;
     :param sample_markeredgewidth: number;
     :param sample_markeredgecolor: matplotlib color;
+    :param sample_name_size: number;
     :param sample_name_color: None or matplotlib color; not plotting sample if None
     :param legend_markersize: number;
     :param legend_fontsize: number;
@@ -1186,7 +1189,7 @@ def _plot_onco_gps(components, samples,
             x = s.ix['x']
             y = s.ix['y']
             ax_map.text(x, y + 0.03, idx,
-                        fontsize=legend_fontsize, weight='bold', color=sample_name_color, horizontalalignment='center',
+                        fontsize=sample_name_size, weight='bold', color=sample_name_color, horizontalalignment='center',
                         zorder=7)
 
     if filepath:
