@@ -23,7 +23,7 @@ from multiprocessing import Pool
 
 from numpy import finfo, array, asarray, empty, zeros, ones, unique, sign, sum, sqrt, exp, log, dot, isnan, sort, \
     argmax, average, log2
-# from numpy.random import seed, random_sample, random_integers, shuffle
+from numpy.random import seed, random_sample, random_integers, shuffle
 from numpy.linalg import pinv
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import pearsonr
