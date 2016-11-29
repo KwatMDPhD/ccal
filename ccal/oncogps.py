@@ -310,7 +310,8 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         matrix = read_gct(matrix)
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
-    matrix = normalize_dataframe_or_series(normalize_dataframe_or_series(matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
+    matrix = normalize_dataframe_or_series(normalize_dataframe_or_series(matrix, '-0-', axis=1).clip(-max_std, max_std),
+                                           method='0-1', axis=1)
 
     # Hierarchical-consensus cluster
     distance_matrix, clusterings, cophenetic_correlation_coefficients = \
@@ -1015,8 +1016,9 @@ def _plot_onco_gps(components, samples,
                 raise TypeError('Continuous annotation values must be numbers (float, int, etc).')
 
             # Normalize annotation
-            samples.ix[:, 'annotation_value'] = normalize_dataframe_or_series(samples.ix[:, 'annotation'], '-0-').clip(-std_max,
-                                                                                                                       std_max)
+            samples.ix[:, 'annotation_value'] = normalize_dataframe_or_series(samples.ix[:, 'annotation'], '-0-').clip(
+                -std_max,
+                std_max)
 
             # Get annotation statistics
             annotation_min = max(-std_max, samples.ix[:, 'annotation_value'].min())
