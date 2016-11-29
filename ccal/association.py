@@ -26,7 +26,8 @@ from seaborn import heatmap
 
 from .support import RANDOM_SEED, print_log, establish_filepath, read_gct, title_str, untitle_str, \
     information_coefficient, parallelize, get_unique_in_order, normalize_dataframe_or_series, compare_matrices, \
-    get_top_and_bottom_indices, FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
+    get_top_and_bottom_indices, \
+    FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
     FONT_SUBTITLE, save_plot, plot_clustermap
 
 
