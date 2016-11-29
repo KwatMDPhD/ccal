@@ -23,7 +23,7 @@ from multiprocessing import Pool
 
 from numpy import finfo, array, asarray, empty, zeros, ones, unique, sign, sum, sqrt, exp, log, dot, isnan, sort, \
     argmax, average, log2
-from numpy.random import seed, random_sample, random_integers, shuffle
+# from numpy.random import seed, random_sample, random_integers, shuffle
 from numpy.linalg import pinv
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import pearsonr
@@ -46,7 +46,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot, boxplot, violinplot, set_style, despine
 
-from . import VERBOSE, SEED
+from . import VERBOSE, RANDOM_SEED
 
 # ======================================================================================================================
 # Parameter
@@ -95,13 +95,13 @@ def source_environment(filepath):
     """
     Update environment using source_environment.
     :param filepath:
-    :return:
+    :return: None
     """
 
     print_log('Sourcing {} ...'.format(filepath))
 
-    for ln in Popen('./{}; env'.format(filepath), stdout=PIPE, universal_newlines=True, shell=True).stdout:
-        key, _, value = ln.partition('=')
+    for line in Popen('./{}; env'.format(filepath), stdout=PIPE, universal_newlines=True, shell=True).stdout:
+        key, _, value = line.partition('=')
         key, value = key.strip(), value.strip()
         environ[key] = value
         print_log('\t{} = {}'.format(key, value))
@@ -130,17 +130,20 @@ def parallelize(function, list_of_args, n_jobs=1):
 def establish_filepath(filepath):
     """
     If the path up to the deepest directory in filepath doesn't exist, make the path up to the deepest directory.
-    :param filepath: str;
+    :param filepath: str; filepath
     :return: None
     """
 
+    # prefix/suffix
     prefix, suffix = split(filepath)
     prefix = abspath(prefix)
 
     # Get missing directories
     missing_directories = []
-    while not (isdir(prefix) or isfile(prefix) or islink(prefix)):
+    while not (isdir(prefix) or isfile(prefix) or islink(prefix)):  # prefix isn't file, directory, or link
         missing_directories.append(prefix)
+
+        # Check prefix's prefix next
         prefix, suffix = split(prefix)
 
     # Make missing directories
@@ -151,9 +154,9 @@ def establish_filepath(filepath):
 
 def split_file_extention(filepath):
     """
-    Return the base filepath and extension as a tuple.
-    :param filepath: str;
-    :return: str and str;
+    Get filepath without file suffix and the suffix from filepath; get foo and txt from foo.txt
+    :param filepath: str; filepath
+    :return: str and str; filepath without file suffix and the suffix
     """
 
     split_filepath = filepath.split('.')
@@ -179,43 +182,49 @@ def count_n_lines_in_file(filepath):
 def convert_csv_to_tsv(filepath):
     """
     Convert .csv file to .tsv file.
-    :param filepath: str;
+    :param filepath: str; filepath
     :return: None
     """
 
-    with open(filepath, 'rU') as infile:
-        r = reader(infile, dialect=excel)
-    with open(filepath.strip('.csv') + '.tsv', 'w') as outfile:
-        w = writer(outfile, dialect=excel_tab)
+    # Open .csv
+    with open(filepath, 'rU') as input_filepath:
+        r = reader(input_filepath, dialect=excel)
+
+    # Open .tsv
+    with open(filepath.strip('.csv') + '.tsv', 'w') as output_filepath:
+        w = writer(output_filepath, dialect=excel_tab)
+
+    # Raed from .csv adn write to .tsv
     for line in r:
         w.writerow(line)
 
 
 def load_gct(matrix):
     """
-
-    :param matrix:
-    :return:
+    If matrix is a DataFrame, return as is; if a filepath (.gct), read matrix from it as DaraFrame; else, raise Error.
+    :param matrix: DataFrame or str; filepath to a .gct or DataFrame
+    :return: DataFrame; matrix
     """
 
     if isinstance(matrix, str):  # Read .gct from a filepath
         matrix = read_gct(matrix)
 
     elif not isinstance(matrix, DataFrame):  # .gct is not a filepath or DataFrame
-        raise ValueError('Matix must be either a DataFrame or a path to a .gct file.')
+        raise ValueError('Matrix must be either a DataFrame or a path to a .gct file.')
 
     return matrix
 
 
 def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, column_name=None):
     """
-    Read a .gct (filepath) and convert it into a pandas DataFrame.
-    :param filepath: str;
+    Read a .gct (filepath) and convert it into a DataFrame.
+
+    :param filepath: str; filepath to .gct
     :param fill_na: *; value to replace NaN in the DataFrame
     :param drop_description: bool; drop the Description column (column 2 in the .gct) or not
     :param row_name: str;
     :param column_name: str;
-    :return: pandas DataFrame; [n_samples, n_features (or n_features + 1 if not dropping the Description column)]
+    :return: DataFrame; [n_samples, n_features (or n_features + 1 if not dropping the Description column)]
     """
 
     # Read .gct
@@ -255,7 +264,7 @@ def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, colum
 def write_gct(matrix, filepath, descriptions=None):
     """
     Establish .gct filepath and write matrix to it.
-    :param matrix: pandas DataFrame or Serires; (n_samples, m_features)
+    :param matrix: DataFrame or Serires; (n_samples, m_features)
     :param filepath: str; filepath; adds .gct suffix if missing
     :param descriptions: iterable; (n_samples); description column
     :return: None
@@ -474,9 +483,9 @@ def load_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!
         if any([line.startswith(a_n) for a_n in annotation_names]):  # Annotation name matches
 
             # Parse row
-            split = line.strip().split('\t')
-            name = split[0]
-            annotation = [s[1:-1] for s in split[1:]]
+            split_line = line.strip().split('\t')
+            name = split_line[0]
+            annotation = [s[1:-1] for s in split_line[1:]]
 
             # Avoid same names
             i = 2
@@ -798,8 +807,8 @@ def get_unique_in_order(iterable):
 def explode(series):
     """
     Make a label-x-sample binary matrix from a Series.
-    :param series: pandas Series;
-    :return: pandas DataFrame; (n_labels, n_samples)
+    :param series: Series;
+    :return: DataFrame; (n_labels, n_samples)
     """
 
     # Make an empty DataFrame (n_unique_labels, n_samples)
@@ -860,13 +869,16 @@ def drop_uniform_slice_from_dataframe(dataframe, value, axis=0):
         return dataframe.ix[~dropped, :]
 
 
-def shuffle_dataframe(dataframe, axis=0):
+def shuffle_dataframe(dataframe, axis=0, random_seed=RANDOM_SEED):
     """
 
     :param dataframe: DataFrame;
     :param axis: int;
+    :param random_seed: int or array-like;
     :return: DataFrame;
     """
+
+    seed(random_seed)
 
     df = dataframe.copy()
 
@@ -903,8 +915,8 @@ def drop_nan_columns(arrays):
 def get_consensus(sample_x_clustering):
     """
     Count number of co-clusterings.
-    :param sample_x_clustering: pandas DataFrame; (n_samples, n_clusterings)
-    :return: pandas DataFrame; (n_samples, n_samples)
+    :param sample_x_clustering: DataFrame; (n_samples, n_clusterings)
+    :return: DataFrame; (n_samples, n_samples)
     """
     sample_x_clustering_array = asarray(sample_x_clustering)
 
@@ -927,7 +939,7 @@ def get_consensus(sample_x_clustering):
     return DataFrame(coclusterings, index=sample_x_clustering.index, columns=sample_x_clustering.index)
 
 
-def mds(matrix, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=1000, standardize=True):
+def mds(matrix, distance_function=None, mds_seed=RANDOM_SEED, n_init=1000, max_iter=1000, standardize=True):
     """
     Multidimentional-scale rows of matrix from <n_cols>D into 2D.
     :param matrix: DataFrame; (n_points, n_dimentions)
@@ -952,7 +964,7 @@ def mds(matrix, distance_function=None, mds_seed=SEED, n_init=1000, max_iter=100
     coordinates = DataFrame(coordinates, index=matrix.index, columns=['x', 'y'])
 
     if standardize:  # Rescale coordinates between 0 and 1
-        coordinates = normalize_pandas(coordinates, method='0-1', axis=0)
+        coordinates = normalize_dataframe_or_series(coordinates, method='0-1', axis=0)
 
     return coordinates
 
@@ -963,6 +975,7 @@ def get_top_and_bottom_indices(dataframe, column_name, threshold, max_n=None):
     :param dataframe: DataFrame;
     :param column_name: str;
     :param threshold: number; quantile if < 1; ranking number if >= 1
+    :param max_n: int; maximum number of rows
     :return: list; list of indices
     """
 
@@ -990,7 +1003,7 @@ def get_top_and_bottom_indices(dataframe, column_name, threshold, max_n=None):
 # Normalization
 # ======================================================================================================================
 # TODO: make sure the normalization when size == 0 or range == 0 is correct
-def normalize_pandas(dataframe, method, axis=None, n_ranks=10000):
+def normalize_dataframe_or_series(dataframe, method, axis=None, n_ranks=10000):
     """
     Normalize a pandas object.
     :param dataframe: DataFrame or Series;
@@ -1099,7 +1112,7 @@ def cross_validate(model, data, target, n_partitions):
 # ======================================================================================================================
 # Information theory
 # ======================================================================================================================
-def information_coefficient(x, y, n_grids=25, jitter=1E-10):
+def information_coefficient(x, y, n_grids=25, jitter=1E-10, random_seed=RANDOM_SEED):
     """
     Compute the information coefficient between x and y, which can be composed of either continuous,
     categorical, or binary values.
@@ -1107,8 +1120,11 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
     :param y: numpy array;
     :param n_grids: int; number of grid lines in a dimention when estimating bandwidths
     :param jitter: number;
+    :param random_seed: int or array-like;
     :return: float;
     """
+
+    seed(random_seed)
 
     # Can't work with missing any value
     # not_nan_filter = ~isnan(x)
@@ -1163,15 +1179,18 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10):
 # ======================================================================================================================
 # Association
 # ======================================================================================================================
-def compute_association_and_pvalue(x, y, function=information_coefficient, n_permutations=100):
+def compute_association_and_pvalue(x, y, function=information_coefficient, n_permutations=100, random_seed=RANDOM_SEED):
     """
     Compute function(x, y) and p-value using permutation test.
     :param x: array-like;
     :param y: array-like;
     :param function: function;
     :param n_permutations: int; number of permutations for the p-value permutation test
+    :param random_seed: int or array-like;
     :return: float and float; score and p-value
     """
+
+    seed(random_seed)
 
     # Compute score
     score = function(x, y)
@@ -1307,7 +1326,7 @@ def make_network_from_edge_file(edge_file, di=False, sep='\t'):
 # Cluster
 # ======================================================================================================================
 def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=information_coefficient,
-                                   n_clusterings=100):
+                                   n_clusterings=100, random_seed=RANDOM_SEED):
     """
     Consensus cluster matrix's columns into k clusters.
     :param matrix: pandas DataFrame; (n_features, m_samples)
@@ -1315,10 +1334,11 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
     :param distance_matrix: str or DataFrame;
     :param function: function; distance function
     :param n_clusterings: int; number of clusterings for the consensus clustering
+    :param random_seed: int or array-like;
     :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and cophenetic correlation coefficients (n_ks)
     """
 
-    print(get_state())
+    seed(random_seed)
 
     if isinstance(ks, int):
         ks = [ks]
@@ -1405,7 +1425,8 @@ def _hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True
 # NMF
 # ======================================================================================================================
 def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
-                          init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED, alpha=0, l1_ratio=0,
+                          init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=RANDOM_SEED, alpha=0,
+                          l1_ratio=0,
                           shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
     Perform NMF with k from ks and _score each NMF decomposition.
@@ -1505,7 +1526,7 @@ def _nmf_and_score(args):
     return nmf_results, cophenetic_correlation_coefficients
 
 
-def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=SEED,
+def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=RANDOM_SEED,
         alpha=0, l1_ratio=0, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
     Nonenegative matrix factorize matrix with k from ks.
@@ -1576,14 +1597,17 @@ def solve_matrix_linear_equation(a, b, method='nnls'):
 # ======================================================================================================================
 # Simulation
 # ======================================================================================================================
-def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None):
+def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None, random_seed=RANDOM_SEED):
     """
     Simulate DataFrame (2D) or Series (1D).
     :param n_rows: int;
     :param n_cols: int;
     :param n_categories: None or int; continuous if None and categorical if int
+    :param random_seed: int or array-like;
     :return: pandas DataFrame or Series; (n_rows, n_cols) or (1, n_cols)
     """
+
+    seed(random_seed)
 
     # Set up indices and column names
     indices = ['Feature {}'.format(i) for i in range(n_rows)]
@@ -1751,7 +1775,7 @@ def plot_heatmap(dataframe, data_type='continuous',
     df = dataframe.copy()
 
     if normalization_method:
-        df = normalize_pandas(df, normalization_method, axis=normalization_axis)
+        df = normalize_dataframe_or_series(df, normalization_method, axis=normalization_axis)
     values = unique(df.values)
 
     if any(row_annotation) or any(column_annotation):
@@ -1865,15 +1889,15 @@ def plot_clustermap(dataframe, cmap=CMAP_CONTINUOUS, row_colors=None, col_colors
                     filepath=None):
     """
     Plot heatmap for dataframe.
-    :param dataframe: pandas DataFrame;
+    :param dataframe: DataFrame;
     :param cmap: colormap;
-    :param row_colors: list-like or pandas DataFrame/Series; List of colors to label for either the rows.
+    :param row_colors: list-like or DataFrame/Series; List of colors to label for either the rows.
         Useful to evaluate whether samples within a group_iterable are clustered together.
         Can use nested lists or DataFrame for multiple color levels of labeling.
         If given as a DataFrame or Series, labels for the colors are extracted from
         the DataFrames column names or from the name of the Series. DataFrame/Series colors are also matched to the data
         by their index, ensuring colors are drawn in the correct order.
-    :param col_colors: list-like or pandas DataFrame/Series; List of colors to label for either the column.
+    :param col_colors: list-like or DataFrame/Series; List of colors to label for either the column.
         Useful to evaluate whether samples within a group_iterable are clustered together.
         Can use nested lists or DataFrame for multiple color levels of labeling.
         If given as a DataFrame or Series, labels for the colors are extracted from
@@ -2002,8 +2026,8 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=T
     Plot nmf_results dictionary (can be generated by ccal.analyze.nmf function).
     :param nmf_results: dict; {k: {W:w, H:h, ERROR:error}}
     :param k: int; k for NMF
-    :param w_matrix: pandas DataFrame
-    :param h_matrix: Pandas DataFrame
+    :param w_matrix: DataFrame
+    :param h_matrix: DataFrame
     :param normalize: bool; normalize W and H matrices or not ('-0-' normalization on the component axis)
     :param max_std: number; threshold to clip standardized values
     :param title: str;
@@ -2036,7 +2060,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=T
 
     # Plot W
     if normalize:
-        w_matrix = normalize_pandas(w_matrix, method='-0-', axis=0).clip(-max_std, max_std)
+        w_matrix = normalize_dataframe_or_series(w_matrix, method='-0-', axis=0).clip(-max_std, max_std)
     heatmap(w_matrix, cmap=CMAP_CONTINUOUS, yticklabels=False, ax=ax_w)
     ax_w.set_title('W Matrix for k={}'.format(w_matrix.shape[1]), **FONT_TITLE)
     ax_w.set_xlabel('Component', **FONT_SUBTITLE)
@@ -2046,7 +2070,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=T
 
     # Plot H
     if normalize:
-        h_matrix = normalize_pandas(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
+        h_matrix = normalize_dataframe_or_series(h_matrix, method='-0-', axis=1).clip(-max_std, max_std)
     heatmap(h_matrix, cmap=CMAP_CONTINUOUS, xticklabels=False, cbar_kws={'orientation': 'horizontal'}, ax=ax_h)
     ax_h.set_title('H Matrix for k={}'.format(h_matrix.shape[0]), **FONT_TITLE)
     ax_h.set_xlabel('Sample', **FONT_SUBTITLE)

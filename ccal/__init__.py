@@ -18,5 +18,5 @@ from .association import *
 
 VERBOSE = True
 
-SEED = 20121020
-print('Planted a random seed: {}.'.format(SEED))
+RANDOM_SEED = 20121020
+print('Planted a random seed: {}.'.format(RANDOM_SEED))

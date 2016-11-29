@@ -27,9 +27,9 @@ from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import violinplot, boxplot
 
-from . import SEED
+from . import RANDOM_SEED
 from .support import EPS, print_log, read_gct, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
-    nmf_consensus_cluster, information_coefficient, normalize_pandas, hierarchical_consensus_cluster, \
+    nmf_consensus_cluster, information_coefficient, normalize_dataframe_or_series, hierarchical_consensus_cluster, \
     exponential_function, mds, compute_association_and_pvalue, solve_matrix_linear_equation, \
     drop_uniform_slice_from_dataframe, \
     FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, plot_nmf, \
@@ -45,7 +45,7 @@ kde2d = mass.kde2d
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED, directory_path=None):
+def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=RANDOM_SEED, directory_path=None):
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
@@ -68,7 +68,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=SEED
 
     # Rank normalize the input matrix by column
     # TODO: try changing n_ranks (choose automatically)
-    matrix = normalize_pandas(matrix, 'rank', n_ranks=10000, axis=0)
+    matrix = normalize_dataframe_or_series(matrix, 'rank', n_ranks=10000, axis=0)
     plot_clustermap(matrix, title='(Rank-normalized) Matrix to be Decomposed', xlabel='Sample', ylabel='Feature',
                     xticklabels=False, yticklabels=False)
 
@@ -183,7 +183,7 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
 
     # Rank normalize the A matrix by column
     # TODO: try changing n_ranks (choose automatically)
-    a_matrix = normalize_pandas(a_matrix, 'rank', n_ranks=10000, axis=0)
+    a_matrix = normalize_dataframe_or_series(a_matrix, 'rank', n_ranks=10000, axis=0)
 
     # Normalize the W matrix by column
     # TODO: improve the normalization (why this normalization?)
@@ -310,7 +310,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         matrix = read_gct(matrix)
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
-    matrix = normalize_pandas(normalize_pandas(matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
+    matrix = normalize_dataframe_or_series(normalize_dataframe_or_series(matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
 
     # Hierarchical-consensus cluster
     distance_matrix, clusterings, cophenetic_correlation_coefficients = \
@@ -373,7 +373,7 @@ def get_state_labels(clusterings, k):
 # ======================================================================================================================
 def make_oncogps_map(training_h, training_states, std_max=3,
                      testing_h=None, testing_states=None, testing_h_normalization='using_training_h',
-                     components=None, informational_mds=True, mds_seed=SEED,
+                     components=None, informational_mds=True, mds_seed=RANDOM_SEED,
                      n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
                      component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
                      samples_to_plot=None,
@@ -652,11 +652,11 @@ def _normalize_h(h, std_max, normalizing_h=None):
 
     else:  # Normalize using statistics from H matrix
         # -0-
-        h = normalize_pandas(h, '-0-', axis=1)
+        h = normalize_dataframe_or_series(h, '-0-', axis=1)
         # Clip
         h = h.clip(-std_max, std_max)
         # 0-1
-        h = normalize_pandas(h, '0-1', axis=1)
+        h = normalize_dataframe_or_series(h, '0-1', axis=1)
 
     return h
 
@@ -1015,8 +1015,8 @@ def _plot_onco_gps(components, samples,
                 raise TypeError('Continuous annotation values must be numbers (float, int, etc).')
 
             # Normalize annotation
-            samples.ix[:, 'annotation_value'] = normalize_pandas(samples.ix[:, 'annotation'], '-0-').clip(-std_max,
-                                                                                                          std_max)
+            samples.ix[:, 'annotation_value'] = normalize_dataframe_or_series(samples.ix[:, 'annotation'], '-0-').clip(-std_max,
+                                                                                                                       std_max)
 
             # Get annotation statistics
             annotation_min = max(-std_max, samples.ix[:, 'annotation_value'].min())
