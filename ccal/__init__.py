@@ -11,10 +11,8 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from random import seed
-
 SEED = 20121020
-seed(SEED)
+print('Planted a random seed: {}.'.format(SEED))
 
 VERBOSE = True
 
@@ -23,5 +21,3 @@ from .oncogps import define_components, get_w_or_h_matrix, solve_for_components,
     make_oncogps_map
 from .association import compute_association, make_association_panel, make_association_panels, \
     plot_association_summary_panel, make_comparison_matrix
-
-print('Planted a random seed: {}.'.format(SEED))

@@ -14,8 +14,7 @@ Authors:
 from os.path import join
 
 from colorsys import rgb_to_hsv, hsv_to_rgb
-import numpy as np
-from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum
+from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma
 from pandas import DataFrame, Series, read_csv, isnull
 from scipy.spatial import Delaunay, ConvexHull
 import rpy2.robjects as ro
@@ -998,7 +997,7 @@ def _plot_onco_gps(components, samples,
         for j in range(grid_probabilities.shape[1]):
             if not convexhull_region.contains_point((x_grids[i], y_grids[j])):
                 mask[i, j] = True
-    z = np.ma.array(grid_probabilities, mask=mask)
+    z = ma.array(grid_probabilities, mask=mask)
 
     # Plot contours
     ax_map.contour(z.transpose(), n_contours,

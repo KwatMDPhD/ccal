@@ -19,8 +19,8 @@ from multiprocessing import Pool
 
 from numpy import finfo, array, asarray, empty, zeros, ones, unique, sign, sum, sqrt, exp, log, dot, isnan, sort, \
     argmax, average, log2
+from numpy.random import seed, random_sample, random_integers, shuffle
 from numpy.linalg import pinv
-from numpy.random import random_sample, random_integers, shuffle
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import pearsonr
 from scipy.spatial.distance import pdist
@@ -1313,6 +1313,8 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
     :param n_clusterings: int; number of clusterings for the consensus clustering
     :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and cophenetic correlation coefficients (n_ks)
     """
+
+    print(get_state())
 
     if isinstance(ks, int):
         ks = [ks]
