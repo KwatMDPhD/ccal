@@ -100,8 +100,8 @@ def source_environment(filepath):
 
     print_log('Sourcing {} ...'.format(filepath))
 
-    for line in Popen('./{}; env'.format(filepath), stdout=PIPE, universal_newlines=True, shell=True).stdout:
-        key, _, value = line.partition('=')
+    for ln in Popen('./{}; env'.format(filepath), stdout=PIPE, universal_newlines=True, shell=True).stdout:
+        key, _, value = ln.partition('=')
         key, value = key.strip(), value.strip()
         environ[key] = value
         print_log('\t{} = {}'.format(key, value))
@@ -112,14 +112,14 @@ def source_environment(filepath):
 # ======================================================================================================================
 def parallelize(function, list_of_args, n_jobs=1):
     """
-    Apply function on args with parallel computing using n_jobs jobs.
+    Apply function on list_of_args using parallel computing across n_jobs jobs; n_jobs doesn't have to be the length of
+    list_of_args.
     :param function: function;
-    :param list_of_args: list-like; function's args
-    :param n_jobs: int;
-    :return: list; list of outputs returned by all jobs
+    :param list_of_args: iterable; for each item in iterable, function(item) is executed; function won't run if empty
+    :param n_jobs: int; number of allowed simultaneous jobs
+    :return: list; list of outputs returned by all jobs, in the order of the list_of_args
     """
 
-    # Parallelize
     with Pool(n_jobs) as p:
         return p.map(function, list_of_args)
 
