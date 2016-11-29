@@ -15,7 +15,7 @@ from os.path import join
 from math import ceil, sqrt
 
 from numpy import array, sum, unique
-from numpy.random import shuffle, choice
+from numpy.random import seed, shuffle, choice
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
 from statsmodels.sandbox.stats.multicomp import multipletests
@@ -24,10 +24,10 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import heatmap
 
-from .support import print_log, establish_filepath, read_gct, title_str, untitle_str, information_coefficient, \
-    parallelize, get_unique_in_order, normalize_dataframe_or_series, compare_matrices, get_top_and_bottom_indices, \
-    FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, FONT_SUBTITLE, save_plot, \
-    plot_clustermap
+from .support import RANDOM_SEED, print_log, establish_filepath, read_gct, title_str, untitle_str, \
+    information_coefficient, parallelize, get_unique_in_order, normalize_dataframe_or_series, compare_matrices, \
+    get_top_and_bottom_indices, FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
+    FONT_SUBTITLE, save_plot, plot_clustermap
 
 
 # ======================================================================================================================
@@ -174,7 +174,7 @@ def compute_association(target, features, function=information_coefficient,
                         target_ascending=False,
                         n_jobs=1, min_n_per_job=100, features_ascending=False,
                         n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
-                        filepath=None):
+                        filepath=None, random_seed=RANDOM_SEED):
     """
     Compute: score_i = function(target, feature_i) for all features.
     Compute confidence interval (CI) for n_features features.
@@ -192,10 +192,13 @@ def compute_association(target, features, function=information_coefficient,
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
     :param filepath: str;
+    :param random_seed: int or array-like;
     :return: Series, DataFrame, DataFrame; (n_features, 8 ('score', '<confidence> moe',
                                             'p-value (forward)', 'p-value (reverse)', 'p-value',
                                             'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
+
+    seed(random_seed)
 
     # Make sure target is a Series and features a DataFrame
     # Keep samples found in both target and features
@@ -288,7 +291,7 @@ def compute_association(target, features, function=information_coefficient,
     else:
         if n_jobs == 1:  # Non-parallel computing
             print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
-            permutation_scores = _permute_and_score((target, features, function, n_permutations))
+            permutation_scores = _permute_and_score((target, features, function, n_permutations, random_seed))
 
         else:  # Parallel computing
 
@@ -300,7 +303,7 @@ def compute_association(target, features, function=information_coefficient,
                           '(with n_jobs=1 because n_per_jobs ({}) < min_n_jobs ({})) ...'.format(n_permutations,
                                                                                                  n_per_job,
                                                                                                  min_n_per_job))
-                permutation_scores = _permute_and_score((target, features, function, n_permutations))
+                permutation_scores = _permute_and_score((target, features, function, n_permutations, random_seed))
 
             else:  # n is enough for parallel computing
                 print_log('Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.format(
@@ -311,7 +314,7 @@ def compute_association(target, features, function=information_coefficient,
                 leftovers = list(features.index)
                 for i in range(n_jobs):
                     split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
-                    args.append((target, split_features, function, n_permutations))
+                    args.append((target, split_features, function, n_permutations, random_seed))
 
                     # Remove scored features
                     for feature in split_features.index:
@@ -323,8 +326,13 @@ def compute_association(target, features, function=information_coefficient,
                 # Handle leftovers
                 if leftovers:
                     print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
-                    permutation_scores = concat([permutation_scores, _permute_and_score(
-                        (target, features.ix[leftovers, :], function, n_permutations))], verify_integrity=True)
+                    permutation_scores = concat([permutation_scores,
+                                                 _permute_and_score((target,
+                                                                     features.ix[leftovers, :],
+                                                                     function,
+                                                                     n_permutations,
+                                                                     random_seed))],
+                                                verify_integrity=True)
 
         print_log('\tComputing P-value and FDR ...')
         # All scores
@@ -429,8 +437,12 @@ def _permute_and_score(args):
          int; n_permutations)
     :return: DataFrame; (n_features, n_permutations)
     """
+    if len(args) != 5:
+        raise ValueError('args is not length of 5 (target, features, function, n_perms, and random_seed).')
+    else:
+        t, f, func, n_perms, random_seed = args
 
-    t, f, func, n_perms = args
+    seed(random_seed)
 
     scores = DataFrame(index=f.index, columns=range(n_perms))
     shuffled_target = array(t)
