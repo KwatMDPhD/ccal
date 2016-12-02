@@ -107,6 +107,34 @@ def source_environment(filepath):
         print_log('\t{} = {}'.format(key, value))
 
 
+def get_name(obj, namesapce):
+    """
+
+    :param obj: object;
+    :param namesapce: dict;
+    :return: str;
+    """
+    if isinstance(obj, int):  # obj is an int
+        return obj
+
+    for obj_name_in_namespace, obj_in_namespace in namesapce.items():
+        if obj_in_namespace is obj:  # obj is a existing obj
+            return obj_name_in_namespace
+
+    # obj is a str
+    return '\'{}\''.format(obj)
+
+
+def set_verbose(verbose):
+    """
+    Set verbose.
+    :param verbose: bool;
+    :return: None
+    """
+
+    VERBOSE = verbose
+
+
 # ======================================================================================================================
 # Parallel computing
 # ======================================================================================================================
@@ -545,10 +573,10 @@ def timestamp(time_only=False):
 # ======================================================================================================================
 # String
 # ======================================================================================================================
-def title_str(string):
+def title_str(a_str):
     """
-    Title a string.
-    :param string: str;
+    Title a a_str.
+    :param a_str: str;
     :return: str;
     """
 
@@ -556,7 +584,7 @@ def title_str(string):
     uppers = []
     start = end = None
     is_upper = False
-    for i, c in enumerate(string):
+    for i, c in enumerate(a_str):
         if c.isupper():
             # print('{} is UPPER.'.format(c))
             if is_upper:
@@ -577,17 +605,17 @@ def title_str(string):
             uppers.append((start, end))
 
     # Title
-    string = string.title().replace('_', ' ')
+    a_str = a_str.title().replace('_', ' ')
 
     # Upper all original uppercase letters
     for start, end in uppers:
-        string = string[:start] + string[start: end].upper() + string[end:]
+        a_str = a_str[:start] + a_str[start: end].upper() + a_str[end:]
 
     # Lower some words
     for lowercase in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of', 'vs', 'vs']:
-        string = string.replace(' ' + lowercase.title() + ' ', ' ' + lowercase + ' ')
+        a_str = a_str.replace(' ' + lowercase.title() + ' ', ' ' + lowercase + ' ')
 
-    return string
+    return a_str
 
 
 def untitle_str(string):

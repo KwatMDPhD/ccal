@@ -372,27 +372,27 @@ def get_state_labels(clusterings, k):
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-def make_oncogps_map(training_h, training_states, std_max=3,
-                     testing_h=None, testing_states=None, testing_h_normalization='using_training_h',
-                     components=None, informational_mds=True, mds_seed=RANDOM_SEED,
-                     n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
-                     component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
-                     samples_to_plot=None,
-                     annotation=(), annotation_name='', annotation_type='continuous',
-                     title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-                     subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                     component_markersize=16, component_markerfacecolor='#000726',
-                     component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
-                     component_text_position='auto', component_fontsize=22,
-                     delaunay_linewidth=1, delaunay_linecolor='#000000',
-                     colors=(), bad_color='#999999', max_background_saturation=1,
-                     n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                     sample_markersize=19, sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
-                     sample_name_size=16, sample_name_color=None,
-                     legend_markersize=22, legend_fontsize=16, effectplot_type='violine',
-                     effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
-                     effectplot_median_markeredgecolor='#FF0082',
-                     filepath=None):
+def make_oncogps(training_h, training_states, std_max=3,
+                 testing_h=None, testing_states=None, testing_h_normalization='using_training_h',
+                 components=None, informational_mds=True, mds_seed=RANDOM_SEED,
+                 n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
+                 component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
+                 samples_to_plot=None,
+                 annotation=(), annotation_name='', annotation_type='continuous',
+                 title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
+                 subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
+                 component_markersize=16, component_markerfacecolor='#000726',
+                 component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
+                 component_text_position='auto', component_fontsize=22,
+                 delaunay_linewidth=1, delaunay_linecolor='#000000',
+                 colors=(), bad_color='#999999', max_background_saturation=1,
+                 n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
+                 sample_markersize=19, sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
+                 sample_name_size=16, sample_name_color=None,
+                 legend_markersize=22, legend_fontsize=16, effectplot_type='violine',
+                 effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
+                 effectplot_median_markeredgecolor='#FF0082',
+                 filepath=None):
     """
     :param training_h: DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param training_states: iterable of int; (n_samples); sample states
