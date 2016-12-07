@@ -12,15 +12,3 @@ Computational Cancer Analysis Laboratory, UCSD Cancer Center
 ptamayo@ucsd.edu
 
 Computational Cancer Analysis Laboratory, UCSD Cancer Center
-
-Contributors
--
-#### James Jensen
-jdjensen@eng.ucsd.edu
-
-Laboratory of Jill Mesirov
-
-#### Clarence Mah
-ckmah@ucsd.edu
-
-Laboratory of Jill Mesirov
