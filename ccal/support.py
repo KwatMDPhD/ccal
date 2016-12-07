@@ -649,7 +649,7 @@ def timestamp(time_only=False):
     if time_only:
         formatter = '%H%M%S'
     else:
-        formatter = '%Y%m%d-%H%M%S'
+        formatter = '%Y%m%d%H%M%S'
     return datetime.now().strftime(formatter)
 
 
@@ -777,6 +777,23 @@ def exponential_function(x, a, k, c):
     """
 
     return a * exp(k * x) + c
+
+
+def skew_t_pdf(x, df, shape, location, scale):
+    """
+    Evaluate skew-t PDF (defined by `df`, `shape`, `location`, and `scale`) at `x`.
+    :param x: array-like; vector of independent variables used to compute probabilities of the skew-t PDF.
+    :param df: number; degree of freedom of the skew-t PDF
+    :param shape: number; skewness or shape parameter of the skew-t PDF
+    :param location: number; location of the skew-t PDF
+    :param scale: number; scale of the skew-t PDF
+    :return array-like: skew-t PDF (defined by `df`, `shape`, `location`, and `scale`) evaluated at `x`.
+    """
+    from scipy.stats.distributions import t
+    from scipy.special import stdtr
+
+    return (2 / scale) * t._pdf(((x - location) / scale), df) * stdtr(df + 1, shape * ((x - location) / scale) * sqrt(
+        (df + 1) / (df + x ** 2)))
 
 
 # ======================================================================================================================
@@ -1807,3 +1824,37 @@ def compute_fold_change_for_a_gene(s, fpkm1_col_name, fpkm2_col_name, fpkm1_min,
     fpkm2 = max(s.ix[fpkm2_col_name], fpkm2_min)
 
     return log2(norm_factor * fpkm2 / fpkm1)
+
+
+def get_variants(gene_x_samples, gene):
+    """
+
+    :param gene_x_samples: dataframe; (n_genes, n_samplesa)
+    :param gene: str; gene index used in gene_x_sample
+    :return: dataframe; (3 (AMP, MUT, DEL), n_samples)
+    """
+
+    null = Series(zeros(gene_x_samples.shape[1]), index=gene_x_samples.columns)
+
+    # Amplification
+    try:
+        amplifications = gene_x_samples.ix['{}_AMP'.format(gene), :]
+    except KeyError:
+        print('No amplification data for {}.'.format(gene))
+        amplifications = null
+
+    # Mutation
+    try:
+        mutations = gene_x_samples.ix['{}_MUT'.format(gene), :]
+    except KeyError:
+        print('No mutation data for {}.'.format(gene))
+        mutations = null
+
+    # Deletion
+    try:
+        deletions = gene_x_samples.ix['{}_DEL'.format(gene), :]
+    except KeyError:
+        print('No deletion data for {}.'.format(gene))
+        deletions = null
+
+    return concat([amplifications, mutations, deletions], axis=1).fillna(0).astype(int).T

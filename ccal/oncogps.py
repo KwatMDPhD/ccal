@@ -31,9 +31,9 @@ from . import RANDOM_SEED
 from .support import EPS, print_log, read_gct, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
     nmf_consensus_cluster, information_coefficient, normalize_dataframe_or_series, hierarchical_consensus_cluster, \
     exponential_function, mds, compute_association_and_pvalue, solve_matrix_linear_equation, \
-    drop_uniform_slice_from_dataframe, \
-    FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, plot_nmf, \
-    plot_x_vs_y
+    drop_uniform_slice_from_dataframe
+from .plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, \
+    plot_nmf, plot_x_vs_y
 from .association import make_association_panel
 
 ro.conversion.py2ri = numpy2ri

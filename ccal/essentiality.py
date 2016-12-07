@@ -7,76 +7,44 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from os.path import join, isfile
+from os.path import join
 
-from numpy import sqrt, linspace, histogram, argmax, empty, cumsum, log
+from numpy import linspace, histogram, argmax, empty, cumsum, log
 from pandas import read_csv, DataFrame
-from scipy.stats.distributions import t
-from scipy.special import stdtr
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
 from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
 from seaborn import set_style, despine, distplot, rugplot
 
-from .support import timestamp, print_log, establish_filepath
+from .support import timestamp, print_log, establish_filepath, get_variants
 from .plot import FIGURE_SIZE, save_plot
 
 
-def plot_essentiality(feature_x_sample, feature_x_fit,
-                      selected_features=None,
-                      overwrite_figures=False, show_plot=True,
-                      directory_path='.'):
+def fit_essentiality(feature_x_sample, bar_df, features=(),
+                     directory_path=None, plot=True, overwrite=False, show_plot=True):
     """
-    Make essentiality plot for each gene.
-    :param feature_x_sample: DataFrame or str; (n_features, n_samples) or a filepath to a file
-    :param feature_x_fit: DataFrame or str; (n_features, 5 (n, df, shape, location, scale)) or a filepath to a file
-    :param selected_features: iterable; (n_selected_features)
-    :param overwrite_figures: bool; overwrite the existing figure or not
-    :param show_plot: bool; show plot or not
-    :param directory_path: str; directory_path/essentiality_plots/feature<id>.pdf will be saved
-    :return: None
+
+    :param feature_x_sample:
+    :param bar_df:
+    :param features:
+    :param directory_path:
+    :param plot:
+    :param overwrite:
+    :param show_plot:
+    :return: dataframe;
     """
 
     if isinstance(feature_x_sample, str):  # Read from a file
         feature_x_sample = read_csv(feature_x_sample, sep='\t', index_col=0)
 
-    if isinstance(feature_x_fit, str):  # Read from a file
-        feature_x_fit = read_csv(feature_x_fit, sep='\t', index_col=0)
+    if not any(features):  # Use all features
+        features = feature_x_sample.index
 
-    if not selected_features:  # Use all features
-        selected_features = feature_x_sample.index
+    # Result data structure
+    feature_x_fit = DataFrame(index=features, columns=['n', 'df', 'shape', 'location', 'scale'])
 
-    # Plot each feature
-    for i, (f_i, fit) in enumerate(feature_x_fit.ix[selected_features, :].iterrows()):
-        print('{}: Plotting {} (@{}) ...'.format(timestamp(time_only=True), f_i, i))
-
-        # Make an output filepath
-        output_filepath = join(directory_path, 'essentiality_plots', '{}.pdf'.format(f_i))
-
-        if not isfile(output_filepath) or overwrite_figures:  # If the figure doesn't exist or overriding it
-
-            # Parse fitted parameters
-            n, df, shape, location, scale = fit
-
-            _plot_essentiality(feature_x_sample.ix[f_i, :], bars,
-                               n=n, df=df, shape=shape, location=location, scale=scale,
-                               filepath=output_filepath, show_plot=show_plot)
-
-
-def fit_essentiality(feature_x_sample, selected_features=None,
-                     plot=True, overwrite_figures=False, show_plot=True,
-                     directory_path='.'):
-    if isinstance(feature_x_sample, str):  # Read from a file
-        feature_x_sample = read_csv(feature_x_sample, sep='\t', index_col=0)
-
-    if not selected_features:  # Use all features
-        selected_features = feature_x_sample.index
-
-    # Result holder
-    feature_x_fit = DataFrame(index=feature_x_sample.index, columns=['n', 'df', 'shape', 'location', 'scale'])
-
-    for i, (f_i, f_v) in enumerate(feature_x_sample.ix[selected_features, :].iterrows()):
+    for i, (f_i, f_v) in enumerate(feature_x_sample.ix[features, :].iterrows()):
         print_log('Fitting {} (@{}) ...'.format(f_i, i))
 
         # Fit skew-t PDF on this gene
@@ -90,25 +58,65 @@ def fit_essentiality(feature_x_sample, selected_features=None,
         if plot:
 
             # Make an output filepath
-            output_filepath = join(directory_path, 'essentiality_plots', '{}.pdf'.format(f_i))
+            if directory_path:
+                filepath = join(directory_path, 'essentiality_plots', '{}.pdf'.format(f_i))
+            else:
+                filepath = None
 
-            if not isfile(output_filepath) or overwrite_figures:  # If the figure doesn't exist or overriding it
-                _plot_essentiality(feature_x_sample.ix[f_i, :], bars,
-                                   n=n, df=df, shape=shape, location=location, scale=scale,
-                                   filepath=output_filepath, show_plot=show_plot)
+            _plot_essentiality(feature_x_sample.ix[f_i, :], get_variants(bar_df, f_i),
+                               n=n, df=df, shape=shape, location=location, scale=scale,
+                               filepath=filepath, overwrite=overwrite, show_plot=show_plot)
 
     # Sort by shape
     feature_x_fit.sort_values('shape', inplace=True)
 
-    # Save
-    output_filepath = join(directory_path, '{}_skew_t_fit.txt'.format(timestamp()))
-    establish_filepath(output_filepath)
-    feature_x_fit.to_csv(output_filepath, sep='\t')
+    if directory_path:  # Save
+        filepath = join(directory_path, '{}_skew_t_fit.txt'.format(timestamp()))
+        establish_filepath(filepath)
+        feature_x_fit.to_csv(filepath, sep='\t')
 
     return feature_x_fit
 
-def get_variants():
 
+def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None,
+                      directory_path=None, overwrite=False, show_plot=True):
+    """
+    Make essentiality plot for each gene.
+    :param feature_x_sample: DataFrame or str; (n_features, n_samples) or a filepath to a file
+    :param feature_x_fit: DataFrame or str; (n_features, 5 (n, df, shape, location, scale)) or a filepath to a file
+    :param bar_df: dataframe;
+    :param features: iterable; (n_selected_features)
+    :param overwrite: bool; overwrite the existing figure or not
+    :param show_plot: bool; show plot or not
+    :param directory_path: str; directory_path/essentiality_plots/feature<id>.pdf will be saved
+    :return: None
+    """
+
+    if isinstance(feature_x_sample, str):  # Read from a file
+        feature_x_sample = read_csv(feature_x_sample, sep='\t', index_col=0)
+
+    if isinstance(feature_x_fit, str):  # Read from a file
+        feature_x_fit = read_csv(feature_x_fit, sep='\t', index_col=0)
+
+    if not features:  # Use all features
+        features = feature_x_sample.index
+
+    # Plot each feature
+    for i, (f_i, fit) in enumerate(feature_x_fit.ix[features, :].iterrows()):
+        print_log('{}: Plotting {} (@{}) ...'.format(timestamp(time_only=True), f_i, i))
+
+        # Make an output filepath
+        if directory_path:
+            filepath = join(directory_path, 'essentiality_plots', '{}.pdf'.format(f_i))
+        else:
+            filepath = None
+
+        # Parse fitted parameters
+        n, df, shape, location, scale = fit
+
+        _plot_essentiality(feature_x_sample.ix[f_i, :], get_variants(bar_df, f_i),
+                           n=n, df=df, shape=shape, location=location, scale=scale,
+                           filepath=filepath, overwrite=overwrite, show_plot=show_plot)
 
 
 def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None, scale=None,
@@ -118,7 +126,7 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
                        gene_fontsize=30, labels_fontsize=22,
                        bars_linewidth=2.4,
                        bar0_color='#9017E6', bar1_color='#6410A0', bar2_color='#470B72',
-                       filepath=None, show_plot=True):
+                       filepath=None, overwrite=True, show_plot=True):
     # ==================================================================================================================
     # Set up
     # ==================================================================================================================
@@ -159,13 +167,6 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
             t.set_visible(False)
 
     # ==================================================================================================================
-    # Set aesthetics
-    # ==================================================================================================================
-    line_kwargs = {'linestyle': '-', 'linewidth': 2.6}
-    label_kwargs = {'weight': 'bold', 'fontsize': labels_fontsize}
-    tick_kwargs = {'size': labels_fontsize * 0.81, 'weight': 'normal'}
-
-    # ==================================================================================================================
     # Plot histogram
     # ==================================================================================================================
     distplot(vector, hist=True, bins=n_bins, kde=False, hist_kws={'linewidth': 0.92, 'alpha': 0.24, 'color': pdf_color},
@@ -189,6 +190,7 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
     skew_t_pdf *= scale_factor
 
     # Plot skew-t PDF
+    line_kwargs = {'linestyle': '-', 'linewidth': 2.6}
     ax_graph.plot(xgrids, skew_t_pdf, color=pdf_color, **line_kwargs)
 
     # Extend plot vertically
@@ -252,10 +254,12 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
                 fontsize=gene_fontsize * 0.6, weight='bold', horizontalalignment='center')
 
     # Set labels
+    label_kwargs = {'weight': 'bold', 'fontsize': labels_fontsize}
     ax_graph.set_xlabel('RNAi Score', **label_kwargs)
     ax_graph.set_ylabel('Frequency', **label_kwargs)
 
     # Set ticks
+    tick_kwargs = {'size': labels_fontsize * 0.81, 'weight': 'normal'}
     for t in ax_graph.get_xticklabels():
         t.set(**tick_kwargs)
     for t in ax_graph.get_yticklabels():
@@ -275,13 +279,13 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
         c = spec['color']
 
         rugplot(v * vector, height=1, color=c, ax=ax, linewidth=bars_linewidth)
-        ax.set_ylabel(v.name, **bar_kwargs)
+        ax.set_ylabel(v.name[-3:], **bar_kwargs)
 
     # ==================================================================================================================
     # Save
     # ==================================================================================================================
     if filepath:
-        save_plot(filepath)
+        save_plot(filepath, overwrite=overwrite)
 
     if show_plot:
         plt.show()
@@ -289,18 +293,3 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
     # TODO: properly close
     plt.clf()
     plt.close()
-
-
-def skew_t_pdf(x, df, shape, location, scale):
-    """
-    Evaluate skew-t PDF (defined by `df`, `shape`, `location`, and `scale`) at `x`.
-    :param x: array-like; vector of independent variables used to compute probabilities of the skew-t PDF.
-    :param df: number; degree of freedom of the skew-t PDF
-    :param shape: number; skewness or shape parameter of the skew-t PDF
-    :param location: number; location of the skew-t PDF
-    :param scale: number; scale of the skew-t PDF
-    :return array-like: skew-t PDF (defined by `df`, `shape`, `location`, and `scale`) evaluated at `x`.
-    """
-
-    return (2 / scale) * t._pdf(((x - location) / scale), df) * stdtr(df + 1, shape * ((x - location) / scale) * sqrt(
-        (df + 1) / (df + x ** 2)))
