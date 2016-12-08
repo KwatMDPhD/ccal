@@ -373,7 +373,7 @@ def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=
     df = dataframe.copy()
 
     if gene_column:
-        df = df.reindex_axis(gene_column)
+        df = df.set_index(gene_column)
 
     if not score_column:
         score_column = df.columns[0]
@@ -948,6 +948,28 @@ def explode(series):
         label_x_sample.ix[i, :] = (series == i).astype(int)
 
     return label_x_sample
+
+
+def split_slices(dataframe, index, splitter, ax=0):
+    """
+
+    :param dataframe:
+    :param index:
+    :param splitter:
+    :param ax:
+    :return:
+    """
+
+    splits = []
+
+    for s_i, s in dataframe.iterrows():
+
+        old = s.ix[index]
+
+        for new in old.split(splitter):
+            splits.append(s.replace(old, new))
+
+    return concat(splits, axis=1).T
 
 
 # ======================================================================================================================
