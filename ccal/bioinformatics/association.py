@@ -24,11 +24,18 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import heatmap
 
-from .support import RANDOM_SEED, print_log, establish_filepath, read_gct, title_str, untitle_str, \
-    information_coefficient, parallelize, get_unique_in_order, normalize_dataframe_or_series, compare_matrices, \
-    get_top_and_bottom_indices
-from .plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
+from .. import RANDOM_SEED
+from ..support.log import print_log
+from ..support.system import parallelize
+from ..support.str import title_str, untitle_str
+from ..support.file import read_gct, establish_filepath
+from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
     FONT_SUBTITLE, save_plot, plot_clustermap
+from ..support.d1 import get_unique_in_order
+from ..support.d2 import get_top_and_bottom_indices
+from ..mathematics.information import information_coefficient
+from ..machine_learning.normalize import normalize_dataframe_or_series
+from ..machine_learning.score import compute_similarity_matrix
 
 
 # ======================================================================================================================
@@ -824,7 +831,7 @@ def make_comparison_matrix(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_l
     """
 
     # Compute association or distance matrix, which is returned at the end
-    comparison_matrix = compare_matrices(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
+    comparison_matrix = compute_similarity_matrix(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
 
     # Save
     if filepath_prefix:

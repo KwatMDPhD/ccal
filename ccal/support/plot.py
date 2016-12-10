@@ -19,7 +19,10 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot, boxplot, violinplot, set_style, despine
 
-from .support import establish_filepath, untitle_str, normalize_dataframe_or_series, compute_association_and_pvalue
+from .file import establish_filepath
+from .str import untitle_str
+from ..machine_learning.normalize import normalize_dataframe_or_series
+from ..machine_learning.score import compute_association_and_pvalue
 
 # ======================================================================================================================
 # Parameter
@@ -258,13 +261,14 @@ def plot_clustermap(dataframe, cmap=CMAP_CONTINUOUS, row_colors=None, col_colors
 
     # Plot cluster map
     clustergrid = clustermap(dataframe, cmap=cmap, row_colors=row_colors, col_colors=col_colors,
-                             xticklabels=xticklabels, yticklabels=yticklabels, )
+                             xticklabels=xticklabels, yticklabels=yticklabels)
 
     # Title
     if title:
         plt.suptitle(title, **FONT_TITLE)
 
     # X & Y labels
+    print(xlabel, ylabel)
     if xlabel:
         clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
     if ylabel:

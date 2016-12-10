@@ -9,16 +9,17 @@ Author:
 
 from os.path import join
 
-from numpy import linspace, histogram, argmax, empty, cumsum, log
-from pandas import read_csv, DataFrame
+from numpy import linspace, histogram, argmax, empty, zeros, cumsum, log
+from pandas import read_csv, DataFrame, Series, concat
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
 from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
 from seaborn import set_style, despine, distplot, rugplot
 
-from .support import timestamp, print_log, establish_filepath, get_variants
-from .plot import FIGURE_SIZE, save_plot
+from ..support.plot import FIGURE_SIZE, save_plot
+from ..support.log import timestamp, print_log
+from ..support.file import establish_filepath
 
 
 def fit_essentiality(feature_x_sample, bar_df, features=(),
@@ -63,7 +64,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=(),
             else:
                 filepath = None
 
-            _plot_essentiality(feature_x_sample.ix[f_i, :], get_variants(bar_df, f_i),
+            _plot_essentiality(feature_x_sample.ix[f_i, :], get_amp_mut_del(bar_df, f_i),
                                n=n, df=df, shape=shape, location=location, scale=scale,
                                filepath=filepath, overwrite=overwrite, show_plot=show_plot)
 
@@ -114,7 +115,7 @@ def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None,
         # Parse fitted parameters
         n, df, shape, location, scale = fit
 
-        _plot_essentiality(feature_x_sample.ix[f_i, :], get_variants(bar_df, f_i),
+        _plot_essentiality(feature_x_sample.ix[f_i, :], get_amp_mut_del(bar_df, f_i),
                            n=n, df=df, shape=shape, location=location, scale=scale,
                            filepath=filepath, overwrite=overwrite, show_plot=show_plot)
 
@@ -293,3 +294,37 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
     # TODO: properly close
     plt.clf()
     plt.close()
+
+
+def get_amp_mut_del(gene_x_samples, gene):
+    """
+    Get AMP, MUT, and DEL information for a gene in the CCLE mutation file.
+    :param gene_x_samples: dataframe; (n_genes, n_samplesa)
+    :param gene: str; gene index used in gene_x_sample
+    :return: dataframe; (3 (AMP, MUT, DEL), n_samples)
+    """
+
+    null = Series(zeros(gene_x_samples.shape[1]), index=gene_x_samples.columns)
+
+    # Amplification
+    try:
+        amplifications = gene_x_samples.ix['{}_AMP'.format(gene), :]
+    except KeyError:
+        print('No amplification data for {}.'.format(gene))
+        amplifications = null
+
+    # Mutation
+    try:
+        mutations = gene_x_samples.ix['{}_MUT'.format(gene), :]
+    except KeyError:
+        print('No mutation data for {}.'.format(gene))
+        mutations = null
+
+    # Deletion
+    try:
+        deletions = gene_x_samples.ix['{}_DEL'.format(gene), :]
+    except KeyError:
+        print('No deletion data for {}.'.format(gene))
+        deletions = null
+
+    return concat([amplifications, mutations, deletions], axis=1).fillna(0).astype(int).T

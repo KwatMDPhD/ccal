@@ -17,9 +17,6 @@ from colorsys import rgb_to_hsv, hsv_to_rgb
 from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma
 from pandas import DataFrame, Series, read_csv, isnull
 from scipy.spatial import Delaunay, ConvexHull
-import rpy2.robjects as ro
-from rpy2.robjects.packages import importr
-from rpy2.robjects.numpy2ri import numpy2ri
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
@@ -27,19 +24,22 @@ from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap
 from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import violinplot, boxplot
 
-from . import RANDOM_SEED
-from .support import EPS, print_log, read_gct, establish_filepath, load_gct, write_gct, write_dictionary, fit_matrix, \
-    nmf_consensus_cluster, information_coefficient, normalize_dataframe_or_series, hierarchical_consensus_cluster, \
-    exponential_function, mds, compute_association_and_pvalue, solve_matrix_linear_equation, \
-    drop_uniform_slice_from_dataframe
-from .plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, plot_heatmap, \
-    plot_nmf, plot_x_vs_y
-from .association import make_association_panel
+from .. import RANDOM_SEED
+from ..support.log import print_log
+from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
+from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, \
+    plot_heatmap, plot_x_vs_y, plot_nmf
+from ..support.d2 import drop_uniform_slice_from_dataframe
+from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
+from ..mathematics.equation import exponential_f
+from ..machine_learning.normalize import normalize_dataframe_or_series
+from ..machine_learning.score import compute_association_and_pvalue
+from ..machine_learning.solve import solve_matrix_linear_equation
+from ..machine_learning.fit import fit_matrix
+from ..machine_learning.cluster import hierarchical_consensus_cluster, nmf_consensus_cluster
+from ..machine_learning.multidimentional_scale import mds
 
-ro.conversion.py2ri = numpy2ri
-mass = importr('MASS')
-bcv = mass.bcv
-kde2d = mass.kde2d
+from .association import make_association_panel
 
 
 # ======================================================================================================================
@@ -91,9 +91,9 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=RAND
         # Save NMF decompositions
         _save_nmf(nmf_results, join(directory_path, 'matrices', ''))
         # Save cophenetic correlation coefficients
-        write_dictionary(cophenetic_correlation_coefficient,
-                         join(directory_path, 'cophenetic_correlation_coefficients.txt'),
-                         key_name='k', value_name='cophenetic_correlation_coefficient')
+        write_dict(cophenetic_correlation_coefficient,
+                   join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+                   key_name='k', value_name='cophenetic_correlation_coefficient')
 
         # Saving filepath for cophenetic correlation coefficients figure
         filepath_ccc_pdf = join(directory_path, 'cophenetic_correlation_coefficients.pdf')
@@ -324,9 +324,9 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         # Save results
         distance_matrix.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
         write_gct(clusterings, join(directory_path, 'clusterings.gct'))
-        write_dictionary(cophenetic_correlation_coefficients,
-                         join(directory_path, 'cophenetic_correlation_coefficients.txt'),
-                         key_name='k', value_name='cophenetic_correlation_coefficient')
+        write_dict(cophenetic_correlation_coefficients,
+                   join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+                   key_name='k', value_name='cophenetic_correlation_coefficient')
 
         # Set up filepath to save plots
         filepath_distance_matrix_plot = join(directory_path, 'distance_matrix.pdf')
@@ -673,7 +673,7 @@ def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
     :return: float; power
     """
 
-    fit_parameters = fit_matrix(h, exponential_function, sort_matrix=True)
+    fit_parameters = fit_matrix(h, exponential_f, sort_matrix=True)
     k = fit_parameters[1]
 
     # Linear transform
