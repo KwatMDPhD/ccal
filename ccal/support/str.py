@@ -113,3 +113,13 @@ def indent_str(string, n_tabs=1):
 
     # TODO: consider deleting
     return '\n'.join(['\t' * n_tabs + line for line in string.split('\n')])
+
+
+def reset_encoding(a_str):
+    """
+
+    :param a_str: str;
+    :return: str;
+    """
+
+    return a_str.replace(u'\u201c', '"').replace(u'\u201d', '"')
