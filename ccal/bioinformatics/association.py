@@ -42,7 +42,8 @@ from ..machine_learning.score import compute_similarity_matrix
 # Association panel
 # ======================================================================================================================
 def make_association_panels(target, features_bundle, target_ascending=False, target_name=None, target_type='continuous',
-                            n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, directory_path=None):
+                            n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, random_seed=RANDOM_SEED,
+                            directory_path=None):
     """
     Annotate target with each features in the features bundle.
     :param target: Series; (n_elements); must have indices
@@ -66,6 +67,7 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
+    :param random_seed: int;
     :param directory_path: str; directory_path/target_name_vs_features_name.{txt, pdf} will be saved.
     :return: None
     """
@@ -86,6 +88,7 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
                                target_ascending=target_ascending,
                                n_jobs=n_jobs, features_ascending=features_dict['is_ascending'],
                                n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
+                               random_seed=random_seed,
                                target_name=target_name, target_type=target_type,
                                features_type=features_dict['data_type'],
                                title=title,
@@ -97,6 +100,7 @@ def make_association_panel(target, features,
                            target_ascending=False,
                            n_jobs=1, features_ascending=False,
                            n_features=0.95, max_n_features=100, n_samplings=30, n_permutations=30,
+                           random_seed=RANDOM_SEED,
                            target_name=None, target_type='continuous',
                            features_type='continuous',
                            title=None, plot_colname=False,
@@ -116,6 +120,7 @@ def make_association_panel(target, features,
     :param max_n_features: int;
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
+    :param random_seed: int;
     :param target_name: str;
     :param target_type: str; {'continuous', 'categorical', 'binary'}
     :param features_type: str; {'continuous', 'categorical', 'binary'}
@@ -148,6 +153,7 @@ def make_association_panel(target, features,
                                                        n_jobs=n_jobs, features_ascending=features_ascending,
                                                        n_features=n_features, n_samplings=n_samplings,
                                                        n_permutations=n_permutations,
+                                                       random_seed=random_seed,
                                                        filepath=filepath)
 
     # Keep only scores and features to plot
@@ -182,7 +188,8 @@ def compute_association(target, features, function=information_coefficient,
                         target_ascending=False,
                         n_jobs=1, min_n_per_job=100, features_ascending=False,
                         n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
-                        filepath=None, random_seed=RANDOM_SEED):
+                        random_seed=RANDOM_SEED,
+                        filepath=None):
     """
     Compute: score_i = function(target, feature_i) for all features.
     Compute confidence interval (CI) for n_features features.
@@ -199,8 +206,8 @@ def compute_association(target, features, function=information_coefficient,
     :param n_samplings: int; number of bootstrap samplings to build distribution to get CI; must be > 2 to compute CI
     :param confidence: float; fraction compute confidence interval
     :param n_permutations: int; number of permutations for permutation test to compute P-val and FDR
+    :param random_seed: int;
     :param filepath: str;
-    :param random_seed: int or array-like;
     :return: Series, DataFrame, DataFrame; (n_features, 8 ('score', '<confidence> moe',
                                             'p-value (forward)', 'p-value (reverse)', 'p-value',
                                             'fdr (forward)', 'fdr (reverse)', 'fdr'))
