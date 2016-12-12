@@ -27,7 +27,7 @@ from seaborn import heatmap
 from .. import RANDOM_SEED
 from ..support.log import print_log
 from ..support.system import parallelize
-from ..support.str import title_str, untitle_str
+from ..support.str_ import title_str, untitle_str
 from ..support.file import read_gct, establish_filepath
 from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
     FONT_SUBTITLE, save_plot, plot_clustermap

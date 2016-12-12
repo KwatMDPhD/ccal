@@ -111,7 +111,6 @@ def indent_str(string, n_tabs=1):
     :return:
     """
 
-    # TODO: consider deleting
     return '\n'.join(['\t' * n_tabs + line for line in string.split('\n')])
 
 

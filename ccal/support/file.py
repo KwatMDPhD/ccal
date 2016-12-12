@@ -15,13 +15,14 @@ from csv import reader, writer, excel, excel_tab
 
 from numpy import unique
 from pandas import Series, DataFrame, read_csv, concat
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 
 from .log import print_log
 from .system import run_cmd
 
 
 # ======================================================================================================================
-# General
+# General functions
 # ======================================================================================================================
 def establish_filepath(filepath):
     """
@@ -48,7 +49,7 @@ def establish_filepath(filepath):
         print_log('Created directory {}.'.format(d))
 
 
-def split_file_exstension(filepath):
+def split_file_extension(filepath):
     """
     Get filepath without file suffix and the suffix from filepath; get foo and txt from foo.txt
     :param filepath: str; filepath
@@ -138,7 +139,7 @@ def count_n_lines_in_file(filepath):
 
 
 # ======================================================================================================================
-# Compress
+# Compression functions
 # ======================================================================================================================
 def bgzip_tabix(fname):
     """
@@ -219,7 +220,7 @@ def convert_gzipped_to_bgzipped(gzipped_filename):
 
 
 # ======================================================================================================================
-# .dict
+# .dict functions
 # ======================================================================================================================
 def read_dict(filepath, sep='\t', switch=False):
     """
@@ -287,8 +288,22 @@ def write_dict(dictionary, filepath, key_name, value_name, sep='\t'):
 
 
 # ======================================================================================================================
-# .colormap
+# .colormap functions
 # ======================================================================================================================
+def read_colormap(filepath):
+    """
+
+    :param filepath:
+    :return:
+    """
+
+    rgbas = []
+    with open(filepath, 'r') as f:
+        for l in f:
+            rgbas.append([float(v) for v in l.split()])
+    return ListedColormap(rgbas)
+
+
 def write_colormap(cmap, filepath):
     """
 
@@ -303,7 +318,7 @@ def write_colormap(cmap, filepath):
 
 
 # ======================================================================================================================
-# .gct
+# .gct functions
 # ======================================================================================================================
 def load_gct(matrix):
     """
@@ -404,7 +419,7 @@ def write_gct(matrix, filepath, descriptions=None):
 
 
 # ======================================================================================================================
-# .gmt
+# .gmt functions
 # ======================================================================================================================
 def read_gmt(filepath, drop_description=True, collapse=False):
     """
@@ -443,7 +458,7 @@ def write_gmt(gmt, filepath):
 
 
 # ======================================================================================================================
-# .rnk
+# .rnk functions
 # ======================================================================================================================
 def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=None):
     """
@@ -477,7 +492,7 @@ def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=
 
 
 # ======================================================================================================================
-# GEO
+# GEO functions
 # ======================================================================================================================
 def load_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!Sample_characteristics_ch1')):
     """
@@ -537,7 +552,7 @@ def load_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!
 
 
 # ======================================================================================================================
-# .fpkm_tracking
+# .fpkm_tracking functions
 # ======================================================================================================================
 def read_fpkm_tracking(filepath, signature=None):
     """
@@ -565,7 +580,7 @@ def read_fpkm_tracking(filepath, signature=None):
 
 
 # ======================================================================================================================
-# .g*f
+# .g*f functions
 # ======================================================================================================================
 def read_gff3(feature_filename, sources, types):
     """

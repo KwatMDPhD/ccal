@@ -13,14 +13,14 @@ from numpy import array, asarray, unique
 from pandas import Series, DataFrame
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
+from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.cm import Paired, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
 from seaborn import light_palette, heatmap, clustermap, pointplot, boxplot, violinplot, set_style, despine
 
 from .file import establish_filepath
-from .str import untitle_str
+from .str_ import untitle_str
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
 
@@ -60,20 +60,6 @@ DPI = 1000
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def read_colormap(filepath):
-    """
-
-    :param filepath:
-    :return:
-    """
-
-    rgbas = []
-    with open(filepath, 'r') as f:
-        for l in f:
-            rgbas.append([float(v) for v in l.split()])
-    return ListedColormap(rgbas)
-
-
 def plot_heatmap(dataframe, data_type='continuous',
                  normalization_method=None, normalization_axis=0, sort_axis=None, vmin=None, vmax=None,
                  row_annotation=(), column_annotation=(),
