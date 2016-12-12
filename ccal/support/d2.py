@@ -75,6 +75,9 @@ def split_slices(dataframe, index, splitter, ax=0):
 
     splits = []
 
+    if ax == 0:  # Split columns
+        dataframe = dataframe.T
+
     for s_i, s in dataframe.iterrows():
 
         old = s.ix[index]
@@ -82,7 +85,11 @@ def split_slices(dataframe, index, splitter, ax=0):
         for new in old.split(splitter):
             splits.append(s.replace(old, new))
 
-    return concat(splits, axis=1).T
+    # Concatenate
+    if ax == 0:
+        return concat(splits, axis=1)
+    elif ax == 1:
+        return concat(splits, axis=1).T
 
 
 def drop_uniform_slice_from_dataframe(dataframe, value, axis=0):
