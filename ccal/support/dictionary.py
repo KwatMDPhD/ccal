@@ -13,7 +13,7 @@ from operator import add, sub
 def merge_dicts(*dicts):
     """
     Shallow copy and merge dicts into a new dict; precedence goes to
-    key value pairs in latter dict.
+    key value pairs in latter dict. Only keys in both dicts will be kept.
     :param dicts: iterable of dict;
     :return: dict;
     """

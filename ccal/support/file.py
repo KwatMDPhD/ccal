@@ -13,7 +13,7 @@ from os.path import abspath, split, isdir, isfile, islink, join
 import gzip
 from csv import reader, writer, excel, excel_tab
 
-from numpy import unique, zeros
+from numpy import unique
 from pandas import Series, DataFrame, read_csv, concat
 
 from .log import print_log
@@ -48,7 +48,7 @@ def establish_filepath(filepath):
         print_log('Created directory {}.'.format(d))
 
 
-def split_file_extention(filepath):
+def split_file_exstension(filepath):
     """
     Get filepath without file suffix and the suffix from filepath; get foo and txt from foo.txt
     :param filepath: str; filepath

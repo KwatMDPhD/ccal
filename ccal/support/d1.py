@@ -69,7 +69,7 @@ def group_iterable(iterable, n, partial_final_item=False):
 def get_unique_in_order(iterable):
     """
     Get unique elements in order or appearance in iterable.
-    :param iterable: iterable;
+    :param iterable:
     :return: list;
     """
 
@@ -83,7 +83,7 @@ def get_unique_in_order(iterable):
 def explode(series):
     """
     Make a label-x-sample binary matrix from a Series.
-    :param series: Series;
+    :param series:
     :return: DataFrame; (n_labels, n_samples)
     """
 
