@@ -1,3 +1,12 @@
+"""
+Computational Cancer Analysis Library
+
+Author:
+    Huwate (Kwat) Yeerna (Medetgul-Ernar)
+        kwat.medetgul.ernar@gmail.com
+        Computational Cancer Analysis Laboratory, UCSD Cancer Center
+"""
+
 from numpy import average
 from scipy.stats import pearsonr
 from sklearn.cross_validation import KFold

@@ -1,3 +1,12 @@
+"""
+Computational Cancer Analysis Library
+
+Author:
+    Huwate (Kwat) Yeerna (Medetgul-Ernar)
+        kwat.medetgul.ernar@gmail.com
+        Computational Cancer Analysis Laboratory, UCSD Cancer Center
+"""
+
 from numpy import asarray, zeros, argmax
 from numpy.random import seed, random_integers
 from pandas import DataFrame, read_csv
