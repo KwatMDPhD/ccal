@@ -35,7 +35,7 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
     :param distance_matrix: str or DataFrame;
     :param function: function; distance function
     :param n_clusterings: int; number of clusterings for the consensus clustering
-    :param random_seed: int or array-like;
+    :param random_seed: int;
     :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and cophenetic correlation coefficients (n_ks)
     """
 
@@ -126,7 +126,7 @@ def _hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True
 # NMF consensus cluster
 # ======================================================================================================================
 def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
-                          init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=RANDOM_SEED, alpha=0,
+                          init='random', solver='cd', tol=1e-6, max_iter=1000, random_seed=RANDOM_SEED, alpha=0,
                           l1_ratio=0,
                           shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
@@ -139,7 +139,7 @@ def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
     :param solver:
     :param tol:
     :param max_iter:
-    :param random_state:
+    :param random_seed:
     :param alpha:
     :param l1_ratio:
     :param shuffle_:
@@ -163,7 +163,7 @@ def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
 
     if len(ks) > 1:
         print_log('Parallelizing ...')
-        args = [[matrix, k, n_clusterings, init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_,
+        args = [[matrix, k, n_clusterings, init, solver, tol, max_iter, random_seed, alpha, l1_ratio, shuffle_,
                  nls_max_iter, sparseness, beta, eta] for k in ks]
 
         for nmf_result, nmf_score in parallelize(_nmf_and_score, args, n_jobs=n_jobs):
@@ -171,7 +171,7 @@ def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
             cophenetic_correlation_coefficients.update(nmf_score)
     else:
         print_log('Not parallelizing ...')
-        nmf_result, nmf_score = _nmf_and_score([matrix, ks[0], n_clusterings, init, solver, tol, max_iter, random_state,
+        nmf_result, nmf_score = _nmf_and_score([matrix, ks[0], n_clusterings, init, solver, tol, max_iter, random_seed,
                                                 alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta])
         nmf_results.update(nmf_result)
         cophenetic_correlation_coefficients.update(nmf_score)
@@ -187,7 +187,7 @@ def _nmf_and_score(args):
     """
 
     matrix, k, n_clusterings = args[:3]
-    init, solver, tol, max_iter, random_state, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta = args[3:]
+    init, solver, tol, max_iter, random_seed, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta = args[3:]
 
     print_log('NMF and scoring k={} ...'.format(k))
 
@@ -203,7 +203,7 @@ def _nmf_and_score(args):
 
         # NMF
         nmf_result = nmf(matrix, k,
-                         init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
+                         init=init, solver=solver, tol=tol, max_iter=max_iter, random_seed=random_seed,
                          alpha=alpha, l1_ratio=l1_ratio, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
                          sparseness=sparseness, beta=beta, eta=eta)[k]
 

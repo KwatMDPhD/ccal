@@ -45,15 +45,15 @@ from .association import make_association_panel
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=RANDOM_SEED, directory_path=None):
+def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_seed=RANDOM_SEED, directory_path=None):
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
     :param matrix: DataFrame or str; (n_rows, n_columns) or filepath to a .gct file
-    :param ks: iterable; iterable of int k used for NMF
+    :param ks: iterable or int; iterable of int k used for NMF
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
-    :param random_state: int;
+    :param random_seed: int;
     :param directory_path: str; directory path where
             cophenetic_correlation_coefficients{.pdf, .gct}
             matrices/nmf_k{k}_{w, h}.gct
@@ -75,7 +75,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_state=RAND
     # NMF-consensus cluster (while saving 1 NMF result per k)
     nmf_results, cophenetic_correlation_coefficient = nmf_consensus_cluster(matrix, ks,
                                                                             n_jobs=n_jobs, n_clusterings=n_clusterings,
-                                                                            random_state=random_state)
+                                                                            random_seed=random_seed)
 
     # Make NMF directory, where
     #     cophenetic_correlation_coefficients{.pdf, .gct}
@@ -209,15 +209,16 @@ def select_features_and_nmf(testing, training,
                             testing_name='Testing', training_name='Training', row_name='Feature', column_name='Sample',
                             n_jobs=1, n_samplings=30, n_permutations=30,
                             n_top_features=0.05, n_bottom_features=0.05,
-                            ks=(), n_clusterings=100,
+                            ks=(), n_clusterings=100, random_seed=RANDOM_SEED,
                             directory_path=None, feature_scores_filename_prefix='feature_scores'):
     """
-
-    :param testing:
-    :param training:
-    :param target:
-    :param target_type:
-    :param feature_scores:
+    Select features from training based on their association with target. Keep only those features from testing, and
+    perform NMF on testing, which has only the selected features.
+    :param testing: DataFrame;
+    :param training: DataFrame;
+    :param target: Series;
+    :param target_type: str;
+    :param feature_scores: DataFrame or str;
     :param testing_name:
     :param training_name:
     :param row_name:
@@ -229,6 +230,7 @@ def select_features_and_nmf(testing, training,
     :param n_bottom_features:
     :param ks:
     :param n_clusterings:
+    :param random_seed: int;
     :param directory_path:
     :param feature_scores_filename_prefix:
     :return:
@@ -237,25 +239,23 @@ def select_features_and_nmf(testing, training,
     # Plot training
     plot_heatmap(training, normalization_method='-0-', normalization_axis=1,
                  column_annotation=target,
-                 title=training_name,
-                 xlabel=column_name, ylabel=row_name, yticklabels=False)
+                 title=training_name, xlabel=column_name, ylabel=row_name, yticklabels=False)
 
     if not feature_scores:  # Compute feature scores
+        # TODO: set seed
         feature_scores = make_association_panel(target, training,
                                                 target_type=target_type,
-                                                n_jobs=n_jobs, n_samplings=n_samplings,
-                                                n_permutations=n_permutations,
-                                                filepath_prefix=join(directory_path,
-                                                                     feature_scores_filename_prefix))
+                                                n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
+                                                filepath_prefix=join(directory_path, feature_scores_filename_prefix))
     else:  # Read feature scores from a file
         # TODO: plot with computed scores
         if not isinstance(feature_scores, DataFrame):
             feature_scores = read_csv(feature_scores, sep='\t', index_col=0)
 
     # Select features
-    if n_top_features < 1:
+    if n_top_features < 1:  # Fraction
         n_top_features = n_top_features * feature_scores.shape[0]
-    if n_bottom_features < 1:
+    if n_bottom_features < 1:  # Fraction
         n_bottom_features = n_bottom_features * feature_scores.shape[0]
     features = feature_scores.index[:n_top_features] | feature_scores.index[-n_bottom_features:]
 
@@ -263,22 +263,19 @@ def select_features_and_nmf(testing, training,
     plot_heatmap(training.ix[features, :], normalization_method='-0-', normalization_axis=1,
                  column_annotation=target,
                  title='{} with Selected {}s'.format(training_name, row_name),
-                 xlabel=column_name, ylabel=row_name,
-                 yticklabels=False)
+                 xlabel=column_name, ylabel=row_name, yticklabels=False)
 
     # Plot testing with selected features
     testing = testing.ix[testing.index & features, :]
-    print_log('Selected testing {} testing features.'.format(testing.shape[0]))
+    print_log('Selected {} testing features.'.format(testing.shape[0]))
     plot_heatmap(testing, normalization_method='-0-', normalization_axis=1,
                  title='{} with Selected {}'.format(testing_name, row_name),
-                 xlabel=column_name, ylabel=row_name,
-                 xticklabels=False, yticklabels=False)
+                 xlabel=column_name, ylabel=row_name, xticklabels=False, yticklabels=False)
 
     # NMF
-    nmf_results, cophenetic_correlation_coefficients = define_components(testing,
-                                                                         ks,
-                                                                         n_jobs=n_jobs,
-                                                                         n_clusterings=n_clusterings,
+    nmf_results, cophenetic_correlation_coefficients = define_components(testing, ks,
+                                                                         n_jobs=n_jobs, n_clusterings=n_clusterings,
+                                                                         random_seed=random_seed,
                                                                          directory_path=directory_path)
 
     return nmf_results, cophenetic_correlation_coefficients
@@ -287,14 +284,16 @@ def select_features_and_nmf(testing, training,
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100, directory_path=None):
+def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100, random_seed=RANDOM_SEED,
+                  directory_path=None):
     """
     Hierarchical-consensus cluster samples (matrix columns) and compute cophenetic correlation coefficients.
-    :param matrix: DataFrame; (n_rows, n_columns);
+    :param matrix: DataFrame or str; (n_rows, n_columns); filepath to a .gct
     :param ks: iterable; iterable of int k used for hierarchical clustering
     :param distance_matrix: str or DataFrame; (n_columns, n_columns); distance matrix to hierarchical cluster
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of hierarchical clusterings for consensus clustering
+    :param random_seed: int;
     :param directory_path: str; directory path where
             clusterings/distance_matrix.{txt, pdf}
             clusterings/clusterings.{gct, pdf}
@@ -315,7 +314,8 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
 
     # Hierarchical-consensus cluster
     distance_matrix, clusterings, cophenetic_correlation_coefficients = \
-        hierarchical_consensus_cluster(matrix, ks, distance_matrix=distance_matrix, n_clusterings=n_clusterings)
+        hierarchical_consensus_cluster(matrix, ks, distance_matrix=distance_matrix, n_clusterings=n_clusterings,
+                                       random_seed=random_seed)
 
     if directory_path:  # Save and plot distance matrix, clusterings, and cophenetic correlation coefficients
         directory_path = join(directory_path, 'clusterings', '')
@@ -383,7 +383,7 @@ def make_oncogps(training_h, training_states, std_max=3,
                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                  component_markersize=16, component_markerfacecolor='#000726',
                  component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
-                 component_text_position='auto', component_fontsize=22,
+                 component_names=(), component_text_position='auto', component_fontsize=22,
                  delaunay_linewidth=1, delaunay_linecolor='#000000',
                  colors=(), bad_color='#999999', max_background_saturation=1,
                  n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
@@ -425,6 +425,7 @@ def make_oncogps(training_h, training_states, std_max=3,
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
     :param component_markeredgecolor: matplotlib color;
+    :param component_names: iterable; (n_components)
     :param component_text_position: str; {'auto', 'top', 'bottom'}
     :param component_fontsize: number;
     :param delaunay_linewidth: number;
@@ -440,7 +441,7 @@ def make_oncogps(training_h, training_states, std_max=3,
     :param sample_markeredgewidth: number;
     :param sample_markeredgecolor: matplotlib color;
     :param sample_name_size: number;
-    :param sample_name_color: None or matplotlib color; not plotting sample if None
+    :param sample_name_color: matplotlib color; not plotting sample if None
     :param legend_markersize: number;
     :param legend_fontsize: number;
     :param effectplot_type: str; {'violine', 'box'}
@@ -556,7 +557,8 @@ def make_oncogps(training_h, training_states, std_max=3,
                    component_markersize=component_markersize, component_markerfacecolor=component_markerfacecolor,
                    component_markeredgewidth=component_markeredgewidth,
                    component_markeredgecolor=component_markeredgecolor,
-                   component_text_position=component_text_position, component_fontsize=component_fontsize,
+                   component_names=component_names, component_text_position=component_text_position,
+                   component_fontsize=component_fontsize,
                    delaunay_linewidth=delaunay_linewidth, delaunay_linecolor=delaunay_linecolor,
                    colors=colors, bad_color=bad_color, max_background_saturation=max_background_saturation,
                    n_contours=n_contours, contour_linewidth=contour_linewidth, contour_linecolor=contour_linecolor,
@@ -835,10 +837,10 @@ def _plot_onco_gps(components, samples,
                    grid_probabilities, grid_states, n_training_states,
                    annotation, annotation_name, annotation_type,
                    std_max,
-                   title, title_fontsize, title_fontcolor,
-                   subtitle_fontsize, subtitle_fontcolor,
+                   title, title_fontsize, title_fontcolor, subtitle_fontsize, subtitle_fontcolor,
                    component_markersize, component_markerfacecolor,
-                   component_markeredgewidth, component_markeredgecolor, component_text_position, component_fontsize,
+                   component_markeredgewidth, component_markeredgecolor,
+                   component_names, component_text_position, component_fontsize,
                    delaunay_linewidth, delaunay_linecolor,
                    colors, bad_color, max_background_saturation,
                    n_contours, contour_linewidth, contour_linecolor, contour_alpha,
@@ -868,6 +870,7 @@ def _plot_onco_gps(components, samples,
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
     :param component_markeredgecolor: matplotlib color;
+    :param component_names: iterable;
     :param component_text_position: str; {'auto', 'top', 'bottom'}
     :param component_fontsize: number;
     :param delaunay_linewidth: number;
@@ -941,6 +944,9 @@ def _plot_onco_gps(components, samples,
 
     # Put labels on top or bottom of the component markers
     vertical_shift = -0.03
+
+    if not empty(component_names):
+        components.index = component_names
     for i in components.index:
         # Compute vertical shift
         if component_text_position == 'auto':

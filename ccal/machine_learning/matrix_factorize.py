@@ -13,7 +13,7 @@ from sklearn.decomposition import NMF
 from .. import RANDOM_SEED
 
 
-def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_state=RANDOM_SEED,
+def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_seed=RANDOM_SEED,
         alpha=0, l1_ratio=0, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
     Nonenegative matrix factorize matrix with k from ks.
@@ -23,7 +23,7 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
     :param solver:
     :param tol:
     :param max_iter:
-    :param random_state:
+    :param random_seed:
     :param alpha:
     :param l1_ratio:
     :param shuffle_:
@@ -43,7 +43,7 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
     for k in ks:
 
         # Compute W, H, and reconstruction error
-        model = NMF(n_components=k, init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_state,
+        model = NMF(n_components=k, init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_seed,
                     alpha=alpha, l1_ratio=l1_ratio, shuffle=shuffle_, nls_max_iter=nls_max_iter, sparseness=sparseness,
                     beta=beta, eta=eta)
         w, h, err = model.fit_transform(matrix), model.components_, model.reconstruction_err_
