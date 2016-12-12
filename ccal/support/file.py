@@ -15,7 +15,7 @@ from csv import reader, writer, excel, excel_tab
 
 from numpy import unique
 from pandas import Series, DataFrame, read_csv, concat
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
+from matplotlib.colors import ListedColormap
 
 from .log import print_log
 from .system import run_cmd
