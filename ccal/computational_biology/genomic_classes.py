@@ -1,5 +1,10 @@
 """
-Genomics data structures classes.
+Computational Cancer Analysis Library
+
+Author:
+    Huwate (Kwat) Yeerna (Medetgul-Ernar)
+        kwat.medetgul.ernar@gmail.com
+        Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
 import collections
@@ -17,6 +22,7 @@ from Bio import bgzf
 from genomics.genomic_utilities import convert_gzipped_to_bgzipped, reverse_complement, parse_gff3, parse_gtf, \
     convert_chromosome, get_alleles
 from utilities import verbose_print, try_finding_gzipped_file, WHITESPACE
+
 
 # Sequence
 SEQUENCE_FILENAME = os.environ['G_DEVICE_SEQUENCE']
