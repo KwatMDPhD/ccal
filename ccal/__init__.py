@@ -13,3 +13,7 @@ Authors:
 
 VERBOSE = True
 RANDOM_SEED = 20121020
+
+from .bioinformatics import association
+from .bioinformatics import oncogps
+from .bioinformatics import essentiality
