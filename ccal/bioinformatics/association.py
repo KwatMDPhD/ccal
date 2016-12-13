@@ -213,8 +213,6 @@ def compute_association(target, features, function=information_coefficient,
                                             'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
 
-    seed(random_seed)
-
     # Make sure target is a Series and features a DataFrame
     # Keep samples found in both target and features
     # Drop features with less than 2 unique values
@@ -281,6 +279,7 @@ def compute_association(target, features, function=information_coefficient,
 
         # Bootstrap: for n_sampling times, randomly choose 63.2% of the samples, score, and build score distribution
         sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
+        seed(random_seed)
         for c_i in sampled_scores:
             # Random sample
             ramdom_samples = choice(features.columns.tolist(), int(ceil(0.632 * features.shape[1]))).tolist()
@@ -458,10 +457,9 @@ def _permute_and_score(args):
     else:
         t, f, func, n_perms, random_seed = args
 
-    seed(random_seed)
-
     scores = DataFrame(index=f.index, columns=range(n_perms))
     shuffled_target = array(t)
+    seed(random_seed)
     for p in range(n_perms):
         print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms))
         shuffle(shuffled_target)

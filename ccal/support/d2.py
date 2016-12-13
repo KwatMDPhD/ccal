@@ -121,10 +121,9 @@ def shuffle_dataframe(dataframe, axis=0, random_seed=RANDOM_SEED):
     :return: DataFrame;
     """
 
-    seed(random_seed)
-
     df = dataframe.copy()
 
+    seed(random_seed)
     if axis == 0:
         for c_i, col in df.iteritems():
             # Shuffle in place

@@ -23,13 +23,12 @@ def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None, random_seed=
     :return: pandas DataFrame or Series; (n_rows, n_cols) or (1, n_cols)
     """
 
-    seed(random_seed)
-
     # Set up indices and column names
     indices = ['Feature {}'.format(i) for i in range(n_rows)]
     columns = ['Sample {}'.format(i) for i in range(n_cols)]
 
     # Set up data type: continuous, categorical, or binary
+    seed(random_seed)
     if n_categories:
         features = DataFrame(random_integers(0, n_categories - 1, (n_rows, n_cols)), index=indices, columns=columns)
     else:

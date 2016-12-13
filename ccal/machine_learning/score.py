@@ -27,14 +27,13 @@ def compute_association_and_pvalue(x, y, function=information_coefficient, n_per
     :return: float and float; score and p-value
     """
 
-    seed(random_seed)
-
     # Compute score
     score = function(x, y)
 
     # Compute scores against permuted target
     permutation_scores = empty(n_permutations)
     shuffled_target = array(y)
+    seed(random_seed)
     for p in range(n_permutations):
         shuffle(shuffled_target)
         permutation_scores[p] = function(x, shuffled_target)

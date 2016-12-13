@@ -39,8 +39,6 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
     :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and cophenetic correlation coefficients (n_ks)
     """
 
-    seed(random_seed)
-
     if isinstance(ks, int):
         ks = [ks]
 
@@ -66,6 +64,7 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
 
         # Make sample x clustering matrix
         sample_x_clustering = DataFrame(index=matrix.columns, columns=range(n_clusterings))
+        seed(random_seed)
         for i in range(n_clusterings):
             if i % 10 == 0:
                 print_log('\tPermuting distance matrix with repeat and clustering ({}/{}) ...'.format(i, n_clusterings))

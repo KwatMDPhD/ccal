@@ -38,8 +38,6 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10, random_seed=RANDOM_S
     :return: float;
     """
 
-    seed(random_seed)
-
     # Can't work with missing any value
     # not_nan_filter = ~isnan(x)
     # not_nan_filter &= ~isnan(y)
@@ -55,6 +53,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10, random_seed=RANDOM_S
     y = asarray(y, dtype=float)
 
     # Add jitter
+    seed(random_seed)
     x += random_sample(x.size) * jitter
     y += random_sample(y.size) * jitter
 
