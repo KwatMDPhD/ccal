@@ -8,8 +8,8 @@ Author:
 """
 
 from numpy import sqrt, exp
-from scipy.stats.distributions import t
 from scipy.special import stdtr
+from scipy.stats.distributions import t
 
 
 def exponential_f(x, a, k, c):

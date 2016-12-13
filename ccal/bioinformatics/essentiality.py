@@ -13,17 +13,16 @@ Authors:
 
 from os.path import join
 
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from numpy import linspace, histogram, argmax, empty, zeros, cumsum, log
 from pandas import read_csv, DataFrame, Series, concat
+from seaborn import set_style, despine, distplot, rugplot
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
-from matplotlib.gridspec import GridSpec
-import matplotlib.pyplot as plt
-from seaborn import set_style, despine, distplot, rugplot
-
-from ..support.plot import FIGURE_SIZE, save_plot
-from ..support.log import timestamp, print_log
 from ..support.file import establish_filepath
+from ..support.log import timestamp, print_log
+from ..support.plot import FIGURE_SIZE, save_plot
 
 
 def fit_essentiality(feature_x_sample, bar_df, features=(),

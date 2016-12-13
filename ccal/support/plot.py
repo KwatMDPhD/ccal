@@ -9,21 +9,20 @@ Author:
 
 from os.path import isfile
 
-from numpy import array, asarray, unique
-from pandas import Series, DataFrame
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.colors import LinearSegmentedColormap, Normalize
+from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.cm import Paired, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
-from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.colors import LinearSegmentedColormap, Normalize
+from matplotlib.gridspec import GridSpec
+from numpy import array, asarray, unique
+from pandas import Series, DataFrame
 from seaborn import light_palette, heatmap, clustermap, pointplot, boxplot, violinplot, set_style, despine
 
 from .file import establish_filepath
 from .str_ import untitle_str
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
-
 
 # ======================================================================================================================
 # Parameter

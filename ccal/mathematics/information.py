@@ -7,12 +7,12 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
+import rpy2.robjects as ro
 from numpy import finfo, asarray, sign, sum, sqrt, exp, log, isnan
 from numpy.random import seed, random_sample
-from scipy.stats import pearsonr
-import rpy2.robjects as ro
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
+from scipy.stats import pearsonr
 
 from .. import RANDOM_SEED
 from ..support.d2 import drop_nan_columns

@@ -11,31 +11,31 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from os.path import join
 from math import ceil, sqrt
+from os.path import join
 
+from matplotlib.colorbar import make_axes, ColorbarBase
+from matplotlib.gridspec import GridSpec
+from matplotlib.pyplot import figure, subplot
 from numpy import array, sum, unique
 from numpy.random import seed, shuffle, choice
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
-from statsmodels.sandbox.stats.multicomp import multipletests
-from matplotlib.pyplot import figure, subplot
-from matplotlib.gridspec import GridSpec
-from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import heatmap
+from statsmodels.sandbox.stats.multicomp import multipletests
 
 from .. import RANDOM_SEED
-from ..support.log import print_log
-from ..support.system import parallelize
-from ..support.str_ import title_str, untitle_str
-from ..support.file import read_gct, establish_filepath
-from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
-    FONT_SUBTITLE, save_plot, plot_clustermap
-from ..support.d1 import get_unique_in_order
-from ..support.d2 import get_top_and_bottom_indices
-from ..mathematics.information import information_coefficient
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_similarity_matrix
+from ..mathematics.information import information_coefficient
+from ..support.d1 import get_unique_in_order
+from ..support.d2 import get_top_and_bottom_indices
+from ..support.file import read_gct, establish_filepath
+from ..support.log import print_log
+from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
+    FONT_SUBTITLE, save_plot, plot_clustermap
+from ..support.str_ import title_str, untitle_str
+from ..support.system import parallelize
 
 
 # ======================================================================================================================

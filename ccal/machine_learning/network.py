@@ -7,8 +7,8 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from pandas import read_csv
 from networkx import Graph, DiGraph
+from pandas import read_csv
 
 
 def make_network_from_similarity_matrix(similarity_matrix):

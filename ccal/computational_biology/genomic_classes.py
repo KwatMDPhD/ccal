@@ -18,11 +18,9 @@ import re
 import intervaltree
 import tables
 from Bio import bgzf
-
 from genomics.genomic_utilities import convert_gzipped_to_bgzipped, reverse_complement, parse_gff3, parse_gtf, \
     convert_chromosome, get_alleles
 from utilities import verbose_print, try_finding_gzipped_file, WHITESPACE
-
 
 # Sequence
 SEQUENCE_FILENAME = os.environ['G_DEVICE_SEQUENCE']

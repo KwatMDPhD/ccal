@@ -7,15 +7,15 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from Bio import bgzf
-from os import mkdir, listdir, remove, rename
-from os.path import abspath, split, isdir, isfile, islink, join
 import gzip
 from csv import reader, writer, excel, excel_tab
+from os import mkdir, listdir, remove, rename
+from os.path import abspath, split, isdir, isfile, islink, join
 
+from Bio import bgzf
+from matplotlib.colors import ListedColormap
 from numpy import unique
 from pandas import Series, DataFrame, read_csv, concat
-from matplotlib.colors import ListedColormap
 
 from .log import print_log
 from .system import run_cmd

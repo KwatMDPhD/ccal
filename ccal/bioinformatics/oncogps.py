@@ -11,35 +11,34 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
+from colorsys import rgb_to_hsv, hsv_to_rgb
 from os.path import join
 
-from colorsys import rgb_to_hsv, hsv_to_rgb
+import matplotlib.pyplot as plt
+from matplotlib.colorbar import make_axes, ColorbarBase
+from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap, ColorConverter
+from matplotlib.gridspec import GridSpec
+from matplotlib.path import Path
 from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma
 from pandas import DataFrame, Series, read_csv, isnull
 from scipy.spatial import Delaunay, ConvexHull
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.path import Path
-from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap, ColorConverter
-from matplotlib.colorbar import make_axes, ColorbarBase
 from seaborn import violinplot, boxplot
 
+from .association import make_association_panel
 from .. import RANDOM_SEED
-from ..support.log import print_log
-from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
-from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, \
-    plot_heatmap, plot_x_vs_y, plot_nmf
-from ..support.d2 import drop_uniform_slice_from_dataframe
-from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
-from ..mathematics.equation import exponential_f
+from ..machine_learning.cluster import hierarchical_consensus_cluster, nmf_consensus_cluster
+from ..machine_learning.fit import fit_matrix
+from ..machine_learning.multidimentional_scale import mds
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
-from ..machine_learning.fit import fit_matrix
-from ..machine_learning.cluster import hierarchical_consensus_cluster, nmf_consensus_cluster
-from ..machine_learning.multidimentional_scale import mds
-
-from .association import make_association_panel
+from ..mathematics.equation import exponential_f
+from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
+from ..support.d2 import drop_uniform_slice_from_dataframe
+from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
+from ..support.log import print_log
+from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, \
+    plot_heatmap, plot_x_vs_y, plot_nmf
 
 
 # ======================================================================================================================

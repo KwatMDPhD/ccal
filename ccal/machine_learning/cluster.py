@@ -10,17 +10,17 @@ Author:
 from numpy import asarray, zeros, argmax
 from numpy.random import seed, random_integers
 from pandas import DataFrame, read_csv
-from scipy.stats import pearsonr
-from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster, cophenet
+from scipy.spatial.distance import pdist
+from scipy.stats import pearsonr
 from sklearn.cluster import AgglomerativeClustering
 
+from .score import compute_similarity_matrix
 from .. import RANDOM_SEED
+from ..machine_learning.matrix_factorize import nmf
+from ..mathematics.information import information_coefficient
 from ..support.log import print_log
 from ..support.system import parallelize
-from ..mathematics.information import information_coefficient
-from ..machine_learning.matrix_factorize import nmf
-from .score import compute_similarity_matrix
 
 
 # ======================================================================================================================

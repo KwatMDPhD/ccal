@@ -16,8 +16,8 @@ from . import PATH_GRCH38, PATH_HG38, PATH_CHAIN_GRCH37_TO_GRCH38, PATH_CHAIN_HG
     PATH_CHROMOSOME_MAP, CHROMOSOMES, CHROMOSOMES_CHR, \
     PATH_DBSNP, PATH_CLINVAR, \
     PICARD, SNPEFF, SNPSIFT
-from ..support.system import run_cmd
 from ..support.file import bgzip_tabix, mark_filename
+from ..support.system import run_cmd
 
 
 # ======================================================================================================================

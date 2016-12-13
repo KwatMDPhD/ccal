@@ -10,9 +10,9 @@ Author:
 from pandas import DataFrame
 from sklearn.manifold import MDS
 
-from .. import RANDOM_SEED
 from .normalize import normalize_dataframe_or_series
 from .score import compute_similarity_matrix
+from .. import RANDOM_SEED
 
 
 def mds(matrix, distance_function=None, random_seed=RANDOM_SEED, n_init=1000, max_iter=1000, standardize=True):

@@ -7,10 +7,11 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from pip import get_installed_distributions, main
-from os import environ
 from multiprocessing import Pool
+from os import environ
 from subprocess import PIPE, run, Popen
+
+from pip import get_installed_distributions, main
 
 from .log import print_log
 

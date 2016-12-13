@@ -12,8 +12,8 @@ from numpy.random import seed, shuffle
 from pandas import DataFrame
 
 from .. import RANDOM_SEED
-from ..support.log import print_log
 from ..mathematics.information import information_coefficient
+from ..support.log import print_log
 
 
 def compute_association_and_pvalue(x, y, function=information_coefficient, n_permutations=100, random_seed=RANDOM_SEED):

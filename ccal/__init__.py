@@ -15,7 +15,7 @@ VERBOSE = True
 RANDOM_SEED = 20121020
 
 from .bioinformatics import association
-from .bioinformatics import oncogps
 from .bioinformatics import essentiality
+from .bioinformatics import oncogps
 from .support.file import read_gct, write_gct
 from .support.plot import plot_heatmap, plot_clustermap, plot_x_vs_y
