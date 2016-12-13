@@ -57,8 +57,6 @@ def get_top_and_bottom_indices(dataframe, column_name, threshold, max_n=None):
             top_and_bottom = dataframe.index[:threshold].tolist() + dataframe.index[-threshold:].tolist()
         else:
             top_and_bottom = dataframe.index
-    else:
-        raise ValueError()
 
     return top_and_bottom
 

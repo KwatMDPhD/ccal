@@ -490,7 +490,7 @@ def make_oncogps(training_h, training_states, std_max=3,
         else:
             print_log('Computing component coordinates using Euclidean distance ...')
             distance_function = None
-        components = mds(training_h, distance_function=distance_function, mds_seed=mds_seed, standardize=True)
+        components = mds(training_h, distance_function=distance_function, random_seed=mds_seed, standardize=True)
 
     if not n_pulls:  # n_pulls = number of all components
         n_pulls = training_h.shape[0]
