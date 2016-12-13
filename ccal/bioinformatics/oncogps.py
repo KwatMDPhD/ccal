@@ -186,7 +186,7 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
 
     # Normalize the W matrix by column
     # TODO: improve the normalization (why this normalization?)
-    w_matrix = w_matrix.apply(lambda c: c / sum(c) * 1000)
+    w_matrix = w_matrix.apply(lambda c: c / c.sum() * 1000)
 
     # Solve W * H = A
     print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(*w_matrix.shape, *a_matrix.shape))
@@ -1149,7 +1149,7 @@ def _plot_onco_gps(components, samples,
         # Set up y label, ticks, and lines
         ax_legend.set_ylabel('')
         ax_legend.set_yticklabels(
-            ['State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)) for s in range(1, n_training_states + 1)],
+            ['State {} (n={})'.format(s, (samples.ix[:, 'state'] == s).sum()) for s in range(1, n_training_states + 1)],
             fontsize=legend_fontsize, weight='bold')
         ax_legend.yaxis.tick_right()
 
@@ -1187,7 +1187,7 @@ def _plot_onco_gps(components, samples,
             ax_legend.plot(0.12, y, marker='o',
                            markersize=legend_markersize, markerfacecolor=c,
                            aa=True, clip_on=False)
-            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, sum(samples.ix[:, 'state'] == s)),
+            ax_legend.text(0.26, y, 'State {} (n={})'.format(s, (samples.ix[:, 'state'] == s).sum()),
                            fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
     if sample_name_color:  # Plot sample names

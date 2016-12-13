@@ -8,7 +8,7 @@ Author:
 """
 
 import rpy2.robjects as ro
-from numpy import finfo, asarray, sign, sum, sqrt, exp, log, isnan
+from numpy import finfo, asarray, sign, sqrt, exp, log, isnan
 from numpy.random import seed, random_sample
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
@@ -72,12 +72,12 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10, random_seed=RANDOM_S
     py = pxy.sum(axis=0) * dx
 
     # Compute mutual information;
-    mi = sum(pxy * log(pxy / (asarray([px] * n_grids).T * asarray([py] * n_grids)))) * dx * dy
+    mi = (pxy * log(pxy / (asarray([px] * n_grids).T * asarray([py] * n_grids)))).sum() * dx * dy
 
     # # Get H(x, y), H(x), and H(y)
-    # hxy = - sum(pxy * log(pxy)) * dx * dy
-    # hx = -sum(px * log(px)) * dx
-    # hy = -sum(py * log(py)) * dy
+    # hxy = - (pxy * log(pxy)).sum() * dx * dy
+    # hx = -(px * log(px)).sum() * dx
+    # hy = -(py * log(py)).sum() * dy
     # mi = hx + hy - hxy
 
     # Compute information coefficient

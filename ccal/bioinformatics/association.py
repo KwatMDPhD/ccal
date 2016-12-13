@@ -17,7 +17,7 @@ from os.path import join
 from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import figure, subplot
-from numpy import array, sum, unique
+from numpy import array, unique
 from numpy.random import seed, shuffle, choice
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
@@ -357,13 +357,13 @@ def compute_association(target, features, function=information_coefficient,
             s = r.ix['score']
 
             # Compute forward P-value
-            p_value_forward = sum(all_permutation_scores >= s) / len(all_permutation_scores)
+            p_value_forward = (all_permutation_scores >= s).sum() / len(all_permutation_scores)
             if not p_value_forward:
                 p_value_forward = float(1 / len(all_permutation_scores))
             results.ix[r_i, 'p-value (forward)'] = p_value_forward
 
             # Compute reverse P-value
-            p_value_reverse = sum(all_permutation_scores <= s) / len(all_permutation_scores)
+            p_value_reverse = (all_permutation_scores <= s).sum() / len(all_permutation_scores)
             if not p_value_reverse:
                 p_value_reverse = float(1 / len(all_permutation_scores))
             results.ix[r_i, 'p-value (reverse)'] = p_value_reverse
@@ -452,6 +452,7 @@ def _permute_and_score(args):
          int; n_permutations)
     :return: DataFrame; (n_features, n_permutations)
     """
+
     if len(args) != 5:
         raise ValueError('args is not length of 5 (target, features, function, n_perms, and random_seed).')
     else:

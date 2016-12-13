@@ -7,7 +7,7 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import ones, sum, isnan
+from numpy import ones, isnan
 from numpy.random import seed, shuffle
 from pandas import concat
 
@@ -102,13 +102,13 @@ def drop_uniform_slice_from_dataframe(dataframe, value, axis=0):
     if axis == 0:
         dropped = (dataframe == value).all(axis=0)
         if any(dropped):
-            print('Removed {} column index(ices) whoes values are all {}.'.format(sum(dropped), value))
+            print('Removed {} column index(ices) whoes values are all {}.'.format(dropped.sum(), value))
         return dataframe.ix[:, ~dropped]
 
     elif axis == 1:
         dropped = (dataframe == value).all(axis=1)
         if any(dropped):
-            print('Removed {} row index(ices) whoes values are all {}.'.format(sum(dropped), value))
+            print('Removed {} row index(ices) whoes values are all {}.'.format(dropped.sum(), value))
         return dataframe.ix[~dropped, :]
 
 

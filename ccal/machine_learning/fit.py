@@ -7,7 +7,7 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import array, sum, sort
+from numpy import array, sort
 from scipy.optimize import curve_fit
 
 
@@ -32,7 +32,7 @@ def fit_matrix(matrix, function_to_fit, axis=0, sort_matrix=False, maxfev=1000):
         matrix = sort(matrix, axis=0)
 
     x = array(range(matrix.shape[0]))
-    y = sum(matrix, axis=1) / matrix.shape[1]
+    y = matrix.sum(axis=1) / matrix.shape[1]
     fit_parameters = curve_fit(function_to_fit, x, y, maxfev=maxfev)[0]
 
     return fit_parameters

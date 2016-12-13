@@ -7,7 +7,7 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import array, asarray, empty, zeros, sum, log2
+from numpy import array, asarray, empty, zeros, log2
 from numpy.random import seed, shuffle
 from pandas import DataFrame
 
@@ -41,9 +41,9 @@ def compute_association_and_pvalue(x, y, function=information_coefficient, n_per
 
     # Compute p-value
     if 0 <= score:
-        p_val = sum(permutation_scores >= score) / n_permutations
+        p_val = (permutation_scores >= score).sum() / n_permutations
     else:
-        p_val = sum(permutation_scores <= score) / n_permutations
+        p_val = (permutation_scores <= score).sum() / n_permutations
 
     if p_val == 0:
         p_val = 1 / n_permutations
@@ -102,7 +102,8 @@ def compute_sliding_mean(vector, window_size=1):
 
     m = zeros(len(vector))
     for i in range(len(vector)):
-        m[i] = sum(vector[max(0, i - window_size):min(len(vector), i + window_size + 1)]) / float(window_size * 2 + 1)
+        m[i] = (vector[max(0, i - window_size):min(len(vector), i + window_size + 1)]).sum() / float(
+            window_size * 2 + 1)
     return m
 
 

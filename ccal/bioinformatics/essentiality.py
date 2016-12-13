@@ -230,8 +230,8 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
     dx = xgrids[1] - xgrids[0]
 
     # Compute darea
-    dareas = skew_t_pdf / sum(skew_t_pdf) * dx
-    dareas_reflected = pdf_reflected / sum(pdf_reflected) * dx
+    dareas = skew_t_pdf / skew_t_pdf.sum() * dx
+    dareas_reflected = pdf_reflected / pdf_reflected.sum() * dx
 
     # Compute cumulative area
     if shape < 0:
