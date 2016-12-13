@@ -284,6 +284,7 @@ def select_features_and_nmf(testing, training,
 # Define states
 # ======================================================================================================================
 def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100, random_seed=RANDOM_SEED,
+                  prefix='',
                   directory_path=None):
     """
     Hierarchical-consensus cluster samples (matrix columns) and compute cophenetic correlation coefficients.
@@ -293,6 +294,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of hierarchical clusterings for consensus clustering
     :param random_seed: int;
+    :param prefix: str; title prefix
     :param directory_path: str; directory path where
             clusterings/distance_matrix.{txt, pdf}
             clusterings/clusterings.{gct, pdf}
@@ -339,18 +341,20 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         filepath_cophenetic_correlation_coefficients_plot = None
 
     # Plot distance matrix
-    plot_clustermap(distance_matrix, title='Distance Matrix', xlabel='Sample', ylabel='Sample',
+    plot_clustermap(distance_matrix, title='{}: Distance Matrix'.format(prefix).strip(),
+                    xlabel='Sample', ylabel='Sample',
                     xticklabels=False, yticklabels=False,
                     filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
-    plot_heatmap(clusterings, sort_axis=1, data_type='categorical', title='Clustering per k', xticklabels=False,
+    plot_heatmap(clusterings, sort_axis=1, data_type='categorical',
+                 title='{}: Clustering per k'.format(prefix).strip(), xticklabels=False,
                  filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients
     plot_x_vs_y(sorted(cophenetic_correlation_coefficients.keys()),
                 [cophenetic_correlation_coefficients[k] for k in sorted(cophenetic_correlation_coefficients.keys())],
-                title='Consensus Clustering Cophenetic Correlation Coefficients vs. k',
+                title='{}: Consensus-Clustering-Cophenetic-Correlation Coefficients vs. k'.format(prefix).strip(),
                 xlabel='k', ylabel='Cophenetic Score',
                 filepath=filepath_cophenetic_correlation_coefficients_plot)
 

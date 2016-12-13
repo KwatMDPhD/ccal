@@ -164,16 +164,18 @@ def plot_heatmap(dataframe, data_type='continuous',
     if ylabel:
         ax_center.set_ylabel(ylabel, rotation=ylabel_rotation, **FONT_SUBTITLE)
 
-    for t in ax_center.get_xticklabels():
+    xticklabels = ax_center.get_xticklabels()
+    ax_center.set_xticklabels([t.get_text()[:10].strip() for t in xticklabels])
+    for t in xticklabels:
         t.set(**FONT)
 
     yticks = ax_center.get_yticklabels()
     if any(yticks):
         if yticklabels_rotation == 'auto':
             if max([len(t.get_text()) for t in yticks]) <= 1:
-                yticklabels_rotation = 0
-            else:
                 yticklabels_rotation = 90
+            else:
+                yticklabels_rotation = 0
         for t in yticks:
             t.set(rotation=yticklabels_rotation, **FONT)
 
@@ -193,6 +195,8 @@ def plot_heatmap(dataframe, data_type='continuous',
                             norm=Normalize(values.min(), values.max()),
                             ticks=[values.min(), values.mean(), values.max()])
         ColorbarBase(cax, **kw)
+        for t in cax.get_xticklabels():
+            t.set(**FONT)
 
     if any(row_annotation):
         if len(set(row_annotation)) <= 2:
@@ -254,7 +258,6 @@ def plot_clustermap(dataframe, cmap=CMAP_CONTINUOUS, row_colors=None, col_colors
         plt.suptitle(title, **FONT_TITLE)
 
     # X & Y labels
-    print(xlabel, ylabel)
     if xlabel:
         clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
     if ylabel:
@@ -278,6 +281,7 @@ def plot_x_vs_y(x, y, title='title', xlabel='xlabel', ylabel='ylabel', filepath=
     :param y:
     :param title:
     :param xlabel:
+    print(xlabel, ylabel)
     :param ylabel:
     :param filepath:
     :return:
