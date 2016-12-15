@@ -12,6 +12,7 @@ def parallelize(function, list_of_args, n_jobs=1):
     :param n_jobs: int; 0 <
     :return: list;
     """
+
     get_random_state('parallelize (before)')
 
     # # TODO: Consider removing since multiprocess also performs this logic

@@ -138,7 +138,7 @@ def shuffle_dataframe(df, axis=0, random_seed=RANDOM_SEED):
     return df
 
 
-def partition_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipping):
+def split_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipping):
     """
     Split df into n_jobs blocks (by row). Assign random states for the blocks' 1st rows, so that the assigned random
     state is the random state that would have assigned to them if a random operation, skipper, operates on each row of

@@ -23,13 +23,12 @@ from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
 from seaborn import heatmap
 from statsmodels.sandbox.stats.multicomp import multipletests
-
 from .. import RANDOM_SEED
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_similarity_matrix
 from ..mathematics.information import information_coefficient
 from ..support.d1 import get_unique_in_order
-from ..support.d2 import get_top_and_bottom_indices
+from ..support.d2 import get_top_and_bottom_indices, split_dataframe_for_random
 from ..support.file import read_gct, establish_filepath
 from ..support.log import print_log
 from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
@@ -310,44 +309,15 @@ def compute_association(target, features, function=information_coefficient,
 
         else:  # Parallelize
 
-            # Compute n for a job
-            n_per_job = features.shape[0] // n_jobs
+            print_log(
+                'Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.format(n_permutations,
+                                                                                                        n_jobs))
 
-            if n_per_job < min_n_per_job:  # n is not enough for parallel computing
-                print_log('Computing P-value & FDR by scoring against {} permuted targets'
-                          '(with n_jobs=1 because n_per_jobs ({}) < min_n_jobs ({})) ...'.format(n_permutations,
-                                                                                                 n_per_job,
-                                                                                                 min_n_per_job))
-                permutation_scores = _permute_and_score((target, features, function, n_permutations, random_seed))
-
-            else:  # n is enough for parallel computing
-                print_log('Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.format(
-                    n_permutations, n_jobs))
-
-                # Group args
-                args = []
-                leftovers = list(features.index)
-                for i in range(n_jobs):
-                    split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
-                    args.append((target, split_features, function, n_permutations, random_seed))
-
-                    # Remove scored features
-                    for feature in split_features.index:
-                        leftovers.remove(feature)
-
-                # Parallelize
-                permutation_scores = concat(parallelize(_permute_and_score, args, n_jobs=n_jobs), verify_integrity=True)
-
-                # Handle leftovers
-                if leftovers:
-                    print_log('Scoring against permuted target using leftovers: {} ...'.format(leftovers))
-                    permutation_scores = concat([permutation_scores,
-                                                 _permute_and_score((target,
-                                                                     features.ix[leftovers, :],
-                                                                     function,
-                                                                     n_permutations,
-                                                                     random_seed))],
-                                                verify_integrity=True)
+            # Split features for parallel computing
+            args = split_dataframe_for_random(features, n_jobs, random_seed,
+                                              'shuffle(for_skipper)', [0] * features.shape[1])
+            # Parallelize
+            permutation_scores = concat(parallelize(_permute_and_score, args, n_jobs=n_jobs), verify_integrity=True)
 
         print_log('\tComputing P-value and FDR ...')
         # All scores
