@@ -229,7 +229,7 @@ def compute_association(target, features, function=information_coefficient,
         print_log('Scoring ...')
         scores = _score((target, features, function))
 
-    else:  # Parallel computing
+    else:  # Parallelize
 
         # Compute n per job
         n_per_job = features.shape[0] // n_jobs
@@ -307,7 +307,7 @@ def compute_association(target, features, function=information_coefficient,
             print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
             permutation_scores = _permute_and_score((target, features, function, n_permutations, random_seed))
 
-        else:  # Parallel computing
+        else:  # Parallelize
 
             # Compute n for a job
             n_per_job = features.shape[0] // n_jobs
