@@ -35,7 +35,7 @@ from ..support.log import print_log
 from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
     FONT_SUBTITLE, save_plot, plot_clustermap
 from ..support.str_ import title_str, untitle_str
-from ..support.system import parallelize
+from ccal.support.parallel_computing import parallelize
 
 
 # ======================================================================================================================
@@ -183,7 +183,6 @@ def make_association_panel(target, features,
     return target, features, scores
 
 
-# TODO: make empty DataFrame to absorb the results instead of concatenation
 def compute_association(target, features, function=information_coefficient,
                         target_ascending=False,
                         n_jobs=1, min_n_per_job=100, features_ascending=False,
@@ -212,6 +211,8 @@ def compute_association(target, features, function=information_coefficient,
                                             'p-value (forward)', 'p-value (reverse)', 'p-value',
                                             'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
+
+    # TODO: make empty DataFrame to absorb the results instead of concatenation
 
     # Make sure target is a Series and features a DataFrame
     # Keep samples found in both target and features

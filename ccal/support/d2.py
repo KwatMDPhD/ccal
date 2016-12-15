@@ -12,6 +12,7 @@ from numpy.random import seed, shuffle
 from pandas import concat
 
 from .. import RANDOM_SEED
+from ..support.system import get_random_state
 
 
 def drop_nan_columns(arrays):
@@ -31,10 +32,10 @@ def drop_nan_columns(arrays):
     return [a[not_nan_filter] for a in arrays]
 
 
-def get_top_and_bottom_indices(dataframe, column_name, threshold, max_n=None):
+def get_top_and_bottom_indices(df, column_name, threshold, max_n=None):
     """
 
-    :param dataframe: DataFrame;
+    :param df: DataFrame;
     :param column_name: str;
     :param threshold: number; quantile if < 1; ranking number if >= 1
     :param max_n: int; maximum number of rows
@@ -42,29 +43,29 @@ def get_top_and_bottom_indices(dataframe, column_name, threshold, max_n=None):
     """
 
     if threshold < 1:
-        column = dataframe.ix[:, column_name]
+        column = df.ix[:, column_name]
 
         is_top = column >= column.quantile(threshold)
         is_bottom = column <= column.quantile(1 - threshold)
 
-        top_and_bottom = dataframe.index[is_top | is_bottom].tolist()
+        top_and_bottom = df.index[is_top | is_bottom].tolist()
 
         if max_n and max_n < len(top_and_bottom):
             threshold = max_n // 2
 
     if 1 <= threshold:
-        if 2 * threshold <= dataframe.shape[0]:
-            top_and_bottom = dataframe.index[:threshold].tolist() + dataframe.index[-threshold:].tolist()
+        if 2 * threshold <= df.shape[0]:
+            top_and_bottom = df.index[:threshold].tolist() + df.index[-threshold:].tolist()
         else:
-            top_and_bottom = dataframe.index
+            top_and_bottom = df.index
 
     return top_and_bottom
 
 
-def split_slices(dataframe, index, splitter, ax=0):
+def split_slices(df, index, splitter, ax=0):
     """
 
-    :param dataframe:
+    :param df:
     :param index:
     :param splitter:
     :param ax:
@@ -74,9 +75,9 @@ def split_slices(dataframe, index, splitter, ax=0):
     splits = []
 
     if ax == 0:  # Split columns
-        dataframe = dataframe.T
+        df = df.T
 
-    for s_i, s in dataframe.iterrows():
+    for s_i, s in df.iterrows():
 
         old = s.ix[index]
 
@@ -90,38 +91,38 @@ def split_slices(dataframe, index, splitter, ax=0):
         return concat(splits, axis=1).T
 
 
-def drop_uniform_slice_from_dataframe(dataframe, value, axis=0):
+def drop_uniform_slice_from_dataframe(df, value, axis=0):
     """
 
-    :param dataframe:
+    :param df:
     :param value:
     :param axis:
     :return:
     """
 
     if axis == 0:
-        dropped = (dataframe == value).all(axis=0)
+        dropped = (df == value).all(axis=0)
         if any(dropped):
             print('Removed {} column index(ices) whoes values are all {}.'.format(dropped.sum(), value))
-        return dataframe.ix[:, ~dropped]
+        return df.ix[:, ~dropped]
 
     elif axis == 1:
-        dropped = (dataframe == value).all(axis=1)
+        dropped = (df == value).all(axis=1)
         if any(dropped):
             print('Removed {} row index(ices) whoes values are all {}.'.format(dropped.sum(), value))
-        return dataframe.ix[~dropped, :]
+        return df.ix[~dropped, :]
 
 
-def shuffle_dataframe(dataframe, axis=0, random_seed=RANDOM_SEED):
+def shuffle_dataframe(df, axis=0, random_seed=RANDOM_SEED):
     """
 
-    :param dataframe: DataFrame;
+    :param df: DataFrame;
     :param axis: int;
     :param random_seed: int or array-like;
     :return: DataFrame;
     """
 
-    df = dataframe.copy()
+    df = df.copy()
 
     seed(random_seed)
     if axis == 0:
@@ -135,3 +136,67 @@ def shuffle_dataframe(dataframe, axis=0, random_seed=RANDOM_SEED):
             shuffle(row)
 
     return df
+
+
+def partition_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipping):
+    """
+    Split df into n_jobs blocks (by row). Assign random states for the blocks' 1st rows, so that the assigned random
+    state is the random state that would have assigned to them if a random operation, skipper, operates on each row of
+    non-split data. Leftovers become its own block (the last block).
+    :param df: DataFrame;
+    :param n_jobs: int;
+    :param random_seed: int;
+    :param skipper: str;
+    :param for_skipping: object;
+    :return: list; list of tuples [{split_df1, random_state1}, {split_df2, random_state2} ...]
+    """
+
+    # Get number of rows per job
+    n_per_job = df.shape[0] // n_jobs
+
+    # List of functional args in each job
+    args = []
+
+    # Leftover rows
+    leftovers = list(df.index)
+
+    # Set the initial random state
+    seed(random_seed)
+    random_state = get_random_state('Before skipping')
+
+    last_i = 0
+    shuffled_for_skipping_random_states = list(range(df.shape[1]))
+    for i in range(n_jobs):
+
+        # Indeces for this job
+        start_i = i * n_per_job
+        end_i = (i + 1) * n_per_job
+        split_df = df.iloc[start_i: end_i, :]
+
+        # Skip random states (number of indeces for the previous job times)
+        for r_i in range(last_i, start_i):
+            exec(skipper)
+            random_state = get_random_state('{}: skipping index {}'.format(i, r_i))
+
+        last_i = start_i
+
+        # Update functional args for this job
+        args.append((random_state, split_df))
+
+        # Remove included indeces
+        for included_i in split_df.index:
+            leftovers.remove(included_i)
+
+    if leftovers:
+        print('Leftovers: {}'.format(leftovers))
+
+        # Skip random states
+        start_i = n_jobs * n_per_job
+        for r_i in range(last_i, start_i):
+            exec(skipper)
+            random_state = get_random_state('Skipping index {}'.format(r_i))
+
+        # Update functional args for this job
+        args.append((random_state, df.ix[leftovers, :]))
+
+    return args

@@ -7,13 +7,25 @@ Author:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from multiprocessing import Pool
 from os import environ
 from subprocess import PIPE, run, Popen
 
+from numpy.random import get_state
 from pip import get_installed_distributions, main
 
 from .log import print_log
+
+
+def run_cmd(cmd):
+    """
+    Execute cmd.
+    :param cmd: str;
+    :return: str;
+    """
+
+    print(cmd)
+    output = run(cmd, shell=True, check=True, stdout=PIPE, universal_newlines=True)
+    return output
 
 
 def install_libraries(libraries_needed):
@@ -69,27 +81,18 @@ def get_name(obj, namesapce):
     return '\'{}\''.format(obj)
 
 
-def parallelize(function, list_of_args, n_jobs=1):
+def get_random_state(mark=''):
     """
-    Apply function on list_of_args using parallel computing across n_jobs jobs; n_jobs doesn't have to be the length of
-    list_of_args.
-    :param function: function;
-    :param list_of_args: iterable; for each item in iterable, function(item) is executed; function won't run if empty
-    :param n_jobs: int; number of allowed simultaneous jobs
-    :return: list; list of outputs returned by all jobs, in the order of the list_of_args
+    Print numpy random state.
+    :param mark: str;
+    :return: array; random state
     """
 
-    with Pool(n_jobs) as p:
-        return p.map(function, list_of_args)
+    random_state = get_state()
+    _, keys, pos, _, _ = random_state
+    try:
+        print('[{}] Seed0={}\ti={}\t@={}'.format(mark, keys[0], pos, keys[pos]))
+    except IndexError:
+        print('[{}] Seed0={}\ti={}'.format(mark, keys[0], pos))
 
-
-def run_cmd(cmd):
-    """
-    Execute cmd.
-    :param cmd: str;
-    :return: str;
-    """
-
-    print(cmd)
-    output = run(cmd, shell=True, check=True, stdout=PIPE, universal_newlines=True)
-    return output
+    return random_state
