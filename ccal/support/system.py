@@ -23,7 +23,7 @@ def run_cmd(cmd):
     :return: str;
     """
 
-    print(cmd)
+    print_log(cmd)
     output = run(cmd, shell=True, check=True, stdout=PIPE, universal_newlines=True)
     return output
 
@@ -91,8 +91,8 @@ def get_random_state(mark=''):
     random_state = get_state()
     _, keys, pos, _, _ = random_state
     try:
-        print('[{}] Seed0={}\ti={}\t@={}'.format(mark, keys[0], pos, keys[pos]))
+        print_log('[{}] Seed0={}\ti={}\t@={}'.format(mark, keys[0], pos, keys[pos]))
     except IndexError:
-        print('[{}] Seed0={}\ti={}'.format(mark, keys[0], pos))
+        print_log('[{}] Seed0={}\ti={}'.format(mark, keys[0], pos))
 
     return random_state

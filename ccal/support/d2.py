@@ -12,6 +12,7 @@ from numpy.random import seed, shuffle
 from pandas import concat
 
 from .. import RANDOM_SEED
+from ..support.log import print_log
 from ..support.system import get_random_state
 
 
@@ -103,13 +104,13 @@ def drop_uniform_slice_from_dataframe(df, value, axis=0):
     if axis == 0:
         dropped = (df == value).all(axis=0)
         if any(dropped):
-            print('Removed {} column index(ices) whoes values are all {}.'.format(dropped.sum(), value))
+            print_log('Removed {} column index(ices) whoes values are all {}.'.format(dropped.sum(), value))
         return df.ix[:, ~dropped]
 
     elif axis == 1:
         dropped = (df == value).all(axis=1)
         if any(dropped):
-            print('Removed {} row index(ices) whoes values are all {}.'.format(dropped.sum(), value))
+            print_log('Removed {} row index(ices) whoes values are all {}.'.format(dropped.sum(), value))
         return df.ix[~dropped, :]
 
 
@@ -188,7 +189,7 @@ def split_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipper):
             leftovers.remove(included_i)
 
     if leftovers:
-        print('Leftovers: {}'.format(leftovers))
+        print_log('Leftovers: {}'.format(leftovers))
 
         # Skip random states
         start_i = n_jobs * n_per_job

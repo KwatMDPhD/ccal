@@ -19,7 +19,7 @@ def parallelize(function, list_of_args, n_jobs):
     # n_args = len(list_of_args)
     # if n_args < n_jobs:
     #     n_jobs = n_args
-    #     print('Changed n_jobs to {} (n_args < n_jobs).'.format(n_jobs))
+    #     print_log('Changed n_jobs to {} (n_args < n_jobs).'.format(n_jobs))
 
     if 1 < n_jobs:  # Work in new processes
         with Pool(n_jobs) as p:
