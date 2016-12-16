@@ -23,6 +23,7 @@ from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
 from seaborn import heatmap
 from statsmodels.sandbox.stats.multicomp import multipletests
+
 from .. import RANDOM_SEED
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_similarity_matrix
@@ -31,10 +32,10 @@ from ..support.d1 import get_unique_in_order
 from ..support.d2 import get_top_and_bottom_indices, split_dataframe_for_random
 from ..support.file import read_gct, establish_filepath
 from ..support.log import print_log
+from ..support.parallel_computing import parallelize
 from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
     FONT_SUBTITLE, save_plot, plot_clustermap
 from ..support.str_ import title_str, untitle_str
-from ccal.support.parallel_computing import parallelize
 
 
 # ======================================================================================================================
