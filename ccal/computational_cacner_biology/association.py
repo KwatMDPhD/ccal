@@ -18,7 +18,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import figure, subplot
 from numpy import array, unique
-from numpy.random import seed, shuffle, choice
+from numpy.random import seed, set_state, shuffle, choice
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
 from seaborn import heatmap
@@ -253,7 +253,7 @@ def compute_association(target, features, function=information_coefficient,
                     leftovers.remove(feature)
 
             # Parallelize
-            scores = concat(parallelize(_score, args, n_jobs=n_jobs), verify_integrity=True)
+            scores = concat(parallelize(_score, args, n_jobs), verify_integrity=True)
 
             # Score leftovers
             if leftovers:
@@ -316,8 +316,12 @@ def compute_association(target, features, function=information_coefficient,
             # Split features for parallel computing
             args = split_dataframe_for_random(features, n_jobs, random_seed,
                                               'shuffle(for_skipper)', [0] * features.shape[1])
+            final_args = []
+            for a in args:
+                final_args.append((target, a[0], function, n_permutations, a[1]))
+
             # Parallelize
-            permutation_scores = concat(parallelize(_permute_and_score, args, n_jobs=n_jobs), verify_integrity=True)
+            permutation_scores = concat(parallelize(_permute_and_score, final_args, n_jobs), verify_integrity=True)
 
         print_log('\tComputing P-value and FDR ...')
         # All scores
@@ -419,18 +423,19 @@ def _permute_and_score(args):
         (Series (m_samples); target,
          DataFrame (n_features, m_samples); features,
          function,
-         int; n_permutations)
+         int; n_permutations,
+         array; random_state)
     :return: DataFrame; (n_features, n_permutations)
     """
 
     if len(args) != 5:
         raise ValueError('args is not length of 5 (target, features, function, n_perms, and random_seed).')
     else:
-        t, f, func, n_perms, random_seed = args
+        t, f, func, n_perms, random_state = args
 
     scores = DataFrame(index=f.index, columns=range(n_perms))
     shuffled_target = array(t)
-    seed(random_seed)
+    set_state(random_state)
     for p in range(n_perms):
         print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms))
         shuffle(shuffled_target)

@@ -3,7 +3,7 @@ from multiprocessing.pool import Pool
 from .system import get_random_state
 
 
-def parallelize(function, list_of_args, n_jobs=1):
+def parallelize(function, list_of_args, n_jobs):
     """
     Apply function on list_of_args using parallel computing across n_jobs jobs; n_jobs doesn't have to be the length of
     list_of_args.

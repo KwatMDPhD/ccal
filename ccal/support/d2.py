@@ -138,7 +138,7 @@ def shuffle_dataframe(df, axis=0, random_seed=RANDOM_SEED):
     return df
 
 
-def split_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipping):
+def split_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipper):
     """
     Split df into n_jobs blocks (by row). Assign random states for the blocks' 1st rows, so that the assigned random
     state is the random state that would have assigned to them if a random operation, skipper, operates on each row of
@@ -147,7 +147,7 @@ def split_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipping):
     :param n_jobs: int;
     :param random_seed: int;
     :param skipper: str;
-    :param for_skipping: object;
+    :param for_skipper: object;
     :return: list; list of tuples [{split_df1, random_state1}, {split_df2, random_state2} ...]
     """
 
@@ -181,7 +181,7 @@ def split_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipping):
         last_i = start_i
 
         # Update functional args for this job
-        args.append((random_state, split_df))
+        args.append((split_df, random_state))
 
         # Remove included indeces
         for included_i in split_df.index:
@@ -197,6 +197,6 @@ def split_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipping):
             random_state = get_random_state('Skipping index {}'.format(r_i))
 
         # Update functional args for this job
-        args.append((random_state, df.ix[leftovers, :]))
+        args.append((df.ix[leftovers, :], random_state))
 
     return args
