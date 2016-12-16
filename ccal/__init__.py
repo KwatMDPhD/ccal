@@ -17,5 +17,5 @@ RANDOM_SEED = 20121020
 from .computational_cacner_biology import association
 from .computational_cacner_biology import essentiality
 from .computational_cacner_biology import oncogps
-from .support.file import read_gct, write_gct
+from .support.file import read_gct, write_gct, read_gmt, read_and_collapse_gmts
 from .support.plot import plot_heatmap, plot_clustermap, plot_x_vs_y

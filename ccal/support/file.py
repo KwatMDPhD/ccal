@@ -14,7 +14,7 @@ from os.path import abspath, split, isdir, isfile, islink, join
 
 from Bio import bgzf
 from matplotlib.colors import ListedColormap
-from numpy import unique
+from numpy import unique, concatenate
 from pandas import Series, DataFrame, read_csv, concat
 
 from .log import print_log
@@ -427,7 +427,7 @@ def read_gmt(filepath, drop_description=True, collapse=False):
     :param filepath: str; filepath to a .gmt file
     :param drop_description: bool; drop Desctiption column (2nd column) or not
     :param collapse: bool; collapse into a list of unique genes or not
-    :return: DataFrame or array; (n_gene_sets, size of the largest gene set) or (1, n_unique genes)
+    :return: DataFrame or list; (n_gene_sets, size of the largest gene set) or (n_unique genes)
     """
 
     gmt = read_csv(filepath, sep='\t', index_col=0, header=None)
@@ -438,9 +438,23 @@ def read_gmt(filepath, drop_description=True, collapse=False):
         gmt.drop('Description', axis=1, inplace=True)
 
     if collapse:
-        return unique(gmt.unstack().dropna().values)
+        return sorted(gmt.unstack().dropna().values)
     else:
         return gmt
+
+
+def read_and_collapse_gmts(filepaths):
+    """
+    Read 1 or more .gmt and collapse their genes into a list.
+    :param filepaths: list; filepaths to .gmt
+    :return: list;
+    """
+
+    gmts = []
+    for fp in filepaths:
+        gmt = read_gmt(fp, collapse=True)
+        gmts.append(gmt)
+    return sorted(unique(concatenate(gmts)))
 
 
 def write_gmt(gmt, filepath):
