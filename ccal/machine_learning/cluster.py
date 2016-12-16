@@ -20,7 +20,7 @@ from .. import RANDOM_SEED
 from ..machine_learning.matrix_factorize import nmf
 from ..mathematics.information import information_coefficient
 from ..support.log import print_log
-from ccal.support.parallel_computing import parallelize
+from ..support.parallel_computing import parallelize
 
 
 # ======================================================================================================================
