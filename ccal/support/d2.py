@@ -13,7 +13,6 @@ from pandas import concat
 
 from .. import RANDOM_SEED
 from ..support.log import print_log
-from ..support.system import get_random_state
 
 
 def drop_nan_columns(arrays):
@@ -139,65 +138,30 @@ def shuffle_dataframe(df, axis=0, random_seed=RANDOM_SEED):
     return df
 
 
-def split_dataframe_for_random(df, n_jobs, random_seed, skipper, for_skipper):
+def split_dataframe(df, n_split):
     """
-    Split df into n_jobs blocks (by row). Assign random states for the blocks' 1st rows, so that the assigned random
-    state is the random state that would have assigned to them if a random operation, skipper, operates on each row of
-    non-split data. Leftovers become its own block (the last block).
+    Split df into n_split blocks (by row).
     :param df: DataFrame;
-    :param n_jobs: int;
-    :param random_seed: int;
-    :param skipper: str;
-    :param for_skipper: object;
-    :return: list; list of tuples [{split_df1, random_state1}, {split_df2, random_state2} ...]
+    :param n_split: int; 0 < n_split <= n_rows
+    :return: list; list of dataframes
     """
 
-    # Get number of rows per job
-    n_per_job = df.shape[0] // n_jobs
+    if df.shape[0] < n_split:
+        raise ValueError('n_split ({}) can\'t be greater than the number of rows ({}).'.format(n_split, df.shape[0]))
+    elif n_split <= 0:
+        raise ValueError('n_split ({}) can\'t be less than 0.'.format(n_split))
 
-    # List of functional args in each job
-    args = []
+    n = df.shape[0] // n_split
 
-    # Leftover rows
-    leftovers = list(df.index)
+    splits = []
 
-    # Set the initial random state
-    seed(random_seed)
-    random_state = get_random_state('Before skipping')
+    for i in range(n_split):
+        start_i = i * n
+        end_i = (i + 1) * n
+        splits.append(df.iloc[start_i: end_i, :])
 
-    last_i = 0
-    shuffled_for_skipping_random_states = list(range(df.shape[1]))
-    for i in range(n_jobs):
+    i = n * n_split
+    if i < df.shape[0]:
+        splits.append(df.ix[i:])
 
-        # Indeces for this job
-        start_i = i * n_per_job
-        end_i = (i + 1) * n_per_job
-        split_df = df.iloc[start_i: end_i, :]
-
-        # Skip random states (number of indeces for the previous job times)
-        for r_i in range(last_i, start_i):
-            exec(skipper)
-            random_state = get_random_state('{}: skipping index {}'.format(i, r_i))
-
-        last_i = start_i
-
-        # Update functional args for this job
-        args.append((split_df, random_state))
-
-        # Remove included indeces
-        for included_i in split_df.index:
-            leftovers.remove(included_i)
-
-    if leftovers:
-        print_log('Leftovers: {}'.format(leftovers))
-
-        # Skip random states
-        start_i = n_jobs * n_per_job
-        for r_i in range(last_i, start_i):
-            exec(skipper)
-            random_state = get_random_state('Skipping index {}'.format(r_i))
-
-        # Update functional args for this job
-        args.append((df.ix[leftovers, :], random_state))
-
-    return args
+    return splits

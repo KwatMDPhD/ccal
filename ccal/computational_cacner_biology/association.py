@@ -29,7 +29,7 @@ from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_similarity_matrix
 from ..mathematics.information import information_coefficient
 from ..support.d1 import get_unique_in_order
-from ..support.d2 import get_top_and_bottom_indices, split_dataframe_for_random
+from ..support.d2 import get_top_and_bottom_indices, split_dataframe
 from ..support.file import read_gct, establish_filepath
 from ..support.log import print_log
 from ..support.parallel_computing import parallelize
@@ -180,12 +180,12 @@ def make_association_panel(target, features,
                             features_type=features_type,
                             title=title, plot_colname=plot_colname, filepath=filepath)
 
-    return target, features, scores
+    return scores
 
 
 def compute_association(target, features, function=information_coefficient,
                         target_ascending=False,
-                        n_jobs=1, min_n_per_job=100, features_ascending=False,
+                        n_jobs=1, features_ascending=False,
                         n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
                         random_seed=RANDOM_SEED,
                         filepath=None):
@@ -198,7 +198,6 @@ def compute_association(target, features, function=information_coefficient,
     :param function: function; scoring function
     :param target_ascending: bool; target is ascending or not
     :param n_jobs: int; number of jobs to parallelize
-    :param min_n_per_job: int; minimum number of n per job for parallel computing
     :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
@@ -226,40 +225,13 @@ def compute_association(target, features, function=information_coefficient,
     #
     # Compute: score_i = function(target, feature_i)
     #
-    if n_jobs == 1:  # Non-parallel computing
-        print_log('Scoring ...')
-        scores = _score((target, features, function))
+    print_log('Scoring (n_jobs={}) ...'.format(n_jobs))
 
-    else:  # Parallelize
+    # Split features for parallel computing
+    split_features = split_dataframe(features, n_jobs)
 
-        # Compute n per job
-        n_per_job = features.shape[0] // n_jobs
-        if n_per_job < min_n_per_job:  # n is not enough for parallel computing
-            print_log('Scoring (with n_jobs=1 because n_per_job ({}) < min_n_per_job ({})) ...'.format(n_per_job,
-                                                                                                       min_n_per_job))
-            scores = _score((target, features, function))
-
-        else:  # n is enough for parallel computing
-            print_log('Scoring (n_jobs={}) ...'.format(n_jobs))
-
-            # Group args
-            args = []
-            leftovers = list(features.index)
-            for i in range(n_jobs):
-                split_features = features.iloc[i * n_per_job: (i + 1) * n_per_job, :]
-                args.append((target, split_features, function))
-
-                # Remove scored features
-                for feature in split_features.index:
-                    leftovers.remove(feature)
-
-            # Parallelize
-            scores = concat(parallelize(_score, args, n_jobs), verify_integrity=True)
-
-            # Score leftovers
-            if leftovers:
-                print_log('Scoring leftovers: {} ...'.format(leftovers))
-                scores = concat([scores, _score((target, features.ix[leftovers, :], function))], verify_integrity=True)
+    # Score
+    scores = concat(parallelize(_score, [(target, f, function) for f in split_features], n_jobs), verify_integrity=True)
 
     # Load scores and sort results by scores
     results.ix[scores.index, 'score'] = scores
@@ -286,9 +258,12 @@ def compute_association(target, features, function=information_coefficient,
             ramdom_samples = choice(features.columns.tolist(), int(ceil(0.632 * features.shape[1]))).tolist()
             sampled_target = target.ix[ramdom_samples]
             sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
+            rs = get_state()
 
             # Score
             sampled_scores.ix[:, c_i] = sampled_features.apply(lambda f: function(sampled_target, f), axis=1)
+
+            set_state(rs)
 
         # Compute scores' confidence intervals using bootstrapped score distributions
         # TODO: improve confidence interval calculation
@@ -304,25 +279,14 @@ def compute_association(target, features, function=information_coefficient,
     if n_permutations < 1:
         print_log('Not computing P-value and FDR because n_perm < 1.')
     else:
-        if n_jobs == 1:  # Non-parallel computing
-            print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
-            permutation_scores = _permute_and_score((target, features, function, n_permutations, get_state()))
+        print_log(
+            'Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.format(n_permutations,
+                                                                                                    n_jobs))
 
-        else:  # Parallelize
-
-            print_log(
-                'Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.format(n_permutations,
-                                                                                                        n_jobs))
-
-            # Split features for parallel computing
-            args = split_dataframe_for_random(features, n_jobs, random_seed,
-                                              'shuffle(for_skipper)', [0] * features.shape[1])
-            final_args = []
-            for a in args:
-                final_args.append((target, a[0], function, n_permutations, a[1]))
-
-            # Parallelize
-            permutation_scores = concat(parallelize(_permute_and_score, final_args, n_jobs), verify_integrity=True)
+        # Permute and score
+        permutation_scores = concat(parallelize(_permute_and_score,
+                                                [(target, f, function, n_permutations, random_seed) for f in
+                                                 split_features], n_jobs), verify_integrity=True)
 
         print_log('\tComputing P-value and FDR ...')
         # All scores
@@ -430,17 +394,26 @@ def _permute_and_score(args):
     """
 
     if len(args) != 5:
-        raise ValueError('args is not length of 5 (target, features, function, n_perms, and random_seed).')
+        raise ValueError('args is not length of 5 (target, features, function, n_perms, and random_state).')
     else:
-        t, f, func, n_perms, random_state = args
+        t, f, func, n_perms, random_seed = args
 
     scores = DataFrame(index=f.index, columns=range(n_perms))
-    shuffled_target = array(t)
-    set_state(random_state)
+
+    # Target array to be permuted during each permutation
+    permuted_t = array(t)
+
+    seed(random_seed)
     for p in range(n_perms):
-        print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms))
-        shuffle(shuffled_target)
-        scores.iloc[:, p] = f.apply(lambda r: func(shuffled_target, r), axis=1)
+        print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms), print_process=True)
+
+        shuffle(permuted_t)
+        rs = get_state()
+
+        scores.iloc[:, p] = f.apply(lambda r: func(permuted_t, r), axis=1)
+
+        set_state(rs)
+
     return scores
 
 

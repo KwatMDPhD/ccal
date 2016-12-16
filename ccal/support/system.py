@@ -10,7 +10,7 @@ Author:
 from os import environ
 from subprocess import PIPE, run, Popen
 
-from numpy.random import get_state
+from numpy.random import seed, get_state
 from pip import get_installed_distributions, main
 
 from .log import print_log
@@ -81,18 +81,36 @@ def get_name(obj, namesapce):
     return '\'{}\''.format(obj)
 
 
-def get_random_state(mark=''):
+def print_random_state(mark='', print_process=False):
     """
     Print numpy random state.
     :param mark: str;
-    :return: array; random state
+    :return: None
     """
 
     random_state = get_state()
+
     _, keys, pos, _, _ = random_state
     try:
-        print_log('[{}] Seed0={}\ti={}\t@={}'.format(mark, keys[0], pos, keys[pos]))
+        print_log('[{}] Seed0={}\ti={}\t@={}'.format(mark, keys[0], pos, keys[pos]), print_process=print_process)
     except IndexError:
-        print_log('[{}] Seed0={}\ti={}'.format(mark, keys[0], pos))
+        print_log('[{}] Seed0={}\ti={}'.format(mark, keys[0], pos), print_process=print_process)
 
-    return random_state
+
+def skip_random_states(random_seed, n_skips, skipper='', for_skipper=None):
+    """
+
+    :param random_seed: int;
+    :param skipper: str;
+    :param for_skipper: object;
+    :return: list; list of arrays;
+    """
+
+    seed(random_seed)
+    r = get_state()
+
+    for i in range(n_skips):
+        exec(skipper)
+        r = get_state()
+
+    return r

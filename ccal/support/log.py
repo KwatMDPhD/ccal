@@ -8,20 +8,25 @@ Author:
 """
 
 from datetime import datetime
+from multiprocessing import current_process
 
 from .. import VERBOSE
 
 
-def print_log(string):
+def print_log(string, print_process=False):
     """
     Print string together with logging information.
     :param string: str; message to printed
+    :param print_process: bool;
     :return: None
     """
 
     # TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
     if VERBOSE:
-        print('<{}> {}'.format(timestamp(time_only=True), string))
+        to_print = '<{}> {}'.format(timestamp(time_only=True), string)
+        if print_process:
+            to_print = '[{}] {}'.format(current_process().name, to_print)
+        print(to_print)
 
 
 def timestamp(time_only=False):
