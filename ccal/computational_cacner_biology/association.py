@@ -18,7 +18,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import figure, subplot
 from numpy import array, unique
-from numpy.random import seed, set_state, shuffle, choice
+from numpy.random import seed, set_state, shuffle, choice, get_state
 from pandas import Series, DataFrame, read_csv, concat
 from scipy.stats import norm
 from seaborn import heatmap
@@ -306,7 +306,7 @@ def compute_association(target, features, function=information_coefficient,
     else:
         if n_jobs == 1:  # Non-parallel computing
             print_log('Computing P-value & FDR by scoring against {} permuted targets ...'.format(n_permutations))
-            permutation_scores = _permute_and_score((target, features, function, n_permutations, random_seed))
+            permutation_scores = _permute_and_score((target, features, function, n_permutations, get_state()))
 
         else:  # Parallelize
 
