@@ -421,10 +421,11 @@ def write_gct(matrix, filepath, descriptions=None):
 # ======================================================================================================================
 # .gmt functions
 # ======================================================================================================================
-def read_gmt(filepath, drop_description=True, collapse=False):
+def read_gmt(filepath, gene_sets=(), drop_description=True, collapse=False):
     """
     Read .gmt.
     :param filepath: str; filepath to a .gmt file
+    :param gene_sets: iterable: list of gene set names to keep
     :param drop_description: bool; drop Desctiption column (2nd column) or not
     :param collapse: bool; collapse into a list of unique genes or not
     :return: DataFrame or list; (n_gene_sets, size of the largest gene set) or (n_unique genes)
@@ -437,24 +438,33 @@ def read_gmt(filepath, drop_description=True, collapse=False):
     if drop_description or collapse:
         gmt.drop('Description', axis=1, inplace=True)
 
+    if any(gene_sets):
+        gmt = gmt.ix[gene_sets, :]
+
     if collapse:
         return sorted(gmt.unstack().dropna().values)
     else:
         return gmt
 
 
-def read_and_collapse_gmts(filepaths):
+def read_gmts_and_collapse(filepaths, gene_sets=()):
     """
     Read 1 or more .gmt and collapse their genes into a list.
     :param filepaths: list; filepaths to .gmt
+    :param gene_sets: iterable: list of gene set names to keep
     :return: list;
     """
 
     gmts = []
     for fp in filepaths:
-        gmt = read_gmt(fp, collapse=True)
+        gmt = read_gmt(fp)
         gmts.append(gmt)
-    return sorted(unique(concatenate(gmts)))
+    gmt = concat(gmts)
+
+    if any(gene_sets):
+        gmt = gmt.ix[gene_sets, :]
+
+    return sorted(gmt.unstack().dropna().values)
 
 
 def write_gmt(gmt, filepath):
