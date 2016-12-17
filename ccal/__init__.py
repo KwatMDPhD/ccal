@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-VERBOSE = True
+VERBOSE = False
 RANDOM_SEED = 20121020
 
 from .computational_cancer_biology import association
