@@ -1,0 +1,235 @@
+{
+  "library_path": "ccal",
+  "library_name": "ccal",
+  "tasks": [
+    {
+      "label": "Get DNA Sequence",
+      "function_name": "get_sequence",
+      "required_args": [
+        {
+          "arg_name": "filepath"
+        },
+        {
+          "arg_name": "chromosome"
+        },
+        {
+          "arg_name": "start"
+        },
+        {
+          "arg_name": "end"
+        }
+      ],
+      "returns": [
+        {
+          "label": "DNA Sequence"
+        }
+      ]
+    },
+    {
+      "label": "DNA to RNA",
+      "function_name": "dna_to_rna",
+      "required_args": [
+        {
+          "arg_name": "dna_sequence",
+          "label": "DNA sequence"
+        }
+      ],
+      "returns": [
+        {
+          "label": "RNA Sequence"
+        }
+      ]
+    },
+    {
+      "label": "Transcription",
+      "function_name": "translate_nucleotides",
+      "required_args": [
+        {
+          "arg_name": "nucleotide_seq",
+          "label": "DNA sequence"
+        }
+      ],
+      "default_args": [
+        {
+          "arg_name": "nucleotide_type",
+          "value": "dna"
+        },
+        {
+          "arg_name": "reading_frame_offset",
+          "value": "0"
+        },
+        {
+          "arg_name": "reading_frame_direction",
+          "value": "1"
+        }
+      ],
+      "returns": [
+        {
+          "label": "RNA Sequence"
+        }
+      ]
+    },
+    {
+      "label": "Read .GCT File",
+      "function_name": "read_gct",
+      "required_args": [
+        {
+          "arg_name": "filepath",
+          "label": ".GCT file"
+        }
+      ],
+      "returns": [
+        {
+          "label": "Matrix"
+        }
+      ]
+    },
+    {
+      "label": "Write .GCT File",
+      "function_name": "write_gct",
+      "required_args": [
+        {
+          "arg_name": "matrix",
+          "Description": "Matrix to be written as a .GCT"
+        },
+        {
+          "arg_name": "filepath",
+          "label": ".GCT file"
+        }
+      ]
+    },
+    {
+      "label": "Define NMF Components",
+      "function_name": "define_components",
+      "required_args": [
+        {
+          "arg_name": "matrix"
+        },
+        {
+          "arg_name": "ks",
+          "label": "Numbers of Components"
+        }
+      ],
+      "default_args": [
+        {
+          "arg_name": "n_clusterings",
+          "value": "30"
+        }
+      ],
+      "returns": [
+        {
+          "label": "NMF Result Dictionary"
+        },
+        {
+          "label": "Cophenetic Correlation Coefficients"
+        }
+      ]
+    },
+    {
+      "label": "Extract W Matrix",
+      "function_name": "get_w_or_h_matrix",
+      "required_args": [
+        {
+          "arg_name": "nmf_results"
+        },
+        {
+          "arg_name": "k",
+          "label": "Number of Components"
+        }
+      ],
+      "default_args": [
+        {
+          "arg_name": "w_or_h",
+          "value": "w"
+        }
+      ],
+      "returns": [
+        {
+          "label": "W Matrix"
+        }
+      ]
+    },
+    {
+      "label": "Extract H Matrix",
+      "function_name": "get_w_or_h_matrix",
+      "required_args": [
+        {
+          "arg_name": "nmf_results"
+        },
+        {
+          "arg_name": "k",
+          "label": "Number of Components"
+        }
+      ],
+      "default_args": [
+        {
+          "arg_name": "w_or_h",
+          "value": "h"
+        }
+      ],
+      "returns": [
+        {
+          "label": "H Matrix"
+        }
+      ]
+    },
+    {
+      "label": "Get State Labels",
+      "function_name": "get_state_labels",
+      "required_args": [
+        {
+          "arg_name": "clusterings",
+          "label": "Clusterings"
+        },
+        {
+          "arg_name": "k",
+          "label": "Number of States"
+        }
+      ],
+      "returns": [
+        {
+          "label": "State Labels"
+        }
+      ]
+    },
+    {
+      "label": "Define States",
+      "function_name": "define_states",
+      "required_args": [
+        {
+          "arg_name": "matrix",
+          "label": "H Matrix"
+        },
+        {
+          "arg_name": "ks",
+          "label": "Numbers of States"
+        }
+      ],
+      "returns": [
+        {
+          "label": "Distance Matrix"
+        },
+        {
+          "label": "Clusterings"
+        },
+        {
+          "label": "Cophenetic Correlation Coefficients"
+        }
+      ]
+    },
+    {
+      "label": "Make Onco-GPS",
+      "function_name": "make_oncogps",
+      "required_args": [
+        {
+          "arg_name": "training_h",
+          "label": "H Matrix"
+        },
+        {
+          "arg_name": "training_states",
+          "label": "Sample State Labels"
+        }
+      ]
+    }
+  ]
+}
