@@ -38,11 +38,11 @@ def dna_to_reverse_complement(dna_sequence):
 def translate_nucleotides(nucleotide_seq, nucleotide_type='dna', reading_frame_offset=0, reading_frame_direction=1):
     """
 
-    :param nucleotide_seq:
-    :param nucleotide_type:
-    :param reading_frame_offset:
-    :param reading_frame_direction:
-    :return:
+    :param nucleotide_seq: str; the dna sequence
+    :param nucleotide_type: str; {'dna'}
+    :param reading_frame_offset: int; 0 for no offset, 1 to offset by one lettter, 2 to offset by two letters
+    :param reading_frame_direction: int; 1 to read left to right, -1 to read left to right
+    :return: list; list of one letter amino acid abbreviations
     """
 
     assert reading_frame_offset in (0, 1, 2)

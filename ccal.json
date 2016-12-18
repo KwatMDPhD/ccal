@@ -17,7 +17,7 @@
         },
         {
           "arg_name": "end"
-        }
+        }  
       ],
       "returns": [
         {
@@ -31,7 +31,7 @@
       "required_args": [
         {
           "arg_name": "dna_sequence",
-          "label": "DNA sequence"
+          "label": "DNA Sequence"
         }
       ],
       "returns": [
@@ -41,7 +41,7 @@
       ]
     },
     {
-      "label": "Transcription",
+      "label": "Translate to Amino Acid Sequence”,
       "function_name": "translate_nucleotides",
       "required_args": [
         {
