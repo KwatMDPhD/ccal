@@ -32,7 +32,7 @@ from ..machine_learning.multidimentional_scale import mds
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
-from ..mathematics.equation import exponential_f
+from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe
 from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
@@ -678,7 +678,7 @@ def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
     :return: float; power
     """
 
-    fit_parameters = fit_matrix(h, exponential_f, sort_matrix=True)
+    fit_parameters = fit_matrix(h, define_exponential_function, sort_matrix=True)
     k = fit_parameters[1]
 
     # Linear transform

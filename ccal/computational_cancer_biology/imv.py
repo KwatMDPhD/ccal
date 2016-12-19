@@ -15,7 +15,7 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from numpy import linspace, histogram, argmax, empty, zeros, cumsum, log
+from numpy import asarray, linspace, histogram, zeros, empty, argmin, sign
 from pandas import read_csv, DataFrame, Series, concat
 from seaborn import set_style, despine, distplot, rugplot
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
@@ -23,15 +23,17 @@ from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 from ..support.file import establish_filepath
 from ..support.log import timestamp, print_log
 from ..support.plot import FIGURE_SIZE, save_plot
+from ..mathematics.equation import define_x_coordinates_for_reflection, define_cumulative_area_ratio_function
 
 
-def fit_essentiality(feature_x_sample, bar_df, features=(),
+def fit_essentiality(feature_x_sample, bar_df, features=(), n_xgrids=1000,
                      directory_path=None, plot=True, overwrite=False, show_plot=True):
     """
 
     :param feature_x_sample:
     :param bar_df:
     :param features:
+    :param n_xgrids: int;
     :param directory_path:
     :param plot:
     :param overwrite:
@@ -76,6 +78,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=(),
 
             _plot_essentiality(feature_x_sample.ix[f_i, :], get_amp_mut_del(bar_df, f_i),
                                n=n, df=df, shape=shape, location=location, scale=scale,
+                               n_xgrids=n_xgrids,
                                filepath=filepath, overwrite=overwrite, show_plot=show_plot)
 
     # Sort by shape
@@ -89,7 +92,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=(),
     return feature_x_fit
 
 
-def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None,
+def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None, n_xgrids=1000,
                       directory_path=None, overwrite=False, show_plot=True):
     """
     Make essentiality plot for each gene.
@@ -97,9 +100,10 @@ def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None,
     :param feature_x_fit: DataFrame or str; (n_features, 5 (n, df, shape, location, scale)) or a filepath to a file
     :param bar_df: dataframe;
     :param features: iterable; (n_selected_features)
+    :param n_xgrids: int;
+    :param directory_path: str; directory_path/essentiality_plots/feature<id>.pdf will be saved
     :param overwrite: bool; overwrite the existing figure or not
     :param show_plot: bool; show plot or not
-    :param directory_path: str; directory_path/essentiality_plots/feature<id>.pdf will be saved
     :return: None
     """
 
@@ -127,6 +131,7 @@ def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None,
 
         _plot_essentiality(feature_x_sample.ix[f_i, :], get_amp_mut_del(bar_df, f_i),
                            n=n, df=df, shape=shape, location=location, scale=scale,
+                           n_xgrids=n_xgrids,
                            filepath=filepath, overwrite=overwrite, show_plot=show_plot)
 
 
@@ -138,6 +143,34 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
                        bars_linewidth=2.4,
                        bar0_color='#9017E6', bar1_color='#6410A0', bar2_color='#470B72',
                        filepath=None, overwrite=True, show_plot=True):
+    """
+
+    :param vector:
+    :param bars:
+    :param n:
+    :param df:
+    :param shape:
+    :param location:
+    :param scale:
+    :param n_bins:
+    :param n_xgrids:
+    :param figure_size:
+    :param plot_vertical_extention_factor:
+    :param pdf_color:
+    :param pdf_reversed_color:
+    :param essentiality_index_color:
+    :param gene_fontsize:
+    :param labels_fontsize:
+    :param bars_linewidth:
+    :param bar0_color:
+    :param bar1_color:
+    :param bar2_color:
+    :param filepath:
+    :param overwrite:
+    :param show_plot:
+    :return:
+    """
+
     # ==================================================================================================================
     # Set up
     # ==================================================================================================================
@@ -187,10 +220,10 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
     skew_t = ACSkewT_gen()
 
     # Set up x-grids
-    xgrids = linspace(vector.min(), vector.max(), n_xgrids)
+    x_grids = linspace(vector.min(), vector.max(), n_xgrids)
 
     # Generate skew-t PDF
-    skew_t_pdf = skew_t.pdf(xgrids, df, shape, loc=location, scale=scale)
+    skew_t_pdf = skew_t.pdf(x_grids, df, shape, loc=location, scale=scale)
 
     # Scale skew-t PDF
     histogram_max = histogram(vector, bins=n_bins)[0].max()
@@ -199,7 +232,7 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
 
     # Plot skew-t PDF
     line_kwargs = {'linestyle': '-', 'linewidth': 2.6}
-    ax_graph.plot(xgrids, skew_t_pdf, color=pdf_color, **line_kwargs)
+    ax_graph.plot(x_grids, skew_t_pdf, color=pdf_color, **line_kwargs)
 
     # Extend plot vertically
     ax_graph.axis([vector.min(), vector.max(), 0, histogram_max * plot_vertical_extention_factor])
@@ -207,37 +240,21 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
     # ==================================================================================================================
     # Plot reflected skew-t PDF
     # ==================================================================================================================
-
     # Get the x-grids to get the reflecting PDF
-    xgrids_reflected = make_x_grids_for_reflection(skew_t_pdf, xgrids)
+    x_grids_for_reflection = define_x_coordinates_for_reflection(skew_t_pdf, x_grids)
 
     # Generate skew-t PDF over reflected x-grids, and scale
-    pdf_reflected = skew_t.pdf(xgrids_reflected, df, shape, loc=location, scale=scale) * scale_factor
+    skew_t_pdf_reflected = skew_t.pdf(x_grids_for_reflection, df, shape, loc=location, scale=scale) * scale_factor
 
     # Plot over the original x-grids
-    ax_graph.plot(xgrids, pdf_reflected, color=pdf_reversed_color, **line_kwargs)
+    ax_graph.plot(x_grids, skew_t_pdf_reflected, color=pdf_reversed_color, **line_kwargs)
 
     # ==================================================================================================================
-    # Plot essentiality index
+    # Plot essentiality indices
     # ==================================================================================================================
-    # Compute dx
-    dx = xgrids[1] - xgrids[0]
-
-    # Compute darea
-    dareas = skew_t_pdf / skew_t_pdf.sum() * dx
-    dareas_reflected = pdf_reflected / pdf_reflected.sum() * dx
-
-    # Compute cumulative area
-    if shape < 0:
-        cumulative_areas = cumsum(dareas)
-        cumulative_areas_reflected = cumsum(dareas_reflected)
-    else:
-        cumulative_areas = cumsum(dareas[::-1])[::-1]
-        cumulative_areas_reflected = cumsum(dareas_reflected[::-1])[::-1]
-
-    # TODO: Try KL divergence
-    essentiality_indices = log(cumulative_areas / cumulative_areas_reflected)
-    ax_graph.plot(xgrids, essentiality_indices, color=essentiality_index_color, **line_kwargs)
+    essentiality_indices = define_cumulative_area_ratio_function(skew_t_pdf, skew_t_pdf_reflected, x_grids,
+                                                                 direction=['+', '-'][shape > 0])
+    ax_graph.plot(x_grids, essentiality_indices, color=essentiality_index_color, **line_kwargs)
 
     # ==================================================================================================================
     # Decorate
@@ -293,39 +310,6 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
     plt.close()
 
 
-def make_x_grids_for_reflection(function, x_grids):
-    """
-    Make x_grids for getting reflecting PDF.
-    :param function: array-like; (1, x_grids.size)
-    :param x_grids: array-like; (1, x_grids.size)
-    :return: array; (1, x_grids.size)
-    """
-
-    pivot_x = x_grids[argmax(function)]
-
-    x_grids_for_reflection = empty(len(x_grids))
-    for i, a_x in enumerate(x_grids):
-
-        distance_to_reflecting_x = abs(a_x - pivot_x) * 2
-
-        if a_x < pivot_x:  # Left of the pivot x
-            x_grids_for_reflection[i] = a_x + distance_to_reflecting_x
-
-        else:  # Right of the pivot x
-            x_grids_for_reflection[i] = a_x - distance_to_reflecting_x
-
-    return x_grids_for_reflection
-
-
-def make_f_from_fs():
-    """
-    Make a function from f1 and f2.
-    :return: array;
-    """
-
-    # TODO: implement
-
-
 def get_amp_mut_del(gene_x_samples, gene):
     """
     Get AMP, MUT, and DEL information for a gene in the CCLE mutation file.
@@ -358,3 +342,36 @@ def get_amp_mut_del(gene_x_samples, gene):
         deletions = null
 
     return concat([amplifications, mutations, deletions], axis=1).fillna(0).astype(int).T
+
+
+def make_essentiality_matrix(gene_x_sample, gene_x_fit, n_x_grids=1000):
+    """
+
+    :param gene_x_sample: DataFrame;
+    :param gene_x_fit: DataFrame;
+    :param n_x_grids: int;
+    :return: DataFrame;
+    """
+
+    skew_t = ACSkewT_gen()
+    essentiality_matrix = empty((gene_x_fit.shape[0], gene_x_sample.shape[1]))
+    for i, (g, (n, df, shape, location, scale)) in enumerate(gene_x_fit.iterrows()):
+        if i % 500 == 0:
+            print(i)
+
+        # Skew-t PDF
+        vector = asarray(gene_x_sample.ix[g, :])
+        x_grids = linspace(vector.min(), vector.max(), n_x_grids)
+        skew_t_pdf = skew_t.pdf(x_grids, df, shape, loc=location, scale=scale)
+
+        # Reflected Skew-t PDF
+        x_grids_for_reflection = define_x_coordinates_for_reflection(skew_t_pdf, x_grids)
+        skew_t_pdf_reflected = skew_t.pdf(x_grids_for_reflection, df, shape, loc=location, scale=scale)
+
+        # Essentiality indices
+        essentiality_indices = define_cumulative_area_ratio_function(skew_t_pdf, skew_t_pdf_reflected, x_grids,
+                                                                     direction=['+', '-'][shape > 0])
+
+        essentiality_matrix[i, :] = [-sign(shape) * essentiality_indices[argmin(abs(x_grids - v))] for v in vector]
+
+    return DataFrame(essentiality_matrix, index=gene_x_fit.index, columns=gene_x_sample.columns)
