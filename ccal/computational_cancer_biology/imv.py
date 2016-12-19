@@ -161,9 +161,6 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
     ax_bar1 = plt.subplot(gridspec[n_rows_graph + 2:n_rows_graph + 3, :])
     ax_bar2 = plt.subplot(gridspec[n_rows_graph + 3:n_rows_graph + 4, :])
     for ax in [ax_bar1, ax_bar0, ax_bar2]:
-        # TODO: remove?
-        # ax.xaxis.set_visible(False)
-        # ax.yaxis.set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
         ax.spines['left'].set_visible(False)
