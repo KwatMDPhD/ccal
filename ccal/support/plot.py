@@ -304,7 +304,7 @@ def plot_points(y=None, x=None, hue=None, data=None, order=None, hue_order=None,
     plt.figure(figsize=FIGURE_SIZE)
 
     # Plot
-    if not x:
+    if x is None:
         x = list(range(len(y)))
     if not scale:
         scale = max(0.1, 30 / len(y))
