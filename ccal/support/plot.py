@@ -321,7 +321,7 @@ def plot_points(y=None, x=None, hue=None, data=None, order=None, hue_order=None,
 
 def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
                       fit_kws=None, color=None, vertical=False, norm_hist=False, axlabel=None, label=None,
-                      ax=None, title='', xlabel='', ylabel='', filepath=None):
+                      ax=None, title='', xlabel='', ylabel='Frequency', filepath=None):
     """
 
     :param a:
@@ -349,7 +349,7 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
 
     plt.figure(figsize=FIGURE_SIZE)
 
-    distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
+    distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, fit=fit, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
              fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
              ax=ax)
 
