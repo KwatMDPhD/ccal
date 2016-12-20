@@ -38,7 +38,7 @@ from ..support.d2 import drop_uniform_slice_from_dataframe
 from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
 from ..support.log import print_log
 from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, \
-    plot_heatmap, plot_x_vs_y, plot_nmf
+    plot_heatmap, plot_points, plot_nmf
 
 
 # ======================================================================================================================
@@ -103,7 +103,7 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_seed=RANDO
 
     print_log('Plotting NMF decompositions and cophenetic correlation coefficients ...')
     # Plot cophenetic correlation coefficients
-    plot_x_vs_y(sorted(cophenetic_correlation_coefficient.keys()),
+    plot_points(sorted(cophenetic_correlation_coefficient.keys()),
                 [cophenetic_correlation_coefficient[k] for k in sorted(cophenetic_correlation_coefficient.keys())],
                 title='NMF Cophenetic Correlation Coefficient vs. k',
                 xlabel='k', ylabel='NMF Cophenetic Correlation Coefficient',
@@ -352,7 +352,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
                  filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients
-    plot_x_vs_y(sorted(cophenetic_correlation_coefficients.keys()),
+    plot_points(sorted(cophenetic_correlation_coefficients.keys()),
                 [cophenetic_correlation_coefficients[k] for k in sorted(cophenetic_correlation_coefficients.keys())],
                 title='{}: Consensus-Clustering-Cophenetic-Correlation Coefficients vs. k'.format(prefix).strip(),
                 xlabel='k', ylabel='Cophenetic Score',

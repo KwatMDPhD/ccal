@@ -19,9 +19,9 @@ from matplotlib.cm import Paired, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.gridspec import GridSpec
-from numpy import array, asarray, unique
+from numpy import array, asarray, unique, mean
 from pandas import Series, DataFrame
-from seaborn import light_palette, heatmap, clustermap, pointplot, boxplot, violinplot, set_style, despine
+from seaborn import light_palette, heatmap, clustermap, pointplot, distplot, boxplot, violinplot, set_style, despine
 
 from .file import establish_filepath
 from .str_ import untitle_str
@@ -31,7 +31,7 @@ from ..machine_learning.score import compute_association_and_pvalue
 # ======================================================================================================================
 # Parameter
 # ======================================================================================================================
-FIGURE_SIZE = (16, 10)
+FIGURE_SIZE = (8, 5)
 
 SPACING = 0.05
 
@@ -218,8 +218,7 @@ def plot_heatmap(dataframe, data_type='continuous',
         heatmap(DataFrame(column_annotation).T, ax=ax_top, cbar=False, xticklabels=False, yticklabels=False,
                 cmap=cmap)
 
-    if filepath:
-        save_plot(filepath)
+    save_plot(filepath)
 
 
 def plot_clustermap(dataframe, cmap=CMAP_CONTINUOUS, row_colors=None, col_colors=None,
@@ -257,15 +256,7 @@ def plot_clustermap(dataframe, cmap=CMAP_CONTINUOUS, row_colors=None, col_colors
     clustergrid = clustermap(dataframe, cmap=cmap, row_colors=row_colors, col_colors=col_colors,
                              xticklabels=xticklabels, yticklabels=yticklabels)
 
-    # Title
-    if title:
-        plt.suptitle(title, **FONT_TITLE)
-
-    # X & Y labels
-    if xlabel:
-        clustergrid.ax_heatmap.set_xlabel(xlabel, **FONT_SUBTITLE)
-    if ylabel:
-        clustergrid.ax_heatmap.set_ylabel(ylabel, **FONT_SUBTITLE)
+    title_and_label(title, xlabel, ylabel, ax=clustergrid.ax_heatmap)
 
     # X & Y ticks
     for t in clustergrid.ax_heatmap.get_xticklabels():
@@ -273,19 +264,38 @@ def plot_clustermap(dataframe, cmap=CMAP_CONTINUOUS, row_colors=None, col_colors
     for t in clustergrid.ax_heatmap.get_yticklabels():
         t.set(**FONT)
 
-    # Save
-    if filepath:
-        save_plot(filepath)
+    save_plot(filepath)
 
 
-def plot_x_vs_y(x, y, title='title', xlabel='xlabel', ylabel='ylabel', filepath=None):
+def plot_points(y=None, x=None, hue=None, data=None, order=None, hue_order=None, estimator=mean, ci=95, n_boot=1000,
+                units=None, markers='o', linestyles='-', dodge=False, join=True, scale=None, orient=None, color=None,
+                palette=None, ax=None, errwidth=None, capsize=None,
+                title='', xlabel='', ylabel='', filepath=None):
     """
-    Plot x vs y.
-    :param x:
+
     :param y:
+    :param x:
+    :param hue:
+    :param data:
+    :param order:
+    :param hue_order:
+    :param estimator:
+    :param ci:
+    :param n_boot:
+    :param units:
+    :param markers:
+    :param linestyles:
+    :param dodge:
+    :param join:
+    :param scale:
+    :param orient:
+    :param color:
+    :param palette:
+    :param ax:
+    :param errwidth:
+    :param capsize:
     :param title:
     :param xlabel:
-    print(xlabel, ylabel)
     :param ylabel:
     :param filepath:
     :return:
@@ -293,21 +303,64 @@ def plot_x_vs_y(x, y, title='title', xlabel='xlabel', ylabel='ylabel', filepath=
 
     plt.figure(figsize=FIGURE_SIZE)
 
-    if title:
-        plt.suptitle(title, **FONT_TITLE)
+    # Plot
+    if not x:
+        x = list(range(len(y)))
+    if not scale:
+        scale = max(0.1, 30 / len(y))
+    pointplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, estimator=estimator, ci=ci, n_boot=n_boot,
+              unit=units, markers=markers, linestyles=linestyles, dodge=dodge, join=join, scale=scale, orient=orient,
+              color=color, palette=palette, ax=ax, errwidth=errwidth, capsize=capsize)
+    if len(y) > 50:
+        plt.gca().set_xticklabels([])
 
-    pointplot(x, y)
+    title_and_label(title, xlabel, ylabel)
 
-    plt.gca().set_xlabel(xlabel, **FONT_SUBTITLE)
-    plt.gca().set_ylabel(ylabel, **FONT_SUBTITLE)
-
-    if filepath:
-        save_plot(filepath)
+    save_plot(filepath)
 
 
-def plot_box_or_violine(target, features, features_name, feature_names=(), box_or_violine='violine',
-                        title=None, xlabel=None, ylabel=None,
-                        filepath_prefix=None):
+def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
+                      fit_kws=None, color=None, vertical=False, norm_hist=False, axlabel=None, label=None,
+                      ax=None, title='', xlabel='', ylabel='', filepath=None):
+    """
+
+    :param a:
+    :param bins:
+    :param hist:
+    :param kde:
+    :param rug:
+    :param fit:
+    :param hist_kws:
+    :param kde_kws:
+    :param rug_kws:
+    :param fit_kws:
+    :param color:
+    :param vertical:
+    :param norm_hist:
+    :param axlabel:
+    :param label:
+    :param ax:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param filepath:
+    :return:
+    """
+
+    plt.figure(figsize=FIGURE_SIZE)
+
+    distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
+             fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
+             ax=ax)
+
+    title_and_label(title, xlabel, ylabel)
+
+    save_plot(filepath)
+
+
+def plot_violine(target, features, features_name, feature_names=(), box_or_violine='violine',
+                 title=None, xlabel=None, ylabel=None,
+                 filepath_prefix=None):
     """
 
     :param target:
@@ -327,9 +380,6 @@ def plot_box_or_violine(target, features, features_name, feature_names=(), box_o
         common_r = r.ix[target.index]
 
         plt.figure(figsize=FIGURE_SIZE)
-        if not title:
-            title = '{} {}'.format(features_name, r_i)
-        plt.suptitle(title, **FONT_TITLE)
         if box_or_violine == 'violine':
             violinplot(x=target, y=common_r)
         if box_or_violine == 'box':
@@ -340,13 +390,9 @@ def plot_box_or_violine(target, features, features_name, feature_names=(), box_o
         plt.gca().text((l + r) / 2, t + 0.016 * t, 'Score = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
                        horizontalalignment='center', **FONT_SUBTITLE)
 
-        if not xlabel:
-            xlabel = plt.gca().get_xlabel()
-        plt.gca().set_xlabel(xlabel, **FONT_SUBTITLE)
-
-        if not ylabel:
-            ylabel = plt.gca().get_ylabel()
-        plt.gca().set_ylabel(ylabel, **FONT_SUBTITLE)
+        if not title:
+            title = '{} {}'.format(features_name, r_i)
+        title_and_label(title, xlabel, ylabel)
 
         for t in plt.gca().get_xticklabels():
             t.set(**FONT)
@@ -447,6 +493,29 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, normalize=T
         pdf.close()
 
 
+def title_and_label(title, xlabel, ylabel, ax=None):
+    """
+
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param ax:
+    :return:
+    """
+
+    # Title
+    if title:
+        plt.suptitle(title, **FONT_TITLE)
+
+    # Label
+    if not ax:
+        ax = plt.gca()
+    if xlabel:
+        ax.set_xlabel(xlabel, **FONT_SUBTITLE)
+    if ylabel:
+        ax.set_ylabel(ylabel, **FONT_SUBTITLE)
+
+
 def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
     """
     Establish filepath and save plot (.pdf) at dpi resolution.
@@ -457,9 +526,10 @@ def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
     :return: None
     """
 
-    if not filepath.endswith(suffix):
-        filepath += suffix
+    if filepath:
+        if not filepath.endswith(suffix):
+            filepath += suffix
 
-    if not isfile(filepath) or overwrite:  # If the figure doesn't exist or overwriting
-        establish_filepath(filepath)
-        plt.savefig(filepath, dpi=dpi, bbox_inches='tight')
+        if not isfile(filepath) or overwrite:  # If the figure doesn't exist or overwriting
+            establish_filepath(filepath)
+            plt.savefig(filepath, dpi=dpi, bbox_inches='tight')

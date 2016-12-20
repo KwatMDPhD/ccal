@@ -18,4 +18,4 @@ from .computational_cancer_biology import association
 from .computational_cancer_biology import imv
 from .computational_cancer_biology import oncogps
 from .support.file import read_gct, write_gct, read_gmt, read_gmts_and_collapse, write_rnk
-from .support.plot import plot_heatmap, plot_clustermap, plot_x_vs_y
+from .support.plot import plot_heatmap, plot_clustermap, plot_points
