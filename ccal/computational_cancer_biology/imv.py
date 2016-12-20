@@ -26,7 +26,7 @@ from ..support.plot import FIGURE_SIZE, save_plot
 from ..mathematics.equation import define_x_coordinates_for_reflection, define_cumulative_area_ratio_function
 
 
-def fit_essentiality(feature_x_sample, bar_df, features=(), n_xgrids=1000,
+def fit_essentiality(feature_x_sample, bar_df, features=None, n_xgrids=3000,
                      directory_path=None, plot=True, overwrite=False, show_plot=True):
     """
 
@@ -44,7 +44,11 @@ def fit_essentiality(feature_x_sample, bar_df, features=(), n_xgrids=1000,
     if isinstance(feature_x_sample, str):  # Read from a file
         feature_x_sample = read_csv(feature_x_sample, sep='\t', index_col=0)
 
-    if any(features):  # Fit selected features
+    if features:  # Fit selected features
+
+        if isinstance(features, str) or isinstance(features, int):  # Single feature
+            features = [features]
+
         feature_x_sample = feature_x_sample.ix[features, :].dropna(how='all')
         if any(feature_x_sample.index):
             print_log('Fitting selected features: {} ...'.format(feature_x_sample.index))
@@ -92,7 +96,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=(), n_xgrids=1000,
     return feature_x_fit
 
 
-def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None, n_xgrids=1000,
+def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None, n_xgrids=3000,
                       directory_path=None, overwrite=False, show_plot=True):
     """
     Make essentiality plot for each gene.
@@ -115,6 +119,8 @@ def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None, n_
 
     if not features:  # Use all features
         features = feature_x_sample.index
+    if isinstance(features, str) or isinstance(features, int):  # Single feature
+        features = [features]
 
     # Plot each feature
     for i, (f_i, fit) in enumerate(feature_x_fit.ix[features, :].iterrows()):
@@ -136,7 +142,7 @@ def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None, n_
 
 
 def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None, scale=None,
-                       n_bins=50, n_xgrids=1000,
+                       n_bins=50, n_xgrids=3000,
                        figure_size=FIGURE_SIZE, plot_vertical_extention_factor=1.26,
                        pdf_color='#20D9BA', pdf_reversed_color='#4E41D9', essentiality_index_color='#FC154F',
                        gene_fontsize=30, labels_fontsize=22,
@@ -290,6 +296,7 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
 
     for i, spec in bar_specifications.items():
         v = spec['vector']
+        print(v)
         ax = spec['ax']
         c = spec['color']
         rugplot(v * vector, height=1, color=c, ax=ax, linewidth=bars_linewidth)
@@ -317,7 +324,7 @@ def get_amp_mut_del(gene_x_samples, gene):
     :return: dataframe; (3 (AMP, MUT, DEL), n_samples)
     """
 
-    null = Series(zeros(gene_x_samples.shape[1]), index=gene_x_samples.columns)
+    null = Series(index=gene_x_samples.columns)
 
     # Amplification
     try:
@@ -343,10 +350,10 @@ def get_amp_mut_del(gene_x_samples, gene):
         deletions = null
         deletions.name = '{}_DEL'.format(gene)
 
-    return concat([amplifications, mutations, deletions], axis=1).fillna(0).astype(int).T
+    return concat([amplifications, mutations, deletions], axis=1).T
 
 
-def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=1000):
+def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=3000):
     """
 
     :param gene_x_sample: DataFrame;
