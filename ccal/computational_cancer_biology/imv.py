@@ -296,7 +296,6 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
 
     for i, spec in bar_specifications.items():
         v = spec['vector']
-        print(v)
         ax = spec['ax']
         c = spec['color']
         rugplot(v * vector, height=1, color=c, ax=ax, linewidth=bars_linewidth)
