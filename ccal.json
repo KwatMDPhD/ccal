@@ -3,8 +3,7 @@
   "tasks": [
     {
       "label": "Read .GCT File",
-      "library_name": "ccal",
-      "function_name": "read_gct",
+      "function_path": "ccal.read_gct",
       "required_args": [
         {
           "arg_name": "filepath",
@@ -19,8 +18,7 @@
     },
     {
       "label": "Write .GCT File",
-      "library_name": "ccal",
-      "function_name": "write_gct",
+      "function_path": "ccal.write_gct",
       "required_args": [
         {
           "arg_name": "matrix",
@@ -34,8 +32,7 @@
     },
     {
       "label": "Define NMF Components",
-      "library_name": "ccal.oncogps",
-      "function_name": "define_components",
+      "function_path": "ccal.computational_cancer_analysis.oncogps.define_components",
       "required_args": [
         {
           "arg_name": "matrix"
@@ -62,8 +59,7 @@
     },
     {
       "label": "Extract W Matrix",
-      "library_name": "ccal.oncogps",
-      "function_name": "get_w_or_h_matrix",
+      "function_path": "ccal.computational_cancer_analysis.oncogps.get_w_or_h_matrix",
       "required_args": [
         {
           "arg_name": "nmf_results"
@@ -87,8 +83,7 @@
     },
     {
       "label": "Extract H Matrix",
-      "library_name": "ccal.oncogps",
-      "function_name": "get_w_or_h_matrix",
+      "function_path": "ccal.computational_cancer_analysis.oncogps.get_w_or_h_matrix",
       "required_args": [
         {
           "arg_name": "nmf_results"
@@ -112,8 +107,7 @@
     },
     {
       "label": "Define States",
-      "library_name": "ccal.oncogps",
-      "function_name": "define_states",
+      "function_path": "ccal.computational_cancer_analysis.oncogps.define_states",
       "required_args": [
         {
           "arg_name": "matrix",
@@ -138,8 +132,7 @@
     },
     {
       "label": "Get State Labels",
-      "library_name": "ccal.oncogps",
-      "function_name": "get_state_labels",
+      "function_path": "ccal.computational_cancer_analysis.oncogps.get_state_labels",
       "required_args": [
         {
           "arg_name": "clusterings",
@@ -158,8 +151,7 @@
     },
     {
       "label": "Make Onco-GPS",
-      "library_name": "ccal.oncogps",
-      "function_name": "make_oncogps",
+      "function_path": "ccal.computational_cancer_analysis.oncogps.make_oncogps",
       "required_args": [
         {
           "arg_name": "training_h",
