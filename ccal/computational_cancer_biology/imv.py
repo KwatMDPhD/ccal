@@ -344,7 +344,7 @@ def get_amp_mut_del(gene_x_samples, gene):
     return concat([amplifications, mutations, deletions], axis=1).fillna(0).astype(int).T
 
 
-def make_essentiality_matrix(gene_x_sample, gene_x_fit, n_x_grids=1000):
+def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=1000):
     """
 
     :param gene_x_sample: DataFrame;
@@ -353,8 +353,17 @@ def make_essentiality_matrix(gene_x_sample, gene_x_fit, n_x_grids=1000):
     :return: DataFrame;
     """
 
+    common_indices = feature_x_sample.index & feature_x_fit.index
+    if any(common_indices):
+        print_log('Making essentiality matrix using {} common features ...'.format(common_indices.size))
+    else:
+        print_log('No shaped features.')
+
+    gene_x_sample = feature_x_sample.ix[common_indices, :]
+    gene_x_fit = feature_x_fit.ix[common_indices, :]
+
     skew_t = ACSkewT_gen()
-    essentiality_matrix = empty((gene_x_fit.shape[0], gene_x_sample.shape[1]))
+    essentiality_matrix = empty((gene_x_sample.shape))
     for i, (g, (n, df, shape, location, scale)) in enumerate(gene_x_fit.iterrows()):
         if i % 500 == 0:
             print(i)
@@ -374,4 +383,4 @@ def make_essentiality_matrix(gene_x_sample, gene_x_fit, n_x_grids=1000):
 
         essentiality_matrix[i, :] = [-sign(shape) * essentiality_indices[argmin(abs(x_grids - v))] for v in vector]
 
-    return DataFrame(essentiality_matrix, index=gene_x_fit.index, columns=gene_x_sample.columns)
+    return DataFrame(essentiality_matrix, index=gene_x_sample.index, columns=gene_x_sample.columns)

@@ -14,6 +14,7 @@ Authors:
 from os.path import isfile
 
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import plot
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.cm import Paired, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
@@ -267,52 +268,30 @@ def plot_clustermap(dataframe, cmap=CMAP_CONTINUOUS, row_colors=None, col_colors
     save_plot(filepath)
 
 
-def plot_points(y=None, x=None, hue=None, data=None, order=None, hue_order=None, estimator=mean, ci=95, n_boot=1000,
-                units=None, markers='o', linestyles='-', dodge=False, join=True, scale=None, orient=None, color=None,
-                palette=None, ax=None, errwidth=None, capsize=None,
-                title='', xlabel='', ylabel='', filepath=None):
+def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
     """
 
-    :param y:
-    :param x:
-    :param hue:
-    :param data:
-    :param order:
-    :param hue_order:
-    :param estimator:
-    :param ci:
-    :param n_boot:
-    :param units:
-    :param markers:
-    :param linestyles:
-    :param dodge:
-    :param join:
-    :param scale:
-    :param orient:
-    :param color:
-    :param palette:
-    :param ax:
-    :param errwidth:
-    :param capsize:
+    :param args:
     :param title:
     :param xlabel:
     :param ylabel:
     :param filepath:
-    :return:
+    :param kwargs:
+    :return: None
     """
 
-    plt.figure(figsize=FIGURE_SIZE)
+    if 'ax' not in kwargs:
+        plt.figure(figsize=FIGURE_SIZE)
 
-    # Plot
-    if x is None:
-        x = list(range(len(y)))
-    if not scale:
-        scale = max(0.1, 30 / len(y))
-    pointplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, estimator=estimator, ci=ci, n_boot=n_boot,
-              unit=units, markers=markers, linestyles=linestyles, dodge=dodge, join=join, scale=scale, orient=orient,
-              color=color, palette=palette, ax=ax, errwidth=errwidth, capsize=capsize)
-    if len(y) > 50:
-        plt.gca().set_xticklabels([])
+    # Preprocess args
+    processed_args = []
+    for i, a in enumerate(args):
+        if isinstance(a, Series):
+            processed_args.append(a.tolist())
+        else:
+            processed_args.append(a)
+
+    plot(*processed_args, **kwargs)
 
     title_and_label(title, xlabel, ylabel)
 
@@ -347,7 +326,8 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     :return:
     """
 
-    plt.figure(figsize=FIGURE_SIZE)
+    if not ax:
+        plt.figure(figsize=FIGURE_SIZE)
 
     distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, fit=fit, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
              fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
@@ -374,6 +354,8 @@ def plot_violine(target, features, features_name, feature_names=(), box_or_violi
     :param filepath_prefix:
     :return:
     """
+
+    plt.figure(figsize=FIGURE_SIZE)
 
     set_style('whitegrid')
     for r_i, r in features.ix[feature_names, :].iterrows():
