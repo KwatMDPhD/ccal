@@ -292,7 +292,6 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
         v = spec['vector']
         ax = spec['ax']
         c = spec['color']
-
         rugplot(v * vector, height=1, color=c, ax=ax, linewidth=bars_linewidth)
         ax.set_ylabel(v.name[-3:], **bar_kwargs)
 
@@ -324,22 +323,25 @@ def get_amp_mut_del(gene_x_samples, gene):
     try:
         amplifications = gene_x_samples.ix['{}_AMP'.format(gene), :]
     except KeyError:
-        print('No amplification data for {}.'.format(gene))
+        print_log('No amplification data for {}.'.format(gene))
         amplifications = null
+        amplifications.name = '{}_AMP'.format(gene)
 
     # Mutation
     try:
         mutations = gene_x_samples.ix['{}_MUT'.format(gene), :]
     except KeyError:
-        print('No mutation data for {}.'.format(gene))
+        print_log('No mutation data for {}.'.format(gene))
         mutations = null
+        mutations.name = '{}_MUT'.format(gene)
 
     # Deletion
     try:
         deletions = gene_x_samples.ix['{}_DEL'.format(gene), :]
     except KeyError:
-        print('No deletion data for {}.'.format(gene))
+        print_log('No deletion data for {}.'.format(gene))
         deletions = null
+        deletions.name = '{}_DEL'.format(gene)
 
     return concat([amplifications, mutations, deletions], axis=1).fillna(0).astype(int).T
 
@@ -366,7 +368,7 @@ def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=1000):
     essentiality_matrix = empty((gene_x_sample.shape))
     for i, (g, (n, df, shape, location, scale)) in enumerate(gene_x_fit.iterrows()):
         if i % 500 == 0:
-            print(i)
+            print_log(i)
 
         # Skew-t PDF
         vector = asarray(gene_x_sample.ix[g, :])

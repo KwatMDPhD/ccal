@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-VERBOSE = False
+VERBOSE = True
 RANDOM_SEED = 20121020
 
 from .computational_cancer_biology import association, imv, oncogps
