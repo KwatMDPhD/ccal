@@ -356,10 +356,10 @@ def get_amp_mut_del(gene_x_samples, gene):
 def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=3000):
     """
 
-    :param gene_x_sample: DataFrame;
-    :param gene_x_fit: DataFrame;
-    :param n_x_grids: int;
-    :return: DataFrame;
+    :param feature_x_sample:
+    :param feature_x_fit:
+    :param n_x_grids:
+    :return:
     """
 
     common_indices = feature_x_sample.index & feature_x_fit.index
@@ -372,7 +372,7 @@ def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=3000):
     gene_x_fit = feature_x_fit.ix[common_indices, :]
 
     skew_t = ACSkewT_gen()
-    essentiality_matrix = empty((gene_x_sample.shape))
+    essentiality_matrix = empty(gene_x_sample.shape)
     for i, (g, (n, df, shape, location, scale)) in enumerate(gene_x_fit.iterrows()):
         if i % 500 == 0:
             print_log(i)
