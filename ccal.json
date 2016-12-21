@@ -32,7 +32,7 @@
     },
     {
       "label": "Define NMF Components",
-      "function_path": "ccal.computational_cancer_analysis.oncogps.define_components",
+      "function_path": "ccal.computational_cancer_biology.oncogps.define_components",
       "required_args": [
         {
           "arg_name": "matrix"
@@ -59,7 +59,7 @@
     },
     {
       "label": "Extract W Matrix",
-      "function_path": "ccal.computational_cancer_analysis.oncogps.get_w_or_h_matrix",
+      "function_path": "ccal.computational_cancer_biology.oncogps.get_w_or_h_matrix",
       "required_args": [
         {
           "arg_name": "nmf_results"
@@ -83,7 +83,7 @@
     },
     {
       "label": "Extract H Matrix",
-      "function_path": "ccal.computational_cancer_analysis.oncogps.get_w_or_h_matrix",
+      "function_path": "ccal.computational_cancer_biology.oncogps.get_w_or_h_matrix",
       "required_args": [
         {
           "arg_name": "nmf_results"
@@ -107,7 +107,7 @@
     },
     {
       "label": "Define States",
-      "function_path": "ccal.computational_cancer_analysis.oncogps.define_states",
+      "function_path": "ccal.computational_cancer_biology.oncogps.define_states",
       "required_args": [
         {
           "arg_name": "matrix",
@@ -132,7 +132,7 @@
     },
     {
       "label": "Get State Labels",
-      "function_path": "ccal.computational_cancer_analysis.oncogps.get_state_labels",
+      "function_path": "ccal.computational_cancer_biology.oncogps.get_state_labels",
       "required_args": [
         {
           "arg_name": "clusterings",
@@ -151,7 +151,7 @@
     },
     {
       "label": "Make Onco-GPS",
-      "function_path": "ccal.computational_cancer_analysis.oncogps.make_oncogps",
+      "function_path": "ccal.computational_cancer_biology.oncogps.make_oncogps",
       "required_args": [
         {
           "arg_name": "training_h",
