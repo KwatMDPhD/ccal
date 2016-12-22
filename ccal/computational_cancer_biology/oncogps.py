@@ -68,8 +68,8 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_seed=RANDO
     # Rank normalize the input matrix by column
     # TODO: try changing n_ranks (choose automatically)
     matrix = normalize_dataframe_or_series(matrix, 'rank', n_ranks=10000, axis=0)
-    plot_clustermap(matrix, title='(Rank-normalized) Matrix to be Decomposed', xlabel='Sample', ylabel='Feature',
-                    xticklabels=False, yticklabels=False)
+    plot_heatmap(matrix, title='(Rank-Normalized) Matrix to be Decomposed', xlabel='Sample', ylabel='Feature',
+                 xticklabels=False, yticklabels=False, cluster=True)
 
     # NMF-consensus cluster (while saving 1 NMF result per k)
     nmf_results, cophenetic_correlation_coefficient = nmf_consensus_cluster(matrix, ks,
@@ -284,7 +284,6 @@ def select_features_and_nmf(testing, training,
 # Define states
 # ======================================================================================================================
 def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100, random_seed=RANDOM_SEED,
-                  prefix='',
                   directory_path=None):
     """
     Hierarchical-consensus cluster samples (matrix columns) and compute cophenetic correlation coefficients.
@@ -294,7 +293,6 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of hierarchical clusterings for consensus clustering
     :param random_seed: int;
-    :param prefix: str; title prefix
     :param directory_path: str; directory path where
             clusterings/distance_matrix.{txt, pdf}
             clusterings/clusterings.{gct, pdf}
@@ -341,20 +339,20 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         filepath_cophenetic_correlation_coefficients_plot = None
 
     # Plot distance matrix
-    plot_clustermap(distance_matrix, title='{}: Distance Matrix'.format(prefix).strip(),
+    plot_clustermap(distance_matrix, title='{}: Distance Matrix',
                     xlabel='Sample', ylabel='Sample',
                     xticklabels=False, yticklabels=False,
                     filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
     plot_heatmap(clusterings, sort_axis=1, data_type='categorical',
-                 title='{}: Clustering per k'.format(prefix).strip(), xticklabels=False,
+                 title='Clustering per k', xticklabels=False,
                  filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients
     plot_points(sorted(cophenetic_correlation_coefficients.keys()),
                 [cophenetic_correlation_coefficients[k] for k in sorted(cophenetic_correlation_coefficients.keys())],
-                title='{}: Consensus-Clustering-Cophenetic-Correlation Coefficients vs. k'.format(prefix).strip(),
+                title='Consensus-Clustering-Cophenetic-Correlation Coefficients vs. k',
                 xlabel='k', ylabel='Cophenetic Score',
                 filepath=filepath_cophenetic_correlation_coefficients_plot)
 
@@ -948,7 +946,7 @@ def _plot_onco_gps(components, samples,
     # Put labels on top or bottom of the component markers
     vertical_shift = -0.03
 
-    if not empty(component_names):
+    if any(component_names):
         components.index = component_names
     for i in components.index:
         # Compute vertical shift

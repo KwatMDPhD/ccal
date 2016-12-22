@@ -14,6 +14,7 @@ Authors:
 from numpy import ones, isnan
 from numpy.random import seed, shuffle
 from pandas import concat
+from scipy.cluster.hierarchy import linkage, dendrogram
 
 from .. import RANDOM_SEED
 from ..support.log import print_log
@@ -64,6 +65,18 @@ def get_top_and_bottom_indices(df, column_name, threshold, max_n=None):
             top_and_bottom = df.index
 
     return top_and_bottom
+
+
+def get_dendrogram_leaf_indices(matrix):
+    """
+
+    :param matrix:
+    :return:
+    """
+
+    row_dendro_leaves = dendrogram(linkage(matrix), no_plot=True)['leaves']
+    col_dendro_leaves = dendrogram(linkage(matrix.T), no_plot=True)['leaves']
+    return row_dendro_leaves, col_dendro_leaves
 
 
 def split_slices(df, index, splitter, ax=0):
