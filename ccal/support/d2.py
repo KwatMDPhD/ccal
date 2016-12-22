@@ -134,7 +134,7 @@ def shuffle_dataframe(df, axis=0, random_seed=RANDOM_SEED):
     """
 
     :param df: DataFrame;
-    :param axis: int;
+    :param axis: int; {0, 1}
     :param random_seed: int or array-like;
     :return: DataFrame;
     """
@@ -151,6 +151,9 @@ def shuffle_dataframe(df, axis=0, random_seed=RANDOM_SEED):
         for r_i, row in df.iterrows():
             # Shuffle in place
             shuffle(row)
+
+    else:
+        ValueError('Unknown axis {}; choose from {0, 1}.')
 
     return df
 

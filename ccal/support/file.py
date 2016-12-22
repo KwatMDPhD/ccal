@@ -488,10 +488,10 @@ def write_gmt(gmt, filepath):
 # ======================================================================================================================
 # .rnk functions
 # ======================================================================================================================
-def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=None):
+def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None, comment=None):
     """
-    Write dataframe to filepath.
-    :param dataframe: DataFrame;
+    Write .rnk.
+    :param series_or_dataframe: Series or DataFrame;
     :param filepath: str;
     :param gene_column: str; column name; dataframe index is the default
     :param score_column: str; column name; 1st column is the default
@@ -499,16 +499,19 @@ def write_rnk(dataframe, filepath, gene_column=None, score_column=None, comment=
     :return: None
     """
 
-    df = dataframe.copy()
+    if isinstance(series_or_dataframe, Series):
+        s = series_or_dataframe.sort_values(ascending=False)
+    else:
+        df = series_or_dataframe.copy()
 
-    if gene_column:
-        df = df.set_index(gene_column)
+        if gene_column:
+            df = df.set_index(gene_column)
 
-    if not score_column:
-        score_column = df.columns[0]
+        if not score_column:
+            score_column = df.columns[0]
 
-    s = df.ix[:, score_column]
-    s = s.sort_values(ascending=False)
+        s = df.ix[:, score_column]
+        s = s.sort_values(ascending=False)
 
     if not filepath.endswith('.rnk'):
         filepath += '.rnk'

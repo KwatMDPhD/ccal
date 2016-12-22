@@ -69,7 +69,7 @@ DPI = 1000
 def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust=False, annot=None, fmt='.2g',
                  annot_kws=None, linewidths=0, linecolor='white', cbar=False, cbar_kws=None, cbar_ax=None, square=False,
                  xticklabels=True, yticklabels=True, mask=None,
-                 data_type='continuous', normalization_method=None, normalization_axis=0, max_std=3, sort_axis=None,
+                 data_type='continuous', normalization_method='-0-', normalization_axis=0, max_std=3, sort_axis=None,
                  cluster=False, row_annotation=(), column_annotation=(), title=None, xlabel=None, ylabel=None,
                  xlabel_rotation=0, ylabel_rotation=90, yticklabels_rotation='auto',
                  filepath=None, **kwargs):
@@ -107,7 +107,6 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
             row_annotation = row_annotation.iloc[row_indices]
         if isinstance(column_annotation, Series):
             column_annotation = column_annotation.iloc[column_indices]
-
 
     elif sort_axis in (0, 1):
         a = array(df)
@@ -439,10 +438,14 @@ def title_and_label(title, xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90
     # Label
     if not ax:
         ax = plt.gca()
-    if xlabel:
-        ax.set_xlabel(xlabel, rotation=xlabel_rotation, **FONT_SUBTITLE)
-    if ylabel:
-        ax.set_ylabel(ylabel, rotation=ylabel_rotation, **FONT_SUBTITLE)
+
+    if not xlabel:
+        xlabel = ax.get_xlabel()
+    ax.set_xlabel(xlabel, rotation=xlabel_rotation, **FONT_SUBTITLE)
+
+    if not ylabel:
+        ylabel = ax.get_ylabel()
+    ax.set_ylabel(ylabel, rotation=ylabel_rotation, **FONT_SUBTITLE)
 
 
 def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):

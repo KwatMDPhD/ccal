@@ -117,7 +117,7 @@ def plot_essentiality(feature_x_sample, feature_x_fit, bar_df, features=None, n_
     if isinstance(feature_x_fit, str):  # Read from a file
         feature_x_fit = read_csv(feature_x_fit, sep='\t', index_col=0)
 
-    if not features:  # Use all features
+    if features is None:  # Use all features
         features = feature_x_sample.index
     if isinstance(features, str) or isinstance(features, int):  # Single feature
         features = [features]
