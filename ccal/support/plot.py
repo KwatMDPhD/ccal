@@ -144,24 +144,19 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
             **kwargs)
 
     title_and_label(title, xlabel, ylabel, xlabel_rotation=xlabel_rotation, ylabel_rotation=ylabel_rotation,
+                    max_xticklabel_size=10,
                     ax=ax_center)
 
-    # TODO: do this in title_and_label
-    xticklabels = ax_center.get_xticklabels()
-    ax_center.set_xticklabels([t.get_text()[:10].strip() for t in xticklabels])
-    for t in xticklabels:
-        t.set(**FONT)
-
-    # TODO: do this in title_and_label
-    yticks = ax_center.get_yticklabels()
-    if any(yticks):
-        if yticklabels_rotation == 'auto':
-            if max([len(t.get_text()) for t in yticks]) <= 1:
-                yticklabels_rotation = 90
-            else:
-                yticklabels_rotation = 0
-        for t in yticks:
-            t.set(rotation=yticklabels_rotation, **FONT)
+    # # TODO: do this in title_and_label
+    # yticks = ax_center.get_yticklabels()
+    # if any(yticks):
+    #     if yticklabels_rotation == 'auto':
+    #         if max([len(t.get_text()) for t in yticks]) <= 1:
+    #             yticklabels_rotation = 90
+    #         else:
+    #             yticklabels_rotation = 0
+    #     for t in yticks:
+    #         t.set(rotation=yticklabels_rotation, **FONT)
 
     if data_type in ('categorical', 'binary'):
         if len(values) < 30:
@@ -421,33 +416,41 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
         pdf.close()
 
 
-def title_and_label(title, xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90, ax=None):
-    """
-
-    :param title:
-    :param xlabel:
-    :param ylabel:
-    :param xlabel_rotation:
-    :param ylabel_rotation:
-    :param ax:
-    :return:
-    """
-
+def title_and_label(title, xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90,
+                    xticklabels=None, yticklabels=None,
+                    max_xticklabel_size=None, max_yticklabel_size=None,
+                    ax=None):
     # Title
     if title:
         plt.suptitle(title_str(title), **FONT_TITLE)
 
-    # Label
+    # Get ax
     if not ax:
         ax = plt.gca()
 
+    # Label x axis
     if not xlabel:
         xlabel = ax.get_xlabel()
     ax.set_xlabel(title_str(xlabel), rotation=xlabel_rotation, **FONT_SUBTITLE)
 
+    # Label y axis
     if not ylabel:
         ylabel = ax.get_ylabel()
     ax.set_ylabel(title_str(ylabel), rotation=ylabel_rotation, **FONT_SUBTITLE)
+
+    # Label x ticks
+    if not xticklabels:
+        xticklabels = ax.get_xticklabels()
+    if max_xticklabel_size:
+        xticklabels = [t.get_text()[:max_xticklabel_size].strip() for t in xticklabels]
+    ax.set_xticklabels(xticklabels, **FONT)
+
+    # Label y ticks
+    if not yticklabels:
+        yticklabels = ax.get_yticklabels()
+    if max_yticklabel_size:
+        yticklabels = [t.get_text()[:max_yticklabel_size].strip() for t in yticklabels]
+    ax.set_yticklabels(yticklabels, **FONT)
 
 
 def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
