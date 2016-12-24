@@ -352,7 +352,7 @@ def get_amp_mut_del(gene_x_samples, gene):
     return concat([amplifications, mutations, deletions], axis=1).T
 
 
-def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=3000):
+def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=3000, factor=1):
     """
 
     :param feature_x_sample:
@@ -386,6 +386,7 @@ def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=3000):
         essentiality_indices = define_cumulative_area_ratio_function(skew_t_pdf, skew_t_pdf_reflected, x_grids,
                                                                      direction=['+', '-'][shape > 0])
 
-        essentiality_matrix[i, :] = [-sign(shape) * essentiality_indices[argmin(abs(x_grids - v))] for v in vector]
+        essentiality_matrix[i, :] = [factor * sign(shape) * essentiality_indices[argmin(abs(x_grids - v))] for v in
+                                     vector]
 
     return DataFrame(essentiality_matrix, index=gene_x_sample.index, columns=gene_x_sample.columns)
