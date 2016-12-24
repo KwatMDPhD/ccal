@@ -339,12 +339,12 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         filepath_cophenetic_correlation_coefficients_plot = None
 
     # Plot distance matrix
-    plot_heatmap(distance_matrix, cluster=True,
+    plot_heatmap(distance_matrix,
                  title='Distance Matrix', xlabel='Sample', ylabel='Sample',
                  xticklabels=False, yticklabels=False, filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
-    plot_heatmap(clusterings, sort_axis=1, data_type='categorical',
+    plot_heatmap(clusterings, sort_axis=1, data_type='categorical', normalization_method=None,
                  title='Clustering per k', xticklabels=False, filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients

@@ -71,8 +71,46 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
                  xticklabels=True, yticklabels=True, mask=None,
                  data_type='continuous', normalization_method='-0-', normalization_axis=0, max_std=3, sort_axis=None,
                  cluster=False, row_annotation=(), column_annotation=(), title=None, xlabel=None, ylabel=None,
-                 xlabel_rotation=0, ylabel_rotation=90, yticklabels_rotation='auto',
+                 xlabel_rotation=0, ylabel_rotation=90,
                  filepath=None, **kwargs):
+    """
+
+    :param dataframe:
+    :param vmin:
+    :param vmax:
+    :param cmap:
+    :param center:
+    :param robust:
+    :param annot:
+    :param fmt:
+    :param annot_kws:
+    :param linewidths:
+    :param linecolor:
+    :param cbar:
+    :param cbar_kws:
+    :param cbar_ax:
+    :param square:
+    :param xticklabels:
+    :param yticklabels:
+    :param mask:
+    :param data_type:
+    :param normalization_method:
+    :param normalization_axis:
+    :param max_std:
+    :param sort_axis:
+    :param cluster:
+    :param row_annotation:
+    :param column_annotation:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param xlabel_rotation:
+    :param ylabel_rotation:
+    :param filepath:
+    :param kwargs:
+    :return:
+    """
+
     df = dataframe.copy()
 
     if normalization_method:
@@ -143,20 +181,9 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
             cbar_ax=cbar_ax, square=square, ax=ax_center, xticklabels=xticklabels, yticklabels=yticklabels, mask=mask,
             **kwargs)
 
-    title_and_label(title, xlabel, ylabel, xlabel_rotation=xlabel_rotation, ylabel_rotation=ylabel_rotation,
-                    max_xticklabel_size=10,
-                    ax=ax_center)
-
-    # # TODO: do this in title_and_label
-    # yticks = ax_center.get_yticklabels()
-    # if any(yticks):
-    #     if yticklabels_rotation == 'auto':
-    #         if max([len(t.get_text()) for t in yticks]) <= 1:
-    #             yticklabels_rotation = 90
-    #         else:
-    #             yticklabels_rotation = 0
-    #     for t in yticks:
-    #         t.set(rotation=yticklabels_rotation, **FONT)
+    decorate(title, xlabel, ylabel, xlabel_rotation=xlabel_rotation, ylabel_rotation=ylabel_rotation,
+             max_xtick_size=10,
+             ax=ax_center)
 
     if data_type in ('categorical', 'binary'):
         if len(values) < 30:
@@ -247,7 +274,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='average', metric='euclide
     for t in ax_heatmap.get_yticklabels():
         t.set(**FONT)
 
-    title_and_label(title, xlabel, ylabel, ax=ax_heatmap)
+    decorate(title, xlabel, ylabel, ax=ax_heatmap)
 
     save_plot(filepath)
 
@@ -275,9 +302,9 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
         else:
             processed_args.append(a)
 
-    plot(*processed_args, **kwargs)
+    plot(*processed_args, marker='o', **kwargs)
 
-    title_and_label(title, xlabel, ylabel)
+    decorate(title, xlabel, ylabel)
 
     save_plot(filepath)
 
@@ -317,7 +344,7 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
              fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
              ax=ax)
 
-    title_and_label(title, xlabel, ylabel)
+    decorate(title, xlabel, ylabel)
 
     save_plot(filepath)
 
@@ -358,7 +385,7 @@ def plot_violine(target, features, features_name, feature_names=(), box_or_violi
 
         if not title:
             title = '{} {}'.format(features_name, r_i)
-        title_and_label(title, xlabel, ylabel)
+        decorate(title, xlabel, ylabel)
 
         for t in plt.gca().get_xticklabels():
             t.set(**FONT)
@@ -416,10 +443,26 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
         pdf.close()
 
 
-def title_and_label(title, xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90,
-                    xticklabels=None, yticklabels=None,
-                    max_xticklabel_size=None, max_yticklabel_size=None,
-                    ax=None):
+def decorate(title,
+             xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90,
+             xticks=None, yticks=None,
+             max_xtick_size=None, max_ytick_size=None,
+             ax=None):
+    """
+
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param xlabel_rotation:
+    :param ylabel_rotation:
+    :param xticks:
+    :param yticks:
+    :param max_xtick_size:
+    :param max_ytick_size:
+    :param ax:
+    :return:
+    """
+
     # Title
     if title:
         plt.suptitle(title_str(title), **FONT_TITLE)
@@ -439,18 +482,18 @@ def title_and_label(title, xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90
     ax.set_ylabel(title_str(ylabel), rotation=ylabel_rotation, **FONT_SUBTITLE)
 
     # Label x ticks
-    if not xticklabels:
-        xticklabels = ax.get_xticklabels()
-    if max_xticklabel_size:
-        xticklabels = [t.get_text()[:max_xticklabel_size].strip() for t in xticklabels]
-    ax.set_xticklabels(xticklabels, **FONT)
+    if not xticks:
+        xticks = ax.get_xticks().astype(str)
+    if max_xtick_size:
+        xticks = [t[:max_xtick_size] for t in xticks]
+    ax.set_xticklabels(xticks, **FONT)
 
-    # Label y ticks
-    if not yticklabels:
-        yticklabels = ax.get_yticklabels()
-    if max_yticklabel_size:
-        yticklabels = [t.get_text()[:max_yticklabel_size].strip() for t in yticklabels]
-    ax.set_yticklabels(yticklabels, **FONT)
+    # Label x ticks
+    if not yticks:
+        yticks = ax.get_yticks().astype(str)
+    if max_ytick_size:
+        yticks = [t[:max_ytick_size] for t in yticks]
+    ax.set_yticklabels(yticks, **FONT)
 
 
 def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
