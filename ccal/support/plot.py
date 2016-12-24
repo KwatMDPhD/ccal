@@ -484,28 +484,30 @@ def decorate(title,
     # Label x ticks
     if not xticks:
         xticks = ax.get_xticks()
+    if xticks:
         if isinstance(xticks[0], float):
             xticks = ['{:.3f}'.format(t) for t in xticks]
 
-    if max_n_xticks < len(xticks):
-        xticks = []
+        if max_n_xticks < len(xticks):
+            xticks = []
 
-    if max_xtick_size:
-        xticks = [t[:max_xtick_size] for t in xticks]
-    ax.set_xticklabels(xticks, **FONT)
+        if max_xtick_size:
+            xticks = [t[:max_xtick_size] for t in xticks]
+        ax.set_xticklabels(xticks, **FONT)
 
     # Label x ticks
     if not yticks:
         yticks = ax.get_yticks().astype(str)
+    if yticks:
         if isinstance(yticks[0], float):
             yticks = ['{:.3f}'.format(t) for t in yticks]
 
-    if max_n_yticks < len(yticks):
-        yticks = []
+        if max_n_yticks < len(yticks):
+            yticks = []
 
-    if max_ytick_size:
-        yticks = [t[:max_ytick_size] for t in yticks]
-    ax.set_yticklabels(yticks, **FONT)
+        if max_ytick_size:
+            yticks = [t[:max_ytick_size] for t in yticks]
+        ax.set_yticklabels(yticks, **FONT)
 
 
 def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
