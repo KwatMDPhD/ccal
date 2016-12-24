@@ -146,11 +146,13 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     title_and_label(title, xlabel, ylabel, xlabel_rotation=xlabel_rotation, ylabel_rotation=ylabel_rotation,
                     ax=ax_center)
 
+    # TODO: do this in title_and_label
     xticklabels = ax_center.get_xticklabels()
     ax_center.set_xticklabels([t.get_text()[:10].strip() for t in xticklabels])
     for t in xticklabels:
         t.set(**FONT)
 
+    # TODO: do this in title_and_label
     yticks = ax_center.get_yticklabels()
     if any(yticks):
         if yticklabels_rotation == 'auto':

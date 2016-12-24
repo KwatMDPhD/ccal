@@ -37,8 +37,8 @@ from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe
 from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
 from ..support.log import print_log
-from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_clustermap, \
-    plot_heatmap, plot_points, plot_nmf
+from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, save_plot, plot_heatmap, \
+    plot_points, plot_nmf
 
 
 # ======================================================================================================================
@@ -339,21 +339,19 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         filepath_cophenetic_correlation_coefficients_plot = None
 
     # Plot distance matrix
-    plot_heatmap(distance_matrix, cluster=True, title='Distance Matrix', xlabel='Sample', ylabel='Sample',
-                 xticklabels=False, yticklabels=False,
-                 filepath=filepath_distance_matrix_plot)
+    plot_heatmap(distance_matrix, cluster=True,
+                 title='Distance Matrix', xlabel='Sample', ylabel='Sample',
+                 xticklabels=False, yticklabels=False, filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
     plot_heatmap(clusterings, sort_axis=1, data_type='categorical',
-                 title='Clustering per k', xticklabels=False,
-                 filepath=filepath_clusterings_plot)
+                 title='Clustering per k', xticklabels=False, filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients
     plot_points(sorted(cophenetic_correlation_coefficients.keys()),
                 [cophenetic_correlation_coefficients[k] for k in sorted(cophenetic_correlation_coefficients.keys())],
                 title='Consensus-Clustering-Cophenetic-Correlation Coefficients vs. k',
-                xlabel='k', ylabel='Cophenetic Score',
-                filepath=filepath_cophenetic_correlation_coefficients_plot)
+                xlabel='k', ylabel='Cophenetic Score', filepath=filepath_cophenetic_correlation_coefficients_plot)
 
     return distance_matrix, clusterings, cophenetic_correlation_coefficients
 
