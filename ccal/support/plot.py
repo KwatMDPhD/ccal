@@ -138,18 +138,18 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
             column_annotation.sort_values(inplace=True)
             df = df.ix[:, column_annotation.index]
 
-    if cluster:
+    if sort_axis in (0, 1):
+        a = array(df)
+        a.sort(axis=sort_axis)
+        df = DataFrame(a, index=df.index)
+
+    elif cluster:
         row_indices, column_indices = get_dendrogram_leaf_indices(dataframe)
         df = df.iloc[row_indices, column_indices]
         if isinstance(row_annotation, Series):
             row_annotation = row_annotation.iloc[row_indices]
         if isinstance(column_annotation, Series):
             column_annotation = column_annotation.iloc[column_indices]
-
-    elif sort_axis in (0, 1):
-        a = array(df)
-        a.sort(axis=sort_axis)
-        df = DataFrame(a, index=df.index)
 
     plt.figure(figsize=FIGURE_SIZE)
 
@@ -446,7 +446,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
 def decorate(title,
              xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90,
              xticks=None, yticks=None,
-             max_xtick_size=None, max_ytick_size=None,
+             max_n_xticks=80, max_n_yticks=50, max_xtick_size=None, max_ytick_size=None,
              ax=None):
     """
 
@@ -483,7 +483,13 @@ def decorate(title,
 
     # Label x ticks
     if not xticks:
-        xticks = ax.get_xticks().astype(str)
+        xticks = ax.get_xticks()
+        if isinstance(xticks[0], float):
+            xticks = ['{:.3f}'.format(t) for t in xticks]
+
+    if max_n_xticks < len(xticks):
+        xticks = []
+
     if max_xtick_size:
         xticks = [t[:max_xtick_size] for t in xticks]
     ax.set_xticklabels(xticks, **FONT)
@@ -491,6 +497,12 @@ def decorate(title,
     # Label x ticks
     if not yticks:
         yticks = ax.get_yticks().astype(str)
+        if isinstance(yticks[0], float):
+            yticks = ['{:.3f}'.format(t) for t in yticks]
+
+    if max_n_yticks < len(yticks):
+        yticks = []
+
     if max_ytick_size:
         yticks = [t[:max_ytick_size] for t in yticks]
     ax.set_yticklabels(yticks, **FONT)

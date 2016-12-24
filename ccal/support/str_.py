@@ -11,10 +11,11 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-def title_str(string):
+
+def title_str(str_):
     """
     Title a a_str.
-    :param string: str;
+    :param str_: str;
     :return: str;
     """
 
@@ -22,74 +23,75 @@ def title_str(string):
     uppers = []
     start = end = None
     is_upper = False
-    for i, c in enumerate(string):
+    for i, c in enumerate(str_):
         if c.isupper():
-            # print('{} is UPPER.'.format(c))
+            print('{} is UPPER.'.format(c))
             if is_upper:
                 end += 1
             else:
                 is_upper = True
                 start = i
                 end = start + 1
-                # print('Start is {}.'.format(i))
+                print('Start is {}.'.format(i))
         else:
-            if is_upper:
+            if is_upper:  # Reset
                 is_upper = False
                 uppers.append((start, end))
                 start = None
                 end = start
     else:
-        if start:
+        if isinstance(start, int):
             uppers.append((start, end))
+            print(uppers)
 
     # Title
-    string = string.title().replace('_', ' ')
+    str_ = str_.title().replace('_', ' ')
 
     # Upper all original uppercase letters
     for start, end in uppers:
-        string = string[:start] + string[start: end].upper() + string[end:]
+        str_ = str_[:start] + str_[start: end].upper() + str_[end:]
 
     # Lower some words
     for lowercase in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of', 'vs', 'vs']:
-        string = string.replace(' ' + lowercase.title() + ' ', ' ' + lowercase + ' ')
+        str_ = str_.replace(' ' + lowercase.title() + ' ', ' ' + lowercase + ' ')
 
-    return string
+    return str_
 
 
-def untitle_str(string):
+def untitle_str(str_):
     """
     Untitle a string.
-    :param string: str;
+    :param str_: str;
     :return: str;
     """
 
-    string = str(string)
-    return string.lower().replace(' ', '_').replace('-', '_')
+    str_ = str(str_)
+    return str_.lower().replace(' ', '_').replace('-', '_')
 
 
-def clean_str(string, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char='_'):
+def clean_str(str_, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char='_'):
     """
     Return a copy of string that has all non-allowed characters replaced by a new character (default: underscore).
-    :param string:
+    :param str_:
     :param illegal_chars:
     :param replacement_char:
     :return:kkkkkuu
     """
 
-    new_string = str(string)
+    new_string = str(str_)
     for illegal_char in illegal_chars:
         new_string = new_string.replace(illegal_char, replacement_char)
     return new_string
 
 
-def cast_str_to_int_float_bool_or_str(string):
+def cast_str_to_int_float_bool_or_str(str_):
     """
     Convert string into the following data types (return the first successful): int, float, bool, or str.
-    :param string: str;
+    :param str_: str;
     :return: int, float, bool, or str;
     """
 
-    value = string.strip()
+    value = str_.strip()
 
     for var_type in [int, float]:
         try:
@@ -106,22 +108,22 @@ def cast_str_to_int_float_bool_or_str(string):
     return str(value)
 
 
-def indent_str(string, n_tabs=1):
+def indent_str(str_, n_tabs=1):
     """
     Indent block of text by adding a n_tabs number of tabs (default 1) to the beginning of each line.
-    :param string:
+    :param str_:
     :param n_tabs:
     :return:
     """
 
-    return '\n'.join(['\t' * n_tabs + line for line in string.split('\n')])
+    return '\n'.join(['\t' * n_tabs + line for line in str_.split('\n')])
 
 
-def reset_encoding(a_str):
+def reset_encoding(str_):
     """
 
-    :param a_str: str;
+    :param str_: str;
     :return: str;
     """
 
-    return a_str.replace(u'\u201c', '"').replace(u'\u201d', '"')
+    return str_.replace(u'\u201c', '"').replace(u'\u201d', '"')
