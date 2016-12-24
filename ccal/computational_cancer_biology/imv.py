@@ -59,7 +59,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_xgrids=3000,
         print_log('Fitting all features ...')
 
     # Result data structure
-    feature_x_fit = DataFrame(index=feature_x_sample.index, columns=['n', 'df', 'shape', 'location', 'scale'])
+    feature_x_fit = DataFrame(index=feature_x_sample.index, columns=['N', 'DF', 'Shape', 'Location', 'Scale'])
 
     for i, (f_i, f_v) in enumerate(feature_x_sample.iterrows()):
         print_log('Fitting {} (@{}) ...'.format(f_i, i))
@@ -86,7 +86,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_xgrids=3000,
                                filepath=filepath, overwrite=overwrite, show_plot=show_plot)
 
     # Sort by shape
-    feature_x_fit.sort_values('shape', inplace=True)
+    feature_x_fit.sort_values('Shape', inplace=True)
 
     if directory_path:  # Save
         filepath = join(directory_path, '{}_skew_t_fit.txt'.format(timestamp()))
@@ -270,7 +270,7 @@ def _plot_essentiality(vector, bars, n=None, df=None, shape=None, location=None,
                 vector.name,
                 fontsize=gene_fontsize, weight='bold', horizontalalignment='center')
     figure.text(0.5, 0.92,
-                'n={:.2f}    df={:.2f}    shape={:.2f}    location={:.2f}    scale={:.2f}'.format(n, df, shape,
+                'N={:.2f}    DF={:.2f}    Shape={:.2f}    Location={:.2f}    Scale={:.2f}'.format(n, df, shape,
                                                                                                   location, scale),
                 fontsize=gene_fontsize * 0.6, weight='bold', horizontalalignment='center')
 
@@ -363,9 +363,9 @@ def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=3000):
 
     common_indices = feature_x_sample.index & feature_x_fit.index
     if any(common_indices):
-        print_log('Making essentiality matrix using {} common features ...'.format(common_indices.size))
+        print_log('Making essentiality matrix using {} common features (indices) ...'.format(common_indices.size))
     else:
-        print_log('No shaped features.')
+        print_log('No common features (indices).')
 
     gene_x_sample = feature_x_sample.ix[common_indices, :]
     gene_x_fit = feature_x_fit.ix[common_indices, :]
@@ -373,9 +373,6 @@ def make_essentiality_matrix(feature_x_sample, feature_x_fit, n_x_grids=3000):
     skew_t = ACSkewT_gen()
     essentiality_matrix = empty(gene_x_sample.shape)
     for i, (g, (n, df, shape, location, scale)) in enumerate(gene_x_fit.iterrows()):
-        if i % 500 == 0:
-            print_log(i)
-
         # Skew-t PDF
         vector = asarray(gene_x_sample.ix[g, :])
         x_grids = linspace(vector.min(), vector.max(), n_x_grids)

@@ -24,9 +24,9 @@ from numpy import array, asarray, unique
 from pandas import Series, DataFrame
 from seaborn import light_palette, heatmap, clustermap, distplot, boxplot, violinplot, set_style, despine
 
+from .d2 import get_dendrogram_leaf_indices
 from .file import establish_filepath
-from .str_ import untitle_str
-from ..support.d2 import get_dendrogram_leaf_indices
+from .str_ import title_str, untitle_str
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
 
@@ -433,7 +433,7 @@ def title_and_label(title, xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90
 
     # Title
     if title:
-        plt.suptitle(title, **FONT_TITLE)
+        plt.suptitle(title_str(title), **FONT_TITLE)
 
     # Label
     if not ax:
@@ -441,11 +441,11 @@ def title_and_label(title, xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90
 
     if not xlabel:
         xlabel = ax.get_xlabel()
-    ax.set_xlabel(xlabel, rotation=xlabel_rotation, **FONT_SUBTITLE)
+    ax.set_xlabel(title_str(xlabel), rotation=xlabel_rotation, **FONT_SUBTITLE)
 
     if not ylabel:
         ylabel = ax.get_ylabel()
-    ax.set_ylabel(ylabel, rotation=ylabel_rotation, **FONT_SUBTITLE)
+    ax.set_ylabel(title_str(ylabel), rotation=ylabel_rotation, **FONT_SUBTITLE)
 
 
 def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
