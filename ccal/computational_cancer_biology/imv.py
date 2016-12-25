@@ -65,7 +65,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_jobs=1, n_xgrids
     args = []
     for f_x_s in split_dataframe(feature_x_sample, n_jobs):
         args.append((f_x_s, plot, directory_path, bar_df, n_xgrids, overwrite, show_plot))
-    feature_x_fit = concat(parallelize(_x, args, n_jobs))
+    feature_x_fit = concat(parallelize(_fit_essentiality, args, n_jobs))
 
     # Sort by shape
     feature_x_fit.sort_values('Shape', inplace=True)
@@ -78,7 +78,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_jobs=1, n_xgrids
     return feature_x_fit
 
 
-def _x(args):
+def _fit_essentiality(args):
     feature_x_sample, plot, directory_path, bar_df, n_xgrids, overwrite, show_plot = args
     feature_x_fit = DataFrame(index=feature_x_sample.index, columns=['N', 'DF', 'Shape', 'Location', 'Scale'])
 
