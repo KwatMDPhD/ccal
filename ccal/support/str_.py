@@ -25,14 +25,14 @@ def title_str(str_):
     is_upper = False
     for i, c in enumerate(str_):
         if c.isupper():
-            print('{} is UPPER.'.format(c))
+            # print('{} is UPPER.'.format(c))
             if is_upper:
                 end += 1
             else:
                 is_upper = True
                 start = i
                 end = start + 1
-                print('Start is {}.'.format(i))
+                # print('Start is {}.'.format(i))
         else:
             if is_upper:  # Reset
                 is_upper = False
@@ -42,7 +42,6 @@ def title_str(str_):
     else:
         if isinstance(start, int):
             uppers.append((start, end))
-            print(uppers)
 
     # Title
     str_ = str_.title().replace('_', ' ')
@@ -84,10 +83,11 @@ def clean_str(str_, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char='
     return new_string
 
 
-def cast_str_to_int_float_bool_or_str(str_):
+def cast_str_to_int_float_bool_or_str(str_, fmt='{:.3f}'):
     """
     Convert string into the following data types (return the first successful): int, float, bool, or str.
     :param str_: str;
+    :param fmt: str; formatter for float
     :return: int, float, bool, or str;
     """
 
@@ -96,6 +96,8 @@ def cast_str_to_int_float_bool_or_str(str_):
     for var_type in [int, float]:
         try:
             converted_var = var_type(value)
+            if var_type == float:
+                converted_var = fmt.format(converted_var)
             return converted_var
         except ValueError:
             pass

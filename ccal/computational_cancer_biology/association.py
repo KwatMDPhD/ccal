@@ -34,7 +34,7 @@ from ..support.file import read_gct, establish_filepath
 from ..support.log import print_log
 from ..support.parallel_computing import parallelize
 from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
-    FONT_SUBTITLE, save_plot, plot_clustermap
+    FONT_SUBTITLE, save_plot, plot_heatmap
 from ..support.str_ import title_str, untitle_str
 
 
@@ -798,6 +798,7 @@ def make_comparison_matrix(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_l
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    plot_clustermap(comparison_matrix, title=title, xlabel=matrix2_label, ylabel=matrix1_label, filepath=filepath)
+    plot_heatmap(comparison_matrix, cluster=False,
+                 title=title, xlabel=matrix2_label, ylabel=matrix1_label, filepath=filepath)
 
     return comparison_matrix

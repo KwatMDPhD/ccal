@@ -294,6 +294,8 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
     if 'ax' not in kwargs:
         plt.figure(figsize=FIGURE_SIZE)
 
+    set_style('ticks')
+
     # Preprocess args
     processed_args = []
     for i, a in enumerate(args):
@@ -340,6 +342,8 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     if not ax:
         plt.figure(figsize=FIGURE_SIZE)
 
+    set_style('ticks')
+
     distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, fit=fit, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
              fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
              ax=ax)
@@ -369,6 +373,7 @@ def plot_violine(target, features, features_name, feature_names=(), box_or_violi
     plt.figure(figsize=FIGURE_SIZE)
 
     set_style('whitegrid')
+
     for r_i, r in features.ix[feature_names, :].iterrows():
         common_r = r.ix[target.index]
 
@@ -483,10 +488,14 @@ def decorate(title,
 
     # Label x ticks
     if not xticks:
-        xticks = ax.get_xticks()
-    if xticks:
-        if isinstance(xticks[0], float):
-            xticks = ['{:.3f}'.format(t) for t in xticks]
+        xticks = [t.get_text() for t in ax.get_xticklabels()]
+
+    if len(xticks):
+        if xticks[0] == '':
+            xticks = ax.get_xticks()
+
+        # if isinstance(xticks[0], float):
+        #     xticks = ['{:.3f}'.format(t) for t in xticks]
 
         if max_n_xticks < len(xticks):
             xticks = []
@@ -495,12 +504,16 @@ def decorate(title,
             xticks = [t[:max_xtick_size] for t in xticks]
         ax.set_xticklabels(xticks, **FONT)
 
-    # Label x ticks
+    # Label y ticks
     if not yticks:
-        yticks = ax.get_yticks().astype(str)
-    if yticks:
-        if isinstance(yticks[0], float):
-            yticks = ['{:.3f}'.format(t) for t in yticks]
+        yticks = [t.get_text() for t in ax.get_yticklabels()]
+
+    if len(yticks):
+        if yticks[0] == '':
+            yticks = ax.get_yticks()
+
+        # if isinstance(yticks[0], float):
+        #     yticks = ['{:.3f}'.format(t) for t in yticks]
 
         if max_n_yticks < len(yticks):
             yticks = []
