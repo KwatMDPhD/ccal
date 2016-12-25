@@ -268,12 +268,6 @@ def plot_clustermap(dataframe, pivot_kws=None, method='average', metric='euclide
 
     ax_heatmap = clustergrid.ax_heatmap
 
-    # X & Y ticks
-    for t in ax_heatmap.get_xticklabels():
-        t.set(**FONT)
-    for t in ax_heatmap.get_yticklabels():
-        t.set(**FONT)
-
     decorate(title, xlabel, ylabel, ax=ax_heatmap)
 
     save_plot(filepath)
@@ -391,11 +385,6 @@ def plot_violine(target, features, features_name, feature_names=(), box_or_violi
         if not title:
             title = '{} {}'.format(features_name, r_i)
         decorate(title, xlabel, ylabel)
-
-        for t in plt.gca().get_xticklabels():
-            t.set(**FONT)
-        for t in plt.gca().get_yticklabels():
-            t.set(**FONT)
 
     if filepath_prefix:
         save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
