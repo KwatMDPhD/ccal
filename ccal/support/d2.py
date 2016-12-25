@@ -11,9 +11,9 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import ones, isnan
+from numpy import asarray, ones, isnan
 from numpy.random import seed, shuffle
-from pandas import concat
+from pandas import DataFrame, concat
 from scipy.cluster.hierarchy import linkage, dendrogram
 
 from .. import RANDOM_SEED
@@ -130,32 +130,33 @@ def drop_uniform_slice_from_dataframe(df, value, axis=0):
         return df.ix[~dropped, :]
 
 
-def shuffle_dataframe(df, axis=0, random_seed=RANDOM_SEED):
+def shuffle_matrix(matrix, axis=0, random_seed=RANDOM_SEED):
     """
 
-    :param df: DataFrame;
+    :param matrix: DataFrame;
     :param axis: int; {0, 1}
     :param random_seed: int or array-like;
-    :return: DataFrame;
+    :return: 2D array or DataFrame;
     """
 
-    df = df.copy()
-
     seed(random_seed)
-    if axis == 0:
-        for c_i, col in df.iteritems():
-            # Shuffle in place
-            shuffle(col)
 
-    elif axis == 1:
-        for r_i, row in df.iterrows():
-            # Shuffle in place
-            shuffle(row)
+    if isinstance(matrix, DataFrame):  # Work with 2D array
+        a = asarray(matrix)
 
+    if axis == 0:  # Shuffle each column
+        for i in range(a.shape[axis]):
+            shuffle(a[i, :])
+    elif axis == 1:  # Shuffle each row
+        for i in range(a.shape[axis]):
+            shuffle(a[:, i])
     else:
         ValueError('Unknown axis {}; choose from {0, 1}.')
 
-    return df
+    if isinstance(matrix, DataFrame):  # Return DataFrame
+        return DataFrame(a, index=matrix.index, columns=matrix.columns)
+    else:  # Return 2D array
+        return a
 
 
 def split_dataframe(df, n_split):
