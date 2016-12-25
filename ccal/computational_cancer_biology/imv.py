@@ -61,6 +61,7 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_xgrids=3000,
     # Result data structure
     feature_x_fit = DataFrame(index=feature_x_sample.index, columns=['N', 'DF', 'Shape', 'Location', 'Scale'])
 
+    # TODO: paralellize
     for i, (f_i, f_v) in enumerate(feature_x_sample.iterrows()):
         print_log('Fitting {} (@{}) ...'.format(f_i, i))
 
