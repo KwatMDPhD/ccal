@@ -15,15 +15,15 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from numpy import asarray, linspace, histogram, zeros, empty, argmin, sign
+from numpy import asarray, linspace, histogram, empty, argmin, sign
 from pandas import read_csv, DataFrame, Series, concat
 from seaborn import set_style, despine, distplot, rugplot
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
+from ..mathematics.equation import define_x_coordinates_for_reflection, define_cumulative_area_ratio_function
 from ..support.file import establish_filepath
 from ..support.log import timestamp, print_log
 from ..support.plot import FIGURE_SIZE, save_plot
-from ..mathematics.equation import define_x_coordinates_for_reflection, define_cumulative_area_ratio_function
 
 
 def fit_essentiality(feature_x_sample, bar_df, features=None, n_xgrids=3000,
