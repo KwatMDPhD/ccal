@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import asarray, ones, isnan
+from numpy import array, ones, isnan
 from numpy.random import seed, shuffle
 from pandas import DataFrame, concat
 from scipy.cluster.hierarchy import linkage, dendrogram
@@ -142,14 +142,16 @@ def shuffle_matrix(matrix, axis=0, random_seed=RANDOM_SEED):
     seed(random_seed)
 
     if isinstance(matrix, DataFrame):  # Work with 2D array
-        a = asarray(matrix)
+        a = array(matrix)
+    else:
+        a = matrix.copy()
 
     if axis == 0:  # Shuffle each column
-        for i in range(a.shape[axis]):
-            shuffle(a[i, :])
-    elif axis == 1:  # Shuffle each row
-        for i in range(a.shape[axis]):
+        for i in range(a.shape[1]):
             shuffle(a[:, i])
+    elif axis == 1:  # Shuffle each row
+        for i in range(a.shape[0]):
+            shuffle(a[i, :])
     else:
         ValueError('Unknown axis {}; choose from {0, 1}.')
 
@@ -167,6 +169,8 @@ def split_dataframe(df, n_split, axis=0):
     :param axis: int; {0, 1}
     :return: list; list of dataframes
     """
+
+    # TODO: implement axis logic
 
     if df.shape[0] < n_split:
         raise ValueError('n_split ({}) can\'t be greater than the number of rows ({}).'.format(n_split, df.shape[0]))

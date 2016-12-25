@@ -21,15 +21,15 @@ from seaborn import set_style, despine, distplot, rugplot
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
 from ..mathematics.equation import define_x_coordinates_for_reflection, define_cumulative_area_ratio_function
-from ..support.parallel_computing import parallelize
 from ..support.d2 import split_dataframe
 from ..support.file import establish_filepath
 from ..support.log import timestamp, print_log
+from ..support.parallel_computing import parallelize
 from ..support.plot import FIGURE_SIZE, save_plot
 
 
 def fit_essentiality(feature_x_sample, bar_df, features=None, n_jobs=1, n_xgrids=3000,
-                     directory_path=None, plot=True, overwrite=False, show_plot=True):
+                     directory_path=None, prefix=None, plot=True, overwrite=False, show_plot=True):
     """
 
     :param feature_x_sample:
@@ -37,7 +37,8 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_jobs=1, n_xgrids
     :param features:
     :param n_jobs: int; number of jobs for parallel computing
     :param n_xgrids: int;
-    :param directory_path:
+    :param directory_path: str;
+    :param prefix: str;
     :param plot:
     :param overwrite:
     :param show_plot:
@@ -71,7 +72,9 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_jobs=1, n_xgrids
     feature_x_fit.sort_values('Shape', inplace=True)
 
     if directory_path:  # Save
-        filepath = join(directory_path, '{}_skew_t_fit.txt'.format(timestamp()))
+        if not prefix:
+            prefix = timestamp()
+        filepath = join(directory_path, '{}_skew_t_fit.txt'.format(prefix))
         establish_filepath(filepath)
         feature_x_fit.to_csv(filepath, sep='\t')
 
