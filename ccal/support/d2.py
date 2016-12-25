@@ -159,11 +159,12 @@ def shuffle_matrix(matrix, axis=0, random_seed=RANDOM_SEED):
         return a
 
 
-def split_dataframe(df, n_split):
+def split_dataframe(df, n_split, axis=0):
     """
     Split df into n_split blocks (by row).
     :param df: DataFrame;
     :param n_split: int; 0 < n_split <= n_rows
+    :param axis: int; {0, 1}
     :return: list; list of dataframes
     """
 

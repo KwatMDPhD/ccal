@@ -21,24 +21,27 @@ from seaborn import set_style, despine, distplot, rugplot
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
 from ..mathematics.equation import define_x_coordinates_for_reflection, define_cumulative_area_ratio_function
+from ..support.parallel_computing import parallelize
+from ..support.d2 import split_dataframe
 from ..support.file import establish_filepath
 from ..support.log import timestamp, print_log
 from ..support.plot import FIGURE_SIZE, save_plot
 
 
-def fit_essentiality(feature_x_sample, bar_df, features=None, n_xgrids=3000,
+def fit_essentiality(feature_x_sample, bar_df, features=None, n_jobs=1, n_xgrids=3000,
                      directory_path=None, plot=True, overwrite=False, show_plot=True):
     """
 
     :param feature_x_sample:
     :param bar_df:
     :param features:
+    :param n_jobs: int; number of jobs for parallel computing
     :param n_xgrids: int;
     :param directory_path:
     :param plot:
     :param overwrite:
     :param show_plot:
-    :return: dataframe;
+    :return: DataFrame;
     """
 
     if isinstance(feature_x_sample, str):  # Read from a file
@@ -58,7 +61,53 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_xgrids=3000,
     else:  # Fit all features
         print_log('Fitting all features ...')
 
-    # Result data structure
+    print_log('Fitting with {} jobs ...'.format(n_jobs))
+    args = []
+    for f_x_s in split_dataframe(feature_x_sample, n_jobs):
+        args.append((f_x_s, plot, directory_path, bar_df, n_xgrids, overwrite, show_plot))
+    feature_x_fit = concat(parallelize(_x, args, n_jobs))
+
+    # # Result data structure
+    # feature_x_fit = DataFrame(index=feature_x_sample.index, columns=['N', 'DF', 'Shape', 'Location', 'Scale'])
+    #
+    # # TODO: paralellize
+    # for i, (f_i, f_v) in enumerate(feature_x_sample.iterrows()):
+    #     print_log('Fitting {} (@{}) ...'.format(f_i, i))
+    #
+    #     # Fit skew-t PDF on this gene
+    #     f_v.dropna(inplace=True)
+    #     skew_t = ACSkewT_gen()
+    #     n = f_v.size
+    #     df, shape, location, scale = skew_t.fit(f_v)
+    #     feature_x_fit.ix[f_i, :] = n, df, shape, location, scale
+    #
+    #     # Plot
+    #     if plot:
+    #
+    #         # Make an output filepath
+    #         if directory_path:
+    #             filepath = join(directory_path, 'essentiality_plots', '{}.pdf'.format(f_i))
+    #         else:
+    #             filepath = None
+    #
+    #         _plot_essentiality(feature_x_sample.ix[f_i, :], get_amp_mut_del(bar_df, f_i),
+    #                            n=n, df=df, shape=shape, location=location, scale=scale,
+    #                            n_xgrids=n_xgrids,
+    #                            filepath=filepath, overwrite=overwrite, show_plot=show_plot)
+
+    # Sort by shape
+    feature_x_fit.sort_values('Shape', inplace=True)
+
+    if directory_path:  # Save
+        filepath = join(directory_path, '{}_skew_t_fit.txt'.format(timestamp()))
+        establish_filepath(filepath)
+        feature_x_fit.to_csv(filepath, sep='\t')
+
+    return feature_x_fit
+
+
+def _x(args):
+    feature_x_sample, plot, directory_path, bar_df, n_xgrids, overwrite, show_plot = args
     feature_x_fit = DataFrame(index=feature_x_sample.index, columns=['N', 'DF', 'Shape', 'Location', 'Scale'])
 
     # TODO: paralellize
@@ -85,15 +134,6 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_xgrids=3000,
                                n=n, df=df, shape=shape, location=location, scale=scale,
                                n_xgrids=n_xgrids,
                                filepath=filepath, overwrite=overwrite, show_plot=show_plot)
-
-    # Sort by shape
-    feature_x_fit.sort_values('Shape', inplace=True)
-
-    if directory_path:  # Save
-        filepath = join(directory_path, '{}_skew_t_fit.txt'.format(timestamp()))
-        establish_filepath(filepath)
-        feature_x_fit.to_csv(filepath, sep='\t')
-
     return feature_x_fit
 
 
