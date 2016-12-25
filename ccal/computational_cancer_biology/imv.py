@@ -67,34 +67,6 @@ def fit_essentiality(feature_x_sample, bar_df, features=None, n_jobs=1, n_xgrids
         args.append((f_x_s, plot, directory_path, bar_df, n_xgrids, overwrite, show_plot))
     feature_x_fit = concat(parallelize(_x, args, n_jobs))
 
-    # # Result data structure
-    # feature_x_fit = DataFrame(index=feature_x_sample.index, columns=['N', 'DF', 'Shape', 'Location', 'Scale'])
-    #
-    # # TODO: paralellize
-    # for i, (f_i, f_v) in enumerate(feature_x_sample.iterrows()):
-    #     print_log('Fitting {} (@{}) ...'.format(f_i, i))
-    #
-    #     # Fit skew-t PDF on this gene
-    #     f_v.dropna(inplace=True)
-    #     skew_t = ACSkewT_gen()
-    #     n = f_v.size
-    #     df, shape, location, scale = skew_t.fit(f_v)
-    #     feature_x_fit.ix[f_i, :] = n, df, shape, location, scale
-    #
-    #     # Plot
-    #     if plot:
-    #
-    #         # Make an output filepath
-    #         if directory_path:
-    #             filepath = join(directory_path, 'essentiality_plots', '{}.pdf'.format(f_i))
-    #         else:
-    #             filepath = None
-    #
-    #         _plot_essentiality(feature_x_sample.ix[f_i, :], get_amp_mut_del(bar_df, f_i),
-    #                            n=n, df=df, shape=shape, location=location, scale=scale,
-    #                            n_xgrids=n_xgrids,
-    #                            filepath=filepath, overwrite=overwrite, show_plot=show_plot)
-
     # Sort by shape
     feature_x_fit.sort_values('Shape', inplace=True)
 
