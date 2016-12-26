@@ -18,7 +18,6 @@ from os.path import abspath, split, isdir, isfile, islink, join
 
 from Bio import bgzf
 from matplotlib.colors import ListedColormap
-from numpy import unique, concatenate
 from pandas import Series, DataFrame, read_csv, concat
 
 from .log import print_log
