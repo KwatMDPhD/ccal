@@ -12,7 +12,6 @@ Authors:
 """
 
 from math import ceil, sqrt
-from os import listdir
 from os.path import join
 
 from matplotlib.colorbar import make_axes, ColorbarBase
@@ -31,12 +30,150 @@ from ..machine_learning.score import compute_similarity_matrix
 from ..mathematics.information import information_coefficient
 from ..support.d1 import get_unique_in_order
 from ..support.d2 import get_top_and_bottom_indices, split_dataframe
-from ..support.file import read_gct, establish_filepath
+from ..support.file import establish_filepath
 from ..support.log import print_log
 from ..support.parallel_computing import parallelize
 from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
     FONT_SUBTITLE, save_plot, plot_clustermap
 from ..support.str_ import title_str, untitle_str
+
+
+# ======================================================================================================================
+# Association summary panel
+# ======================================================================================================================
+def make_association_summary_panel(target, data_bundle, annotation_files, target_type='continuous', title=None,
+                                   filepath=None):
+    """
+    Plot summary association panel.
+    :param target: Series; (n_elements);
+    :param data_bundle: dict;
+    :param annotation_files: dict;
+    :param target_type: str;
+    :param title; str;
+    :param filepath: str;
+    :return: None
+    """
+
+    # Prepare target for plotting
+    target, target_min, target_max, target_cmap = _prepare_data_for_plotting(target, target_type)
+
+    #
+    # Set up figure
+    #
+    # Compute the number of row-grids for setting up a figure
+    n = 0
+    for features_name, features_dict in data_bundle.items():
+        n += features_dict['dataframe'].shape[0] + 3
+    # Add row for color bar
+    n += 1
+
+    # Set up figure
+    figure(figsize=FIGURE_SIZE)
+
+    # Set up axis grids
+    gridspec = GridSpec(n, 1)
+
+    #
+    # Annotate this target with each feature
+    #
+    r_i = 0
+    if not title:
+        title = 'Association Summary Panel for {}'.format(target.name)
+    plot_figure_title = True
+    plot_header = True
+    for features_name, features_dict in data_bundle:
+
+        # Read features
+        features = features_dict['dataframe']
+
+        # Prepare features for plotting
+        features, features_min, features_max, features_cmap = _prepare_data_for_plotting(features,
+                                                                                         features_dict['data_type'])
+
+        # Keep only columns shared by target and features
+        shared = target.index & features.columns
+        if any(shared):
+            # Target is always descending from right to left
+            a_target = target.ix[shared].sort_values(ascending=False)
+            features = features.ix[:, a_target.index]
+            print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
+                                                                                                  target.size,
+                                                                                                  features.shape[1],
+                                                                                                  len(shared)))
+        else:
+            raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
+                                                                                                        target.size,
+                                                                                                        features.shape[
+                                                                                                            1]))
+
+        # Read corresponding annotations file
+        annotations = read_csv(annotation_files[features_name], sep='\t', index_col=0)
+        # Keep only features in the features dataframe and sort by score
+        annotations = annotations.ix[features.index, :].sort_values('score',
+                                                                    ascending=features_dict['emphasis'] == 'low')
+        # Apply the sorted index to featuers
+        features = features.ix[annotations.index, :]
+
+        if any(features_dict['alias']):  # Use alias as index
+            features.index = features_dict['alias']
+            annotations.index = features.index
+
+        # Set up axes
+        r_i += 1
+        title_ax = subplot(gridspec[r_i: r_i + 1, 0])
+        title_ax.axis('off')
+        r_i += 1
+        target_ax = subplot(gridspec[r_i: r_i + 1, 0])
+        r_i += 1
+        features_ax = subplot(gridspec[r_i: r_i + features.shape[0], 0])
+        r_i += features.shape[0]
+
+        if plot_figure_title:  # Plot figure title
+            title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 2, title, horizontalalignment='center',
+                          **FONT_TITLE)
+            plot_figure_title = False
+
+        # Plot title
+        title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 0.3,
+                      '{} (n={})'.format(features_name, len(shared)), horizontalalignment='center', **FONT_SUBTITLE)
+
+        # Plot target
+        heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
+                xticklabels=False, yticklabels=True, cbar=False)
+        for t in target_ax.get_yticklabels():
+            t.set(rotation=0, **FONT)
+
+        if plot_header:  # Plot header only for the 1st target axis
+            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
+                           ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR', verticalalignment='center',
+                           **FONT)
+            plot_header = False
+
+        # Plot features
+        heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=False,
+                cbar=False)
+        for t in features_ax.get_yticklabels():
+            t.set(rotation=0, **FONT)
+
+        # Plot annotations
+        for i, (a_i, a) in enumerate(annotations.iterrows()):
+            # TODO: add confidence interval
+            features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * SPACING,
+                             features_ax.axis()[3] - i * (features_ax.axis()[3] / features.shape[0]) - 0.5,
+                             '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['score', 'p-value', 'fdr']]).expandtabs(),
+                             verticalalignment='center', **FONT)
+
+        # Plot colorbar
+        if r_i == n - 1:
+            colorbar_ax = subplot(gridspec[r_i:r_i + 1, 0])
+            colorbar_ax.axis('off')
+            cax, kw = make_axes(colorbar_ax, location='bottom', pad=0.026, fraction=0.26, shrink=2.6, aspect=26,
+                                cmap=target_cmap, ticks=[])
+            ColorbarBase(cax, **kw)
+            cax.text(cax.axis()[1] * 0.5, cax.axis()[3] * -2.6, 'Standardized Profile for Target and Features',
+                     horizontalalignment='center', **FONT)
+    # Save
+    save_plot(filepath)
 
 
 # ======================================================================================================================
@@ -496,227 +633,7 @@ def _plot_association_panel(target, features, annotations,
                          '\t'.join(a.tolist()).expandtabs(), verticalalignment='center', **FONT)
 
     # Save
-    if filepath:
-        save_plot(filepath)
-
-
-def plot_association_summary_panel(target, features_bundle, annotations_bundle, target_type='continuous', title=None,
-                                   filepath=None):
-    """
-    Plot summary association panel.
-    :param target: Series; (n_elements); must have indices
-    :param features_bundle: dict;
-    :param target_type: str;
-    :param title; str;
-    :param filepath: str;
-    :return: None
-    """
-
-    # Read features
-    features_dicts = _read_bundle(features_bundle)
-
-    # Prepare target for plotting
-    target, target_min, target_max, target_cmap = _prepare_data_for_plotting(target, target_type)
-
-    #
-    # Set up figure
-    #
-    # Compute the number of row-grids for setting up a figure
-    n = 0
-    for features_name, features_dict in features_dicts.items():
-        n += features_dict['dataframe'].shape[0] + 3
-    # Add row for color bar
-    n += 1
-
-    # Set up figure
-    figure(figsize=FIGURE_SIZE)
-
-    # Set up axis grids
-    gridspec = GridSpec(n, 1)
-
-    #
-    # Annotate this target with each feature
-    #
-    r_i = 0
-    if not title:
-        title = 'Association Summary Panel for {}'.format(target.name)
-    plot_figure_title = True
-    plot_header = True
-    for features_name in [b[0] for b in features_bundle]:
-
-        # Read feature dict
-        features_dict = features_dicts[features_name]
-
-        # Read features
-        features = features_dict['dataframe']
-
-        # Prepare features for plotting
-        features, features_min, features_max, features_cmap = _prepare_data_for_plotting(features,
-                                                                                         features_dict['data_type'])
-
-        # Keep only columns shared by target and features
-        shared = target.index & features.columns
-        if any(shared):
-            # Target is always descending from right to left
-            a_target = target.ix[shared].sort_values(ascending=False)
-            features = features.ix[:, a_target.index]
-            print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
-                                                                                                  target.size,
-                                                                                                  features.shape[1],
-                                                                                                  len(shared)))
-        else:
-            raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
-                                                                                                        target.size,
-                                                                                                        features.shape[
-                                                                                                            1]))
-
-        # Read corresponding annotations file
-        annotations = read_csv([a[1] for a in annotations_bundle if a[0] == features_name][0], sep='\t', index_col=0)
-        # Keep only features in the features dataframe and sort by score
-        annotations = annotations.ix[features.index, :].sort_values('score', ascending=features_dict['is_ascending'])
-        # Apply the sorted index to featuers
-        features = features.ix[annotations.index, :]
-
-        if any(features_dict['alias']):  # Use alias as index
-            features.index = [features_dict['alias'][i] for i in features.index]
-            annotations.index = [features_dict['alias'][i] for i in annotations.index]
-
-        # Set up axes
-        r_i += 1
-        title_ax = subplot(gridspec[r_i: r_i + 1, 0])
-        title_ax.axis('off')
-        r_i += 1
-        target_ax = subplot(gridspec[r_i: r_i + 1, 0])
-        r_i += 1
-        features_ax = subplot(gridspec[r_i: r_i + features.shape[0], 0])
-        r_i += features.shape[0]
-
-        if plot_figure_title:  # Plot figure title
-            title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 2, title, horizontalalignment='center',
-                          **FONT_TITLE)
-            plot_figure_title = False
-
-        # Plot title
-        title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 0.3,
-                      '{} (n={})'.format(features_name, len(shared)), horizontalalignment='center', **FONT_SUBTITLE)
-
-        # Plot target
-        heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
-                xticklabels=False, yticklabels=True, cbar=False)
-        for t in target_ax.get_yticklabels():
-            t.set(rotation=0, **FONT)
-
-        if plot_header:  # Plot header only for the 1st target axis
-            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
-                           ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR', verticalalignment='center',
-                           **FONT)
-            plot_header = False
-
-        # Plot features
-        heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=False,
-                cbar=False)
-        for t in features_ax.get_yticklabels():
-            t.set(rotation=0, **FONT)
-
-        # Plot annotations
-        for i, (a_i, a) in enumerate(annotations.iterrows()):
-            # TODO: add confidence interval
-            features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * SPACING,
-                             features_ax.axis()[3] - i * (features_ax.axis()[3] / features.shape[0]) - 0.5,
-                             '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['score', 'p-value', 'fdr']]).expandtabs(),
-                             verticalalignment='center', **FONT)
-
-        # Plot colorbar
-        if r_i == n - 1:
-            colorbar_ax = subplot(gridspec[r_i:r_i + 1, 0])
-            colorbar_ax.axis('off')
-            cax, kw = make_axes(colorbar_ax, location='bottom', pad=0.026, fraction=0.26, shrink=2.6, aspect=26,
-                                cmap=target_cmap, ticks=[])
-            ColorbarBase(cax, **kw)
-            cax.text(cax.axis()[1] * 0.5, cax.axis()[3] * -2.6, 'Standardized Profile for Target and Features',
-                     horizontalalignment='center', **FONT)
-    # Save
-    if filepath:
-        save_plot(filepath)
-
-
-def load_ccle_bundle(ccle_directory_path):
-    """
-
-    :param ccle_directory_path: str;
-    :return: dict;
-        {
-            data_name: {
-                'dataframe': DataFrame,
-                'data_type': str,
-                'emphasis': bool,
-            }
-            ...
-        }
-    """
-
-    ccle_information = [('mutations', 'binary', 'high'),
-                        ('promoter_methylations', 'continuous', 'high'),
-                        ('regulators', 'continuous', 'high'),
-                        ('gene_expressions', 'continuous', 'high'),
-                        ('pathways', 'continuous', 'high'),
-                        ('protein_expressions', 'continuous', 'high'),
-                        ('metabolites', 'continuous', 'high'),
-                        ('gene_dependencies', 'continuous', 'low'),
-                        ('drug_sensitivities', 'continuous', 'low'),
-                        ('annotations', 'categorical', 'high')]
-
-    return load_data_bundle(ccle_directory_path, ccle_information)
-
-
-def load_data_bundle(directory_path, data_information, data_indices=None):
-    """
-
-    :param directory_path: str;
-    :param data_information: iterable of tuples;
-    :param data_indices: dict;
-        {
-            'mutations': {
-                index: ['index_1', 'index_2', ...],
-                alias: ['Foo', 'Bar', ...]
-            }
-            ...
-        }
-    :return: dict;
-        {
-            data_name: {
-                'dataframe': DataFrame,
-                'data_type': str,
-                'emphasis': bool,
-            }
-            ...
-        }
-    """
-
-    data_bundle = {}
-
-    for data_name, data_type, emphasis in data_information:  # For each data
-
-        for f in listdir(directory_path):  # Check each file
-
-            if data_name in f:  # The file matches this data
-                print('{} matched; loading {} ...'.format(data_name, f))
-
-                data_bundle[data_name] = {}
-
-                # Read the data
-                df = data_bundle[data_name]['dataframe'] = read_gct(join(directory_path, f))
-
-                if isinstance(data_indices, dict):  # If data_indices is given
-                    if data_name in data_indices:  # Keep specific indices
-                        df = df.ix[data_indices[data_name]['index'], :]
-                        if 'alias' in data_indices[data_name]:  # Rename these specific indices
-                            df.index = data_indices[data_name]['alias']
-
-                data_bundle[data_name]['data_type'] = data_type
-                data_bundle[data_name]['emphasis'] = emphasis
-
-    return data_bundle
+    save_plot(filepath)
 
 
 def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
@@ -733,9 +650,9 @@ def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
 # ======================================================================================================================
 # Comparison panel
 # ======================================================================================================================
-def make_comparison_matrix(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_label='Matrix 2',
-                           function=information_coefficient, axis=0, is_distance=False, title=None,
-                           filepath_prefix=None):
+def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_label='Matrix 2',
+                          function=information_coefficient, axis=0, is_distance=False, title=None,
+                          filepath_prefix=None):
     """
     Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
     :param matrix1: DataFrame or numpy 2D arrays;
@@ -753,8 +670,7 @@ def make_comparison_matrix(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_l
     # Compute association or distance matrix, which is returned at the end
     comparison_matrix = compute_similarity_matrix(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
 
-    # Save
-    if filepath_prefix:
+    if filepath_prefix:  # Save
         comparison_matrix.to_csv(filepath_prefix + '.txt', sep='\t')
 
     # Plot cluster map of the compared matrix

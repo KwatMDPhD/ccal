@@ -321,6 +321,88 @@ def write_colormap(cmap, filepath):
 
 
 # ======================================================================================================================
+# CCLE .gct functions
+# ======================================================================================================================
+def load_ccle_bundle(ccle_directory_path):
+    """
+
+    :param ccle_directory_path: str;
+    :return: dict;
+        {
+            data_name: {
+                'dataframe': DataFrame,
+                'data_type': str,
+                'emphasis': bool,
+            }
+            ...
+        }
+    """
+
+    ccle_information = [('mutations', 'binary', 'high'),
+                        ('promoter_methylations', 'continuous', 'high'),
+                        ('regulators', 'continuous', 'high'),
+                        ('gene_expressions', 'continuous', 'high'),
+                        ('pathways', 'continuous', 'high'),
+                        ('protein_expressions', 'continuous', 'high'),
+                        ('metabolites', 'continuous', 'high'),
+                        ('gene_dependencies', 'continuous', 'low'),
+                        ('drug_sensitivities', 'continuous', 'low'),
+                        ('annotations', 'categorical', 'high')]
+
+    return load_data_bundle(ccle_directory_path, ccle_information)
+
+
+def load_data_bundle(directory_path, data_information, data_indices=None):
+    """
+
+    :param directory_path: str;
+    :param data_information: iterable of tuples;
+    :param data_indices: dict;
+        {
+            'mutations': {
+                index: ['index_1', 'index_2', ...],
+                alias: ['Foo', 'Bar', ...]
+            }
+            ...
+        }
+    :return: dict;
+        {
+            data_name: {
+                'dataframe': DataFrame,
+                'data_type': str,
+                'emphasis': bool,
+            }
+            ...
+        }
+    """
+
+    data_bundle = {}
+
+    for data_name, data_type, emphasis in data_information:  # For each data
+
+        for f in listdir(directory_path):  # Check each file
+
+            if data_name in f:  # The file matches this data
+                print('{} matched; loading {} ...'.format(data_name, f))
+
+                data_bundle[data_name] = {}
+
+                # Read the data
+                df = data_bundle[data_name]['dataframe'] = read_gct(join(directory_path, f))
+
+                if isinstance(data_indices, dict):  # If data_indices is given
+                    if data_name in data_indices:  # Keep specific indices
+                        df = df.ix[data_indices[data_name]['index'], :]
+                        if 'alias' in data_indices[data_name]:  # Rename these specific indices
+                            df.index = data_indices[data_name]['alias']
+
+                data_bundle[data_name]['data_type'] = data_type
+                data_bundle[data_name]['emphasis'] = emphasis
+
+    return data_bundle
+
+
+# ======================================================================================================================
 # .gct functions
 # ======================================================================================================================
 def load_gct(matrix):
