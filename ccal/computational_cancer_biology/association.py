@@ -12,6 +12,7 @@ Authors:
 """
 
 from math import ceil, sqrt
+from os import listdir
 from os.path import join
 
 from matplotlib.colorbar import make_axes, ColorbarBase
@@ -41,25 +42,13 @@ from ..support.str_ import title_str, untitle_str
 # ======================================================================================================================
 # Association panel
 # ======================================================================================================================
-def make_association_panels(target, features_bundle, target_ascending=False, target_name=None, target_type='continuous',
+def make_association_panels(target, data_bundle, target_ascending=False, target_name=None, target_type='continuous',
                             n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, random_seed=RANDOM_SEED,
                             directory_path=None):
     """
     Annotate target with each features in the features bundle.
-    :param target: Series; (n_elements); must have indices
-    :param features_bundle: list of lists;
-        [
-            [
-                data_name,
-                dataframe_or_filepath (to .gct),
-                data_type,
-                is_ascending,
-                (optional) index_axis,
-                (optional) index,
-                (optional) alias
-            ],
-            ...
-        ]
+    :param target: DataFrame or Series; (n_targets, n_elements) or (n_elements)
+    :param data_bundle: dict;
     :param target_ascending: bool; target is ascending from left to right or not
     :param target_name: str;
     :param target_type: str;
@@ -72,27 +61,31 @@ def make_association_panels(target, features_bundle, target_ascending=False, tar
     :return: None
     """
 
-    # Load feature bundle
-    print_log('Loading features bundle ...')
-    feature_dicts = _read_bundle(features_bundle)
+    if isinstance(target, Series):
+        target = DataFrame(target).T
 
-    # Annotate this target with each feature
-    for features_name, features_dict in feature_dicts.items():
-        title = title_str('{} vs {}'.format(target.name, features_name))
-        print_log('{} ...'.format(title))
-        if directory_path:
-            filepath_prefix = join(directory_path, untitle_str(title))
-        else:
-            filepath_prefix = None
-        make_association_panel(target, features_dict['dataframe'],
-                               target_ascending=target_ascending,
-                               n_jobs=n_jobs, features_ascending=features_dict['is_ascending'],
-                               n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
-                               random_seed=random_seed,
-                               target_name=target_name, target_type=target_type,
-                               features_type=features_dict['data_type'],
-                               title=title,
-                               filepath_prefix=filepath_prefix)
+    for t_i, t in target.iterrows():
+
+        # Annotate this target with each data (feature)
+        for data_name, data_dict in data_bundle.items():
+
+            title = title_str('{} vs {}'.format(t_i, data_name))
+            print_log('{} ...'.format(title))
+
+            if directory_path:
+                filepath_prefix = join(directory_path, untitle_str(title))
+            else:
+                filepath_prefix = None
+
+            make_association_panel(t, data_dict['dataframe'],
+                                   target_ascending=target_ascending,
+                                   n_jobs=n_jobs, features_ascending=data_dict['emphasis'] == 'low',
+                                   n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
+                                   random_seed=random_seed,
+                                   target_name=target_name, target_type=target_type,
+                                   features_type=data_dict['data_type'],
+                                   title=title,
+                                   filepath_prefix=filepath_prefix)
 
 
 def make_association_panel(target, features,
@@ -517,27 +510,7 @@ def plot_association_summary_panel(target, features_bundle, annotations_bundle, 
     """
     Plot summary association panel.
     :param target: Series; (n_elements); must have indices
-    :param features_bundle: list;
-        [
-            [
-                data_name,
-                dataframe_or_filepath (to .gct),
-                data_type,
-                is_ascending,
-                (optional) index_axis,
-                (optional) index,
-                (optional) alias
-            ],
-            ...
-        ]
-    :param annotations_bundle:
-        [
-            [
-                data_name,
-                dataframe_or_filepath (to annotation .gct)
-            ],
-            ...
-        ]
+    :param features_bundle: dict;
     :param target_type: str;
     :param title; str;
     :param filepath: str;
@@ -683,22 +656,25 @@ def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
         raise ValueError('Target data type must be one of {continuous, categorical, binary}.')
 
 
-def _read_bundle(data_bundle):
+def load_data_bundle(directory_path, data_information=(('mutations', 'binary', 'high'),
+                                                       ('promoter_methylations', 'continuous', 'high'),
+                                                       ('regulators', 'continuous', 'high'),
+                                                       ('gene_expressions', 'continuous', 'high'),
+                                                       ('pathways', 'continuous', 'high'),
+                                                       ('protein_expressions', 'continuous', 'high'),
+                                                       ('metabolites', 'continuous', 'high'),
+                                                       ('gene_dependencies', 'continuous', 'low'),
+                                                       ('drug_sensitivities', 'continuous', 'low'),
+                                                       ('annotations', 'categorical', 'high')), data_indices=None, ):
     """
-    Read data bundle.
-    :param data_bundle: list;
-        [
-            [
-                data_name,
-                dataframe_or_filepath (to .gct),
-                data_type,
-                is_ascending,
-                (optional) index_axis,
-                (optional) index,
-                (optional) alias
-            ],
-            ...
-        ]
+    :param directory_path: str;
+    :param data_information: iterable of tuples;
+    :param data_indices: dict;
+        {'mutations':{
+            index:[index_1, index_2, ...],
+            alias:[Index 1, Index 2, ...]
+            }
+        }
     :return: dict;
         {
             name: {
@@ -711,59 +687,30 @@ def _read_bundle(data_bundle):
         }
     """
 
-    dicts = {}
+    data_bundle = {}
 
-    # Read all annotations
-    for data_name, dataframe_or_filepath, data_type, is_ascending, index_axis, index, alias in data_bundle:
-        print_log('Reading {} ...'.format(data_name))
-        print_log('\tData: {}.'.format(type(dataframe_or_filepath)))
-        print_log('\tData type: {}.'.format(data_type))
-        print_log('\tIs ascending: {}.'.format(is_ascending))
-        print_log('\tIndex axis: {}.'.format(index_axis))
-        print_log('\tIndex: {}.'.format(index))
-        print_log('\tAlias: {}.'.format(alias))
+    for data_name, data_type, emphasis in data_information:  # For each data
 
-        dicts[data_name] = {}
+        for f in listdir(directory_path):  # Check each file
 
-        # Read data type
-        dicts[data_name]['data_type'] = data_type
+            if data_name in f:  # The file matches this data
+                print('{} matched; loading {} ...'.format(data_name, f))
 
-        # Read whether reverse make_association_panel or not
-        dicts[data_name]['is_ascending'] = is_ascending
+                data_bundle[data_name] = {}
 
-        # Read alias for index
-        dicts[data_name]['alias'] = {}
-        for i, a in zip(index, alias):
-            dicts[data_name]['alias'][i] = a
+                # Read the data
+                df = data_bundle[data_name]['dataframe'] = read_gct(join(directory_path, f))
 
-        # Read DataFrame
-        if isinstance(dataframe_or_filepath, DataFrame):
-            df = dataframe_or_filepath
-        elif isinstance(dataframe_or_filepath, str):
-            df = read_gct(dataframe_or_filepath)
-        else:
-            raise ValueError('dataframe_or_filepath (2nd in the list) must be either a DataFrame or str (filepath).')
+                if isinstance(data_indices, dict):  # If data_indices is given
+                    if data_name in data_indices:  # Keep specific indices
+                        df = df.ix[data_indices[data_name]['index'], :]
+                        if 'alias' in data_indices[data_name]:  # Rename these specific indices
+                            df.index = data_indices[data_name]['alias']
 
-        # Limit to specified features
-        if index:  # Extract
-            if index_axis == 0:  # By row
-                df = df.ix[index, :]
-                if isinstance(df, Series):
-                    df = DataFrame(df).T
-            elif index_axis == 1:  # By column
-                df = df.ix[:, index]
-                if isinstance(df, Series):
-                    df = DataFrame(df).T
-                else:
-                    df = df.T
-            else:
-                raise ValueError('index_axis (6th in the list) must be either 0 (row) or 1 (column).')
+                data_bundle[data_name]['data_type'] = data_type
+                data_bundle[data_name]['emphasis'] = emphasis
 
-        dicts[data_name]['dataframe'] = df
-
-        print_log('\tRead {} features & {} samples.'.format(*dicts[data_name]['dataframe'].shape))
-
-    return dicts
+    return data_bundle
 
 
 # ======================================================================================================================
