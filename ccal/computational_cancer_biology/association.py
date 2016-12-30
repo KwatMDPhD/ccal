@@ -88,16 +88,12 @@ def make_association_panels(target, data_bundle, target_ascending=False, target_
                                    filepath_prefix=filepath_prefix)
 
 
-def make_association_panel(target, features,
-                           filepath_scores=None,
-                           target_ascending=False,
-                           n_jobs=1, features_ascending=False,
-                           n_features=0.95, max_n_features=100, n_samplings=30, n_permutations=30,
+def make_association_panel(target, features, filepath_scores=None,
+                           target_ascending=False, features_ascending=False,
+                           n_jobs=1, n_features=0.95, max_n_features=100, n_samplings=30, n_permutations=30,
                            random_seed=RANDOM_SEED,
-                           target_name=None, target_type='continuous',
-                           features_type='continuous',
-                           title=None, plot_colname=False,
-                           filepath_prefix=None):
+                           target_name=None, target_type='continuous', features_type='continuous',
+                           title=None, plot_colname=False, filepath_prefix=None):
     """
     Compute: score_i = function(target, feature_i) for all features.
     Compute confidence interval (CI) for n_features features.
@@ -177,9 +173,8 @@ def make_association_panel(target, features,
 
 
 def compute_association(target, features, function=information_coefficient,
-                        target_ascending=False,
-                        n_jobs=1, features_ascending=False,
-                        n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
+                        target_ascending=False, features_ascending=False,
+                        n_jobs=1, n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
                         random_seed=RANDOM_SEED,
                         filepath=None):
     """
@@ -645,43 +640,54 @@ def plot_association_summary_panel(target, features_bundle, annotations_bundle, 
         save_plot(filepath)
 
 
-def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
-    if data_type == 'continuous':
-        return normalize_dataframe_or_series(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_ASSOCIATION
-    elif data_type == 'categorical':
-        return dataframe.copy(), 0, len(unique(dataframe)), CMAP_CATEGORICAL
-    elif data_type == 'binary':
-        return dataframe.copy(), 0, 1, CMAP_BINARY
-    else:
-        raise ValueError('Target data type must be one of {continuous, categorical, binary}.')
-
-
-def load_data_bundle(directory_path, data_information=(('mutations', 'binary', 'high'),
-                                                       ('promoter_methylations', 'continuous', 'high'),
-                                                       ('regulators', 'continuous', 'high'),
-                                                       ('gene_expressions', 'continuous', 'high'),
-                                                       ('pathways', 'continuous', 'high'),
-                                                       ('protein_expressions', 'continuous', 'high'),
-                                                       ('metabolites', 'continuous', 'high'),
-                                                       ('gene_dependencies', 'continuous', 'low'),
-                                                       ('drug_sensitivities', 'continuous', 'low'),
-                                                       ('annotations', 'categorical', 'high')), data_indices=None, ):
+def load_ccle_bundle(ccle_directory_path):
     """
+
+    :param ccle_directory_path: str;
+    :return: dict;
+        {
+            data_name: {
+                'dataframe': DataFrame,
+                'data_type': str,
+                'emphasis': bool,
+            }
+            ...
+        }
+    """
+
+    ccle_information = [('mutations', 'binary', 'high'),
+                        ('promoter_methylations', 'continuous', 'high'),
+                        ('regulators', 'continuous', 'high'),
+                        ('gene_expressions', 'continuous', 'high'),
+                        ('pathways', 'continuous', 'high'),
+                        ('protein_expressions', 'continuous', 'high'),
+                        ('metabolites', 'continuous', 'high'),
+                        ('gene_dependencies', 'continuous', 'low'),
+                        ('drug_sensitivities', 'continuous', 'low'),
+                        ('annotations', 'categorical', 'high')]
+
+    return load_data_bundle(ccle_directory_path, ccle_information)
+
+
+def load_data_bundle(directory_path, data_information, data_indices=None):
+    """
+
     :param directory_path: str;
     :param data_information: iterable of tuples;
     :param data_indices: dict;
-        {'mutations':{
-            index:[index_1, index_2, ...],
-            alias:[Index 1, Index 2, ...]
+        {
+            'mutations': {
+                index: ['index_1', 'index_2', ...],
+                alias: ['Foo', 'Bar', ...]
             }
+            ...
         }
     :return: dict;
         {
-            name: {
-                dataframe: DataFrame,
-                data_type: str,
-                is_ascending: bool,
-                alias: dict {index: alias, ... }
+            data_name: {
+                'dataframe': DataFrame,
+                'data_type': str,
+                'emphasis': bool,
             }
             ...
         }
@@ -711,6 +717,17 @@ def load_data_bundle(directory_path, data_information=(('mutations', 'binary', '
                 data_bundle[data_name]['emphasis'] = emphasis
 
     return data_bundle
+
+
+def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
+    if data_type == 'continuous':
+        return normalize_dataframe_or_series(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_ASSOCIATION
+    elif data_type == 'categorical':
+        return dataframe.copy(), 0, len(unique(dataframe)), CMAP_CATEGORICAL
+    elif data_type == 'binary':
+        return dataframe.copy(), 0, 1, CMAP_BINARY
+    else:
+        raise ValueError('Target data type must be one of {continuous, categorical, binary}.')
 
 
 # ======================================================================================================================
