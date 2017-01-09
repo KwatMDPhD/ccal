@@ -367,6 +367,35 @@ def get_state_labels(clusterings, k):
     return clusterings.ix[k, :].tolist()
 
 
+# TODO: use explode function, and remove this function
+def define_binary_state_labels(clusterings, k, state_relabeling=None):
+    """
+    Get state labels from clusterings and create binary variable for each state
+    :param clusterings: DataFrame;
+    :param k: int;
+    :param state_relabeling: int; [1, n_states]; new labels for the states or None
+    :return: DataFrame;
+    """
+
+    k_labels = clusterings.ix[k, :]
+
+    if state_relabeling:
+        for i in range(len(k_labels)):
+            k_labels.ix[i] = state_relabeling[k_labels.ix[i] - 1]
+
+    u_labels = k_labels.unique().tolist()
+    max_index = len(u_labels) + 1
+    u_labels.extend([max_index])
+
+    binary_labels = DataFrame(index=u_labels, columns=clusterings.columns)
+    for state in k_labels.unique():
+        binary_labels.ix[state, :] = (k_labels == state).astype('int')
+
+    binary_labels.ix[max_index, :] = k_labels
+
+    return binary_labels
+
+
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
@@ -376,16 +405,16 @@ def make_oncogps(training_h, training_states, std_max=3,
                  n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
                  component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
                  samples_to_plot=None,
-                 annotation=(), annotation_name='', annotation_type='continuous',
+                 annotation=(), annotation_name='', annotation_type='continuous', annotation_ascending=False,
                  title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
-                 component_markersize=16, component_markerfacecolor='#000726',
+                 component_marker='o', component_markersize=30, component_markerfacecolor='#000726',
                  component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
-                 component_names=(), component_text_position='auto', component_fontsize=22,
-                 delaunay_linewidth=1, delaunay_linecolor='#000000',
-                 colors=(), bad_color='#999999', max_background_saturation=1,
-                 n_contours=26, contour_linewidth=0.81, contour_linecolor='#5A5A5A', contour_alpha=0.92,
-                 sample_markersize=19, sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
+                 component_names=(), component_fontsize=32,
+                 delaunay_linewidth=0.7, delaunay_linecolor='#000000',
+                 colors=(), bad_color='wheat', max_background_saturation=1,
+                 n_contours=26, contour_linewidth=0.60, contour_linecolor='#0099CC', contour_alpha=0.80,
+                 sample_markersize=23, sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
                  sample_name_size=16, sample_name_color=None,
                  legend_markersize=22, legend_fontsize=16, effectplot_type='violine',
                  effectplot_mean_markerfacecolor='#FFFFFF', effectplot_mean_markeredgecolor='#FF0082',
@@ -414,17 +443,18 @@ def make_oncogps(training_h, training_states, std_max=3,
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+    :param annotation_ascending: bool;
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
+    :param component_marker: str;
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
     :param component_markeredgecolor: matplotlib color;
     :param component_names: iterable; (n_components)
-    :param component_text_position: str; {'auto', 'top', 'bottom'}
     :param component_fontsize: number;
     :param delaunay_linewidth: number;
     :param delaunay_linecolor: matplotlib color;
@@ -546,28 +576,60 @@ def make_oncogps(training_h, training_states, std_max=3,
                   '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
                   '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008B', '#D2B48C', '#006400']
 
-    _plot_onco_gps(components=components, samples=samples, grid_probabilities=grid_probabilities,
-                   grid_states=grid_states, n_training_states=len(set(training_states)),
-                   annotation=annotation, annotation_name=annotation_name, annotation_type=annotation_type,
+    _plot_onco_gps(components=components,
+                   samples=samples,
+                   grid_probabilities=grid_probabilities,
+                   grid_states=grid_states,
+                   n_training_states=len(set(training_states)),
+
+                   annotation=annotation,
+                   annotation_name=annotation_name,
+                   annotation_type=annotation_type,
+                   annotation_ascending=annotation_ascending,
+
                    std_max=std_max,
-                   title=title, title_fontsize=title_fontsize, title_fontcolor=title_fontcolor,
-                   subtitle_fontsize=subtitle_fontsize, subtitle_fontcolor=subtitle_fontcolor,
-                   component_markersize=component_markersize, component_markerfacecolor=component_markerfacecolor,
+
+                   title=title,
+                   title_fontsize=title_fontsize,
+                   title_fontcolor=title_fontcolor,
+
+                   subtitle_fontsize=subtitle_fontsize,
+                   subtitle_fontcolor=subtitle_fontcolor,
+
+                   component_marker=component_marker,
+                   component_markersize=component_markersize,
+                   component_markerfacecolor=component_markerfacecolor,
                    component_markeredgewidth=component_markeredgewidth,
                    component_markeredgecolor=component_markeredgecolor,
-                   component_names=component_names, component_text_position=component_text_position,
+                   component_names=component_names,
                    component_fontsize=component_fontsize,
-                   delaunay_linewidth=delaunay_linewidth, delaunay_linecolor=delaunay_linecolor,
-                   colors=colors, bad_color=bad_color, max_background_saturation=max_background_saturation,
-                   n_contours=n_contours, contour_linewidth=contour_linewidth, contour_linecolor=contour_linecolor,
+
+                   delaunay_linewidth=delaunay_linewidth,
+                   delaunay_linecolor=delaunay_linecolor,
+
+                   colors=colors,
+                   bad_color=bad_color,
+                   max_background_saturation=max_background_saturation,
+
+                   n_contours=n_contours,
+                   contour_linewidth=contour_linewidth,
+                   contour_linecolor=contour_linecolor,
                    contour_alpha=contour_alpha,
+
                    sample_markersize=sample_markersize,
-                   sample_markeredgewidth=sample_markeredgewidth, sample_markeredgecolor=sample_markeredgecolor,
-                   sample_name_size=sample_name_size, sample_name_color=sample_name_color,
-                   legend_markersize=legend_markersize, legend_fontsize=legend_fontsize,
-                   effectplot_type=effectplot_type, effectplot_mean_markerfacecolor=effectplot_mean_markerfacecolor,
+                   sample_markeredgewidth=sample_markeredgewidth,
+                   sample_markeredgecolor=sample_markeredgecolor,
+                   sample_name_size=sample_name_size,
+                   sample_name_color=sample_name_color,
+
+                   legend_markersize=legend_markersize,
+                   legend_fontsize=legend_fontsize,
+
+                   effectplot_type=effectplot_type,
+                   effectplot_mean_markerfacecolor=effectplot_mean_markerfacecolor,
                    effectplot_mean_markeredgecolor=effectplot_mean_markeredgecolor,
                    effectplot_median_markeredgecolor=effectplot_median_markeredgecolor,
+
                    filepath=filepath)
 
 
@@ -831,22 +893,60 @@ def _process_annotation(annotation, ordered_indices):
 # ======================================================================================================================
 # Plot Onco-GPS map
 # ======================================================================================================================
-def _plot_onco_gps(components, samples,
-                   grid_probabilities, grid_states, n_training_states,
-                   annotation, annotation_name, annotation_type,
+def _plot_onco_gps(components,
+                   samples,
+                   grid_probabilities,
+                   grid_states,
+                   n_training_states,
+
+                   annotation,
+                   annotation_name,
+                   annotation_type,
+                   annotation_ascending,
+
                    std_max,
-                   title, title_fontsize, title_fontcolor, subtitle_fontsize, subtitle_fontcolor,
-                   component_markersize, component_markerfacecolor,
-                   component_markeredgewidth, component_markeredgecolor,
-                   component_names, component_text_position, component_fontsize,
-                   delaunay_linewidth, delaunay_linecolor,
-                   colors, bad_color, max_background_saturation,
-                   n_contours, contour_linewidth, contour_linecolor, contour_alpha,
-                   sample_markersize, sample_markeredgewidth, sample_markeredgecolor,
-                   sample_name_size, sample_name_color,
-                   legend_markersize, legend_fontsize,
-                   effectplot_type, effectplot_mean_markerfacecolor,
-                   effectplot_mean_markeredgecolor, effectplot_median_markeredgecolor,
+
+                   title,
+                   title_fontsize,
+                   title_fontcolor,
+
+                   subtitle_fontsize,
+                   subtitle_fontcolor,
+
+                   component_marker,
+                   component_markersize,
+                   component_markerfacecolor,
+                   component_markeredgewidth,
+                   component_markeredgecolor,
+                   component_names,
+                   component_fontsize,
+
+                   delaunay_linewidth,
+                   delaunay_linecolor,
+
+                   colors,
+                   bad_color,
+                   max_background_saturation,
+
+                   n_contours,
+                   contour_linewidth,
+                   contour_linecolor,
+                   contour_alpha,
+
+                   sample_markersize,
+                   sample_markeredgewidth,
+                   sample_markeredgecolor,
+                   sample_name_size,
+                   sample_name_color,
+
+                   legend_markersize,
+                   legend_fontsize,
+
+                   effectplot_type,
+                   effectplot_mean_markerfacecolor,
+                   effectplot_mean_markeredgecolor,
+                   effectplot_median_markeredgecolor,
+
                    filepath):
     """
     Plot Onco-GPS map.
@@ -858,18 +958,19 @@ def _plot_onco_gps(components, samples,
     :param annotation: Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+    :param annotation_ascending: logical True or False
     :param std_max: number; threshold to clip standardized values
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
+    :param component_marker;
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
     :param component_markeredgewidth: number;
     :param component_markeredgecolor: matplotlib color;
     :param component_names: iterable;
-    :param component_text_position: str; {'auto', 'top', 'bottom'}
     :param component_fontsize: number;
     :param delaunay_linewidth: number;
     :param delaunay_linecolor: matplotlib color;
@@ -931,7 +1032,7 @@ def _plot_onco_gps(components, samples,
                   fontsize=subtitle_fontsize, weight='bold', color=subtitle_fontcolor)
 
     # Plot components and their labels
-    ax_map.plot(components.ix[:, 'x'], components.ix[:, 'y'], marker='D', linestyle='',
+    ax_map.plot(components.ix[:, 'x'], components.ix[:, 'y'], linestyle='', marker=component_marker,
                 markersize=component_markersize, markerfacecolor=component_markerfacecolor,
                 markeredgewidth=component_markeredgewidth, markeredgecolor=component_markeredgecolor,
                 aa=True, clip_on=False, zorder=6)
@@ -940,33 +1041,41 @@ def _plot_onco_gps(components, samples,
     convexhull = ConvexHull(components)
     convexhull_region = Path(convexhull.points[convexhull.vertices])
 
-    # Put labels on top or bottom of the component markers
-    vertical_shift = -0.03
-
     if any(component_names):
         components.index = component_names
     for i in components.index:
-        # Compute vertical shift
-        if component_text_position == 'auto':
-            if convexhull_region.contains_point((components.ix[i, 'x'], components.ix[i, 'y'] + vertical_shift)):
-                vertical_shift *= -1
-        elif component_text_position == 'top':
-            vertical_shift *= -1
-        elif component_text_position == 'bottom':
-            pass
 
+        # Get x & y coordinates
         x = components.ix[i, 'x']
-        y = components.ix[i, 'y'] + vertical_shift
-        ax_map.text(x, y, i,
-                    horizontalalignment='center', verticalalignment='center',
-                    fontsize=component_fontsize, weight='bold', color=component_markerfacecolor,
-                    zorder=6)
+        y = components.ix[i, 'y']
+
+        # Shift
+        if x < 0.5:
+            h_shift = -0.0475
+        elif 0.5 < x:
+            h_shift = 0.0475
+        else:
+            h_shift = 0
+        if y < 0.5:
+            v_shift = -0.0475
+        elif 0.5 < y:
+            v_shift = 0.0475
+        else:
+            v_shift = 0
+        if convexhull_region.contains_point((components.ix[i, 'x'] + h_shift, components.ix[i, 'y'] + v_shift)):  # Flip
+            h_shift *= -1
+            v_shift *= -1
+        x += h_shift
+        y += v_shift
+
+        # Plot
+        ax_map.text(x, y, i, horizontalalignment='center', verticalalignment='center',
+                    fontsize=component_fontsize, weight='bold', color=component_markerfacecolor, zorder=6)
 
     # Plot Delaunay triangulation
     delaunay = Delaunay(components)
     ax_map.triplot(delaunay.points[:, 0], delaunay.points[:, 1], delaunay.simplices.copy(),
-                   linewidth=delaunay_linewidth, color=delaunay_linecolor,
-                   aa=True, clip_on=False, zorder=4)
+                   linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, clip_on=False, zorder=4)
 
     # Assign colors to states
     state_colors = {}
@@ -992,10 +1101,9 @@ def _plot_onco_gps(components, samples,
                 rgba = state_colors[grid_states[i, j]]
                 hsv = rgb_to_hsv(*rgba[:3])
                 a = (grid_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
-                image[j, i] = hsv_to_rgb(hsv[0], a * max_background_saturation, hsv[2])
-    ax_map.imshow(image,
-                  origin='lower', aspect='auto', extent=ax_map.axis(),
-                  clip_on=False, zorder=1)
+                image[j, i] = hsv_to_rgb(hsv[0], a * max_background_saturation, hsv[2] * a + (1 - a))
+
+    ax_map.imshow(image, origin='lower', aspect='auto', extent=ax_map.axis(), clip_on=False, zorder=1)
 
     mask = zeros_like(grid_probabilities, dtype=bool)
     for i in range(grid_probabilities.shape[0]):
@@ -1025,9 +1133,11 @@ def _plot_onco_gps(components, samples,
                 std_max)
 
             # Get annotation statistics
-            annotation_min = max(-std_max, samples.ix[:, 'annotation_value'].min())
+            # annotation_min = max(-std_max, samples.ix[:, 'annotation_value'].min())
+            annotation_min = -std_max
             annotation_mean = samples.ix[:, 'annotation_value'].mean()
-            annotation_max = min(std_max, samples.ix[:, 'annotation_value'].max())
+            # annotation_max = min(std_max, samples.ix[:, 'annotation_value'].max())
+            annotation_max = std_max
 
             # Set color map
             cmap = CMAP_CONTINUOUS
@@ -1064,6 +1174,10 @@ def _plot_onco_gps(components, samples,
 
         # Plot annotated samples
         # TODO: add component_ratio logic
+
+        # Set plotting order
+        samples.sort_values('annotation_value', inplace=True, na_position='first', ascending=annotation_ascending)
+
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
@@ -1071,7 +1185,7 @@ def _plot_onco_gps(components, samples,
                 c = bad_color
             else:
                 if annotation_type == 'continuous':
-                    c = cmap(s.ix['annotation_value'])
+                    c = cmap((s.ix['annotation_value'] - annotation_min) / annotation_range)
                 elif annotation_type in ('categorical', 'binary'):
                     if annotation_range:
                         c = cmap((s.ix['annotation_value'] - annotation_min) / annotation_range)
@@ -1155,16 +1269,28 @@ def _plot_onco_gps(components, samples,
         # Plot sample markers
         l, r = ax_legend.axis()[:2]
         x = l - float((r - l) / 5)
-        for i, s in enumerate(samples.ix[:, 'state'].sort_values().unique()):
+        for i, s in enumerate(samples.ix[:, 'state'].unique().sort_values()):
             c = state_colors[s]
             ax_legend.plot(x, i, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
 
-        # Plot color bar
-        if annotation_type == 'continuous':
+        if annotation_type == 'continuous':  # Plot colorbar
             cax, kw = make_axes(ax_colorbar, location='top', fraction=0.39, shrink=1, aspect=16,
                                 cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                                 ticks=[annotation_min, annotation_mean, annotation_max])
             ColorbarBase(cax, **kw)
+
+        elif annotation_type in ('categorical', 'binary'):  # Plot legends
+            l, r = ax_colorbar.axis()[:2]
+            x = l + float((r - l) / 4)
+            for i, s in enumerate(samples.ix[:, 'annotation'].unique().sort_values()):
+                if annotation_range:
+                    c = cmap((s - annotation_min) / annotation_range)
+                else:
+                    c = cmap(0)
+                ax_colorbar.plot(x, 0.1 + 0.5 * i, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True,
+                                 clip_on=False)
+                ax_colorbar.text(x + 0.1, 0.1 + 0.5 * i, s, horizontalalignment='center', verticalalignment='center',
+                                 fontsize=20, color='black', zorder=6)
 
     else:  # Plot samples and sample legends
         # TODO: add component_ratio logic

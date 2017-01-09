@@ -8,6 +8,7 @@ class InstallCommand(install):
         from distutils import log
         log.set_verbosity(log.DEBUG)
 
+
 setup(name='ccal',
       description='Computational Cancer Analysis Library',
       packages=['ccal'],
@@ -20,6 +21,7 @@ setup(name='ccal',
                    'License :: OSI Approved :: MIT License',
                    'Programming Language :: Python :: 3.5'],
       keywords=['computational cancer biology bioinformatics machine learning statistics'],
-      install_requires=['jupyter', 'notebook>=4.2.0','IPython', 'matplotlib', 'seaborn'],
+      install_requires=['jupyter', 'notebook>=4.2.0', 'IPython', 'numpy', 'pandas', 'scipy', 'matplotlib', 'seaborn',
+                        'biopython', 'rpy2'],
       cmdclass={'install': InstallCommand},
       package_data={})

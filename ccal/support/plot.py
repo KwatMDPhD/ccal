@@ -17,12 +17,12 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.cm import Paired, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
-from matplotlib.colors import LinearSegmentedColormap, Normalize
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import plot
 from numpy import array, asarray, unique
 from pandas import Series, DataFrame
-from seaborn import light_palette, heatmap, clustermap, distplot, boxplot, violinplot, set_style, despine
+from seaborn import heatmap, clustermap, distplot, boxplot, violinplot, set_style, despine
 
 from .d2 import get_dendrogram_leaf_indices
 from .file import establish_filepath
@@ -43,21 +43,29 @@ FONT_SUBTITLE = {'fontsize': 20, 'weight': 'bold'}
 FONT = {'fontsize': 12, 'weight': 'bold'}
 
 # Color maps
-CMAP_CONTINUOUS = bwr
-CMAP_CONTINUOUS.set_bad('wheat')
 
+# Continuous 1
+CMAP_CONTINUOUS = bwr
+CMAP_CONTINUOUS.set_bad('yellow')
+
+# Continuous 2
 reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
 greens_half = [0.26, 0.16, 0.09, 0.26, 0.69]
 colordict = {'red': tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
              'green': tuple([(0.1 * i, r, r) for i, r in enumerate(greens_half + [1] + list(reversed(greens_half)))]),
              'blue': tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])}
 CMAP_ASSOCIATION = LinearSegmentedColormap('association', colordict)
+# TODO: consider using yellow here too
 CMAP_ASSOCIATION.set_bad('wheat')
 
+# Categorical
 CMAP_CATEGORICAL = Paired
+# TODO: consider using yellow here too
 CMAP_CATEGORICAL.set_bad('wheat')
 
-CMAP_BINARY = light_palette('black', n_colors=2, as_cmap=True)
+# Binary
+CMAP_BINARY = ListedColormap(['#CDCDCD', '#404040'])
+# TODO: consider using yellow here too
 CMAP_BINARY.set_bad('wheat')
 
 DPI = 1000
@@ -70,11 +78,11 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
                  annot_kws=None, linewidths=0, linecolor='white', cbar=False, cbar_kws=None, cbar_ax=None, square=False,
                  xticklabels=True, yticklabels=True, mask=None,
                  data_type='continuous', normalization_method='-0-', normalization_axis=0, max_std=3, sort_axis=None,
-                 cluster=False, row_annotation=(), column_annotation=(), title=None, xlabel=None, ylabel=None,
-                 xlabel_rotation=0, ylabel_rotation=90,
+                 cluster=False, row_annotation=(), column_annotation=(), annotation_colors=(),
+                 title=None, xlabel=None, ylabel=None, xlabel_rotation=0, ylabel_rotation=90,
                  filepath=None, **kwargs):
     """
-
+    Plot heatmap.
     :param dataframe:
     :param vmin:
     :param vmax:
@@ -101,6 +109,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     :param cluster:
     :param row_annotation:
     :param column_annotation:
+    :param annotation_colors: list; a list of matplotlib color specifications
     :param title:
     :param xlabel:
     :param ylabel:
@@ -208,17 +217,21 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
         if len(set(row_annotation)) <= 2:
             cmap = CMAP_BINARY
         else:
-            cmap = CMAP_CATEGORICAL
-        heatmap(DataFrame(row_annotation), ax=ax_right, cbar=False, xticklabels=False, yticklabels=False,
-                cmap=cmap)
+            if any(annotation_colors):
+                cmap = ListedColormap(annotation_colors)
+            else:
+                cmap = CMAP_CATEGORICAL
+        heatmap(DataFrame(row_annotation), ax=ax_right, cbar=False, xticklabels=False, yticklabels=False, cmap=cmap)
 
     if any(column_annotation):
         if len(set(column_annotation)) <= 2:
             cmap = CMAP_BINARY
         else:
-            cmap = CMAP_CATEGORICAL
-        heatmap(DataFrame(column_annotation).T, ax=ax_top, cbar=False, xticklabels=False, yticklabels=False,
-                cmap=cmap)
+            if any(annotation_colors):
+                cmap = ListedColormap(annotation_colors)
+            else:
+                cmap = CMAP_CATEGORICAL
+        heatmap(DataFrame(column_annotation).T, ax=ax_top, cbar=False, xticklabels=False, yticklabels=False, cmap=cmap)
 
     save_plot(filepath)
 
