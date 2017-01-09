@@ -19,7 +19,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap, ColorConverter
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
-from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma
+from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma, sqrt
 from pandas import DataFrame, Series, read_csv, isnull
 from scipy.spatial import Delaunay, ConvexHull
 from seaborn import violinplot, boxplot
@@ -339,7 +339,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100
         filepath_cophenetic_correlation_coefficients_plot = None
 
     # Plot distance matrix
-    plot_heatmap(distance_matrix,
+    plot_heatmap(distance_matrix, cluster=True,
                  title='Distance Matrix', xlabel='Sample', ylabel='Sample',
                  xticklabels=False, yticklabels=False, filepath=filepath_distance_matrix_plot)
 
@@ -401,11 +401,11 @@ def define_binary_state_labels(clusterings, k, state_relabeling=None):
 # ======================================================================================================================
 def make_oncogps(training_h, training_states, std_max=3,
                  testing_h=None, testing_states=None, testing_h_normalization='using_training_h',
-                 components=None, informational_mds=True, mds_seed=RANDOM_SEED,
+                 components=None, equilateral=False, informational_mds=True, mds_seed=RANDOM_SEED,
                  n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
                  component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
                  samples_to_plot=None,
-                 annotation=(), annotation_name='', annotation_type='continuous', annotation_ascending=False,
+                 annotation=(), annotation_name='', annotation_type='continuous', annotation_ascending=True,
                  title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
                  subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
                  component_marker='o', component_markersize=30, component_markerfacecolor='#000726',
@@ -428,6 +428,7 @@ def make_oncogps(training_h, training_states, std_max=3,
     :param testing_states: iterable of int; (n_samples); sample states
     :param testing_h_normalization: str or None; {'using_training_h', 'using_testing_h', None}
     :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
+    :param equilateral: bool;
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
     :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
@@ -507,9 +508,15 @@ def make_oncogps(training_h, training_states, std_max=3,
     print_log('\tTraining states: {}.'.format(set(training_states)))
 
     # Compute component coordinates
+    if equilateral and training_h.shape[0] == 3:
+        print_log('Using equilateral component coordinates ...'.format(components))
+        components = DataFrame(index=['Vertex 1', 'Vertex 2', 'Vertex 3'], columns=['x', 'y'])
+        components.iloc[0, :] = [0.5, sqrt(3) / 2]
+        components.iloc[1, :] = [1, 0]
+        components.iloc[2, :] = [0, 0]
+
     if isinstance(components, DataFrame):
         print_log('Using predefined component coordinates ...'.format(components))
-        # TODO: enforce matched index
         components.index = training_h.index
     else:
         if informational_mds:
@@ -1078,16 +1085,17 @@ def _plot_onco_gps(components,
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, clip_on=False, zorder=4)
 
     # Assign colors to states
+    unique_states = sorted(samples.ix[:, 'state'].unique())
+    if (isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap)):
+        colors = [colors[s] for s in unique_states]
+    elif any(colors):
+        color_converter = ColorConverter()
+        colors = color_converter.to_rgba_array(colors)
+    else:
+        colors = [CMAP_CATEGORICAL(int(s / n_training_states * CMAP_CATEGORICAL.N)) for s in unique_states]
     state_colors = {}
-    color_converter = ColorConverter()
-    for i, s in enumerate(range(1, n_training_states + 1)):
-        if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
-            state_colors[s] = colors(s)
-        elif len(colors) > 0:
-            colors = color_converter.to_rgba_array(colors)
-            state_colors[s] = colors[i]
-        else:
-            state_colors[s] = CMAP_CATEGORICAL(int(s / n_training_states * CMAP_CATEGORICAL.N))
+    for i, s in enumerate(unique_states):
+        state_colors[s] = colors[i]
 
     # Plot background
     grid_probabilities_min = grid_probabilities.min()
@@ -1269,7 +1277,7 @@ def _plot_onco_gps(components,
         # Plot sample markers
         l, r = ax_legend.axis()[:2]
         x = l - float((r - l) / 5)
-        for i, s in enumerate(samples.ix[:, 'state'].unique().sort_values()):
+        for i, s in enumerate(unique_states):
             c = state_colors[s]
             ax_legend.plot(x, i, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
 
@@ -1282,7 +1290,7 @@ def _plot_onco_gps(components,
         elif annotation_type in ('categorical', 'binary'):  # Plot legends
             l, r = ax_colorbar.axis()[:2]
             x = l + float((r - l) / 4)
-            for i, s in enumerate(samples.ix[:, 'annotation'].unique().sort_values()):
+            for i, s in enumerate(unique_states):
                 if annotation_range:
                     c = cmap((s - annotation_min) / annotation_range)
                 else:
