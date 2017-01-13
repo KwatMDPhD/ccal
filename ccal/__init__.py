@@ -16,4 +16,4 @@ RANDOM_SEED = 20121020
 
 from .computational_cancer_biology import association, imv, oncogps
 from .support.plot import plot_heatmap, plot_clustermap, plot_points, plot_distribution, plot_violine
-from .support.file import read_gct, write_gct, read_gmt, read_gmts_and_collapse, write_rnk
+from .support.file import read_gct, write_gct, read_gmt, read_gmts, write_rnk
