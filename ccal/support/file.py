@@ -323,10 +323,22 @@ def write_colormap(cmap, filepath):
 # ======================================================================================================================
 # CCLE .gct functions
 # ======================================================================================================================
-def load_ccle_bundle(ccle_directory_path):
+def load_ccle_bundle(ccle_directory_path, features=None):
     """
 
-    :param ccle_directory_path: str;
+    :param ccle_directory_path: str; path to the directory with annotation files
+    :param features: dict;
+        {
+            'mutation': {
+                'index': ['GNAS_MUT', 'KRAS_MUT'],
+                'alias': ['GNAS Mutation', 'KRAS Mutation']
+            },
+            'gene_expression': {
+                'index': ['EGFR'],
+                'alias': ['EGFR Expression']
+            },
+            ...
+        }
     :return: dict;
         {
             data_name: {
@@ -338,31 +350,40 @@ def load_ccle_bundle(ccle_directory_path):
         }
     """
 
-    ccle_information = [('mutations', 'binary', 'high'),
-                        ('promoter_methylations', 'continuous', 'high'),
-                        ('regulators', 'continuous', 'high'),
-                        ('gene_expressions', 'continuous', 'high'),
-                        ('pathways', 'continuous', 'high'),
-                        ('protein_expressions', 'continuous', 'high'),
-                        ('metabolites', 'continuous', 'high'),
-                        ('gene_dependencies', 'continuous', 'low'),
-                        ('drug_sensitivities', 'continuous', 'low'),
-                        ('annotations', 'categorical', 'high')]
+    ccle_information = [('mutation', 'binary', 'high'),
+                        ('promoter_methylation', 'continuous', 'high'),
+                        ('regulator', 'continuous', 'high'),
+                        ('gene_expression', 'continuous', 'high'),
+                        ('pathway', 'continuous', 'high'),
+                        ('protein_expression', 'continuous', 'high'),
+                        ('metabolite', 'continuous', 'high'),
+                        ('gene_dependency', 'continuous', 'low'),
+                        ('drug_sensitivity', 'continuous', 'low'),
+                        ('annotation', 'categorical', 'high'),
+                        ('tissue', 'binary', 'high')]
 
-    return load_data_bundle(ccle_directory_path, ccle_information)
+    return load_data_bundle(ccle_directory_path, ccle_information, indices=features)
 
 
-def load_data_bundle(directory_path, data_information, data_indices=None):
+def load_data_bundle(directory_path, information, indices=None):
     """
 
     :param directory_path: str;
-    :param data_information: iterable of tuples;
-    :param data_indices: dict;
+    :param information: iterable of tuples;
+        [('mutation', 'binary', 'high'),
+        ('gene_expression', 'continuous', 'high'),
+        ('drug_sensitivity', 'continuous', 'low'),
+        ...]
+    :param indices: dict;
         {
-            'mutations': {
-                index: ['index_1', 'index_2', ...],
-                alias: ['Foo', 'Bar', ...]
-            }
+            'mutation': {
+                'index': ['GNAS_MUT', 'KRAS_MUT'],
+                'alias': ['GNAS Mutation', 'KRAS Mutation']
+            },
+            'gene_expression': {
+                'index': ['EGFR'],
+                'alias': ['EGFR Expression']
+            },
             ...
         }
     :return: dict;
@@ -378,24 +399,29 @@ def load_data_bundle(directory_path, data_information, data_indices=None):
 
     data_bundle = {}
 
-    for data_name, data_type, emphasis in data_information:  # For each data
+    for data_name, data_type, emphasis in information:  # For each data
+        if isinstance(indices, dict) and data_name not in indices:
+            print('Skipped loading {} because indices were not specified.'.format(data_name))
+            continue
 
         for f in listdir(directory_path):  # Check each file
 
             if data_name in f:  # The file matches this data
-                print('{} matched; loading {} ...'.format(data_name, f))
+                print('Loading {} (matched \'{}\') ...'.format(f, data_name))
 
                 data_bundle[data_name] = {}
 
                 # Read the data
-                df = data_bundle[data_name]['dataframe'] = read_gct(join(directory_path, f))
+                df = read_gct(join(directory_path, f))
 
-                if isinstance(data_indices, dict):  # If data_indices is given
-                    if data_name in data_indices:  # Keep specific indices
-                        df = df.ix[data_indices[data_name]['index'], :]
-                        if 'alias' in data_indices[data_name]:  # Rename these specific indices
-                            df.index = data_indices[data_name]['alias']
+                if isinstance(indices, dict):  # If indices is given
+                    if data_name in indices:  # Keep specific indices
+                        df = df.ix[indices[data_name]['index'], :]
+                        if 'alias' in indices[data_name]:  # Rename these specific indices
+                            df.index = indices[data_name]['alias']
+                        print('\tSelected rows: {}.'.format(df.index.tolist()))
 
+                data_bundle[data_name]['dataframe'] = df
                 data_bundle[data_name]['data_type'] = data_type
                 data_bundle[data_name]['emphasis'] = emphasis
 

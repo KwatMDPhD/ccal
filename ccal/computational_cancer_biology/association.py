@@ -179,13 +179,15 @@ def make_association_summary_panel(target, data_bundle, annotation_files, target
 # ======================================================================================================================
 # Association panel
 # ======================================================================================================================
-def make_association_panels(target, data_bundle, target_ascending=False, target_name=None, target_type='continuous',
+def make_association_panels(target, data_bundle, dropna='all', target_ascending=False, target_name=None,
+                            target_type='continuous',
                             n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, random_seed=RANDOM_SEED,
                             directory_path=None):
     """
     Annotate target with each features in the features bundle.
     :param target: DataFrame or Series; (n_targets, n_elements) or (n_elements)
     :param data_bundle: dict;
+    :param dropna: str; 'any' or 'all'
     :param target_ascending: bool; target is ascending from left to right or not
     :param target_name: str;
     :param target_type: str;
@@ -214,7 +216,7 @@ def make_association_panels(target, data_bundle, target_ascending=False, target_
             else:
                 filepath_prefix = None
 
-            make_association_panel(t, data_dict['dataframe'],
+            make_association_panel(t, data_dict['dataframe'], dropna=dropna,
                                    target_ascending=target_ascending,
                                    n_jobs=n_jobs, features_ascending=data_dict['emphasis'] == 'low',
                                    n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
@@ -225,7 +227,7 @@ def make_association_panels(target, data_bundle, target_ascending=False, target_
                                    filepath_prefix=filepath_prefix)
 
 
-def make_association_panel(target, features, filepath_scores=None,
+def make_association_panel(target, features, dropna='all', filepath_scores=None,
                            target_ascending=False, features_ascending=False,
                            n_jobs=1, n_features=0.95, max_n_features=100, n_samplings=30, n_permutations=30,
                            random_seed=RANDOM_SEED,
@@ -238,6 +240,7 @@ def make_association_panel(target, features, filepath_scores=None,
     Finally plot the result.
     :param target: Series; (n_samples); must have name and index matching features's column names
     :param features: DataFrame; (n_features, n_samples); must have index and column names
+    :param dropna: str; 'any' or 'all'
     :param filepath_scores: str;
     :param target_ascending: bool;
     :param n_jobs: int; number of jobs to parallelize
@@ -274,7 +277,7 @@ def make_association_panel(target, features, filepath_scores=None,
         else:
             filepath = None
 
-        target, features, scores = compute_association(target, features,
+        target, features, scores = compute_association(target, features, dropna=dropna,
                                                        target_ascending=target_ascending,
                                                        n_jobs=n_jobs, features_ascending=features_ascending,
                                                        n_features=n_features, n_samplings=n_samplings,
@@ -309,9 +312,10 @@ def make_association_panel(target, features, filepath_scores=None,
     return scores
 
 
-def compute_association(target, features, function=information_coefficient,
+def compute_association(target, features, function=information_coefficient, dropna='all',
                         target_ascending=False, features_ascending=False,
-                        n_jobs=1, n_features=0.95, n_samplings=30, confidence=0.95, n_permutations=30,
+                        n_jobs=1, min_n_per_job=100, n_features=0.95, n_samplings=30, confidence=0.95,
+                        n_permutations=30,
                         random_seed=RANDOM_SEED,
                         filepath=None):
     """
@@ -321,8 +325,10 @@ def compute_association(target, features, function=information_coefficient,
     :param target: Series; (n_samples); must have name and indices, matching features's column index
     :param features: DataFrame; (n_features, n_samples); must have row and column indices
     :param function: function; scoring function
+    :param dropna: str; 'any' or 'all'
     :param target_ascending: bool; target is ascending or not
     :param n_jobs: int; number of jobs to parallelize
+    :param min_n_per_job: int; minimum number of n per job
     :param features_ascending: bool; True if features scores increase from top to bottom, and False otherwise
     :param n_features: int or float; number of features to compute confidence interval and plot;
                         number threshold if >= 1, percentile threshold if < 1, and don't compute if None
@@ -341,7 +347,8 @@ def compute_association(target, features, function=information_coefficient,
     # Make sure target is a Series and features a DataFrame
     # Keep samples found in both target and features
     # Drop features with less than 2 unique values
-    target, features = _preprocess_target_and_features(target, features, target_ascending=target_ascending)
+    target, features = _preprocess_target_and_features(target, features, dropna=dropna,
+                                                       target_ascending=target_ascending)
 
     results = DataFrame(index=features.index, columns=['score', '{} moe'.format(confidence),
                                                        'p-value (forward)', 'p-value (reverse)', 'p-value',
@@ -353,6 +360,8 @@ def compute_association(target, features, function=information_coefficient,
     print_log('Scoring (n_jobs={}) ...'.format(n_jobs))
 
     # Split features for parallel computing
+    if features.shape[0] < n_jobs * min_n_per_job:
+        n_jobs = 1
     split_features = split_dataframe(features, n_jobs)
 
     # Score
@@ -453,13 +462,14 @@ def compute_association(target, features, function=information_coefficient,
     return target, features, results
 
 
-def _preprocess_target_and_features(target, features, target_ascending=False, min_n_unique_values=2):
+def _preprocess_target_and_features(target, features, dropna='all', target_ascending=False, min_n_unique_values=2):
     """
     Make sure target is a Series and features a DataFrame.
     Keep samples found in both target and features.
     Drop features with less than 2 unique values.
     :param target: Series or iterable;
     :param features: DataFrame or Series;
+    :param dropna: 'any' or 'all'
     :param target_ascending: bool;
     :param min_n_unique_values: int;
     :return: Series and DataFrame;
@@ -467,6 +477,8 @@ def _preprocess_target_and_features(target, features, target_ascending=False, mi
 
     if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
         features = DataFrame(features).T
+
+    features.dropna(axis=1, how=dropna, inplace=True)
 
     if not isinstance(target, Series):  # Convert target into a Series
         target = Series(target, index=features.columns)
@@ -668,7 +680,7 @@ def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_la
     """
 
     # Compute association or distance matrix, which is returned at the end
-    comparison_matrix = compute_similarity_matrix(matrix1, matrix2, function, axis=axis, is_distance=is_distance)
+    comparison_matrix = compute_similarity_matrix(matrix2, matrix1, function, axis=axis, is_distance=is_distance)
 
     if filepath_prefix:  # Save
         comparison_matrix.to_csv(filepath_prefix + '.txt', sep='\t')
@@ -678,6 +690,6 @@ def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_la
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    plot_clustermap(comparison_matrix, title=title, xlabel=matrix2_label, ylabel=matrix1_label, filepath=filepath)
+    plot_clustermap(comparison_matrix, title=title, xlabel=matrix1_label, ylabel=matrix2_label, filepath=filepath)
 
     return comparison_matrix

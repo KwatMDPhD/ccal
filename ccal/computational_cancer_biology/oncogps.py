@@ -405,8 +405,8 @@ def make_oncogps(training_h, training_states, std_max=3,
                  component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
                  samples_to_plot=None,
                  annotation=(), annotation_name='', annotation_type='continuous', annotation_ascending=True,
-                 title='Onco-GPS Map', title_fontsize=24, title_fontcolor='#3326C0',
-                 subtitle_fontsize=16, subtitle_fontcolor='#FF0039',
+                 title='Onco-GPS Map', title_fontsize=26, title_fontcolor='#3326C0',
+                 subtitle_fontsize=20, subtitle_fontcolor='#FF0039',
                  component_marker='o', component_markersize=30, component_markerfacecolor='#000726',
                  component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
                  component_names=(), component_fontsize=32,
@@ -1004,7 +1004,7 @@ def _plot_onco_gps(components,
     # Plot title
     ax_map.text(0, 1.16, title,
                 fontsize=title_fontsize, weight='bold', color=title_fontcolor, horizontalalignment='left')
-    ax_map.text(0, 1.1, '{} samples, {} components, & {} states'.format(samples.shape[0], components.shape[0],
+    ax_map.text(0, 1.12, '{} samples, {} components, & {} states'.format(samples.shape[0], components.shape[0],
                                                                         n_training_states),
                 fontsize=subtitle_fontsize, weight='bold', color=subtitle_fontcolor, horizontalalignment='left')
 
@@ -1214,9 +1214,9 @@ def _plot_onco_gps(components,
     if filepath:
         save_plot(filepath)
 
-    # # Plot effect plot
-    plt.figure(figsize=FIGURE_SIZE)
-    plot_violine(x='state', y='annotation_value', data=samples, palette=state_colors)
-    if filepath:
-        splits = filepath.split('.')
-        save_plot('{}_violine.{}'.format(splits[:-1], splits[-1]))
+    if isinstance(annotation, Series):  # Plot violine plot
+        plt.figure(figsize=FIGURE_SIZE)
+        plot_violine(x='state', y='annotation_value', data=samples, palette=state_colors)
+        if filepath:
+            splits = filepath.split('.')
+            save_plot('{}_violine.{}'.format(splits[:-1], splits[-1]))
