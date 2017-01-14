@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import asarray
+from numpy import array, asarray, empty_like
 from pandas import DataFrame
 
 
@@ -27,6 +27,35 @@ def quantize(array, precision_factor):
     """
 
     return (asarray(array) * precision_factor).round(0)
+
+
+def discretize_categories(iterable):
+    """
+
+    :param iterable:
+    :return:
+    """
+
+    uniques = sorted(set(iterable))
+
+    discretize = False
+    for v in uniques:
+        if isinstance(v, str):
+            discretize = True
+
+    if discretize:  # Discretize and return an array
+        str_to_int_map = {}
+        for i, v in enumerate(uniques):
+            str_to_int_map[v] = i
+
+        ints = empty_like(iterable, dtype=int)
+        for i, v in enumerate(iterable):
+            ints[i] = str_to_int_map[v]
+
+        return ints
+
+    else:  # Do nothing and return as an array
+        return array(iterable)
 
 
 def flatten_nested_iterable(nested_iterable, list_type=(list, tuple)):

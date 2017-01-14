@@ -15,15 +15,16 @@ from os.path import isfile
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.cm import Paired, bwr
+from matplotlib.cm import Paired, Dark2, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import plot
-from numpy import array, asarray, unique
+from numpy import array, unique
 from pandas import Series, DataFrame
-from seaborn import heatmap, clustermap, distplot, boxplot, violinplot, set_style, despine
+from seaborn import heatmap, clustermap, distplot, violinplot, set_style, despine
 
+from .d1 import discretize_categories
 from .d2 import get_dendrogram_leaf_indices
 from .file import establish_filepath
 from .str_ import title_str, untitle_str
@@ -60,6 +61,7 @@ CMAP_ASSOCIATION.set_bad('wheat')
 
 # Categorical
 CMAP_CATEGORICAL = Paired
+CMAP_CATEGORICAL_2 = Dark2
 # TODO: consider using yellow here too
 CMAP_CATEGORICAL.set_bad('wheat')
 
@@ -360,44 +362,63 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     save_plot(filepath)
 
 
-def plot_violine(target, features, features_name, feature_names=(), box_or_violine='violine',
-                 title=None, xlabel=None, ylabel=None,
-                 filepath_prefix=None):
+def plot_violine(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2, scale='count',
+                 scale_hue=True, gridsize=100, width=0.8, inner='quartile', split=False, orient=None, linewidth=None,
+                 color=None, palette=None, saturation=0.75, ax=None,
+                 title=None, xlabel=None, ylabel=None, filepath_prefix=None, **kwargs):
     """
-
-    :param target:
-    :param features:
-    :param features_name:
-    :param feature_names:
-    :param box_or_violine:
+    Plot violine plot.
+    :param x:
+    :param y:
+    :param hue:
+    :param data:
+    :param order:
+    :param hue_order:
+    :param bw:
+    :param cut:
+    :param scale:
+    :param scale_hue:
+    :param gridsize:
+    :param width:
+    :param inner:
+    :param split:
+    :param orient:
+    :param linewidth:
+    :param color:
+    :param palette:
+    :param saturation:
+    :param ax:
     :param title:
     :param xlabel:
     :param ylabel:
     :param filepath_prefix:
+    :param kwargs:
     :return:
     """
 
+    # Initialize a figure
     plt.figure(figsize=FIGURE_SIZE)
 
+    violinplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, bw=bw, cut=cut, scale=scale,
+               scale_hue=scale_hue, gridsize=gridsize, width=width, inner=inner, split=split, orient=orient,
+               linewidth=linewidth, color=color, palette=palette, saturation=saturation, ax=ax, **kwargs)
+
+    # Score; discretize str valued iterables if not already discretized
+    if isinstance(x, str):
+        x = discretize_categories(data.ix[:, x])
+    if isinstance(y, str):
+        y = discretize_categories(data.ix[:, y])
+
+    score, pval = compute_association_and_pvalue(x, y, n_permutations=100)
+    l, r, b, t = plt.gca().axis()
+    plt.gca().text((l + r) / 2, t + 0.016 * t, 'IC = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
+                   horizontalalignment='center', **FONT_SUBTITLE)
+
+    decorate(title, xlabel, ylabel)
+
+    # Set plot aesthetics
     set_style('whitegrid')
-
-    for r_i, r in features.ix[feature_names, :].iterrows():
-        common_r = r.ix[target.index]
-
-        plt.figure(figsize=FIGURE_SIZE)
-        if box_or_violine == 'violine':
-            violinplot(x=target, y=common_r)
-        if box_or_violine == 'box':
-            boxplot(x=target, y=common_r)
-        despine(left=True)
-        score, pval = compute_association_and_pvalue(asarray(target), asarray(common_r), n_permutations=1000)
-        l, r, b, t = plt.gca().axis()
-        plt.gca().text((l + r) / 2, t + 0.016 * t, 'Score = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
-                       horizontalalignment='center', **FONT_SUBTITLE)
-
-        if not title:
-            title = '{} {}'.format(features_name, r_i)
-        decorate(title, xlabel, ylabel)
+    despine(left=True)
 
     if filepath_prefix:
         save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
@@ -464,6 +485,8 @@ def decorate(title,
     :param ylabel_rotation:
     :param xticks:
     :param yticks:
+    :param max_n_xticks:
+    :param max_n_yticks:
     :param max_xtick_size:
     :param max_ytick_size:
     :param ax:
