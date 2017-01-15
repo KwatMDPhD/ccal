@@ -573,7 +573,7 @@ def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=True, col
         gmt.dropna(axis=1, how='all', inplace=True)
 
     if collapse:
-        return sorted(gmt.unstack().dropna().values)
+        return sorted(gmt.unstack().dropna().unique().values)
     else:
         return gmt
 
@@ -605,7 +605,8 @@ def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, c
         gmt.columns = ['Gene {}'.format(i) for i in range(1, gmt.shape[1] + 1)]
 
     if collapse:
-        return sorted(gmt.unstack().dropna().values)
+        print(gmt.unstack().dropna().unique().values)
+        return sorted(gmt.unstack().dropna().unique().values)
     else:
         return gmt
 
