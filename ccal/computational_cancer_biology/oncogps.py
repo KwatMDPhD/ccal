@@ -43,7 +43,53 @@ from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_seed=RANDOM_SEED, directory_path=None):
+def drop_na(df, axis='both', how='all'):
+    """
+
+    :param df:
+    :param axis:
+    :param how:
+    :return:
+    """
+
+    if axis in ('both', 1):
+        df = _drop_na(df, axis=1, how=how)
+
+    if axis in ('both', 0):
+        df = _drop_na(df, axis=0, how=how)
+
+    return df
+
+
+def _drop_na(df, axis=0, how='all'):
+    """
+
+    :param df:
+    :param how:
+    :return:
+    """
+
+    if axis == 0:
+        axis_name = 'column'
+    else:
+        axis_name = 'row'
+
+    if how == 'any':
+        nas = df.isnull().any(axis=axis)
+    elif how == 'all':
+        nas = df.isnull().all(axis=axis)
+    else:
+        raise ValueError('Unknown \'how\' \'{}\'; pick from (\'any\', \'all\').'.format(how))
+
+    if any(nas):
+        df = df.ix[~nas, :]
+        print_log('Dropped {} {}(s) without any value: {}'.format(nas.sum(), axis_name, nas.index[nas].tolist()))
+
+    return df
+
+
+def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=100, random_seed=RANDOM_SEED,
+                      directory_path=None):
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
@@ -63,6 +109,9 @@ def define_components(matrix, ks, n_jobs=1, n_clusterings=100, random_seed=RANDO
 
     if isinstance(matrix, str):  # Read form a .gct file
         matrix = read_gct(matrix)
+
+    # Drop na rows & columns
+    matrix = drop_na(matrix, how=how_to_drop_na)
 
     # Rank normalize the input matrix by column
     # TODO: try changing n_ranks (choose automatically)
@@ -1005,7 +1054,7 @@ def _plot_onco_gps(components,
     ax_map.text(0, 1.16, title,
                 fontsize=title_fontsize, weight='bold', color=title_fontcolor, horizontalalignment='left')
     ax_map.text(0, 1.12, '{} samples, {} components, & {} states'.format(samples.shape[0], components.shape[0],
-                                                                        n_training_states),
+                                                                         n_training_states),
                 fontsize=subtitle_fontsize, weight='bold', color=subtitle_fontcolor, horizontalalignment='left')
 
     # Plot component markers
