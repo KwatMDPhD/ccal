@@ -41,8 +41,8 @@ from ..support.str_ import title_str, untitle_str
 # ======================================================================================================================
 # Association summary panel
 # ======================================================================================================================
-def make_association_summary_panel(target, data_bundle, annotation_files, target_type='continuous', title=None,
-                                   filepath=None):
+def make_association_summary_panel(target, data_bundle, annotation_files, target_ascending=False,
+                                   target_type='continuous', title=None, filepath=None):
     """
     Plot summary association panel.
     :param target: Series; (n_elements);
@@ -64,24 +64,24 @@ def make_association_summary_panel(target, data_bundle, annotation_files, target
     n = 0
     for features_name, features_dict in data_bundle.items():
         n += features_dict['dataframe'].shape[0] + 3
-    # Add row for color bar
+    # Add a row for color bar
     n += 1
-
     # Set up figure
-    figure(figsize=FIGURE_SIZE)
-
+    fig = figure(figsize=FIGURE_SIZE)
     # Set up axis grids
     gridspec = GridSpec(n, 1)
 
+
     #
-    # Annotate this target with each feature
+    # Annotate target with features
     #
     r_i = 0
     if not title:
-        title = 'Association Summary Panel for {}'.format(target.name)
-    plot_figure_title = True
-    plot_header = True
-    for features_name, features_dict in data_bundle:
+        title = 'Association Summary Panel for {}'.format(title_str(target.name))
+    fig.suptitle(title, horizontalalignment='center', **FONT_TITLE)
+    plot_annotation_header = True
+
+    for features_name, features_dict in sorted(data_bundle.items()):
 
         # Read features
         features = features_dict['dataframe']
@@ -93,30 +93,32 @@ def make_association_summary_panel(target, data_bundle, annotation_files, target
         # Keep only columns shared by target and features
         shared = target.index & features.columns
         if any(shared):
-            # Target is always descending from right to left
-            a_target = target.ix[shared].sort_values(ascending=False)
+            a_target = target.ix[shared].sort_values(ascending=target_ascending)
             features = features.ix[:, a_target.index]
             print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
                                                                                                   target.size,
                                                                                                   features.shape[1],
                                                                                                   len(shared)))
         else:
-            raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
-                                                                                                        target.size,
-                                                                                                        features.shape[
-                                                                                                            1]))
+            raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared column.'.format(target.name,
+                                                                                                       target.size,
+                                                                                                       features.shape[
+                                                                                                           1]))
 
         # Read corresponding annotations file
         annotations = read_csv(annotation_files[features_name], sep='\t', index_col=0)
         # Keep only features in the features dataframe and sort by score
-        annotations = annotations.ix[features.index, :].sort_values('score',
-                                                                    ascending=features_dict['emphasis'] == 'low')
+        annotations = annotations.ix[features_dict['original_index'], :]
+        annotations.index = features.index
+        annotations.sort_values('score', ascending=features_dict['emphasis'] == 'low')
+
         # Apply the sorted index to featuers
         features = features.ix[annotations.index, :]
 
-        if any(features_dict['alias']):  # Use alias as index
-            features.index = features_dict['alias']
-            annotations.index = features.index
+        # TODO: update logic and consider removing this
+        # if any(features_dict['alias']):  # Use alias as index
+        #     features.index = features_dict['alias']
+        #     annotations.index = features.index
 
         # Set up axes
         r_i += 1
@@ -128,14 +130,10 @@ def make_association_summary_panel(target, data_bundle, annotation_files, target
         features_ax = subplot(gridspec[r_i: r_i + features.shape[0], 0])
         r_i += features.shape[0]
 
-        if plot_figure_title:  # Plot figure title
-            title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 2, title, horizontalalignment='center',
-                          **FONT_TITLE)
-            plot_figure_title = False
-
         # Plot title
         title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 0.3,
-                      '{} (n={})'.format(features_name, len(shared)), horizontalalignment='center', **FONT_SUBTITLE)
+                      '{} (n={})'.format(title_str(features_name), len(shared)),
+                      horizontalalignment='center', **FONT_SUBTITLE)
 
         # Plot target
         heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
@@ -143,11 +141,11 @@ def make_association_summary_panel(target, data_bundle, annotation_files, target
         for t in target_ax.get_yticklabels():
             t.set(rotation=0, **FONT)
 
-        if plot_header:  # Plot header only for the 1st target axis
+        if plot_annotation_header:  # Plot header only for the 1st target axis
             target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
                            ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR', verticalalignment='center',
                            **FONT)
-            plot_header = False
+            plot_annotation_header = False
 
         # Plot features
         heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=False,

@@ -416,9 +416,15 @@ def load_data_bundle(directory_path, information, indices=None):
 
                 if isinstance(indices, dict):  # If indices is given
                     if data_name in indices:  # Keep specific indices
-                        df = df.ix[indices[data_name]['index'], :]
+                        index = indices[data_name]['index']
+                        df = df.ix[index, :]
+
+                        # Save the original index names
+                        data_bundle[data_name]['original_index'] = index
+
                         if 'alias' in indices[data_name]:  # Rename these specific indices
                             df.index = indices[data_name]['alias']
+
                         print('\tSelected rows: {}.'.format(df.index.tolist()))
 
                 data_bundle[data_name]['dataframe'] = df
