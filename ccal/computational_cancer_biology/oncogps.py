@@ -33,67 +33,23 @@ from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
 from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
-from ..support.d2 import drop_uniform_slice_from_dataframe
+from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
 from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
 from ..support.log import print_log
 from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_CATEGORICAL_2, CMAP_BINARY, save_plot, \
-    plot_heatmap, plot_points, plot_violine, plot_nmf
+    plot_heatmap, plot_points, plot_violin_or_box, plot_nmf
 
 
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def drop_na(df, axis='both', how='all'):
-    """
-
-    :param df:
-    :param axis:
-    :param how:
-    :return:
-    """
-
-    if axis in ('both', 1):
-        df = _drop_na(df, axis=1, how=how)
-
-    if axis in ('both', 0):
-        df = _drop_na(df, axis=0, how=how)
-
-    return df
-
-
-def _drop_na(df, axis=0, how='all'):
-    """
-
-    :param df:
-    :param how:
-    :return:
-    """
-
-    if axis == 0:
-        axis_name = 'column'
-    else:
-        axis_name = 'row'
-
-    if how == 'any':
-        nas = df.isnull().any(axis=axis)
-    elif how == 'all':
-        nas = df.isnull().all(axis=axis)
-    else:
-        raise ValueError('Unknown \'how\' \'{}\'; pick from (\'any\', \'all\').'.format(how))
-
-    if any(nas):
-        df = df.ix[~nas, :]
-        print_log('Dropped {} {}(s) without any value: {}'.format(nas.sum(), axis_name, nas.index[nas].tolist()))
-
-    return df
-
-
 def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=100, random_seed=RANDOM_SEED,
                       directory_path=None):
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
     :param matrix: DataFrame or str; (n_rows, n_columns) or filepath to a .gct file
+    :param how_to_drop_na: str; 'all' or 'any'
     :param ks: iterable or int; iterable of int k used for NMF
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
@@ -111,7 +67,7 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
         matrix = read_gct(matrix)
 
     # Drop na rows & columns
-    matrix = drop_na(matrix, how=how_to_drop_na)
+    matrix = drop_na_2d(matrix, how=how_to_drop_na)
 
     # Rank normalize the input matrix by column
     # TODO: try changing n_ranks (choose automatically)
@@ -447,55 +403,115 @@ def define_binary_state_labels(clusterings, k, state_relabeling=None):
 # ======================================================================================================================
 # Make Onco-GPS map
 # ======================================================================================================================
-def make_oncogps(training_h, training_states, std_max=3,
-                 testing_h=None, testing_states=None, testing_h_normalization='using_training_h',
-                 components=None, equilateral=False, informational_mds=True, mds_seed=RANDOM_SEED,
-                 n_pulls=None, power=None, fit_min=0, fit_max=2, power_min=1, power_max=5,
-                 component_ratio=0, n_grids=256, kde_bandwidths_factor=1,
+def make_oncogps(training_h,
+                 training_states,
+                 std_max=3,
+
+                 testing_h=None,
+                 testing_states=None,
+                 testing_h_normalization='using_training_h',
+
+                 components=None,
+                 equilateral=False,
+                 informational_mds=True,
+                 mds_seed=RANDOM_SEED,
+
+                 n_pulls=None,
+                 power=None,
+                 fit_min=0,
+                 fit_max=2,
+                 power_min=1,
+                 power_max=5,
+
+                 n_grids=256,
+                 kde_bandwidths_factor=1,
+
                  samples_to_plot=None,
-                 annotation=(), annotation_name='', annotation_type='continuous', annotation_ascending=True,
-                 title='Onco-GPS Map', title_fontsize=26, title_fontcolor='#3326C0',
-                 subtitle_fontsize=20, subtitle_fontcolor='#FF0039',
-                 component_marker='o', component_markersize=30, component_markerfacecolor='#000726',
-                 component_markeredgewidth=2.6, component_markeredgecolor='#FFFFFF',
-                 component_names=(), component_fontsize=32,
-                 delaunay_linewidth=0.7, delaunay_linecolor='#000000',
-                 colors=(), bad_color='wheat', max_background_saturation=1,
-                 n_contours=26, contour_linewidth=0.60, contour_linecolor='#0099CC', contour_alpha=0.80,
-                 sample_markersize=23, sample_markeredgewidth=0.92, sample_markeredgecolor='#000000',
-                 sample_name_size=16, sample_name_color=None,
-                 legend_markersize=22, legend_fontsize=16,
+                 component_ratio=0,
+
+                 annotation=(),
+                 annotation_name='',
+                 annotation_type='continuous',
+                 annotation_ascending=True,
+                 violin_or_box='violin',
+
+                 title='Onco-GPS Map',
+                 title_fontsize=26,
+                 title_fontcolor='#3326C0',
+
+                 subtitle_fontsize=20,
+                 subtitle_fontcolor='#FF0039',
+
+                 component_marker='o',
+                 component_markersize=26,
+                 component_markerfacecolor='#000726',
+                 component_markeredgewidth=2.6,
+                 component_markeredgecolor='#FFFFFF',
+                 component_names=(),
+                 component_fontsize=26,
+
+                 delaunay_linewidth=0.7,
+                 delaunay_linecolor='#000000',
+
+                 colors=(),
+                 bad_color='wheat',
+                 max_background_saturation=1,
+
+                 n_contours=26,
+                 contour_linewidth=0.60,
+                 contour_linecolor='#262626',
+                 contour_alpha=0.80,
+
+                 sample_markersize=23,
+                 sample_markeredgewidth=0.92,
+                 sample_markeredgecolor='#000000',
+                 sample_name_size=16,
+                 sample_name_color=None,
+
+                 legend_markersize=22,
+                 legend_fontsize=16,
+
                  filepath=None):
     """
     :param training_h: DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param training_states: iterable of int; (n_samples); sample states
     :param std_max: number; threshold to clip standardized values
+
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param testing_states: iterable of int; (n_samples); sample states
     :param testing_h_normalization: str or None; {'using_training_h', 'using_testing_h', None}
+
     :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
     :param equilateral: bool;
     :param informational_mds: bool; use informational MDS or not
     :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+
     :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
     :param power: str or number; power to raise components' influence on each sample
     :param fit_min: number;
     :param fit_max: number;
     :param power_min: number;
     :param power_max: number;
-    :param component_ratio: number; number if int; percentile if float & < 1
+
     :param n_grids: int; number of grids; larger the n_grids, higher the resolution
     :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
+
     :param samples_to_plot: indexer; (n_training_samples), (n_testing_samples), or (n_sample_indices)
+    :param component_ratio: number; number if int; percentile if float & < 1
+
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param annotation_ascending: bool;
+    :param violin_or_box: str; 'violin' or 'box'
+
     :param title: str;
     :param title_fontsize: number;
     :param title_fontcolor: matplotlib color;
+
     :param subtitle_fontsize: number;
     :param subtitle_fontcolor: matplotlib color;
+
     :param component_marker: str;
     :param component_markersize: number;
     :param component_markerfacecolor: matplotlib color;
@@ -503,23 +519,30 @@ def make_oncogps(training_h, training_states, std_max=3,
     :param component_markeredgecolor: matplotlib color;
     :param component_names: iterable; (n_components)
     :param component_fontsize: number;
+
     :param delaunay_linewidth: number;
     :param delaunay_linecolor: matplotlib color;
+
     :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
     :param bad_color: matplotlib color;
     :param max_background_saturation: float; [0, 1]
+
     :param n_contours: int; set to 0 to disable drawing contours
     :param contour_linewidth: number;
     :param contour_linecolor: matplotlib color;
     :param contour_alpha: float; [0, 1]
+
     :param sample_markersize: number;
     :param sample_markeredgewidth: number;
     :param sample_markeredgecolor: matplotlib color;
     :param sample_name_size: number;
     :param sample_name_color: matplotlib color; not plotting sample if None
+
     :param legend_markersize: number;
     :param legend_fontsize: number;
+
     :param filepath: str;
+
     :return: None
     """
 
@@ -635,6 +658,7 @@ def make_oncogps(training_h, training_states, std_max=3,
                    annotation_name=annotation_name,
                    annotation_type=annotation_type,
                    annotation_ascending=annotation_ascending,
+                   violin_or_box=violin_or_box,
 
                    std_max=std_max,
 
@@ -947,6 +971,7 @@ def _plot_onco_gps(components,
                    annotation_name,
                    annotation_type,
                    annotation_ascending,
+                   violin_or_box,
 
                    std_max,
 
@@ -1101,7 +1126,7 @@ def _plot_onco_gps(components,
 
     # Assign colors to states
     unique_states = sorted(samples.ix[:, 'state'].unique())
-    if (isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap)):
+    if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
         colors = [colors[s] for s in unique_states]
     elif any(colors):
         color_converter = ColorConverter()
@@ -1197,7 +1222,8 @@ def _plot_onco_gps(components,
                        fontsize=legend_fontsize * 1.26, weight='bold', horizontalalignment='center')
 
         # Set plotting order and plot
-        samples.sort_values('annotation_value', inplace=True, na_position='first', ascending=annotation_ascending)
+        samples = samples.reindex_axis(
+            samples.ix[:, 'annotation_value'].abs().sort_values(ascending=annotation_ascending).index)
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
@@ -1236,7 +1262,7 @@ def _plot_onco_gps(components,
                 ax_map.text(x, y - 0.03, a, fontsize=legend_fontsize, weight='bold', color=title_fontcolor,
                             rotation=rotation, horizontalalignment='center', verticalalignment='top')
 
-        if annotation_type == 'continuous':  # Plot colorbar
+        if annotation_type == 'continuous':  # Plot color bar
             cax, kw = make_axes(ax_legend, location='bottom', fraction=0.1, shrink=1, aspect=8,
                                 cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                                 ticks=[annotation_min, annotation_mean, annotation_max])
@@ -1263,9 +1289,10 @@ def _plot_onco_gps(components,
     if filepath:
         save_plot(filepath)
 
-    if isinstance(annotation, Series):  # Plot violine plot
-        plt.figure(figsize=FIGURE_SIZE)
-        plot_violine(x='state', y='annotation_value', data=samples, palette=state_colors)
+    if isinstance(annotation, Series):  # Plot violin plot
+        plt.figure(figsize=[n / 2 for n in FIGURE_SIZE])
+        plot_violin_or_box(x='state', y='annotation_value', data=samples, palette=state_colors,
+                           violin_or_box=violin_or_box)
         if filepath:
             splits = filepath.split('.')
-            save_plot('{}_violine.{}'.format(splits[:-1], splits[-1]))
+            save_plot('{}_violin.{}'.format(splits[:-1], splits[-1]))

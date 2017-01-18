@@ -22,7 +22,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import plot
 from numpy import array, unique
 from pandas import Series, DataFrame
-from seaborn import heatmap, clustermap, distplot, violinplot, set_style, despine
+from seaborn import heatmap, clustermap, distplot, violinplot, boxplot, set_style, despine
 
 from .d1 import discretize_categories
 from .d2 import get_dendrogram_leaf_indices
@@ -241,7 +241,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
 def plot_clustermap(dataframe, pivot_kws=None, method='average', metric='euclidean', z_score=None, standard_scale=None,
                     figsize=FIGURE_SIZE, cbar_kws=None, row_cluster=True, col_cluster=True, row_linkage=None,
                     col_linkage=None,
-                    row_colors=None, col_colors=None, mask=None, cmap=CMAP_CONTINUOUS,
+                    row_colors=None, col_colors=None, annotate=False, mask=None, cmap=CMAP_CONTINUOUS,
                     title=None, xlabel=None, ylabel=None, xticklabels=True, yticklabels=True, filepath=None, **kwargs):
     """
 
@@ -259,6 +259,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='average', metric='euclide
     :param col_linkage:
     :param row_colors:
     :param col_colors:
+    :param annotate: bool; show values in the matrix or not
     :param mask:
     :param cmap:
     :param title:
@@ -278,7 +279,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='average', metric='euclide
     clustergrid = clustermap(dataframe, pivot_kws=pivot_kws, method=method, metric=metric, z_score=z_score,
                              standard_scale=standard_scale, figsize=figsize, cbar_kws=cbar_kws, row_cluster=row_cluster,
                              col_cluster=col_cluster, row_linkage=row_linkage, col_linkage=col_linkage,
-                             row_colors=row_colors, col_colors=col_colors, mask=mask, cmap=cmap,
+                             row_colors=row_colors, col_colors=col_colors, annot=annotate, mask=mask, cmap=cmap,
                              xticklabels=xticklabels, yticklabels=yticklabels, **kwargs)
 
     ax_heatmap = clustergrid.ax_heatmap
@@ -362,12 +363,13 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     save_plot(filepath)
 
 
-def plot_violine(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2, scale='count',
-                 scale_hue=True, gridsize=100, width=0.8, inner='quartile', split=False, orient=None, linewidth=None,
-                 color=None, palette=None, saturation=0.75, ax=None,
-                 title=None, xlabel=None, ylabel=None, filepath_prefix=None, **kwargs):
+def plot_violin_or_box(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
+                       scale='count', scale_hue=True, gridsize=100, width=0.8, inner='quartile', split=False,
+                       orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
+                       fliersize=5, whis=1.5, notch=False,
+                       violin_or_box='violin', title=None, xlabel=None, ylabel=None, filepath_prefix=None, **kwargs):
     """
-    Plot violine plot.
+    Plot violin plot.
     :param x:
     :param y:
     :param hue:
@@ -388,6 +390,10 @@ def plot_violine(x=None, y=None, hue=None, data=None, order=None, hue_order=None
     :param palette:
     :param saturation:
     :param ax:
+    :param fliersize:
+    :param whis:
+    :param notch:
+    :param violin_or_box:
     :param title:
     :param xlabel:
     :param ylabel:
@@ -399,9 +405,16 @@ def plot_violine(x=None, y=None, hue=None, data=None, order=None, hue_order=None
     # Initialize a figure
     plt.figure(figsize=FIGURE_SIZE)
 
-    violinplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, bw=bw, cut=cut, scale=scale,
-               scale_hue=scale_hue, gridsize=gridsize, width=width, inner=inner, split=split, orient=orient,
-               linewidth=linewidth, color=color, palette=palette, saturation=saturation, ax=ax, **kwargs)
+    if violin_or_box == 'violin':
+        violinplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, bw=bw, cut=cut, scale=scale,
+                   scale_hue=scale_hue, gridsize=gridsize, width=width, inner=inner, split=split, orient=orient,
+                   linewidth=linewidth, color=color, palette=palette, saturation=saturation, ax=ax, **kwargs)
+    elif violin_or_box == 'box':
+        boxplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, orient=orient, color=color,
+                palette=palette, saturation=saturation, width=width, fliersize=fliersize, linewidth=linewidth,
+                whis=whis, notch=notch, ax=ax, **kwargs)
+    else:
+        raise ValueError('\'violin_or_box\' must be either \'violin\' or \'box\'.')
 
     # Score; discretize str valued iterables if not already discretized
     if isinstance(x, str):

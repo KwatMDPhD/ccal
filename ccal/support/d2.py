@@ -18,6 +18,25 @@ from scipy.cluster.hierarchy import linkage, dendrogram
 
 from .. import RANDOM_SEED
 from ..support.log import print_log
+from ..support.d1 import drop_na_1d
+
+
+def drop_na_2d(df, axis='both', how='all'):
+    """
+
+    :param df:
+    :param axis:
+    :param how:
+    :return:
+    """
+
+    if axis in ('both', 1):
+        df = drop_na_1d(df, axis=1, how=how)
+
+    if axis in ('both', 0):
+        df = drop_na_1d(df, axis=0, how=how)
+
+    return df
 
 
 def drop_nan_columns(arrays):

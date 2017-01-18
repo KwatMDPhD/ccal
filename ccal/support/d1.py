@@ -15,6 +15,33 @@ from numpy import array, asarray, empty_like
 from pandas import DataFrame
 
 
+def drop_na_1d(df, axis=0, how='all'):
+    """
+
+    :param df:
+    :param how:
+    :return:
+    """
+
+    if axis == 0:
+        axis_name = 'column'
+    else:
+        axis_name = 'row'
+
+    if how == 'any':
+        nas = df.isnull().any(axis=axis)
+    elif how == 'all':
+        nas = df.isnull().all(axis=axis)
+    else:
+        raise ValueError('Unknown \'how\' \'{}\'; pick from (\'any\', \'all\').'.format(how))
+
+    if any(nas):
+        df = df.ix[~nas, :]
+        print_log('Dropped {} {}(s) without any value: {}'.format(nas.sum(), axis_name, nas.index[nas].tolist()))
+
+    return df
+
+
 def quantize(array, precision_factor):
     """
     Return a copy of vector that is scaled by precision_factor and then rounded to the nearest integer.

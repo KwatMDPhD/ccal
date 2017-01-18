@@ -71,7 +71,6 @@ def make_association_summary_panel(target, data_bundle, annotation_files, target
     # Set up axis grids
     gridspec = GridSpec(n, 1)
 
-
     #
     # Annotate target with features
     #
@@ -661,7 +660,7 @@ def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
 # Comparison panel
 # ======================================================================================================================
 def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_label='Matrix 2',
-                          function=information_coefficient, axis=0, is_distance=False, title=None,
+                          function=information_coefficient, axis=0, is_distance=False, annotate=True, title=None,
                           filepath_prefix=None):
     """
     Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
@@ -672,6 +671,7 @@ def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_la
     :param function: function; association or distance function
     :param axis: int; 0 for row-wise and 1 for column-wise comparison
     :param is_distance: bool; if True, distances are computed from associations, as in 'distance = 1 - association'
+    :param annotate: bool; show values in the matrix or not
     :param title: str; plot title
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
     :return: DataFrame; association or distance matrix
@@ -688,6 +688,7 @@ def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_la
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    plot_clustermap(comparison_matrix, title=title, xlabel=matrix1_label, ylabel=matrix2_label, filepath=filepath)
+    plot_clustermap(comparison_matrix, title=title, xlabel=matrix1_label, ylabel=matrix2_label, annotate=annotate,
+                    filepath=filepath)
 
     return comparison_matrix
