@@ -1263,10 +1263,13 @@ def _plot_onco_gps(components,
                             rotation=rotation, horizontalalignment='center', verticalalignment='top')
 
         if annotation_type == 'continuous':  # Plot color bar
+            print('\n\n\n**********\n\n\n')
             cax, kw = make_axes(ax_legend, location='bottom', fraction=0.1, shrink=1, aspect=8,
                                 cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                                 ticks=[annotation_min, annotation_mean, annotation_max])
             ColorbarBase(cax, **kw)
+            cax.set_title('Normalized Values', **{'fontsize': 16, 'weight': 'bold'})
+
 
     else:  # Plot samples using state colors
         for idx, s in samples.iterrows():

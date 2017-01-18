@@ -12,13 +12,27 @@ Authors:
 """
 
 from numpy import array, asarray, empty_like
-from pandas import DataFrame
+from pandas import DataFrame, Series
+from .log import print_log
+
+
+def make_series(iterable, index=None, name=None):
+    """
+
+    :param iterable:
+    :param index:
+    :param name:
+    :return:
+    """
+
+    return Series(iterable, index=index, name=name)
 
 
 def drop_na_1d(df, axis=0, how='all'):
     """
 
     :param df:
+    :param axis: int;
     :param how:
     :return:
     """
@@ -42,18 +56,18 @@ def drop_na_1d(df, axis=0, how='all'):
     return df
 
 
-def quantize(array, precision_factor):
+def quantize(array_, precision_factor):
     """
     Return a copy of vector that is scaled by precision_factor and then rounded to the nearest integer.
     To re-scale, simply divide by precision_factor.
     Note that because of rounding, an open interval from (x, y) will give rise to up to
     (x - y) * precision_factor + 1 bins.
-    :param array:
+    :param array_:
     :param precision_factor:
     :return:
     """
 
-    return (asarray(array) * precision_factor).round(0)
+    return (asarray(array_) * precision_factor).round(0)
 
 
 def discretize_categories(iterable):
