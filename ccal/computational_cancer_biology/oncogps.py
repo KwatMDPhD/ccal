@@ -468,7 +468,7 @@ def make_oncogps(training_h,
                  sample_name_size=16,
                  sample_name_color=None,
 
-                 legend_markersize=22,
+                 legend_markersize=16,
                  legend_fontsize=16,
 
                  filepath=None):
