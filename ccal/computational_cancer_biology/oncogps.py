@@ -1223,7 +1223,8 @@ def _plot_onco_gps(components,
 
         # Set plotting order and plot
         samples = samples.reindex_axis(
-            samples.ix[:, 'annotation_value'].abs().sort_values(ascending=annotation_ascending).index)
+            samples.ix[:, 'annotation_value'].abs().sort_values(ascending=annotation_ascending,
+                                                                na_position='first').index)
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
