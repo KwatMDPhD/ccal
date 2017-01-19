@@ -34,7 +34,7 @@ from ..machine_learning.solve import solve_matrix_linear_equation
 from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
-from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
+from ..support.file import read_gct, establish_filepath, mark_filename, load_gct, write_gct, write_dict
 from ..support.log import print_log
 from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_CATEGORICAL_2, CMAP_BINARY, save_plot, \
     plot_heatmap, plot_points, plot_violin_or_box, plot_nmf
@@ -1264,7 +1264,6 @@ def _plot_onco_gps(components,
                             rotation=rotation, horizontalalignment='center', verticalalignment='top')
 
         if annotation_type == 'continuous':  # Plot color bar
-            print('\n\n\n**********\n\n\n')
             cax, kw = make_axes(ax_legend, location='bottom', fraction=0.1, shrink=1, aspect=8,
                                 cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                                 ticks=[annotation_min, annotation_mean, annotation_max])
@@ -1294,9 +1293,8 @@ def _plot_onco_gps(components,
         save_plot(filepath)
 
     if isinstance(annotation, Series):  # Plot violin plot
-        plt.figure(figsize=[n / 2 for n in FIGURE_SIZE])
+        plt.figure(figsize=FIGURE_SIZE)
         plot_violin_or_box(x='state', y='annotation_value', data=samples, palette=state_colors,
                            violin_or_box=violin_or_box)
         if filepath:
-            splits = filepath.split('.')
-            save_plot('{}_violin.{}'.format(splits[:-1], splits[-1]))
+            save_plot(mark_filename(filepath, 'violin', suffix='.pdf'))
