@@ -321,59 +321,13 @@ def write_colormap(cmap, filepath):
 
 
 # ======================================================================================================================
-# CCLE .gct functions
+# .data_table functions
 # ======================================================================================================================
-def load_ccle_bundle(ccle_directory_path, features=None):
-    """
-
-    :param ccle_directory_path: str; path to the directory with annotation files
-    :param features: dict;
-        {
-            'mutation': {
-                'index': ['GNAS_MUT', 'KRAS_MUT'],
-                'alias': ['GNAS Mutation', 'KRAS Mutation']
-            },
-            'gene_expression': {
-                'index': ['EGFR'],
-                'alias': ['EGFR Expression']
-            },
-            ...
-        }
-    :return: dict;
-        {
-            data_name: {
-                'dataframe': DataFrame,
-                'data_type': str,
-                'emphasis': bool,
-            }
-            ...
-        }
-    """
-
-    ccle_information = [('mutation', 'binary', 'high'),
-                        ('promoter_methylation', 'continuous', 'high'),
-                        ('regulator', 'continuous', 'high'),
-                        ('gene_expression', 'continuous', 'high'),
-                        ('pathway', 'continuous', 'high'),
-                        ('protein_expression', 'continuous', 'high'),
-                        ('metabolite', 'continuous', 'high'),
-                        ('gene_dependency', 'continuous', 'low'),
-                        ('drug_sensitivity', 'continuous', 'low'),
-                        ('annotation', 'categorical', 'high'),
-                        ('tissue', 'binary', 'high')]
-
-    return load_data_bundle(ccle_directory_path, ccle_information, indices=features)
-
-
-def load_data_bundle(directory_path, information, indices=None):
+def load_data_table(directory_path, data_table, indices=None):
     """
 
     :param directory_path: str;
-    :param information: iterable of tuples;
-        [('mutation', 'binary', 'high'),
-        ('gene_expression', 'continuous', 'high'),
-        ('drug_sensitivity', 'continuous', 'low'),
-        ...]
+    :param data_table: str or DataFrame; path to a .data_table or data_table DataFrame
     :param indices: dict;
         {
             'mutation': {
@@ -390,16 +344,19 @@ def load_data_bundle(directory_path, information, indices=None):
         {
             data_name: {
                 'dataframe': DataFrame,
-                'data_type': str,
-                'emphasis': bool,
+                'data_type': str ('continuous', 'categorical', or 'binary'),
+                'emphasis': str ('high' or 'low'),
             }
             ...
         }
     """
 
-    data_bundle = {}
+    if isinstance(data_table, str):
+        data_table = read_data_table(data_table)
 
-    for data_name, data_type, emphasis in information:  # For each data
+    # TODO: refactor and unite
+    data_bundle = {}
+    for data_name, (data_type, emphasis) in data_table.iterrows():  # For each data
         if isinstance(indices, dict) and data_name not in indices:
             print('Skipped loading {} because indices were not specified.'.format(data_name))
             continue
@@ -432,6 +389,37 @@ def load_data_bundle(directory_path, information, indices=None):
                 data_bundle[data_name]['emphasis'] = emphasis
 
     return data_bundle
+
+
+def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasis')):
+    """
+    Write <data> to filepath.
+    :param data: iterable of tuples;
+        [('mutation', 'binary', 'high'),
+        ('gene_expression', 'continuous', 'high'),
+        ('drug_sensitivity', 'continuous', 'low'),
+        ...]
+    :param filepath: str; file path to a .data_table (.data_table suffix will be automatically added if not present)
+    :param columns: iterable;
+    :return: None
+    """
+
+    df = DataFrame(data)
+    df.columns = columns
+    df.set_index(columns[0], inplace=True)
+    if not filepath.endswith('.data_table'):
+        filepath = '{}.data_table'.format(filepath)
+    df.to_csv(filepath, sep='\t')
+
+
+def read_data_table(filepath):
+    """
+    Read .data_table.
+    :param filepath: str; file path to a .data_table
+    :return: DataFrame
+    """
+
+    return read_csv(filepath, sep='\t', index_col=0)
 
 
 # ======================================================================================================================

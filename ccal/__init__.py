@@ -19,4 +19,4 @@ sys.setrecursionlimit(10000)
 
 from .computational_cancer_biology import association, imv, oncogps
 from .support.plot import plot_heatmap, plot_clustermap, plot_points, plot_distribution, plot_violin_or_box
-from .support.file import read_gct, write_gct, read_gmt, read_gmts, write_rnk, load_ccle_bundle
+from .support.file import read_gct, write_gct, read_gmt, read_gmts, write_rnk, load_data_table, write_data_table
