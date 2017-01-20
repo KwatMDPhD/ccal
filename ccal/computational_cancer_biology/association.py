@@ -206,7 +206,7 @@ def make_association_panels(target, data_bundle, dropna='all', target_ascending=
         for data_name, data_dict in data_bundle.items():
 
             title = title_str('{} vs {}'.format(t_i, data_name))
-            print_log('{} ...'.format(title))
+            print('{} ...'.format(title))
 
             if directory_path:
                 filepath_prefix = join(directory_path, untitle_str(title))
