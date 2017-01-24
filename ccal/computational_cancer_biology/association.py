@@ -207,9 +207,9 @@ def make_association_panels(target, data_bundle, dropna='all', target_ascending=
         # Annotate this target with each data (feature)
         for data_name, data_dict in data_bundle.items():
 
-            if not target_prefix.endswith(' '):
+            if target_prefix and not target_prefix.endswith(' '):
                 target_prefix += ' '
-            if not data_prefix.endswith(' '):
+            if data_prefix and not data_prefix.endswith(' '):
                 data_prefix += ' '
             title = title_str('{}{} vs {}{}'.format(target_prefix, t_i, data_prefix, data_name))
             print('{} ...'.format(title))
