@@ -22,7 +22,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import plot
 from numpy import array, unique
 from pandas import Series, DataFrame
-from seaborn import heatmap, clustermap, distplot, violinplot, boxplot, set_style, despine
+from seaborn import set_style, despine, distplot, barplot, violinplot, boxplot, heatmap, clustermap
 
 from .d1 import discretize_categories
 from .d2 import get_dendrogram_leaf_indices
@@ -76,6 +76,199 @@ DPI = 1000
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
+def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
+    """
+
+    :param args:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param filepath:
+    :param kwargs:
+    :return: None
+    """
+
+    if 'ax' not in kwargs:
+        plt.figure(figsize=FIGURE_SIZE)
+
+    set_style('ticks')
+
+    # Preprocess args
+    processed_args = []
+    for i, a in enumerate(args):
+        if isinstance(a, Series):
+            processed_args.append(a.tolist())
+        else:
+            processed_args.append(a)
+
+    plot(*processed_args, marker='o', **kwargs)
+
+    decorate(title, xlabel, ylabel)
+
+    save_plot(filepath)
+
+
+def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
+                      fit_kws=None, color=None, vertical=False, norm_hist=False, axlabel=None, label=None,
+                      ax=None, title='', xlabel='', ylabel='Frequency', filepath=None):
+    """
+
+    :param a:
+    :param bins:
+    :param hist:
+    :param kde:
+    :param rug:
+    :param fit:
+    :param hist_kws:
+    :param kde_kws:
+    :param rug_kws:
+    :param fit_kws:
+    :param color:
+    :param vertical:
+    :param norm_hist:
+    :param axlabel:
+    :param label:
+    :param ax:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param filepath:
+    :return:
+    """
+
+    if not ax:
+        plt.figure(figsize=FIGURE_SIZE)
+
+    set_style('ticks')
+
+    distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, fit=fit, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
+             fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
+             ax=ax)
+
+    decorate(title, xlabel, ylabel)
+
+    save_plot(filepath)
+
+
+def plot_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, estimator=None, ci=95,
+             n_boot=1000, units=None, orient=None, color=None, palette=None, saturation=0.75, errcolor='.26',
+             errwidth=2, capsize=0.1, ax=None,
+             title=None, xlabel=None, ylabel=None, filepath=None, **kwargs):
+    """
+
+    :param x:
+    :param y:
+    :param hue:
+    :param data:
+    :param order:
+    :param hue_order:
+    :param estimator:
+    :param ci:
+    :param n_boot:
+    :param units:
+    :param orient:
+    :param color:
+    :param palette:
+    :param saturation:
+    :param errcolor:
+    :param errwidth:
+    :param capsize:
+    :param ax:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param filepath:
+    :param kwargs:
+    :return:
+    """
+
+    if not ax:
+        plt.figure(figsize=FIGURE_SIZE)
+
+    # TODO: reincoorporate estimator=estimator
+    barplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, ci=ci, n_boot=n_boot,
+            units=units, orient=orient, color=color, palette=palette, saturation=saturation, errcolor=errcolor,
+            errwidth=errwidth, capsize=capsize, ax=ax, **kwargs)
+
+    decorate(title, xlabel, ylabel)
+    save_plot(filepath)
+
+
+def plot_violin_or_box(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
+                       scale='count', scale_hue=True, gridsize=100, width=0.8, inner='quartile', split=False,
+                       orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
+                       fliersize=5, whis=1.5, notch=False,
+                       violin_or_box='violin', title=None, xlabel=None, ylabel=None, filepath_prefix=None, **kwargs):
+    """
+    Plot violin plot.
+    :param x:
+    :param y:
+    :param hue:
+    :param data:
+    :param order:
+    :param hue_order:
+    :param bw:
+    :param cut:
+    :param scale:
+    :param scale_hue:
+    :param gridsize:
+    :param width:
+    :param inner:
+    :param split:
+    :param orient:
+    :param linewidth:
+    :param color:
+    :param palette:
+    :param saturation:
+    :param ax:
+    :param fliersize:
+    :param whis:
+    :param notch:
+    :param violin_or_box:
+    :param title:
+    :param xlabel:
+    :param ylabel:
+    :param filepath_prefix:
+    :param kwargs:
+    :return:
+    """
+
+    # Initialize a figure
+    if not ax:
+        plt.figure(figsize=FIGURE_SIZE)
+
+    if violin_or_box == 'violin':
+        violinplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, bw=bw, cut=cut, scale=scale,
+                   scale_hue=scale_hue, gridsize=gridsize, width=width, inner=inner, split=split, orient=orient,
+                   linewidth=linewidth, color=color, palette=palette, saturation=saturation, ax=ax, **kwargs)
+    elif violin_or_box == 'box':
+        boxplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, orient=orient, color=color,
+                palette=palette, saturation=saturation, width=width, fliersize=fliersize, linewidth=linewidth,
+                whis=whis, notch=notch, ax=ax, **kwargs)
+    else:
+        raise ValueError('\'violin_or_box\' must be either \'violin\' or \'box\'.')
+
+    # Score; discretize str valued iterables if not already discretized
+    if isinstance(x, str):
+        x = discretize_categories(data.ix[:, x])
+    if isinstance(y, str):
+        y = discretize_categories(data.ix[:, y])
+
+    score, pval = compute_association_and_pvalue(x, y, n_permutations=100)
+    l, r, b, t = plt.gca().axis()
+    plt.gca().text((l + r) / 2, t + 0.016 * t, 'IC = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
+                   horizontalalignment='center', **FONT_SUBTITLE)
+
+    decorate(title, xlabel, ylabel)
+
+    # Set plot aesthetics
+    set_style('whitegrid')
+    despine(left=True)
+
+    if filepath_prefix:
+        save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
+
+
 def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust=False, annot=None, fmt='.2g',
                  annot_kws=None, linewidths=0, linecolor='white', cbar=False, cbar_kws=None, cbar_ax=None, square=False,
                  xticklabels=True, yticklabels=True, mask=None,
@@ -289,154 +482,6 @@ def plot_clustermap(dataframe, pivot_kws=None, method='average', metric='euclide
     save_plot(filepath)
 
 
-def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
-    """
-
-    :param args:
-    :param title:
-    :param xlabel:
-    :param ylabel:
-    :param filepath:
-    :param kwargs:
-    :return: None
-    """
-
-    if 'ax' not in kwargs:
-        plt.figure(figsize=FIGURE_SIZE)
-
-    set_style('ticks')
-
-    # Preprocess args
-    processed_args = []
-    for i, a in enumerate(args):
-        if isinstance(a, Series):
-            processed_args.append(a.tolist())
-        else:
-            processed_args.append(a)
-
-    plot(*processed_args, marker='o', **kwargs)
-
-    decorate(title, xlabel, ylabel)
-
-    save_plot(filepath)
-
-
-def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
-                      fit_kws=None, color=None, vertical=False, norm_hist=False, axlabel=None, label=None,
-                      ax=None, title='', xlabel='', ylabel='Frequency', filepath=None):
-    """
-
-    :param a:
-    :param bins:
-    :param hist:
-    :param kde:
-    :param rug:
-    :param fit:
-    :param hist_kws:
-    :param kde_kws:
-    :param rug_kws:
-    :param fit_kws:
-    :param color:
-    :param vertical:
-    :param norm_hist:
-    :param axlabel:
-    :param label:
-    :param ax:
-    :param title:
-    :param xlabel:
-    :param ylabel:
-    :param filepath:
-    :return:
-    """
-
-    if not ax:
-        plt.figure(figsize=FIGURE_SIZE)
-
-    set_style('ticks')
-
-    distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, fit=fit, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
-             fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
-             ax=ax)
-
-    decorate(title, xlabel, ylabel)
-
-    save_plot(filepath)
-
-
-def plot_violin_or_box(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
-                       scale='count', scale_hue=True, gridsize=100, width=0.8, inner='quartile', split=False,
-                       orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
-                       fliersize=5, whis=1.5, notch=False,
-                       violin_or_box='violin', title=None, xlabel=None, ylabel=None, filepath_prefix=None, **kwargs):
-    """
-    Plot violin plot.
-    :param x:
-    :param y:
-    :param hue:
-    :param data:
-    :param order:
-    :param hue_order:
-    :param bw:
-    :param cut:
-    :param scale:
-    :param scale_hue:
-    :param gridsize:
-    :param width:
-    :param inner:
-    :param split:
-    :param orient:
-    :param linewidth:
-    :param color:
-    :param palette:
-    :param saturation:
-    :param ax:
-    :param fliersize:
-    :param whis:
-    :param notch:
-    :param violin_or_box:
-    :param title:
-    :param xlabel:
-    :param ylabel:
-    :param filepath_prefix:
-    :param kwargs:
-    :return:
-    """
-
-    # Initialize a figure
-    plt.figure(figsize=FIGURE_SIZE)
-
-    if violin_or_box == 'violin':
-        violinplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, bw=bw, cut=cut, scale=scale,
-                   scale_hue=scale_hue, gridsize=gridsize, width=width, inner=inner, split=split, orient=orient,
-                   linewidth=linewidth, color=color, palette=palette, saturation=saturation, ax=ax, **kwargs)
-    elif violin_or_box == 'box':
-        boxplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, orient=orient, color=color,
-                palette=palette, saturation=saturation, width=width, fliersize=fliersize, linewidth=linewidth,
-                whis=whis, notch=notch, ax=ax, **kwargs)
-    else:
-        raise ValueError('\'violin_or_box\' must be either \'violin\' or \'box\'.')
-
-    # Score; discretize str valued iterables if not already discretized
-    if isinstance(x, str):
-        x = discretize_categories(data.ix[:, x])
-    if isinstance(y, str):
-        y = discretize_categories(data.ix[:, y])
-
-    score, pval = compute_association_and_pvalue(x, y, n_permutations=100)
-    l, r, b, t = plt.gca().axis()
-    plt.gca().text((l + r) / 2, t + 0.016 * t, 'IC = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
-                   horizontalalignment='center', **FONT_SUBTITLE)
-
-    decorate(title, xlabel, ylabel)
-
-    # Set plot aesthetics
-    set_style('whitegrid')
-    despine(left=True)
-
-    if filepath_prefix:
-        save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
-
-
 def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, filepath=None):
     """
     Plot nmf_results dictionary (can be generated by ccal.analyze.nmf function).
@@ -505,6 +550,11 @@ def decorate(title,
     :param ax:
     :return:
     """
+
+    # TODO: set aesthetics here
+    # Set plot aesthetics
+    # set_style('whitegrid')
+    # despine(left=True)
 
     # Title
     if title:

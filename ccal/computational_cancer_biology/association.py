@@ -176,7 +176,8 @@ def make_association_summary_panel(target, data_bundle, annotation_files, target
 # ======================================================================================================================
 # Association panel
 # ======================================================================================================================
-def make_association_panels(target, data_bundle, dropna='all', target_ascending=False, target_name=None,
+def make_association_panels(target, data_bundle, dropna='all', target_ascending=False,
+                            target_prefix='', data_prefix='',
                             target_type='continuous',
                             n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, random_seed=RANDOM_SEED,
                             directory_path=None):
@@ -186,7 +187,8 @@ def make_association_panels(target, data_bundle, dropna='all', target_ascending=
     :param data_bundle: dict;
     :param dropna: str; 'any' or 'all'
     :param target_ascending: bool; target is ascending from left to right or not
-    :param target_name: str;
+    :param target_prefix: str; prefix added before the target name
+    :param data_prefix: str; prefix added before the data name
     :param target_type: str;
     :param n_jobs: int; number of jobs to parallelize
     :param n_features: int or float; number threshold if >= 1, and percentile threshold if < 1
@@ -205,7 +207,11 @@ def make_association_panels(target, data_bundle, dropna='all', target_ascending=
         # Annotate this target with each data (feature)
         for data_name, data_dict in data_bundle.items():
 
-            title = title_str('{} vs {}'.format(t_i, data_name))
+            if not target_prefix.endswith(' '):
+                target_prefix += ' '
+            if not data_prefix.endswith(' '):
+                data_prefix += ' '
+            title = title_str('{}{} vs {}{}'.format(target_prefix, t_i, data_prefix, data_name))
             print('{} ...'.format(title))
 
             if directory_path:
@@ -218,7 +224,7 @@ def make_association_panels(target, data_bundle, dropna='all', target_ascending=
                                    n_jobs=n_jobs, features_ascending=data_dict['emphasis'] == 'low',
                                    n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
                                    random_seed=random_seed,
-                                   target_name=target_name, target_type=target_type,
+                                   target_name=t_i, target_type=target_type,
                                    features_type=data_dict['data_type'],
                                    title=title,
                                    filepath_prefix=filepath_prefix)
