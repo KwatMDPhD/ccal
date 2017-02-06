@@ -324,7 +324,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     if any(row_annotation) or any(column_annotation):
         if any(row_annotation):
             if isinstance(row_annotation, Series):
-                if not any(row_annotation.index & df.index):
+                if not any(row_annotation.index & df.index):  # Series but without proper index
                     row_annotation.index = df.index
             else:
                 row_annotation = Series(row_annotation, index=df.index)
@@ -334,7 +334,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
 
         if any(column_annotation):
             if isinstance(column_annotation, Series):
-                if not any(column_annotation.index & df.index):
+                if not any(column_annotation.index & df.columns):  # Series but without proper index
                     column_annotation.index = df.columns
             else:
                 column_annotation = Series(column_annotation, index=df.columns)
