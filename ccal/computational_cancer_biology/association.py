@@ -259,7 +259,9 @@ def make_association_panel(target, features, dropna='all', filepath_scores=None,
     :param title: str; plot title
     :param plot_colname: bool; plot column names below the plot or not
     :param filepath_prefix: str; filepath_prefix.txt and filepath_prefix.pdf will be saved
-    :return: None
+    :return: DataFrame; (n_features, 8 ('score', '<confidence> moe',
+                                        'p-value (forward)', 'p-value (reverse)', 'p-value',
+                                        'fdr (forward)', 'fdr (reverse)', 'fdr'))
     """
 
     # Score
