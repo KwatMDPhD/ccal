@@ -1,12 +1,12 @@
 {
-  "library_path": "ccal",
+  "library_path": "CompBio/ccal",
   "tasks": [
     {
       "label": "Read .GCT File",
       "function_path": "ccal.read_gct",
       "required_args": [
         {
-          "arg_name": "filepath",
+          "name": "filepath",
           "label": ".GCT file"
         }
       ],
@@ -21,11 +21,11 @@
       "function_path": "ccal.write_gct",
       "required_args": [
         {
-          "arg_name": "matrix",
+          "name": "matrix",
           "Description": "Matrix to be written as a .GCT"
         },
         {
-          "arg_name": "filepath",
+          "name": "filepath",
           "label": ".GCT file"
         }
       ]
@@ -35,16 +35,16 @@
       "function_path": "ccal.computational_cancer_biology.oncogps.define_components",
       "required_args": [
         {
-          "arg_name": "matrix"
+          "name": "matrix"
         },
         {
-          "arg_name": "ks",
+          "name": "ks",
           "label": "Numbers of Components"
         }
       ],
       "default_args": [
         {
-          "arg_name": "n_clusterings",
+          "name": "n_clusterings",
           "value": "30"
         }
       ],
@@ -62,16 +62,16 @@
       "function_path": "ccal.computational_cancer_biology.oncogps.get_w_or_h_matrix",
       "required_args": [
         {
-          "arg_name": "nmf_results"
+          "name": "nmf_results"
         },
         {
-          "arg_name": "k",
+          "name": "k",
           "label": "Number of Components"
         }
       ],
       "default_args": [
         {
-          "arg_name": "w_or_h",
+          "name": "w_or_h",
           "value": "w"
         }
       ],
@@ -86,16 +86,16 @@
       "function_path": "ccal.computational_cancer_biology.oncogps.get_w_or_h_matrix",
       "required_args": [
         {
-          "arg_name": "nmf_results"
+          "name": "nmf_results"
         },
         {
-          "arg_name": "k",
+          "name": "k",
           "label": "Number of Components"
         }
       ],
       "default_args": [
         {
-          "arg_name": "w_or_h",
+          "name": "w_or_h",
           "value": "h"
         }
       ],
@@ -110,11 +110,11 @@
       "function_path": "ccal.computational_cancer_biology.oncogps.define_states",
       "required_args": [
         {
-          "arg_name": "matrix",
+          "name": "matrix",
           "label": "H Matrix"
         },
         {
-          "arg_name": "ks",
+          "name": "ks",
           "label": "Numbers of States"
         }
       ],
@@ -135,11 +135,11 @@
       "function_path": "ccal.computational_cancer_biology.oncogps.get_state_labels",
       "required_args": [
         {
-          "arg_name": "clusterings",
+          "name": "clusterings",
           "label": "Clusterings"
         },
         {
-          "arg_name": "k",
+          "name": "k",
           "label": "Number of States"
         }
       ],
@@ -154,11 +154,11 @@
       "function_path": "ccal.computational_cancer_biology.oncogps.make_oncogps",
       "required_args": [
         {
-          "arg_name": "training_h",
+          "name": "training_h",
           "label": "H Matrix"
         },
         {
-          "arg_name": "training_states",
+          "name": "training_states",
           "label": "Sample State Labels"
         }
       ]
