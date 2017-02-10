@@ -43,7 +43,7 @@ from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=40, random_seed=RANDOM_SEED,
+def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=100, random_seed=RANDOM_SEED,
                       directory_path=None):
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
@@ -287,7 +287,7 @@ def select_features_and_nmf(testing, training,
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=40, random_seed=RANDOM_SEED,
+def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=100, random_seed=RANDOM_SEED,
                   directory_path=None):
     """
     Hierarchical-consensus cluster samples (matrix columns) and compute cophenetic correlation coefficients.
@@ -424,7 +424,7 @@ def make_oncogps(training_h,
                  power_max=5,
 
                  n_grids=256,
-                 kde_bandwidths_factor=2,
+                 kde_bandwidths_factor=1,
 
                  samples_to_plot=None,
                  component_ratio=0,

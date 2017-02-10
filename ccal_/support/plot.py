@@ -186,10 +186,9 @@ def plot_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, es
         plt.figure(figsize=FIGURE_SIZE)
 
     # TODO: reincoorporate estimator=estimator
-    # TODO: reincoorporate barwidth=2
     barplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, ci=ci, n_boot=n_boot,
             units=units, orient=orient, color=color, palette=palette, saturation=saturation, errcolor=errcolor,
-            capsize=capsize, ax=ax, **kwargs)
+            errwidth=errwidth, capsize=capsize, ax=ax, **kwargs)
 
     decorate(title, xlabel, ylabel)
     save_plot(filepath)

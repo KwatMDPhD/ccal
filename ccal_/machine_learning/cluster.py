@@ -90,7 +90,7 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
 
         # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
         hierarchical_clustering, cophenetic_correlation_coefficient = \
-            _hierarchical_cluster_consensus_matrix(consensus_matrix, method='ward')
+            _hierarchical_cluster_consensus_matrix(consensus_matrix, method='average')
         cophenetic_correlation_coefficients[k] = cophenetic_correlation_coefficient
 
         # Get labels from hierarchical clustering
@@ -129,8 +129,9 @@ def _hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True
 # NMF consensus cluster
 # ======================================================================================================================
 def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
-                          init='random', solver='cd', tol=1e-4, max_iter=1500, random_seed=RANDOM_SEED, alpha=1,
-                          l1_ratio=1, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
+                          init='random', solver='cd', tol=1e-6, max_iter=1000, random_seed=RANDOM_SEED, alpha=0,
+                          l1_ratio=0,
+                          shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
     Perform NMF with k from ks and _score each NMF decomposition.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
@@ -205,7 +206,7 @@ def _nmf_and_score(args):
 
         # NMF
         nmf_result = nmf(matrix, k,
-                         init=init, solver=solver, tol=tol, max_iter=max_iter, random_seed=random_seed + i,
+                         init=init, solver=solver, tol=tol, max_iter=max_iter, random_seed=random_seed,
                          alpha=alpha, l1_ratio=l1_ratio, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
                          sparseness=sparseness, beta=beta, eta=eta)[k]
 
