@@ -827,6 +827,7 @@ def _process_samples(h, states, components, n_pulls, power, component_ratio):
     :param component_ratio:
     :return: DataFrame; (n_samples, 4 [x, y, state, component_ratio])
     """
+
     samples = DataFrame(index=h.columns, columns=['x', 'y', 'state', 'component_ratio'])
     samples.ix[:, 'state'] = states
 

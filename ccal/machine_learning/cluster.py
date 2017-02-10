@@ -238,6 +238,7 @@ def _get_consensus(sample_x_clustering):
     :param sample_x_clustering: DataFrame; (n_samples, n_clusterings)
     :return: DataFrame; (n_samples, n_samples)
     """
+
     sample_x_clustering_array = asarray(sample_x_clustering)
 
     n_samples, n_clusterings = sample_x_clustering_array.shape
