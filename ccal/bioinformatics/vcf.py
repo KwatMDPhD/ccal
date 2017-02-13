@@ -13,8 +13,9 @@ Authors:
 
 import re
 
-import tabix
 from pandas import read_csv
+import tabix
+from Bio import bgzf
 
 from . import PATH_GRCH38, PATH_HG38, PATH_CHAIN_GRCH37_TO_GRCH38, PATH_CHAIN_HG19_TO_HG38, \
     PATH_CHROMOSOME_MAP, CHROMOSOMES, CHROMOSOMES_CHR, \
@@ -39,23 +40,41 @@ def read_vcf(filepath, verbose=False):
     header_line = None
     header = None
 
-    with open(filepath) as f:
-        for i, line in enumerate(f):
-            if line.startswith('##'):
-                meta_information.append(line.strip())
-            elif line.startswith('#CHROM'):
-                header_line = i
-                print('header starts at line {}\n'.format(header_line))
-                header = line.strip()
-            else:
-                break
+    # TODO: refactor; remove redundancy
+    try:
+        with open(filepath) as f:
+            for i, line in enumerate(f):
+                if line.startswith('##'):
+                    meta_information.append(line.strip())
+                elif line.startswith('#CHROM'):
+                    header_line = i
+                    print('header starts at line {}\n'.format(header_line))
+                    header = line.strip()
+                    samples = header.split('\t')[9:]
+                else:
+                    break
+    except UnicodeDecodeError:
+        with bgzf.open(filepath) as f:
+            for i, line in enumerate(f):
+                line = line.decode()
+                if line.startswith('##'):
+                    meta_information.append(line.strip())
+                elif line.startswith('#CHROM'):
+                    header_line = i
+                    print('header starts at line {}\n'.format(header_line))
+                    header = line.strip()
+                else:
+                    break
+
     vcf_data = read_csv(filepath, sep='\t', skiprows=header_line)
 
     if verbose:
         print('Meta-information\n{}\n'.format(meta_information))
         print('header\n{}\n'.format(header))
         print('VCF\n{}\n'.format(vcf_data.head()))
-    return meta_information, header_line, header, vcf_data
+
+    # TODO: dictionarize meta_information; keyed by FILTER, INFO, contig, and FORMAT
+    return meta_information, header_line, header, samples, vcf_data
 
 
 def read_sample_and_reference_vcfs(sample_vcf, reference_vcf):
