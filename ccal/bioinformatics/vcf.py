@@ -63,6 +63,7 @@ def read_vcf(filepath, verbose=False):
                     header_line = i
                     print('header starts at line {}\n'.format(header_line))
                     header = line.strip()
+                    samples = header.split('\t')[9:]
                 else:
                     break
 

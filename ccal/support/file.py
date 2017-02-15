@@ -604,6 +604,7 @@ def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, c
         return gmt
 
 
+# TODO: check for description?
 def write_gmt(gmt, filepath):
     """
     Write a gmt DataFrame to a filepath.gmt.

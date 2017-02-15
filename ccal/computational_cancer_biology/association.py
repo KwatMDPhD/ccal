@@ -486,7 +486,10 @@ def _preprocess_target_and_features(target, features, dropna='all', target_ascen
     features.dropna(axis=1, how=dropna, inplace=True)
 
     if not isinstance(target, Series):  # Convert target into a Series
-        target = Series(target, index=features.columns)
+        if isinstance(target, DataFrame) and target.shape[0] == 1:
+            target = target.iloc[0, :]
+        else:
+            target = Series(target, index=features.columns)
 
     # Keep only columns shared by target and features
     shared = target.index & features.columns
@@ -705,12 +708,12 @@ def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_la
 # ======================================================================================================================
 # Modalities
 # ======================================================================================================================
-def differential_gene_expression(phenotypes, gene_expressions, output_filename, max_number_of_genes_to_show=20,
+def differential_gene_expression(phenotypes, gene_expression, output_filename, max_number_of_genes_to_show=20,
                                  number_of_permutations=10, title=None, random_seed=RANDOM_SEED):
     """
     Sort genes according to their association with a binary phenotype or class vector.
     :param phenotypes: Series; input binary phenotype/class distinction
-    :param gene_expressions: Dataframe; data matrix with input gene expression profiles
+    :param gene_expression: Dataframe; data matrix with input gene expression profiles
     :param output_filename: str; output files will have this name plus extensions .txt and .pdf
     :param max_number_of_genes_to_show: int; maximum number of genes to show in the heatmap
     :param number_of_permutations: int; number of random permutations to estimate statistical significance (p-values and FDRs)
@@ -719,7 +722,7 @@ def differential_gene_expression(phenotypes, gene_expressions, output_filename, 
     :return: Dataframe; table of genes ranked by Information Coeff vs. phenotype
     """
     gene_scores = make_association_panel(target=phenotypes,
-                                         features=gene_expressions,
+                                         features=gene_expression,
                                          n_jobs=1,
                                          max_n_features=max_number_of_genes_to_show,
                                          n_permutations=number_of_permutations,
