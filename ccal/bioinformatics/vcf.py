@@ -31,9 +31,9 @@ from ..support.system import run_cmd
 def read_vcf(filepath, verbose=False):
     """
 
-    :param filepath:
-    :param verbose:
-    :return:
+    :param filepath: str;
+    :param verbose: bool;
+    :return: ; meta_information, header_line, header, samples, vcf_data
     """
 
     meta_information = []

@@ -1126,7 +1126,9 @@ def _plot_onco_gps(components,
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, clip_on=False, zorder=4)
 
     # Assign colors to states
-    unique_states = sorted(samples.ix[:, 'state'].unique())
+    # TODO: remove
+    # unique_states = sorted(samples.ix[:, 'state'].unique())
+    unique_states = sorted(range(1, n_training_states + 1))
     if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
         colors = [colors[s] for s in unique_states]
     elif any(colors):
@@ -1293,7 +1295,7 @@ def _plot_onco_gps(components,
     if filepath:
         save_plot(filepath)
 
-    if isinstance(annotation, Series):  # Plot violin plot
+    if isinstance(annotation, Series):
         plt.figure(figsize=FIGURE_SIZE)
         if annotation_type in ('continuous', 'categorical'):
             plot_violin_or_box(x='state', y='annotation_value', data=samples, palette=state_colors,
