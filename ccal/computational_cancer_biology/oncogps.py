@@ -433,6 +433,7 @@ def make_oncogps(training_h,
                  annotation_name='',
                  annotation_type='continuous',
                  annotation_ascending=True,
+                 highlight_high_magnitude=True,
                  violin_or_box='violin',
 
                  title='Onco-GPS Map',
@@ -503,6 +504,7 @@ def make_oncogps(training_h,
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param annotation_ascending: bool;
+    :param highlight_high_magnitude: bool;
     :param violin_or_box: str; 'violin' or 'box'
 
     :param title: str;
@@ -658,6 +660,7 @@ def make_oncogps(training_h,
                    annotation_name=annotation_name,
                    annotation_type=annotation_type,
                    annotation_ascending=annotation_ascending,
+                   highlight_high_magnitude=highlight_high_magnitude,
                    violin_or_box=violin_or_box,
 
                    std_max=std_max,
@@ -972,6 +975,7 @@ def _plot_onco_gps(components,
                    annotation_name,
                    annotation_type,
                    annotation_ascending,
+                   highlight_high_magnitude,
                    violin_or_box,
 
                    std_max,
@@ -1024,6 +1028,8 @@ def _plot_onco_gps(components,
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param annotation_ascending: logical True or False
+    :param highlight_high_magnitude: bool;
+    :param violin_or_box: str;
     :param std_max: number; threshold to clip standardized values
     :param title: str;
     :param title_fontsize: number;
@@ -1225,9 +1231,12 @@ def _plot_onco_gps(components,
                        fontsize=legend_fontsize * 1.26, weight='bold', horizontalalignment='center')
 
         # Set plotting order and plot
-        samples = samples.reindex_axis(
-            samples.ix[:, 'annotation_value'].abs().sort_values(ascending=annotation_ascending,
-                                                                na_position='first').index)
+        if highlight_high_magnitude:
+            samples = samples.reindex_axis(
+                samples.ix[:, 'annotation_value'].abs().sort_values(na_position='first').index)
+        else:
+            samples.sort_values('annotation_value', ascending=annotation_ascending, inplace=True)
+
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
