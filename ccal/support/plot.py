@@ -20,7 +20,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import plot
-from numpy import array, unique
+from numpy import array, unique, isnan
 from pandas import Series, DataFrame
 from seaborn import set_style, despine, distplot, barplot, violinplot, boxplot, heatmap, clustermap
 
@@ -195,11 +195,13 @@ def plot_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, es
     save_plot(filepath)
 
 
-def plot_violin_or_box(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
-                       scale='count', scale_hue=True, gridsize=100, width=0.8, inner='quartile', split=False,
-                       orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
-                       fliersize=5, whis=1.5, notch=False,
-                       violin_or_box='violin', title=None, xlabel=None, ylabel=None, filepath_prefix=None, **kwargs):
+def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
+                           scale='count', scale_hue=True, gridsize=100, width=0.8, inner='quartile', split=False,
+                           orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
+                           fliersize=5, whis=1.5, notch=False,
+                           ci=95, n_boot=1000, units=None, errwidth=None, capsize=None,
+                           violin_or_box='violin', title=None, xlabel=None, ylabel=None, filepath_prefix=None,
+                           **kwargs):
     """
     Plot violin plot.
     :param x:
@@ -225,6 +227,11 @@ def plot_violin_or_box(x=None, y=None, hue=None, data=None, order=None, hue_orde
     :param fliersize:
     :param whis:
     :param notch:
+    :param ci:
+    :param n_boot:
+    :param units:
+    :param errwidth:
+    :param capsize:
     :param violin_or_box:
     :param title:
     :param xlabel:
@@ -238,16 +245,24 @@ def plot_violin_or_box(x=None, y=None, hue=None, data=None, order=None, hue_orde
     if not ax:
         plt.figure(figsize=FIGURE_SIZE)
 
-    if violin_or_box == 'violin':
-        violinplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, bw=bw, cut=cut, scale=scale,
-                   scale_hue=scale_hue, gridsize=gridsize, width=width, inner=inner, split=split, orient=orient,
-                   linewidth=linewidth, color=color, palette=palette, saturation=saturation, ax=ax, **kwargs)
-    elif violin_or_box == 'box':
-        boxplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, orient=orient, color=color,
-                palette=palette, saturation=saturation, width=width, fliersize=fliersize, linewidth=linewidth,
-                whis=whis, notch=notch, ax=ax, **kwargs)
-    else:
-        raise ValueError('\'violin_or_box\' must be either \'violin\' or \'box\'.')
+    if isinstance(y, str):
+        y = data[y]
+
+    if len(set([v for v in y if v and ~isnan(v)])) <= 2:  # Use barplot for binary
+        barplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, ci=ci, n_boot=n_boot, units=units,
+                orient=orient, color=color, palette=palette, saturation=saturation, errwidth=errwidth, capsize=capsize,
+                ax=ax, **kwargs)
+    else:  # Use violin or box plot for continuous or categorical
+        if violin_or_box == 'violin':
+            violinplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, bw=bw, cut=cut, scale=scale,
+                       scale_hue=scale_hue, gridsize=gridsize, width=width, inner=inner, split=split, orient=orient,
+                       linewidth=linewidth, color=color, palette=palette, saturation=saturation, ax=ax, **kwargs)
+        elif violin_or_box == 'box':
+            boxplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, orient=orient, color=color,
+                    palette=palette, saturation=saturation, width=width, fliersize=fliersize, linewidth=linewidth,
+                    whis=whis, notch=notch, ax=ax, **kwargs)
+        else:
+            raise ValueError('\'violin_or_box\' must be either \'violin\' or \'box\'.')
 
     # Score; discretize str valued iterables if not already discretized
     if isinstance(x, str):

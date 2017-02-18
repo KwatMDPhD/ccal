@@ -52,6 +52,22 @@ def establish_filepath(filepath):
         print_log('Created directory {}.'.format(d))
 
 
+def get_home_dir():
+    """
+
+    :return: str; user-home directory
+    """
+
+    if 'linux' in platform or 'darwin' in platform:
+        home_dir = environ['HOME']
+    elif 'win' in platform:
+        home_dir = environ['HOMEPATH']
+    else:
+        raise ValueError('Unknown platform {}.'.format(platform))
+
+    return home_dir
+
+
 def split_file_extension(filepath):
     """
     Get filepath without file suffix and the suffix from filepath; get foo and txt from foo.txt
@@ -354,44 +370,37 @@ def load_data_table(directory_path, data_table, indices=None):
     if isinstance(data_table, str):
         data_table = read_data_table(data_table)
 
-    # TODO: refactor and unite
     data_bundle = {}
-    for data_name, (data_type, emphasis) in data_table.iterrows():  # For each data
+    for data_name, (data_type, emphasis, filepath) in data_table.iterrows():  # For each data
         if isinstance(indices, dict) and data_name not in indices:
-            print('Skipped loading {} because indices were not specified.'.format(data_name))
+            print_log('Skipped loading {} because indices were not specified.'.format(data_name))
             continue
 
-        for f in listdir(directory_path):  # Check each file
+        print_log('Making data bundle for {} ...'.format(data_name))
+        data_bundle[data_name] = {}
+        df = read_gct(join(filepath))
+        print_log('\tLoaded {}.'.format(filepath))
+        if isinstance(indices, dict):  # If indices is given
+            if data_name in indices:  # Keep specific indices
+                index = indices[data_name]['index']
+                df = df.ix[index, :]
 
-            if data_name in f:  # The file matches this data
-                print('Loading {} (matched \'{}\') ...'.format(f, data_name))
+                # Save the original index names
+                data_bundle[data_name]['original_index'] = index
 
-                data_bundle[data_name] = {}
+                if 'alias' in indices[data_name]:  # Rename these specific indices
+                    df.index = indices[data_name]['alias']
 
-                # Read the data
-                df = read_gct(join(directory_path, f))
+                print('\tSelected rows: {}.'.format(df.index.tolist()))
 
-                if isinstance(indices, dict):  # If indices is given
-                    if data_name in indices:  # Keep specific indices
-                        index = indices[data_name]['index']
-                        df = df.ix[index, :]
-
-                        # Save the original index names
-                        data_bundle[data_name]['original_index'] = index
-
-                        if 'alias' in indices[data_name]:  # Rename these specific indices
-                            df.index = indices[data_name]['alias']
-
-                        print('\tSelected rows: {}.'.format(df.index.tolist()))
-
-                data_bundle[data_name]['dataframe'] = df
-                data_bundle[data_name]['data_type'] = data_type
-                data_bundle[data_name]['emphasis'] = emphasis
+        data_bundle[data_name]['dataframe'] = df
+        data_bundle[data_name]['data_type'] = data_type
+        data_bundle[data_name]['emphasis'] = emphasis
 
     return data_bundle
 
 
-def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasis')):
+def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasis', 'Filepath')):
     """
     Write <data> to filepath.
     :param data: iterable of tuples;
@@ -407,8 +416,8 @@ def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasi
     df = DataFrame(data)
     df.columns = columns
     df.set_index(columns[0], inplace=True)
-    if not filepath.endswith('.data_table'):
-        filepath = '{}.data_table'.format(filepath)
+    if not filepath.endswith('data_table.txt'):
+        filepath = '{}.data_table.txt'.format(filepath)
     df.to_csv(filepath, sep='\t')
 
 

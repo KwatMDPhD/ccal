@@ -37,7 +37,7 @@ from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
 from ..support.file import read_gct, establish_filepath, mark_filename, load_gct, write_gct, write_dict
 from ..support.log import print_log
 from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_CATEGORICAL_2, CMAP_BINARY, save_plot, \
-    plot_heatmap, plot_points, plot_violin_or_box, plot_bar, plot_nmf
+    plot_heatmap, plot_points, plot_violin_box_or_bar, plot_bar, plot_nmf
 
 
 # ======================================================================================================================
@@ -1306,11 +1306,8 @@ def _plot_onco_gps(components,
 
     if isinstance(annotation, Series):
         plt.figure(figsize=FIGURE_SIZE)
-        if annotation_type in ('continuous', 'categorical'):
-            plot_violin_or_box(x='state', y='annotation_value', data=samples, palette=state_colors,
+        plot_violin_box_or_bar(x='state', y='annotation_value', data=samples, palette=state_colors,
                                violin_or_box=violin_or_box)
-        elif annotation_type == 'binary':
-            plot_bar(x='state', y='annotation_value', data=samples, palette=state_colors)
 
         if filepath:
             save_plot(mark_filename(filepath, 'annotation', suffix='.pdf'))

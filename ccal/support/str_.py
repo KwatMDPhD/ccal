@@ -110,6 +110,18 @@ def cast_str_to_int_float_bool_or_str(str_, fmt='{:.3f}'):
     return str(value)
 
 
+def remove_nested_quotes(str_):
+    """
+
+    :param str_:
+    :return:
+    """
+
+    if isinstance(str_, str):
+        str_ = re.sub(r'^"|"$|^\'|\'$', '', str_)
+    return str_
+
+
 def indent_str(str_, n_tabs=1):
     """
     Indent block of text by adding a n_tabs number of tabs (default 1) to the beginning of each line.
