@@ -22,7 +22,7 @@ from . import PATH_GRCH38, PATH_HG38, PATH_CHAIN_GRCH37_TO_GRCH38, PATH_CHAIN_HG
     PATH_CHROMOSOME_MAP, CHROMOSOMES, CHROMOSOMES_CHR, \
     PATH_DBSNP, PATH_CLINVAR, \
     PICARD, SNPEFF, SNPSIFT
-from ..support.str_ import split_ignoring_inside_quotes
+from ..support.str_ import split_ignoring_inside_quotes, remove_nested_quotes
 from ..support.file import bgzip_tabix, mark_filename
 from ..support.system import run_cmd
 
@@ -84,7 +84,7 @@ def read_vcf(filepath, verbose=True):
                 for s in fl_split[1:]:
                     ei = s.find('=')
                     k, v = s[:ei], s[ei + 1:]
-                    fd_v[k] = v
+                    fd_v[k] = remove_nested_quotes(v)
 
                 # Save
                 if fn in vcf['meta_information']:
