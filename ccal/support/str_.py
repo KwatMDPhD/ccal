@@ -11,6 +11,8 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
+import re
+
 
 def title_str(str_):
     """
@@ -141,3 +143,30 @@ def reset_encoding(str_):
     """
 
     return str_.replace(u'\u201c', '"').replace(u'\u201d', '"')
+
+
+def split_ignoring_inside_quotes(str_, sep):
+    """
+    Split str_ by sep not in quotes.
+    :param str_: str;
+    :param sep: str;
+    :return: list; list of str
+    """
+
+    split = str_.split(sep)
+    to_return = []
+    temp = ''
+    for s in split:
+        if '"' in s:
+            if temp:
+                temp += s
+                to_return.append(temp)
+                temp = ''
+            else:
+                temp += s
+        else:
+            if temp:
+                temp += s
+            else:
+                to_return.append(s)
+    return to_return

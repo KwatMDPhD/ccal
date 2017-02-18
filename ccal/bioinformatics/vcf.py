@@ -12,6 +12,7 @@ Authors:
 """
 
 import re
+from pprint import pprint
 
 from pandas import read_csv
 import tabix
@@ -21,6 +22,7 @@ from . import PATH_GRCH38, PATH_HG38, PATH_CHAIN_GRCH37_TO_GRCH38, PATH_CHAIN_HG
     PATH_CHROMOSOME_MAP, CHROMOSOMES, CHROMOSOMES_CHR, \
     PATH_DBSNP, PATH_CLINVAR, \
     PICARD, SNPEFF, SNPSIFT
+from ..support.str_ import split_ignoring_inside_quotes
 from ..support.file import bgzip_tabix, mark_filename
 from ..support.system import run_cmd
 
@@ -28,54 +30,96 @@ from ..support.system import run_cmd
 # ======================================================================================================================
 # Query
 # ======================================================================================================================
-def read_vcf(filepath, verbose=False):
+def read_vcf(filepath, verbose=True):
     """
-
+    Read a VCF.
     :param filepath: str;
     :param verbose: bool;
-    :return: ; meta_information, header_line, header, samples, vcf_data
+    :return: dict;
     """
 
-    meta_information = []
-    header_line = None
-    header = None
+    vcf = {'meta_information': {'INFO': {},
+                                'FILTER': {},
+                                'FORMAT': {},
+                                'reference': {}},
+           'header': [],
+           'samples': [],
+           'data': 'DataFrame'}
 
-    # TODO: refactor; remove redundancy
+    # Open VCF
     try:
-        with open(filepath) as f:
-            for i, line in enumerate(f):
-                if line.startswith('##'):
-                    meta_information.append(line.strip())
-                elif line.startswith('#CHROM'):
-                    header_line = i
-                    print('header starts at line {}\n'.format(header_line))
-                    header = line.strip()
-                    samples = header.split('\t')[9:]
-                else:
-                    break
+        f = open(filepath)
+        bgzipped = False
     except UnicodeDecodeError:
-        with bgzf.open(filepath) as f:
-            for i, line in enumerate(f):
-                line = line.decode()
-                if line.startswith('##'):
-                    meta_information.append(line.strip())
-                elif line.startswith('#CHROM'):
-                    header_line = i
-                    print('header starts at line {}\n'.format(header_line))
-                    header = line.strip()
-                    samples = header.split('\t')[9:]
-                else:
-                    break
+        f = bgzf.open(filepath)
+        bgzipped = True
 
-    vcf_data = read_csv(filepath, sep='\t', skiprows=header_line)
+    for line in f:
+        if bgzipped:
+            line = line.decode()
+        line = line.strip()
+
+        if line.startswith('##'):  # Meta-information
+            # Remove '##' prefix
+            line = line[2:]
+
+            # Find the 1st '='
+            ei = line.find('=')
+
+            # Get field name and field line
+            fn, fl = line[:ei], line[ei + 1:]
+
+            if fl.startswith('<') and fl.endswith('>'):
+                # Strip '<' and '>'
+                fl = fl[1:-1]
+
+                # Split field line
+                fl_split = split_ignoring_inside_quotes(fl, ',')
+
+                # Get ID
+                id = fl_split[0].split('=')[1]
+
+                # Parse field line
+                fd_v = {}
+                for s in fl_split[1:]:
+                    ei = s.find('=')
+                    k, v = s[:ei], s[ei + 1:]
+                    fd_v[k] = v
+
+                # Save
+                if fn in vcf['meta_information']:
+                    if id in vcf['meta_information'][fn]:
+                        raise ValueError('Duplicated ID {}.'.format(id))
+                    else:
+                        vcf['meta_information'][fn][id] = fd_v
+                else:
+                    vcf['meta_information'][fn] = {id: fd_v}
+            else:
+                print('Didn\'t read line: {}.'.format(fl))
+
+        elif line.startswith('#CHROM'):  # Header
+            # Remove '#' prefix
+            line = line[1:]
+
+            # Get header line number
+            vcf['header'] = line.split('\t')
+            vcf['samples'] = vcf['header'][9:]
+        else:
+            break
+
+    # Close VCF
+    f.close()
+
+    # Read data
+    vcf['data'] = read_csv(filepath, sep='\t', comment='#')
 
     if verbose:
-        print('Meta-information\n{}\n'.format(meta_information))
-        print('header\n{}\n'.format(header))
-        print('VCF\n{}\n'.format(vcf_data.head()))
-
-    # TODO: dictionarize meta_information; keyed by FILTER, INFO, contig, and FORMAT
-    return meta_information, header_line, header, samples, vcf_data
+        print('********* VCF dict (without data) *********')
+        for k, v in vcf.items():
+            if k != 'data':
+                pprint({k: v}, compact=True, width=110)
+        print('*******************************************')
+    return vcf
 
 
 def read_sample_and_reference_vcfs(sample_vcf, reference_vcf):

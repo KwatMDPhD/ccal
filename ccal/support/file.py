@@ -241,24 +241,25 @@ def convert_gzipped_to_bgzipped(gzipped_filename):
 # ======================================================================================================================
 # .dict functions
 # ======================================================================================================================
-def read_dict(filepath, sep='\t', switch=False):
+def read_dict(filepath, comment_prefix='#', n_skipping_rows=0, sep='\t', switch_key_and_value=False):
     """
     Make a dictionary from mapping_file: key<sep>value.
     By default, 1st column is the key and the 2nd value, and use tab delimeter.
     :param filepath:
+    :param n_skipping_rows: int;
     :param sep:
-    :param switch:
-    :return:
+    :param switch_key_and_value:
+    :return: dict;
     """
 
     # Set column for key and value
-    if switch:
+    if switch_key_and_value:
         column_names = ['value', 'key']
     else:
         column_names = ['key', 'value']
 
     # Load mapping info; drop rows with NaN and duplicates
-    mapping = read_csv(filepath, sep=sep, names=column_names).dropna().drop_duplicates()
+    mapping = read_csv(filepath, comment=comment_prefix, skiprows=n_skipping_rows, sep=sep, names=column_names).dropna()
 
     # Sort by key
     mapping.sort_values('key', inplace=True)
