@@ -22,6 +22,7 @@ from matplotlib.path import Path
 from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma, sqrt
 from pandas import DataFrame, Series, read_csv, isnull
 from scipy.spatial import Delaunay, ConvexHull
+from sklearn.svm import SVC
 
 from .association import make_association_panel
 from .. import RANDOM_SEED
@@ -408,7 +409,7 @@ def make_oncogps(training_h,
                  std_max=3,
 
                  testing_h=None,
-                 testing_states=None,
+                 testing_states=(),
                  testing_h_normalization='using_training_h',
 
                  components=None,
@@ -564,7 +565,13 @@ def make_oncogps(training_h,
             normalize_training_h = True
             normalizing_h = None
         else:
-            raise ValueError('testing_h_normalization must be one of {using_training_h, using_testing_h, None}.')
+            raise ValueError(
+                'testing_h_normalization must be \'using_training_h\', \'using_testing_h\', or None.')
+
+        if not any(testing_states):  # Predict state labels for the testing samples
+            clf = SVC()
+            clf.fit(asarray(training_h.T), asarray(training_states))
+            testing_states = clf.predict(asarray(testing_h.T))
 
     # Preprocess training-H matrix and training states
     training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
@@ -624,7 +631,6 @@ def make_oncogps(training_h,
         print_log('Testing Onco-GPS with {} samples and {} states ...'.format(testing_h.shape[1],
                                                                               len(set(testing_states))))
         print_log('\tTesting states: {}'.format(set(training_states)))
-
         testing_h, testing_states, = _process_h_and_states(testing_h, testing_states, std_max,
                                                            normalize=normalize_training_h, normalizing_h=normalizing_h)
         testing_samples = _process_samples(testing_h, testing_states, components, n_pulls, power, component_ratio)
