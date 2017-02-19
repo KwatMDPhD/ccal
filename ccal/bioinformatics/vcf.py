@@ -136,25 +136,39 @@ def read_vcf(filepath, verbose=False):
     return vcf
 
 
-def get_allelic_frequency(vcf_data):
+def get_allelic_frequencies(vcf_data, sample_iloc=9):
     """
 
     :param vcf_data: DataFrame;
     :return: list; list of lists, which contain allelic frequencies for a sample
     """
 
-    def _get_allelic_frequency(vcf_row):
-        for s in vcf_row[9:]:
-            s_split = s.split(':')
-            try:
-                dp = int(s_split[2])
-                return ','.join(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
-            except ValueError:
-                return None
-            except ZeroDivisionError:
-                return None
+    def f(vcf_row):
+        s_split = vcf_row[sample_iloc].split(':')
+        try:
+            dp = int(s_split[2])
+            return ','.join(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
+        except ValueError:
+            return None
+        except ZeroDivisionError:
+            return None
 
-    return vcf_data.apply(_get_allelic_frequency, axis=1)
+    return vcf_data.apply(f, axis=1)
+
+
+def get_gene_names(vcf_data):
+    """
+
+    :param vcf_data: DataFrame;
+    :return: list; list of lists, which contain allelic frequencies for a sample
+    """
+
+    def f(vcf_row):
+        for i_s in vcf_row[7].split(';'):
+            if i_s.startswith('ANN='):
+                return i_s.split('|')[3]
+
+    return vcf_data.apply(f, axis=1)
 
 
 # ======================================================================================================================
