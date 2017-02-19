@@ -15,6 +15,7 @@ import re
 from pprint import pprint
 
 from pandas import read_csv
+import tabix
 from Bio import bgzf
 
 from . import PATH_GRCH38, PATH_HG38, PATH_CHAIN_GRCH37_TO_GRCH38, PATH_CHAIN_HG19_TO_HG38, \
@@ -31,7 +32,7 @@ CASTER = {
     'GT': lambda x: re.split('[|/]', x),
     'AD': lambda x: x.split(','),
     'VQSLOD': float,
-    'CLNSIG': lambda x: max([int(s) for s in re.split('[,|]', x)])
+    'CLNSIG': lambda x: max([int(s) for s in re.split('[,|]', x)]),
 }
 
 
@@ -46,13 +47,16 @@ def read_vcf(filepath, verbose=False):
     :return: dict;
     """
 
-    vcf = {'meta_information': {'INFO': {},
-                                'FILTER': {},
-                                'FORMAT': {},
-                                'reference': {}},
-           'header': [],
-           'samples': [],
-           'data': 'DataFrame'}
+    vcf = {
+        'meta_information': {'INFO': {},
+                             'FILTER': {},
+                             'FORMAT': {},
+                             'reference': {}
+                             },
+        'header': [],
+        'samples': [],
+        'data': None
+    }
 
     # Open VCF
     try:
@@ -132,16 +136,17 @@ def read_vcf(filepath, verbose=False):
     return vcf
 
 
-def get_allelic_frequency(variant):
+# TODO: keep only 1 logic
+def get_allelic_frequency(vcf_row):
     """
 
-    :param variant: Series; a VCF row
+    :param vcf_row: Series; a VCF row
     :return: list; list of lists, which contain allelic frequencies for a sample
     """
 
     try:
         to_return = []
-        for sample in variant[9:]:
+        for sample in vcf_row[9:]:
             sample_split = sample.split(':')
 
             dp = int(sample_split[2])
@@ -153,38 +158,30 @@ def get_allelic_frequency(variant):
 # ======================================================================================================================
 # Work with VCF as file
 # ======================================================================================================================
-def get_variants_by_tabix(contig, start_position, stop_position, sample_vcf_handle, reference_vcf_handle=None):
+def get_variants_by_tabix(contig, start, end, sample_vcf, reference_vcf=None):
     """
 
-    :param contig:
-    :param start_position:
-    :param stop_position:
-    :param sample_vcf_handle: pytabix handler;
-    :param reference_vcf_handle: pytabix handler;
-    :return:
+    :param contig: str;
+    :param start: int;
+    :param end: int;
+    :param sample_vcf: str or pytabix handler;
+    :param reference_vcf: str or pytabix handler;
+    :return: list; list of dict
     """
 
-    records = sample_vcf_handle.query(contig, start_position - 1, stop_position)
+    if isinstance(sample_vcf, str):  # Open sample VCF
+        sample_vcf = tabix.open(sample_vcf)
 
-    if reference_vcf_handle and len(list(records)) == 0:  # If sample does not have the record, query reference if given
-        records = reference_vcf_handle.query(contig, start_position - 1, stop_position)
+    records = sample_vcf.query(contig, start - 1, end)
+
+    if reference_vcf and len(list(records)) == 0:  # If sample does not have the record, query reference if given
+
+        if isinstance(reference_vcf, str):  # Open reference VCF
+            reference_vcf = tabix.open(reference_vcf)
+
+        records = reference_vcf.query(contig, start - 1, end)
 
     return [parse_variant(r) for r in records]
-
-
-def _cast(k, v, caster=CASTER):
-    """
-
-    :param k: str;
-    :param v: str;
-    :param caster: dict;
-    :return:
-    """
-
-    if k in caster:
-        return caster[k](v)
-    else:
-        return v
 
 
 def parse_variant(vcf_row, verbose=False):
@@ -241,8 +238,6 @@ def parse_variant(vcf_row, verbose=False):
     for i_s in info_split:
         if i_s.startswith('ANN='):
             anns = {}
-
-            # TODO: use not only the 1st annotation
             for i, a in enumerate(i_s.split(',')):
                 a_split = a.split('|')
 
@@ -277,6 +272,21 @@ def parse_variant(vcf_row, verbose=False):
         pprint(variant, compact=True, width=110)
         print('***************************')
     return variant
+
+
+def _cast(k, v, caster=CASTER):
+    """
+
+    :param k: str;
+    :param v: str;
+    :param caster: dict;
+    :return:
+    """
+
+    if k in caster:
+        return caster[k](v)
+    else:
+        return v
 
 
 # ======================================================================================================================
