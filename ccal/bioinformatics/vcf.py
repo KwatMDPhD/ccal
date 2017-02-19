@@ -136,23 +136,27 @@ def read_vcf(filepath, verbose=False):
     return vcf
 
 
-# TODO: keep only 1 logic
-def get_allelic_frequency(vcf_row):
+def get_allelic_frequency(vcf_data):
     """
 
     :param vcf_row: Series; a VCF row
     :return: list; list of lists, which contain allelic frequencies for a sample
     """
 
-    try:
-        to_return = []
-        for sample in vcf_row[9:]:
-            sample_split = sample.split(':')
+    def _get_allelic_frequency(vcf_row):
+        ss = []
+        for s in vcf_row[9:]:
+            s_split = s.split(':')
+            try:
+                dp = int(s_split[2])
+                ss.append([round(ad / dp, 3) for ad in [int(i) for i in s_split[1].split(',')]])
+            except ValueError:
+                ss.append(None)
+            except ZeroDivisionError:
+                ss.append(None)
+        return ss
 
-            dp = int(sample_split[2])
-            to_return.append([round(ad / dp, 3) for ad in [int(i) for i in sample_split[1].split(',')]])
-    except ValueError:
-        pass
+    return vcf_data.apply(_get_allelic_frequency, axis=1)
 
 
 # ======================================================================================================================
@@ -184,7 +188,10 @@ def get_variants_by_tabix(contig, start, end, sample_vcf, reference_vcf=None):
     return [parse_variant(r) for r in records]
 
 
-def parse_variant(vcf_row, verbose=False):
+# ======================================================================================================================
+# Parse
+# ======================================================================================================================
+def parse_variant(vcf_row, n_anns=1, verbose=False):
     """
 
     :param vcf_row:
@@ -197,6 +204,7 @@ def parse_variant(vcf_row, verbose=False):
         'REF': _cast('REF', vcf_row[3]),
         'FILTER': _cast('FILTER', vcf_row[6]),
     }
+    ref = variant['REF']
 
     # ID
     rsid = vcf_row[2]
@@ -213,10 +221,29 @@ def parse_variant(vcf_row, verbose=False):
     if qual and qual != '.':
         variant['QUAL'] = _cast('QUAL', qual)
 
+    # Variant type
+    if alt:
+        if len(ref) == len(alt):
+            if len(ref) == 1:
+                vt = 'SNP'
+            elif len(ref) == 2:
+                vt = 'DNP'
+            elif len(ref) == 3:
+                vt = 'TNP'
+            else:  # 4 <= len(ref)
+                vt = 'ONP'
+        else:
+            if len(ref) < len(alt):
+                vt = 'INS'
+            else:  # len(alt) < len(ref)
+                vt = 'DEL'
+        variant['variant_type'] = vt
+
     # Samples
+    variant['samples'] = []
     format_ = vcf_row[8].split(':')
     for i, s in enumerate(vcf_row[9:]):
-        s_d = {}
+        s_d = {'sample_id': i + 1}
 
         # Sample
         for k, v in zip(format_, s.split(':')):
@@ -230,15 +257,16 @@ def parse_variant(vcf_row, verbose=False):
             s_d['genotype'] = [variant['REF']] * 2
 
         # Allelic frequency
-        s_d['allelic_frequency'] = [round(int(ad) / int(s_d['DP']), 3) for ad in s_d['AD']]
+        if 'DP' in s_d and int(s_d['DP']):
+            s_d['allelic_frequency'] = [round(int(ad) / int(s_d['DP']), 3) for ad in s_d['AD']]
 
-        variant['sample_{}'.format(i + 1)] = s_d
+        variant['samples'].append(s_d)
 
     info_split = vcf_row[7].split(';')
     for i_s in info_split:
         if i_s.startswith('ANN='):
             anns = {}
-            for i, a in enumerate(i_s.split(',')):
+            for i, a in enumerate(i_s.split(',')[:n_anns]):
                 a_split = a.split('|')
 
                 anns[i] = {
@@ -265,7 +293,8 @@ def parse_variant(vcf_row, verbose=False):
                     # TODO: decode properly
                     variant[k] = _cast(k, v)
             except ValueError:
-                print('INFO error: {} (not key=value)'.format(i_s))
+                pass
+                # print('INFO error: {} (not key=value)'.format(i_s))
 
     if verbose:
         print('********* Variant *********')
@@ -290,7 +319,7 @@ def _cast(k, v, caster=CASTER):
 
 
 # ======================================================================================================================
-# Operate
+# Use executables
 # ======================================================================================================================
 def concat_snp_indel(snp_filepath, indel_filepath, output_fname):
     """
