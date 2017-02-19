@@ -541,6 +541,7 @@ def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=True, col
     """
     Read .gmt.
     :param filepath: str; filepath to a .gmt file
+    :param gene_sets: iterable;
     :param gmt: iterable: list of gene set names to keep
     :param drop_description: bool; drop Desctiption column (2nd column) or not
     :param save_clean: bool; Save as .gmt (cleaned version) or not
@@ -552,8 +553,8 @@ def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=True, col
     rows = []
     with open(filepath) as f:
         for line in f.readlines():
-            split = line.split()
-            rows.append(split[:2] + sorted(split[2:]))
+            line_split = line.split()
+            rows.append(line_split[:2] + sorted(line_split[2:]))
 
     # Make a dataframe
     gmt = DataFrame(rows)
