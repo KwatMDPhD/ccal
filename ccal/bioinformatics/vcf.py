@@ -139,22 +139,20 @@ def read_vcf(filepath, verbose=False):
 def get_allelic_frequency(vcf_data):
     """
 
-    :param vcf_row: Series; a VCF row
+    :param vcf_data: DataFrame;
     :return: list; list of lists, which contain allelic frequencies for a sample
     """
 
     def _get_allelic_frequency(vcf_row):
-        ss = []
         for s in vcf_row[9:]:
             s_split = s.split(':')
             try:
                 dp = int(s_split[2])
-                ss.append([round(ad / dp, 3) for ad in [int(i) for i in s_split[1].split(',')]])
+                return ','.join(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
             except ValueError:
-                ss.append(None)
+                return None
             except ZeroDivisionError:
-                ss.append(None)
-        return ss
+                return None
 
     return vcf_data.apply(_get_allelic_frequency, axis=1)
 
@@ -194,8 +192,10 @@ def get_variants_by_tabix(contig, start, end, sample_vcf, reference_vcf=None):
 def parse_variant(vcf_row, n_anns=1, verbose=False):
     """
 
-    :param vcf_row:
-    :return: dict
+    :param vcf_row: iterable;
+    :param n_anns: int;
+    :param verbose: bool;
+    :return: dict;
     """
 
     variant = {
