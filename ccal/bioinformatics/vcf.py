@@ -25,11 +25,20 @@ from ..support.str_ import split_ignoring_inside_quotes, remove_nested_quotes
 from ..support.file import bgzip_tabix, mark_filename
 from ..support.system import run_cmd
 
+CASTER = {
+    'POS': int,
+    'QUAL': float,
+    'GT': lambda x: re.split('[|/]', x),
+    'AD': lambda x: x.split(','),
+    'VQSLOD': float,
+    'CLNSIG': lambda x: max([int(s) for s in re.split('[,|]', x)])
+}
+
 
 # ======================================================================================================================
 # Work with VCF as DataFrame
 # ======================================================================================================================
-def read_vcf(filepath, verbose=True):
+def read_vcf(filepath, verbose=False):
     """
     Read a VCF.
     :param filepath: str;
@@ -48,6 +57,8 @@ def read_vcf(filepath, verbose=True):
     # Open VCF
     try:
         f = open(filepath)
+        f.readline()
+        f.seek(0)
         bgzipped = False
     except UnicodeDecodeError:
         f = bgzf.open(filepath)
@@ -94,7 +105,7 @@ def read_vcf(filepath, verbose=True):
                 else:
                     vcf['meta_information'][fn] = {id_: fd_v}
             else:
-                print('Didn\'t read line: {}.'.format(fl))
+                print('Didn\'t parse: {}.'.format(fl))
 
         elif line.startswith('#CHROM'):  # Header
             # Remove '#' prefix
@@ -135,14 +146,14 @@ def get_allelic_frequency(variant):
 
             dp = int(sample_split[2])
             to_return.append([round(ad / dp, 3) for ad in [int(i) for i in sample_split[1].split(',')]])
-    except:
+    except ValueError:
         pass
 
 
 # ======================================================================================================================
 # Work with VCF as file
 # ======================================================================================================================
-def get_variant_by_tabix(contig, start_position, stop_position, sample_vcf_handle, reference_vcf_handle=None):
+def get_variants_by_tabix(contig, start_position, stop_position, sample_vcf_handle, reference_vcf_handle=None):
     """
 
     :param contig:
@@ -154,96 +165,118 @@ def get_variant_by_tabix(contig, start_position, stop_position, sample_vcf_handl
     """
 
     records = sample_vcf_handle.query(contig, start_position - 1, stop_position)
-    sample_or_reference = 'sample'
 
     if reference_vcf_handle and len(list(records)) == 0:  # If sample does not have the record, query reference if given
         records = reference_vcf_handle.query(contig, start_position - 1, stop_position)
-        sample_or_reference = 'reference'
 
-    # Parse variant information
-    variants = {}
-    for i, r in enumerate(records):
-        rsid = r[2]
-        if rsid == '.':
-            rsid = 'unknown_rsid_{}'.format(i)
-        variants[rsid] = parse_vcf_information(r, sample_or_reference)
-    return variants
+    return [parse_variant(r) for r in records]
 
 
-def parse_vcf_information(record, sample_or_reference):
+def _cast(k, v, caster=CASTER):
     """
 
-    :param record: tabix record;
-    :param sample_or_reference: str;
-    :return: dict;
-    """
-
-    to_return = {'contig': record[0],
-                 'start_position': record[1],
-                 'nucleotide_pair': get_vcf_nucleotide_pair(record, sample_or_reference)}
-
-    if record[5] != '.':
-        to_return['quality'] = record[5]
-
-    for info in record[7].split(';'):
-        try:
-            key, value = info.split('=')
-        except ValueError:
-            print('Error parsing {} (not key=value entry in INFO)'.format(info))
-
-        fields = {'VQSLOD': lambda score: float(score),
-                  'ANN': lambda string: string,
-                  'CLNSIG': lambda scores: max([int(s) for s in re.split('[,|]', scores)])}
-        if key in fields:
-            if key == 'ANN':
-                for k, v in parse_vcf_annotation(value).items():
-                    to_return[k] = v
-            else:
-                to_return[key] = fields[key](value)
-
-    return to_return
-
-
-def get_vcf_nucleotide_pair(record, sample_or_reference):
-    """
-
-    :param record: tabix record;
-    :param sample_or_reference: {'sample', 'reference'}
-    :return: str;
-    """
-
-    if sample_or_reference == 'sample':
-        zygosity = get_vcf_zygosity(record)
-        reference_nucleotide, alternate_nucleotides = record[3], record[4].split(',')
-        return tuple([([reference_nucleotide] + alternate_nucleotides)[x] for x in zygosity])
-
-    elif sample_or_reference == 'reference':
-        reference_nucleotide = record[3]
-        return tuple([reference_nucleotide] * 2)
-
-    else:
-        raise ValueError('Unknown sample_or_reference: {}'.format(sample_or_reference))
-
-
-def get_vcf_zygosity(record):
-    """
-
-    :param record: tabix record
+    :param k: str;
+    :param v: str;
+    :param caster: dict;
     :return:
     """
-    zygosity = [int(code) for code in re.split('[|/]', record[9].split(':')[0])]
-    return zygosity
+
+    if k in caster:
+        return caster[k](v)
+    else:
+        return v
 
 
-def parse_vcf_annotation(annotations):
+def parse_variant(vcf_row, verbose=False):
     """
 
-    :param annotations: annotations of ANN=annotation INFO entry in a VCF
+    :param vcf_row:
     :return: dict
     """
 
-    first_annotation = annotations.split(',')[0].split('|')
-    return {'effect': first_annotation[1], 'impact': first_annotation[2]}
+    variant = {
+        'CHROM': _cast('CHROM', vcf_row[0]),
+        'POS': _cast('POS', vcf_row[1]),
+        'REF': _cast('REF', vcf_row[3]),
+        'FILTER': _cast('FILTER', vcf_row[6]),
+    }
+
+    # ID
+    rsid = vcf_row[2]
+    if rsid and rsid != '.':
+        variant['ID'] = _cast('ID', rsid)
+
+    # ALT
+    alt = vcf_row[4]
+    if alt and alt != '.':
+        variant['ALT'] = _cast('ALT', alt)
+
+    # QUAL
+    qual = vcf_row[5]
+    if qual and qual != '.':
+        variant['QUAL'] = _cast('QUAL', qual)
+
+    # Samples
+    format_ = vcf_row[8].split(':')
+    for i, s in enumerate(vcf_row[9:]):
+        s_d = {}
+
+        # Sample
+        for k, v in zip(format_, s.split(':')):
+            s_d[k] = _cast(k, v)
+
+        # Genotype
+        if 'ALT' in variant:
+            ref_alts = [variant['REF']] + variant['ALT'].split(',')
+            s_d['genotype'] = [ref_alts[int(gt)] for gt in s_d['GT']]
+        else:
+            s_d['genotype'] = [variant['REF']] * 2
+
+        # Allelic frequency
+        s_d['allelic_frequency'] = [round(int(ad) / int(s_d['DP']), 3) for ad in s_d['AD']]
+
+        variant['sample_{}'.format(i + 1)] = s_d
+
+    info_split = vcf_row[7].split(';')
+    for i_s in info_split:
+        if i_s.startswith('ANN='):
+            anns = {}
+
+            # TODO: use not only the 1st annotation
+            for i, a in enumerate(i_s.split(',')):
+                a_split = a.split('|')
+
+                anns[i] = {
+                    'effect': a_split[1],
+                    'putative_impact': a_split[2],
+                    'gene_name': a_split[3],
+                    'gene_id': a_split[4],
+                    'feature_type': a_split[5],
+                    'feature_id': a_split[6],
+                    'transcript_biotype': a_split[7],
+                    'rank': a_split[8],
+                    'hgvsc': a_split[9],
+                    'hgvsp': a_split[10],
+                    'cdna_position': a_split[11],
+                    'cds_position': a_split[12],
+                    'protein_position': a_split[13],
+                    'distance_to_feature': a_split[14],
+                }
+            variant['ANN'] = anns
+        else:
+            try:
+                k, v = i_s.split('=')
+                if v and v != '.':
+                    # TODO: decode properly
+                    variant[k] = _cast(k, v)
+            except ValueError:
+                print('INFO error: {} (not key=value)'.format(i_s))
+
+    if verbose:
+        print('********* Variant *********')
+        pprint(variant, compact=True, width=110)
+        print('***************************')
+    return variant
 
 
 # ======================================================================================================================
