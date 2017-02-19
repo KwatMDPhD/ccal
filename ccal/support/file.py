@@ -541,9 +541,8 @@ def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=True, col
     """
     Read .gmt.
     :param filepath: str; filepath to a .gmt file
-    :param gene_sets: iterable;
-    :param gmt: iterable: list of gene set names to keep
-    :param drop_description: bool; drop Desctiption column (2nd column) or not
+    :param gene_sets: iterable: list of gene set names to keep
+    :param drop_description: bool; drop Description column (2nd column) or not
     :param save_clean: bool; Save as .gmt (cleaned version) or not
     :param collapse: bool; collapse into a list of unique genes or not
     :return: DataFrame or list; (n_gene_sets, size of the largest gene set) or (n_unique genes)
@@ -587,9 +586,9 @@ def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=True, col
 def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, collapse=False):
     """
     Read 1 or more .gmt.
-    :param filepath: str; filepath to a .gmt file
-    :param gmt: iterable: list of gene set names to keep
-    :param drop_description: bool; drop Desctiption column (2nd column) or not
+    :param filepaths: str; filepath to a .gmt file
+    :param gene_sets: iterable: list of gene set names to keep
+    :param drop_description: bool; drop Description column (2nd column) or not
     :param save_clean: bool; Save as .gmt (cleaned version) or not
     :param collapse: bool; collapse into a list of unique genes or not
     :return: DataFrame or list; (n_gene_sets, size of the largest gene set) or (n_unique genes)
