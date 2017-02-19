@@ -246,6 +246,7 @@ def read_dict(filepath, comment_prefix='#', n_skipping_rows=0, sep='\t', switch_
     Make a dictionary from mapping_file: key<sep>value.
     By default, 1st column is the key and the 2nd value, and use tab delimeter.
     :param filepath:
+    :param comment_prefix: str;
     :param n_skipping_rows: int;
     :param sep:
     :param switch_key_and_value:
@@ -338,13 +339,12 @@ def write_colormap(cmap, filepath):
 
 
 # ======================================================================================================================
-# .data_table functions
+# .data_table.txt functions
 # ======================================================================================================================
-def load_data_table(directory_path, data_table, indices=None):
+def load_data_table(data_table, indices=None):
     """
 
-    :param directory_path: str;
-    :param data_table: str or DataFrame; path to a .data_table or data_table DataFrame
+    :param data_table: str or DataFrame; path to a .data_table.txt or data_table DataFrame
     :param indices: dict;
         {
             'mutation': {
@@ -405,9 +405,9 @@ def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasi
     """
     Write <data> to filepath.
     :param data: iterable of tuples;
-        [('mutation', 'binary', 'high'),
-        ('gene_expression', 'continuous', 'high'),
-        ('drug_sensitivity', 'continuous', 'low'),
+        [('mutation', 'binary', 'high', 'filepath),
+        ('gene_expression', 'continuous', 'high', 'filepath),
+        ('drug_sensitivity', 'continuous', 'low', 'filepath),
         ...]
     :param filepath: str; file path to a .data_table (.data_table suffix will be automatically added if not present)
     :param columns: iterable;
