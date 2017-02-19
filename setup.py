@@ -31,6 +31,7 @@ setup(name='ccal',
                         'matplotlib',
                         'seaborn',
                         'biopython',
-                        'rpy2'],
+                        'rpy2',
+                        'progressbar'],
       cmdclass={'install': InstallCommand},
       package_data={})

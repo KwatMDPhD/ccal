@@ -68,20 +68,21 @@ def read_vcf(filepath, verbose=False):
         f = bgzf.open(filepath)
         bgzipped = True
 
-    for line in f:
-        if bgzipped:
-            line = line.decode()
-        line = line.strip()
+    for row in f:
 
-        if line.startswith('##'):  # Meta-information
+        if bgzipped:
+            row = row.decode()
+        row = row.strip()
+
+        if row.startswith('##'):  # Meta-information
             # Remove '##' prefix
-            line = line[2:]
+            row = row[2:]
 
             # Find the 1st '='
-            ei = line.find('=')
+            ei = row.find('=')
 
             # Get field name and field line
-            fn, fl = line[:ei], line[ei + 1:]
+            fn, fl = row[:ei], row[ei + 1:]
 
             if fl.startswith('<') and fl.endswith('>'):
                 # Strip '<' and '>'
@@ -111,12 +112,12 @@ def read_vcf(filepath, verbose=False):
             else:
                 print('Didn\'t parse: {}.'.format(fl))
 
-        elif line.startswith('#CHROM'):  # Header
+        elif row.startswith('#CHROM'):  # Header
             # Remove '#' prefix
-            line = line[1:]
+            row = row[1:]
 
             # Get header line number
-            vcf['header'] = line.split('\t')
+            vcf['header'] = row.split('\t')
             vcf['samples'] = vcf['header'][9:]
         else:
             break
@@ -125,7 +126,7 @@ def read_vcf(filepath, verbose=False):
     f.close()
 
     # Read data
-    vcf['data'] = read_csv(filepath, sep='\t', comment='#')
+    vcf['data'] = read_csv(filepath, sep='\t', comment='#', header=None, names=vcf['header'])
 
     if verbose:
         print('********* VCF dict (without data) *********')
@@ -147,13 +148,15 @@ def get_allelic_frequencies(vcf_data, sample_iloc=9):
         s_split = vcf_row[sample_iloc].split(':')
         try:
             dp = int(s_split[2])
-            return ','.join(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
+            return ', '.join(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
         except ValueError:
             return None
         except ZeroDivisionError:
             return None
 
-    return vcf_data.apply(f, axis=1)
+    s = vcf_data.apply(f, axis=1)
+    s.name = 'allelic_frequency'
+    return s
 
 
 def get_gene_names(vcf_data):
@@ -168,7 +171,9 @@ def get_gene_names(vcf_data):
             if i_s.startswith('ANN='):
                 return i_s.split('|')[3]
 
-    return vcf_data.apply(f, axis=1)
+    s = vcf_data.apply(f, axis=1)
+    s.name = 'gene'
+    return s
 
 
 # ======================================================================================================================
