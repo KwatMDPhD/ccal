@@ -137,15 +137,31 @@ def read_vcf(filepath, verbose=False):
     return vcf
 
 
+def get_variant_type(vcf_data):
+    """
+
+    :param vcf_data: DataFrame;
+    :return: list; list of lists which contain
+    """
+
+    def f(vcf_row):
+        ref, alt = vcf_row.iloc[[3, 4]]
+        return _get_variant_type(ref, alt)
+
+    s = vcf_data.apply(f, axis=1)
+    s.name = 'variant_type'
+    return s
+
+
 def get_allelic_frequencies(vcf_data, sample_iloc=9):
     """
 
     :param vcf_data: DataFrame;
-    :return: list; list of lists, which contain allelic frequencies for a sample
+    :return: list; list of lists which contain allelic frequencies for a sample
     """
 
     def f(vcf_row):
-        s_split = vcf_row[sample_iloc].split(':')
+        s_split = vcf_row.iloc[sample_iloc].split(':')
         try:
             dp = int(s_split[2])
             return ', '.join(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
@@ -159,20 +175,54 @@ def get_allelic_frequencies(vcf_data, sample_iloc=9):
     return s
 
 
+def get_effect(vcf_data):
+    """
+
+    :param vcf_data: DataFrame;
+    :return: list; list of lists which contain
+    """
+
+    def f(vcf_row):
+        for i_s in vcf_row.iloc[7].split(';'):
+            if i_s.startswith('ANN='):
+                return i_s.split('|')[2]
+
+    s = vcf_data.apply(f, axis=1)
+    s.name = 'effect'
+    return s
+
+
 def get_gene_names(vcf_data):
     """
 
     :param vcf_data: DataFrame;
-    :return: list; list of lists, which contain allelic frequencies for a sample
+    :return: list; list of lists which contain
     """
 
     def f(vcf_row):
-        for i_s in vcf_row[7].split(';'):
+        for i_s in vcf_row.iloc[7].split(';'):
             if i_s.startswith('ANN='):
                 return i_s.split('|')[3]
 
     s = vcf_data.apply(f, axis=1)
     s.name = 'gene'
+    return s
+
+
+def get_gene_id(vcf_data):
+    """
+
+    :param vcf_data: DataFrame;
+    :return: list; list of lists which contain
+    """
+
+    def f(vcf_row):
+        for i_s in vcf_row.iloc[7].split(';'):
+            if i_s.startswith('ANN='):
+                return i_s.split('|')[4]
+
+    s = vcf_data.apply(f, axis=1)
+    s.name = 'geen_id'
     return s
 
 
@@ -242,20 +292,7 @@ def parse_variant(vcf_row, n_anns=1, verbose=False):
 
     # Variant type
     if alt:
-        if len(ref) == len(alt):
-            if len(ref) == 1:
-                vt = 'SNP'
-            elif len(ref) == 2:
-                vt = 'DNP'
-            elif len(ref) == 3:
-                vt = 'TNP'
-            else:  # 4 <= len(ref)
-                vt = 'ONP'
-        else:
-            if len(ref) < len(alt):
-                vt = 'INS'
-            else:  # len(alt) < len(ref)
-                vt = 'DEL'
+        vt = _get_variant_type(ref, alt)
         variant['variant_type'] = vt
 
     # Samples
@@ -335,6 +372,31 @@ def _cast(k, v, caster=CASTER):
         return caster[k](v)
     else:
         return v
+
+
+def _get_variant_type(ref, alt):
+    """
+
+    :param ref: str;
+    :param alt: str;
+    :return: str;
+    """
+
+    if len(ref) == len(alt):
+        if len(ref) == 1:
+            vt = 'SNP'
+        elif len(ref) == 2:
+            vt = 'DNP'
+        elif len(ref) == 3:
+            vt = 'TNP'
+        else:  # 4 <= len(ref)
+            vt = 'ONP'
+    else:
+        if len(ref) < len(alt):
+            vt = 'INS'
+        else:  # len(alt) < len(ref)
+            vt = 'DEL'
+    return vt
 
 
 # ======================================================================================================================

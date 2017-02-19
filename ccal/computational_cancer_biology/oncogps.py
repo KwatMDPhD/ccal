@@ -38,7 +38,7 @@ from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
 from ..support.file import read_gct, establish_filepath, mark_filename, load_gct, write_gct, write_dict
 from ..support.log import print_log
 from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_CATEGORICAL_2, CMAP_BINARY, save_plot, \
-    plot_heatmap, plot_points, plot_violin_box_or_bar, plot_bar, plot_nmf
+    plot_heatmap, plot_points, plot_violin_box_or_bar, plot_nmf
 
 
 # ======================================================================================================================
@@ -550,34 +550,66 @@ def make_oncogps(training_h,
     """
 
     # Make sure the index is str (better for .ix)
-    # TODO: consider deleting
+    # TODO: enforece
     training_h.index = training_h.index.astype(str)
 
     if isinstance(testing_h, DataFrame):
-        print_log('\tTesting normalization: {}'.format(testing_h_normalization))
-        if not testing_h_normalization:
-            normalize_training_h = False
-            normalizing_h = None
-        elif testing_h_normalization == 'using_training_h':
-            normalize_training_h = True
-            normalizing_h = training_h.copy()
-        elif testing_h_normalization == 'using_testing_h':
-            normalize_training_h = True
-            normalizing_h = None
-        else:
-            raise ValueError(
-                'testing_h_normalization must be \'using_training_h\', \'using_testing_h\', or None.')
+
+        # Make sure the index is str (better for .ix)
+        # TODO: enforce
+        testing_h.index = testing_h.index.astype(str)
 
         if not any(testing_states):  # Predict state labels for the testing samples
             clf = SVC()
             clf.fit(asarray(training_h.T), asarray(training_states))
             testing_states = clf.predict(asarray(testing_h.T))
 
+        print_log('Testing Onco-GPS with {} components, {} samples, & {} states ...'.format(*testing_h.shape,
+                                                                                            len(set(testing_states))))
+        print_log('\tComponents: {}.'.format(set(testing_h.index)))
+        print_log('\tTraining states: {}.'.format(set(testing_states)))
+        print_log('\tNormalization: {}'.format(testing_h_normalization))
+
+        if testing_h_normalization == 'using_training_h':
+            normalize_testing_h = True
+            normalizing_size = training_h.shape[1]
+            normalizing_mean = training_h.mean(axis=1)
+            normalizing_std = training_h.std(axis=1)
+            dummy = normalize_dataframe_or_series(training_h, '-0-', axis=1).clip(-std_max, std_max)
+            normalizing_min = dummy.min(axis=1)
+            normalizing_max = dummy.max(axis=1)
+
+        elif testing_h_normalization == 'using_testing_h':
+            normalize_testing_h = True
+            normalizing_size = None
+            normalizing_mean = None
+            normalizing_std = None
+            normalizing_min = None
+            normalizing_max = None
+
+        elif testing_h_normalization is None:
+            normalize_testing_h = False
+            normalizing_size = None
+            normalizing_mean = None
+            normalizing_std = None
+            normalizing_min = None
+            normalizing_max = None
+
+        else:
+            raise ValueError('testing_h_normalization must be \'using_training_h\', \'using_testing_h\', or None.')
+        testing_h, testing_states, = _process_h_and_states(testing_h, testing_states, std_max,
+                                                           normalize=normalize_testing_h,
+                                                           normalizing_size=normalizing_size,
+                                                           normalizing_mean=normalizing_mean,
+                                                           normalizing_std=normalizing_std,
+                                                           normalizing_min=normalizing_min,
+                                                           normalizing_max=normalizing_max)
+
     # Preprocess training-H matrix and training states
     training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
 
-    print_log('Training Onco-GPS with {} components, {} samples, and {} states ...'.format(*training_h.shape,
-                                                                                           len(set(training_states))))
+    print_log('Training Onco-GPS with {} components, {} samples, & {} states ...'.format(*training_h.shape,
+                                                                                         len(set(training_states))))
     print_log('\tComponents: {}.'.format(set(training_h.index)))
     print_log('\tTraining states: {}.'.format(set(training_states)))
 
@@ -605,7 +637,7 @@ def make_oncogps(training_h,
         n_pulls = training_h.shape[0]
 
     if not power:
-        print_log('Computing component power ...')
+        print_log('Computing power ...')
         if training_h.shape[0] < 4:
             print_log('\tCould\'t model with Ae^(kx) + C; too few data points.')
             power = 1
@@ -617,7 +649,6 @@ def make_oncogps(training_h,
                 power = 1
 
     # Process samples
-    # TODO: refactor meaningfully
     training_samples = _process_samples(training_h, training_states, components, n_pulls, power, component_ratio)
 
     print_log('Computing grid probabilities and states ...')
@@ -625,23 +656,14 @@ def make_oncogps(training_h,
                                                                              kde_bandwidths_factor)
 
     if isinstance(testing_h, DataFrame):
-        # Make sure the index is str (better for .ix)
-        testing_h.index = testing_h.index.astype(str)
-
-        print_log('Testing Onco-GPS with {} samples and {} states ...'.format(testing_h.shape[1],
-                                                                              len(set(testing_states))))
-        print_log('\tTesting states: {}'.format(set(training_states)))
-        testing_h, testing_states, = _process_h_and_states(testing_h, testing_states, std_max,
-                                                           normalize=normalize_training_h, normalizing_h=normalizing_h)
         testing_samples = _process_samples(testing_h, testing_states, components, n_pulls, power, component_ratio)
-        samples = testing_samples
 
+        samples = testing_samples
         if any(annotation):  # Make sure annotation is Series and keep selected samples
             annotation = _process_annotation(annotation, testing_h.columns)
 
     else:
         samples = training_samples
-
         if any(annotation):  # Make sure annotation is Series and keep selected samples
             annotation = _process_annotation(annotation, training_h.columns)
 
@@ -649,7 +671,6 @@ def make_oncogps(training_h,
         samples = samples.ix[samples_to_plot, :]
 
     print_log('Plotting ...')
-
     # TODO: remove
     if colors == 'paper':
         colors = ['#CD96CD', '#5CACEE', '#43CD80', '#FFA500', '#CD5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
@@ -713,13 +734,20 @@ def make_oncogps(training_h,
 # ======================================================================================================================
 # Process H matrix and states
 # ======================================================================================================================
-def _process_h_and_states(h, states, std_max, normalize=True, normalizing_h=None):
+def _process_h_and_states(h, states, std_max, normalize=True,
+                          normalizing_size=None,
+                          normalizing_mean=None, normalizing_std=None,
+                          normalizing_min=None, normalizing_max=None):
     """
     Process H matrix and states.
     :param h: DataFrame; (n_components, n_samples); H matrix
     :param states: iterable of ints;
     :param std_max: number;
-    :param normalizing_h: DataFrame; (n_components, m_samples);
+    :param normalizing_size:
+    :param normalizing_mean:
+    :param normalizing_std:
+    :param normalizing_min:
+    :param normalizing_max:
     :return: DataFrame and Series; processed H matrix and states
     """
 
@@ -727,7 +755,10 @@ def _process_h_and_states(h, states, std_max, normalize=True, normalizing_h=None
     states = Series(states, index=h.columns)
 
     # Normalize H matrix and drop all-0 samples
-    h = _process_h(h, std_max, normalize=normalize, normalizing_h=normalizing_h)
+    h = _process_h(h, std_max, normalize=normalize,
+                   normalizing_size=normalizing_size,
+                   normalizing_mean=normalizing_mean, normalizing_std=normalizing_std,
+                   normalizing_min=normalizing_min, normalizing_max=normalizing_max)
 
     # Drop all-0 samples from states too
     states = states.ix[h.columns]
@@ -735,21 +766,33 @@ def _process_h_and_states(h, states, std_max, normalize=True, normalizing_h=None
     return h, states
 
 
-def _process_h(h, std_max, normalize=True, normalizing_h=None):
+def _process_h(h, std_max, normalize=True,
+               normalizing_size=None,
+               normalizing_mean=None, normalizing_std=None,
+               normalizing_min=None, normalizing_max=None):
     """
     Normalize H matrix and drop all-0 samples.
     :param h: DataFrame; (n_components, n_samples); H matrix
     :param std_max: number;
-    :param normalizing_h: DataFrame; (n_components, m_samples);
+    :param normalizing_size:
+    :param normalizing_mean:
+    :param normalizing_std:
+    :param normalizing_min:
+    :param normalizing_max:
     :return: DataFrame; (n_components, n_samples); Normalized H matrix
     """
+
+    # TODO: refactor 2 dropping all-0 samples
 
     # Drop all-0 samples
     h = drop_uniform_slice_from_dataframe(h, 0)
 
     if normalize:
         # Clip by standard deviation and 0-1 normalize
-        h = _normalize_h(h, std_max, normalizing_h=normalizing_h)
+        h = _normalize_h(h, std_max,
+                         normalizing_size=normalizing_size,
+                         normalizing_mean=normalizing_mean, normalizing_std=normalizing_std,
+                         normalizing_min=normalizing_min, normalizing_max=normalizing_max)
 
         # Drop all-0 samples
         h = drop_uniform_slice_from_dataframe(h, 0)
@@ -757,46 +800,29 @@ def _process_h(h, std_max, normalize=True, normalizing_h=None):
     return h
 
 
-# TODO: consider making a general function in support.py that normalizes with other matrix's values
-def _normalize_h(h, std_max, normalizing_h=None):
+def _normalize_h(h, std_max,
+                 normalizing_size=None,
+                 normalizing_mean=None, normalizing_std=None,
+                 normalizing_min=None, normalizing_max=None):
     """
     Clip by standard deviation and 0-1 normalize the rows of H matrix.
     :param h: DataFrame; (n_components, n_samples); H matrix
     :param std_max: number;
-    :param normalizing_h: DataFrame; (n_components, m_samples);
+    :param normalizing_size:
+    :param normalizing_mean:
+    :param normalizing_std:
+    :param normalizing_min:
+    :param normalizing_max:
     :return: DataFrame; (n_components, n_samples); Normalized H matrix
     """
 
-    if isinstance(normalizing_h, DataFrame):  # Normalize using statistics from normalizing-H matrix
-        # -0-
-        for r_i, r in normalizing_h.iterrows():
-            mean = r.mean()
-            std = r.std()
-            if std == 0:
-                h.ix[r_i, :] = h.ix[r_i, :] / r.size
-                normalizing_h.ix[r_i, :] = r / r.size
-            else:
-                h.ix[r_i, :] = (h.ix[r_i, :] - mean) / std
-                normalizing_h.ix[r_i, :] = (r - mean) / std
-
-        # Clip
-        h = h.clip(-std_max, std_max)
-        # 0-1
-        for r_i, r in normalizing_h.iterrows():
-            r_min = r.min()
-            r_max = r.max()
-            if r_max - r_min == 0:
-                h.ix[r_i, :] = h.ix[r_i, :] / r.size
-            else:
-                h.ix[r_i, :] = (h.ix[r_i, :] - r_min) / (r_max - r_min)
-
-    else:  # Normalize using statistics from H matrix
-        # -0-
-        h = normalize_dataframe_or_series(h, '-0-', axis=1)
-        # Clip
-        h = h.clip(-std_max, std_max)
-        # 0-1
-        h = normalize_dataframe_or_series(h, '0-1', axis=1)
+    h = normalize_dataframe_or_series(h, '-0-', axis=1,
+                                      normalizing_size=normalizing_size,
+                                      normalizing_mean=normalizing_mean, normalizing_std=normalizing_std)
+    h = h.clip(-std_max, std_max)
+    h = normalize_dataframe_or_series(h, '0-1', axis=1,
+                                      normalizing_size=normalizing_size,
+                                      normalizing_min=normalizing_min, normalizing_max=normalizing_max)
 
     return h
 
