@@ -15,7 +15,6 @@ import re
 from pprint import pprint
 
 from pandas import read_csv
-import tabix
 from Bio import bgzf
 
 from . import PATH_GRCH38, PATH_HG38, PATH_CHAIN_GRCH37_TO_GRCH38, PATH_CHAIN_HG19_TO_HG38, \
@@ -28,7 +27,7 @@ from ..support.system import run_cmd
 
 
 # ======================================================================================================================
-# Query
+# Work with VCF as DataFrame
 # ======================================================================================================================
 def read_vcf(filepath, verbose=True):
     """
@@ -77,7 +76,7 @@ def read_vcf(filepath, verbose=True):
                 fl_split = split_ignoring_inside_quotes(fl, ',')
 
                 # Get ID
-                id = fl_split[0].split('=')[1]
+                id_ = fl_split[0].split('=')[1]
 
                 # Parse field line
                 fd_v = {}
@@ -88,12 +87,12 @@ def read_vcf(filepath, verbose=True):
 
                 # Save
                 if fn in vcf['meta_information']:
-                    if id in vcf['meta_information'][fn]:
-                        raise ValueError('Duplicated ID {}.'.format(id))
+                    if id_ in vcf['meta_information'][fn]:
+                        raise ValueError('Duplicated ID {}.'.format(id_))
                     else:
-                        vcf['meta_information'][fn][id] = fd_v
+                        vcf['meta_information'][fn][id_] = fd_v
                 else:
-                    vcf['meta_information'][fn] = {id: fd_v}
+                    vcf['meta_information'][fn] = {id_: fd_v}
             else:
                 print('Didn\'t read line: {}.'.format(fl))
 
@@ -122,66 +121,53 @@ def read_vcf(filepath, verbose=True):
     return vcf
 
 
-def read_sample_and_reference_vcfs(sample_vcf, reference_vcf):
-    """
-    Read sample and reference (dbSNP) VCF.GZs, and return as pytabix handlers.
-    :param sample_vcf:
-    :param reference_vcf:
-    :return:
+def get_allelic_frequency(variant):
     """
 
-    return tabix.open(sample_vcf), tabix.open(reference_vcf)
+    :param variant: Series; a VCF row
+    :return: list; list of lists, which contain allelic frequencies for a sample
+    """
+
+    try:
+        to_return = []
+        for sample in variant[9:]:
+            sample_split = sample.split(':')
+
+            dp = int(sample_split[2])
+            to_return.append([round(ad / dp, 3) for ad in [int(i) for i in sample_split[1].split(',')]])
+    except:
+        pass
 
 
-def get_variant_by_tabix(contig, start_position, stop_position, sample_variants, reference_variants):
+# ======================================================================================================================
+# Work with VCF as file
+# ======================================================================================================================
+def get_variant_by_tabix(contig, start_position, stop_position, sample_vcf_handle, reference_vcf_handle=None):
     """
 
     :param contig:
     :param start_position:
     :param stop_position:
-    :param sample_variants: pytabix handler;
-    :param reference_variants: pytabix handler;
+    :param sample_vcf_handle: pytabix handler;
+    :param reference_vcf_handle: pytabix handler;
     :return:
     """
 
-    records = sample_variants.query(contig, start_position - 1, stop_position)
+    records = sample_vcf_handle.query(contig, start_position - 1, stop_position)
     sample_or_reference = 'sample'
 
-    if len(list(records)) > 1:  # Have more than 1 record per variant ID
-        raise ValueError(
-            'More than 1 record found when querying variant at {}:()-()'.format(contig, start_position, stop_position))
-
-    elif len(list(records)) == 0:  # If sample does not have the genotype, query reference
-        records = reference_variants.query(contig, start_position - 1, stop_position)
+    if reference_vcf_handle and len(list(records)) == 0:  # If sample does not have the record, query reference if given
+        records = reference_vcf_handle.query(contig, start_position - 1, stop_position)
         sample_or_reference = 'reference'
 
-    # Parse query output
-    for r in records:
-        variant_result = parse_vcf_information(r, sample_or_reference)
-        return variant_result
-
-
-def get_gene_variants_by_tabix(contig, start_position, stop_position, sample_variants):
-    """
-
-    :param contig:
-    :param start_position:
-    :param stop_position:
-    :param sample_variants:
-    :return:
-    """
-
-    records = sample_variants.query(contig, start_position - 1, stop_position)
-    sample_or_reference = 'sample'
-
-    gene_results = {}
-
-    for r in records:
-        # Get only variant with variant ID
-        if r[2] != '.':
-            # Store variant information
-            gene_results[r[2]] = parse_vcf_information(r, sample_or_reference)
-    return gene_results
+    # Parse variant information
+    variants = {}
+    for i, r in enumerate(records):
+        rsid = r[2]
+        if rsid == '.':
+            rsid = 'unknown_rsid_{}'.format(i)
+        variants[rsid] = parse_vcf_information(r, sample_or_reference)
+    return variants
 
 
 def parse_vcf_information(record, sample_or_reference):
@@ -192,20 +178,18 @@ def parse_vcf_information(record, sample_or_reference):
     :return: dict;
     """
 
-    contig, start_position, quality, information = record[0], record[1], record[5], record[7].split(';')
+    to_return = {'contig': record[0],
+                 'start_position': record[1],
+                 'nucleotide_pair': get_vcf_nucleotide_pair(record, sample_or_reference)}
 
-    result = {'contig': contig,
-              'start_position': start_position,
-              'nucleotide_pair': get_vcf_nucleotide_pair(record, sample_or_reference)}
-    if quality != '.':
-        result['quality'] = quality
+    if record[5] != '.':
+        to_return['quality'] = record[5]
 
-    for info in information:
+    for info in record[7].split(';'):
         try:
             key, value = info.split('=')
         except ValueError:
-            pass
-            # if verbose: print('Error parsing {} (not key=value entry in INFO)'.format(info))
+            print('Error parsing {} (not key=value entry in INFO)'.format(info))
 
         fields = {'VQSLOD': lambda score: float(score),
                   'ANN': lambda string: string,
@@ -213,11 +197,11 @@ def parse_vcf_information(record, sample_or_reference):
         if key in fields:
             if key == 'ANN':
                 for k, v in parse_vcf_annotation(value).items():
-                    result[k] = v
+                    to_return[k] = v
             else:
-                result[key] = fields[key](value)
+                to_return[key] = fields[key](value)
 
-    return result
+    return to_return
 
 
 def get_vcf_nucleotide_pair(record, sample_or_reference):
