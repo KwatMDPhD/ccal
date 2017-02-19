@@ -11,10 +11,11 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
+from sys import platform
+from os import mkdir, listdir, remove, rename, environ
+from os.path import abspath, split, isdir, isfile, islink, join
 import gzip
 from csv import reader, writer, excel, excel_tab
-from os import mkdir, listdir, remove, rename
-from os.path import abspath, split, isdir, isfile, islink, join
 
 from Bio import bgzf
 from matplotlib.colors import ListedColormap
