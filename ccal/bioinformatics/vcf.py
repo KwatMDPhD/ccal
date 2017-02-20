@@ -137,6 +137,22 @@ def read_vcf(filepath, verbose=False):
     return vcf
 
 
+def get_start_end_positions(vcf_data):
+    """
+
+    :param vcf_data: DataFrame;
+    :return: list; list of lists which contain
+    """
+
+    def f(vcf_row):
+        pos, ref, alt = vcf_row.iloc[[1, 3, 4]]
+        return _get_variant_start_end_positions(pos, ref, alt)
+
+    s = vcf_data.apply(f, axis=1)
+    s.name = 'start_end_positions'
+    return s
+
+
 def get_variant_type(vcf_data):
     """
 
@@ -164,7 +180,7 @@ def get_allelic_frequencies(vcf_data, sample_iloc=9):
         s_split = vcf_row.iloc[sample_iloc].split(':')
         try:
             dp = int(s_split[2])
-            return ', '.join(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
+            return tuple(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
         except ValueError:
             return None
         except ZeroDivisionError:
@@ -391,12 +407,34 @@ def _get_variant_type(ref, alt):
             vt = 'TNP'
         else:  # 4 <= len(ref)
             vt = 'ONP'
-    else:
-        if len(ref) < len(alt):
-            vt = 'INS'
-        else:  # len(alt) < len(ref)
-            vt = 'DEL'
+
+    elif len(ref) < len(alt):
+        vt = 'INS'
+
+    else:  # len(alt) < len(ref)
+        vt = 'DEL'
+
     return vt
+
+
+def _get_variant_start_end_positions(pos, ref, alt):
+    """
+
+    :param ref: str;
+    :param alt: str;
+    :return: (str, str);
+    """
+
+    if len(ref) == len(alt):
+        s, e = pos, pos + len(alt) - 1
+
+    elif len(ref) < len(alt):
+        s, e = pos, pos + 1
+
+    else:  # len(alt) < len(ref)
+        s, e = pos + 1, pos + len(ref) - len(alt)
+
+    return s, e
 
 
 # ======================================================================================================================
