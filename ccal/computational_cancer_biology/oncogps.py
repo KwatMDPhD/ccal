@@ -35,10 +35,10 @@ from ..machine_learning.solve import solve_matrix_linear_equation
 from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
-from ..support.file import read_gct, establish_filepath, mark_filename, load_gct, write_gct, write_dict
+from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
 from ..support.log import print_log
-from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_CATEGORICAL_2, CMAP_BINARY, save_plot, \
-    plot_heatmap, plot_points, plot_violin_box_or_bar, plot_nmf
+from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_CATEGORICAL_2, CMAP_BINARY, \
+    plot_heatmap, plot_points, plot_nmf, assign_colors_to_states, save_plot
 
 
 # ======================================================================================================================
@@ -172,8 +172,6 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
     :return: DataFrame; (k, n_columns)
     """
 
-    # TODO: add collapsing
-
     # Load A and W matrices
     w_matrix = load_gct(w_matrix)
     a_matrix = load_gct(a_matrix)
@@ -246,13 +244,12 @@ def select_features_and_nmf(testing, training,
                  title=training_name, xlabel=column_name, ylabel=row_name, yticklabels=False)
 
     if not feature_scores:  # Compute feature scores
-        # TODO: set seed
         feature_scores = make_association_panel(target, training,
                                                 target_type=target_type,
                                                 n_jobs=n_jobs, n_samplings=n_samplings, n_permutations=n_permutations,
+                                                random_seed=random_seed,
                                                 filepath_prefix=join(directory_path, feature_scores_filename_prefix))
     else:  # Read feature scores from a file
-        # TODO: plot with computed scores
         if not isinstance(feature_scores, DataFrame):
             feature_scores = read_csv(feature_scores, sep='\t', index_col=0)
 
@@ -435,7 +432,6 @@ def make_oncogps(training_h,
                  annotation_type='continuous',
                  annotation_ascending=True,
                  highlight_high_magnitude=True,
-                 violin_or_box='violin',
 
                  title='Onco-GPS Map',
                  title_fontsize=26,
@@ -506,7 +502,6 @@ def make_oncogps(training_h,
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
     :param annotation_ascending: bool;
     :param highlight_high_magnitude: bool;
-    :param violin_or_box: str; 'violin' or 'box'
 
     :param title: str;
     :param title_fontsize: number;
@@ -688,7 +683,6 @@ def make_oncogps(training_h,
                    annotation_type=annotation_type,
                    annotation_ascending=annotation_ascending,
                    highlight_high_magnitude=highlight_high_magnitude,
-                   violin_or_box=violin_or_box,
 
                    std_max=std_max,
 
@@ -1008,7 +1002,6 @@ def _plot_onco_gps(components,
                    annotation_type,
                    annotation_ascending,
                    highlight_high_magnitude,
-                   violin_or_box,
 
                    std_max,
 
@@ -1164,19 +1157,7 @@ def _plot_onco_gps(components,
                    linewidth=delaunay_linewidth, color=delaunay_linecolor, aa=True, clip_on=False, zorder=4)
 
     # Assign colors to states
-    # TODO: remove
-    # unique_states = sorted(samples.ix[:, 'state'].unique())
-    unique_states = sorted(range(1, n_training_states + 1))
-    if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):
-        colors = [colors[s] for s in unique_states]
-    elif any(colors):
-        color_converter = ColorConverter()
-        colors = color_converter.to_rgba_array(colors)
-    else:
-        colors = [CMAP_CATEGORICAL(int(s / n_training_states * CMAP_CATEGORICAL.N)) for s in unique_states]
-    state_colors = {}
-    for i, s in enumerate(unique_states):
-        state_colors[s] = colors[i]
+    state_colors = assign_colors_to_states(n_training_states, colors=colors)
 
     # Plot background
     grid_probabilities_min = grid_probabilities.min()
@@ -1314,7 +1295,6 @@ def _plot_onco_gps(components,
             ColorbarBase(cax, **kw)
             cax.set_title('Normalized Values', **{'fontsize': 16, 'weight': 'bold'})
 
-
     else:  # Plot samples using state colors
         for idx, s in samples.iterrows():
             x = s.ix['x']
@@ -1335,11 +1315,11 @@ def _plot_onco_gps(components,
 
     if filepath:
         save_plot(filepath)
-
-    if isinstance(annotation, Series):
-        plt.figure(figsize=FIGURE_SIZE)
-        plot_violin_box_or_bar(x='state', y='annotation_value', data=samples, palette=state_colors,
-                               violin_or_box=violin_or_box)
-
-        if filepath:
-            save_plot(mark_filename(filepath, 'annotation', suffix='.pdf'))
+        #
+        # if isinstance(annotation, Series):
+        #     plt.figure(figsize=FIGURE_SIZE)
+        #     plot_violin_box_or_bar(x='state', y='annotation_value', data=samples, palette=state_colors,
+        #                            violin_or_box=violin_or_box)
+        #
+        #     if filepath:
+        #         save_plot(mark_filename(filepath, 'annotation', suffix='.pdf'))

@@ -41,13 +41,14 @@ from ..support.str_ import title_str, untitle_str
 # ======================================================================================================================
 # Association summary panel
 # ======================================================================================================================
-def make_association_summary_panel(target, data_bundle, annotation_files, target_ascending=False,
+def make_association_summary_panel(target, data_bundle, annotation_files, order=(), target_ascending=False,
                                    target_type='continuous', title=None, filepath=None):
     """
     Plot summary association panel.
     :param target: Series; (n_elements);
     :param data_bundle: dict;
     :param annotation_files: dict;
+    :param order: iterable;
     :param target_type: str;
     :param title; str;
     :param filepath: str;
@@ -80,7 +81,9 @@ def make_association_summary_panel(target, data_bundle, annotation_files, target
     fig.suptitle(title, horizontalalignment='center', **FONT_TITLE)
     plot_annotation_header = True
 
-    for features_name, features_dict in sorted(data_bundle.items()):
+    if not any(order):  # Sort alphabetically if order is not given
+        order = sorted(data_bundle.keys())
+    for features_name, features_dict in [(k, data_bundle[k]) for k in order]:
 
         # Read features
         features = features_dict['dataframe']

@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.cm import Paired, Dark2, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize, ColorConverter
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import plot
 from numpy import array, unique, isnan
@@ -200,8 +200,9 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
                            orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
                            fliersize=5, whis=1.5, notch=False,
                            ci=95, n_boot=1000, units=None, errwidth=None, capsize=None,
-                           violin_or_box='violin', title=None, xlabel=None, ylabel=None, filepath_prefix=None,
-                           **kwargs):
+                           violin_or_box='violin', colors=(),
+                           figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None,
+                           filepath_prefix=None, **kwargs):
     """
     Plot violin plot.
     :param x:
@@ -243,10 +244,15 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
 
     # Initialize a figure
     if not ax:
-        plt.figure(figsize=FIGURE_SIZE)
+        plt.figure(figsize=figure_size)
 
+    if isinstance(x, str):
+        x = data[x]
     if isinstance(y, str):
         y = data[y]
+
+    if not palette:
+        palette = assign_colors_to_states(x, colors=colors)
 
     if len(set([v for v in y if v and ~isnan(v)])) <= 2:  # Use barplot for binary
         barplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, ci=ci, n_boot=n_boot, units=units,
@@ -544,6 +550,37 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
 
     if filepath:
         pdf.close()
+
+
+def assign_colors_to_states(states, colors=None):
+    """
+    Assign colors to states
+    :param states: int or iterable; number of states or iterable of int representing state
+    :param colors:
+    :return: dict; {state: color}
+    """
+
+    if isinstance(states, int):  # Number of states
+        unique_states = range(1, states + 1)
+    elif any(states):  # Iterable of int representing state
+        unique_states = sorted(set(states))
+    else:
+        raise ValueError('Error with states.')
+
+    if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):  # Use given colormap
+        colors = [colors[s] for s in unique_states]
+
+    elif any(colors):  # Use given colors to make a colormap
+        color_converter = ColorConverter()
+        colors = color_converter.to_rgba_array(colors)
+
+    else:  # Use categorical colormap
+        colors = [CMAP_CATEGORICAL(int(s / max(unique_states) * CMAP_CATEGORICAL.N)) for s in unique_states]
+
+    state_colors = {}
+    for i, s in enumerate(unique_states):
+        state_colors[s] = colors[i]
+    return state_colors
 
 
 def decorate(title,
