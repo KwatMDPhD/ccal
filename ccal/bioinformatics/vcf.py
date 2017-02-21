@@ -35,6 +35,94 @@ CASTER = {
     'CLNSIG': lambda x: max([int(s) for s in re.split('[,|]', x)]),
 }
 
+# Prioritize Sequence Ontology terms in order of severity, as estimated by Ensembl and others:
+# http://useast.ensembl.org/info/genome/variation/predicted_data.html#consequences
+# http://snpeff.sourceforge.net/VCFannotationformat_v1.0.pdf
+# vcf2maf.pl
+effect_ranking = [
+    # Loss of transcript or exon
+    'transcript_ablation',
+    'exon_loss_variant',
+    # Altered splicing 1
+    'splice_acceptor_variant',
+    'splice_donor_variant',
+    # Nonsense mutation
+    'stop_gained',
+    # Frameshift
+    'frameshift_variant',
+    # Nonstop mutation 1
+    'stop_lost',
+    # Nonstart mutation
+    'start_lost',
+    'initiator_codon_variant',
+    # Altered transcript
+    'transcript_amplification',
+    'transcript_variant',
+    # InDel
+    'disruptive_inframe_insertion',
+    'disruptive_inframe_deletion',
+    'inframe_insertion',
+    'inframe_deletion',
+    # Missense mutation
+    'conservative_missense_variant',
+    'rare_amino_acid_variant',
+    'missense_variant',
+    'protein_altering_variant',
+    # Altered splicing 2
+    'splice_region_variant',
+    # Nonstop mutation 2
+    'incomplete_terminal_codon_variant',
+    # Silent mutation
+    'start_retained_variant',
+    'stop_retained_variant',
+    'synonymous_variant',
+    # Mutation
+    'coding_sequence_variant',
+    'exon_variant',
+    # Altered miRNA
+    'mature_miRNA_variant',
+    # Altered 5'UTR
+    '5_prime_UTR_variant',
+    '5_prime_UTR_premature_start_codon_gain_variant',
+    # Altered 3'UTR
+    '3_prime_UTR_variant',
+    # Altered non-coding exon region
+    'non_coding_exon_variant',
+    'non_coding_transcript_exon_variant',
+    # Altered intragenic region
+    'intragenic_variant',
+    'conserved_intron_variant',
+    'intron_variant',
+    'INTRAGENIC',
+    # Altered nonsense-mediated-decay-target region
+    'NMD_transcript_variant',
+    # Altered non-coding region
+    'non_coding_transcript_variant',
+    'nc_transcript_variant',
+    # Altered 5'flank site
+    'upstream_gene_variant',
+    # Altered 3'flank site
+    'downstream_gene_variant',
+    # Altered transcription-factor-binding region
+    'TF_binsing_site_ablation',
+    'TFBS_ablation',
+    'TF_binding_site_amplification',
+    'TFBS_amplification',
+    'TF_binding_site_variant',
+    'TFBS_variant',
+    # Altered regulatory region
+    'regulatory_region_ablation',
+    'regulatory_region_amplification',
+    'regulatory_region_variant',
+    'regulatory_region',
+    'feature_elongation',
+    'feature_truncation',
+    # Altered intergenic region
+    'conserved_intergenic_variant',
+    'intergenic_variant',
+    'intergenic_region',
+]
+
 
 # ======================================================================================================================
 # Work with VCF as DataFrame
@@ -435,6 +523,138 @@ def _get_variant_start_end_positions(pos, ref, alt):
         s, e = pos + 1, pos + len(ref) - len(alt)
 
     return s, e
+
+
+def _get_maf_variant_classification(effect):
+    if effect in (
+            'transcript_ablation',
+            'exon_loss_variant',
+            'splice_acceptor_variant',
+            'splice_donor_variant',
+            'splice_region_variant',
+    ):
+        maf_variant_classification = 'Splice_Site'
+
+    elif effect in (
+            'stop_gained',
+    ):
+        maf_variant_classification = 'Nonsense_Mutation'
+
+    elif effect in (
+            'frameshift_variant OR INS',
+    ):
+        maf_variant_classification = 'Frame_Shift_Ins'
+
+    elif effect in (
+            'frameshift_variant OR DEL',
+    ):
+        maf_variant_classification = 'Frame_Shift_Del'
+
+    elif effect in (
+            'stop_lost',
+    ):
+        maf_variant_classification = 'Nonstop_Mutation'
+
+    elif effect in (
+            'start_lost',
+            'initiator_codon_variant',
+    ):
+        maf_variant_classification = 'Translation_Start_Site'
+
+    elif effect in (
+            'disruptive_inframe_insertion',
+            'inframe_insertion',
+    ):
+        maf_variant_classification = 'In_Frame_Ins'
+
+    elif effect in (
+            'disruptive_inframe_deletion',
+            'inframe_deletion',
+    ):
+        maf_variant_classification = 'In_Frame_Del'
+
+    elif effect in (
+            'transcript_variant',
+            'conservative_missense_variant',
+            'rare_amino_acid_variant',
+            'missense_variant',
+            'protein_altering_variant',
+            'coding_sequence_variant',
+    ):
+        maf_variant_classification = 'Missense_Mutation'
+
+    elif effect in (
+            'transcript_amplification',
+            'intragenic_variant',
+            'conserved_intron_variant',
+            'intron_variant',
+            'INTRAGENIC',
+            'NMD_transcript_variant',
+            'TF_binding_site_ablation',
+            'TFBS_ablation',
+            'TF_binding_site_amplification',
+            'TFBS_amplification',
+            'TF_binding_site_variant',
+            'TFBS_variant',
+            'regulatory_region_ablation',
+            'regulatory_region_amplification',
+            'regulatory_region_variant',
+            'regulatory_region',
+    ):
+        maf_variant_classification = 'Intron'
+
+    elif effect in (
+            'incomplete_terminal_codon_variant',
+            'start_retained_variant',
+            'stop_retained_variant',
+            'synonymous_variant',
+    ):
+        maf_variant_classification = 'Silent'
+
+    elif effect in (
+            'exon_variant',
+            'mature_miRNA_variant',
+            'non_coding_exon_variant',
+            'non_coding_transcript_exon_variant',
+            'non_coding_transcript_variant',
+            'nc_transcript_variant'
+    ):
+        maf_variant_classification = 'RNA'
+
+    elif effect in (
+            '5_prime_UTR_variant',
+            '5_prime_UTR_premature_start_codon_gain_variant'
+    ):
+        maf_variant_classification = '%\'UTR'
+
+    elif effect in (
+            '3_prime_UTR_variant'
+    ):
+        maf_variant_classification = '3\'UTR'
+
+    elif effect in (
+            'feature_elongation',
+            'feature_truncation',
+            'conserved_intergenic_variant',
+            'intergenic_variant',
+            'intergenic_region',
+    ):
+        maf_variant_classification = 'IGR'
+
+    elif effect in (
+            'upstream_gene_variant'
+    ):
+        maf_variant_classification = '5\'Flank'
+
+    elif effect in (
+            'downstream_gene_variant'
+    ):
+        maf_variant_classification = '3\'Flank'
+
+    else:
+        print(effect)
+        maf_variant_classification = 'Targeted_Region'
+    return maf_variant_classification
 
 
 # ======================================================================================================================
