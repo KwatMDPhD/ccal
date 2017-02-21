@@ -233,13 +233,13 @@ def read_vcf(filepath):
     return vcf
 
 
-def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filepath=None):
+def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_anns=1, maf_filepath=None):
     """
 
     :param vcf: DataFrame or str;
     :param ensg_to_entrez: str; Filepath to a mapping file (ENSG ID<\t>Entrez ID)
     :param sample_name:
-    :param n_ann: int;
+    :param n_anns: int;
     :param maf_filepath: str; filepath to MAF.
     :return: DataFrame; MAF
     """
@@ -308,7 +308,7 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filep
 
         chrom, pos, rsid, ref, alt, info = vcf_row.iloc[[0, 1, 2, 3, 4, 7]]
 
-        start, end = _get_variant_start_end_positions(pos, ref, alt)
+        start, end = _get_variant_start_and_end_positions(pos, ref, alt)
 
         vt = _get_variant_type(ref, alt)
 
@@ -318,7 +318,7 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filep
                 i_s = i_s[4:]
                 anns = i_s.split(',')
 
-                for a in anns[:n_ann]:  # For each ANN
+                for a in anns[:n_anns]:  # For each ANN
                     a_s = a.split('|')
 
                     effect = a_s[1]
@@ -356,22 +356,6 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filep
     return maf
 
 
-def get_start_and_end_positions(vcf_data):
-    """
-
-    :param vcf_data: DataFrame;
-    :return: list; list of lists which contain
-    """
-
-    def f(vcf_row):
-        pos, ref, alt = vcf_row.iloc[[1, 3, 4]]
-        return _get_variant_start_end_positions(pos, ref, alt)
-
-    s = vcf_data.apply(f, axis=1)
-    s.name = 'start_end_positions'
-    return s
-
-
 def get_variant_type(vcf_data):
     """
 
@@ -388,12 +372,28 @@ def get_variant_type(vcf_data):
     return s
 
 
-def get_ann(vcf_data, field, n_ann=1):
+def get_variant_start_and_end_positions(vcf_data):
+    """
+
+    :param vcf_data: DataFrame;
+    :return: list; list of lists which contain
+    """
+
+    def f(vcf_row):
+        pos, ref, alt = vcf_row.iloc[[1, 3, 4]]
+        return _get_variant_start_and_end_positions(pos, ref, alt)
+
+    s = vcf_data.apply(f, axis=1)
+    s.name = 'start_end_positions'
+    return s
+
+
+def get_ann(vcf_data, field, n_anns=1):
     """
 
     :param vcf_data: DataFrame;
     :param field: str;
-    :param n_ann: int;
+    :param n_anns: int;
     :return: list; list of lists which contain
     """
 
@@ -409,7 +409,7 @@ def get_ann(vcf_data, field, n_ann=1):
                 to_return = []
                 anns = i_s.split(',')
 
-                for a in anns[:n_ann]:  # For each ANN
+                for a in anns[:n_anns]:  # For each ANN
                     to_return.append(a.split('|')[i])
 
                 if len(to_return) == 1:
@@ -626,7 +626,7 @@ def _get_variant_type(ref, alt):
     return vt
 
 
-def _get_variant_start_end_positions(pos, ref, alt):
+def _get_variant_start_and_end_positions(pos, ref, alt):
     """
 
     :param ref: str;
@@ -655,8 +655,7 @@ def _get_maf_variant_classification(es, vt):
     """
 
     es = es.split('&')
-    blah = [ANN_EFFECT_RANKING.index(e) for e in es]
-    vc = _convert_ann_effect_to_maf_variant_classification(es[argmin(blah)], vt)
+    vc = _convert_ann_effect_to_maf_variant_classification(es[argmin([ANN_EFFECT_RANKING.index(e) for e in es])], vt)
     return vc
 
 
@@ -861,6 +860,7 @@ def _convert_maf_variant_classification_to_mutsig_effect(vc):
         'upstream': 'noncoding',
         'upstream;downstream': 'noncoding',
     }
+
     return d[vc]
 
 
