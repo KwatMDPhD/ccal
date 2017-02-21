@@ -130,7 +130,7 @@ ANN_EFFECT_RANKING = [
 
 
 # ======================================================================================================================
-# Work with VCF as DataFrame
+# DataFrame VCF
 # ======================================================================================================================
 def read_vcf(filepath, verbose=False):
     """
@@ -340,12 +340,12 @@ def get_maf_variant_classification(vcf_data, n_ann=1):
                     return _get_maf_variant_classification(effect)
 
     s = vcf_data.apply(f, axis=1)
-    s.name = 'effect'
+    s.name = 'maf_variant_classification'
     return s
 
 
 # ======================================================================================================================
-# Work with VCF as file
+# Tabix VCF
 # ======================================================================================================================
 def get_variants_by_tabix(contig, start, end, sample_vcf, reference_vcf=None):
     """
@@ -374,7 +374,7 @@ def get_variants_by_tabix(contig, start, end, sample_vcf, reference_vcf=None):
 
 
 # ======================================================================================================================
-# Parse
+# Parse VCF fields
 # ======================================================================================================================
 def parse_variant(vcf_row, n_anns=1, verbose=False):
     """
