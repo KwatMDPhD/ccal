@@ -69,6 +69,7 @@ ANN_EFFECT_RANKING = [
     'inframe_insertion',
     'inframe_deletion',
     # Missense mutation
+    'protein_protein_contact',
     'conservative_missense_variant',
     'rare_amino_acid_variant',
     'missense_variant',
@@ -629,15 +630,16 @@ def _get_maf_variant_classification(effect):
     """
 
     es = effect.split('&')
-    blah  = [ANN_EFFECT_RANKING.index(e) for e in es]
-    vc = _convert_ann_effect_to_maf_variant_classificaton(es[argmin(blah)])
+    blah = [ANN_EFFECT_RANKING.index(e) for e in es]
+    vc = _convert_ann_effect_to_maf_variant_classification(es[argmin(blah)])
     return vc
 
 
-def _convert_ann_effect_to_maf_variant_classificaton(e):
+def _convert_ann_effect_to_maf_variant_classification(e, vt):
     """
 
-    :param e: str; effect
+    :param e: str; Effect
+    :param vt: str; Variant type
     :return: str; MAF variant classification
     """
 
@@ -656,13 +658,13 @@ def _convert_ann_effect_to_maf_variant_classificaton(e):
         vc = 'Nonsense_Mutation'
 
     elif e in (
-            'frameshift_variant OR INS',
-    ):
+            'frameshift_variant',
+    ) and vt == 'INS':
         vc = 'Frame_Shift_Ins'
 
     elif e in (
-            'frameshift_variant OR DEL',
-    ):
+            'frameshift_variant',
+    ) and vt == 'DEL':
         vc = 'Frame_Shift_Del'
 
     elif e in (
@@ -679,16 +681,17 @@ def _convert_ann_effect_to_maf_variant_classificaton(e):
     elif e in (
             'disruptive_inframe_insertion',
             'inframe_insertion',
-    ):
+    ) and vt == 'INS':
         vc = 'In_Frame_Ins'
 
     elif e in (
             'disruptive_inframe_deletion',
             'inframe_deletion',
-    ):
+    ) and vt == 'DEL':
         vc = 'In_Frame_Del'
 
     elif e in (
+            'protein_protein_contact',
             'transcript_variant',
             'conservative_missense_variant',
             'rare_amino_acid_variant',
@@ -765,6 +768,11 @@ def _convert_ann_effect_to_maf_variant_classificaton(e):
             'downstream_gene_variant',
     ):
         vc = '3\'Flank'
+
+    elif e in (
+            'sequence_feature',
+    ):
+        vc = 'Targeted_Region'
 
     else:
         print('Unknown effect: {}.'.format(e))
