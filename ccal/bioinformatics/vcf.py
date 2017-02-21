@@ -231,12 +231,30 @@ def read_vcf(filepath, verbose=False):
     return vcf
 
 
-def convert_vcf_to_maf(vcf_filepath, ensg_to_entrez):
-    vcf_dict = read_vcf(vcf_filepath)
-    vcf_data = vcf_dict['data']
-    sample = vcf_dict['sample']
+def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None):
+    """
 
-    ensg_to_entrez = read_dict(ensg_to_entrez)
+    :param vcf:
+    :param ensg_to_entrez:
+    :param sample_name:
+    :return:
+    """
+
+    if isinstance(vcf, DataFrame):
+        if not sample_name:
+            raise ValueError('If vcf is a DataFrame, provide sample_name.')
+    elif isinstance(vcf, str):
+        vcf_dict = read_vcf(vcf)
+        sample = vcf_dict['samples'][0]
+        vcf = vcf_dict['data']
+    else:
+        raise ValueError('vcf must be either a DataFrame or a filepath to a VCF.')
+
+    if isinstance(ensg_to_entrez, str):
+        ensg_to_entrez = read_dict(ensg_to_entrez)
+    elif not isinstance(ensg_to_entrez, dict):
+        raise ValueError('ensg_to_entrez must be either a dict or a filepath to dictionary mapping.')
+
     maf_header = [
         'Hugo_Symbol',
         'Entrez_Gene_Id',
@@ -275,18 +293,18 @@ def convert_vcf_to_maf(vcf_filepath, ensg_to_entrez):
     ]
     maf = DataFrame(columns=maf_header)
 
-    maf.ix[:, 'Hugo_Symbol'] = get_ann(vcf_data, 'gene_name')
-    maf.ix[:, 'Entrez_Gene_Id'] = get_ann(vcf_data, 'gene_id').apply(ensg_to_entrez.get)
-    maf.ix[:, 'Chromosome'] = vcf_data.ix[:, 'CHROM']
-    start_end = get_start_end_positions(vcf_data)
+    maf.ix[:, 'Hugo_Symbol'] = get_ann(vcf, 'gene_name')
+    maf.ix[:, 'Entrez_Gene_Id'] = get_ann(vcf, 'gene_id').apply(ensg_to_entrez.get)
+    maf.ix[:, 'Chromosome'] = vcf.ix[:, 'CHROM']
+    start_end = get_start_end_positions(vcf)
     maf.ix[:, 'Start_Position'] = start_end.apply(lambda t: t[0])
     maf.ix[:, 'End_Position'] = start_end.apply(lambda t: t[1])
     maf.ix[:, 'Strand'] = '+'
-    maf.ix[:, 'Variant_Classification'] = get_maf_variant_classification(vcf_data)
-    maf.ix[:, 'Variant_Type'] = get_variant_type(vcf_data)
-    maf.ix[:, 'dbSNP_RS'] = vcf_data.ix[:, 'ID']
-    maf.ix[:, 'Reference_Allele'] = vcf_data.ix[:, 'REF']
-    maf.ix[:, 'Tumor_Seq_Allele1'] = vcf_data.ix[:, 'ALT']
+    maf.ix[:, 'Variant_Classification'] = get_maf_variant_classification(vcf)
+    maf.ix[:, 'Variant_Type'] = get_variant_type(vcf)
+    maf.ix[:, 'dbSNP_RS'] = vcf.ix[:, 'ID']
+    maf.ix[:, 'Reference_Allele'] = vcf.ix[:, 'REF']
+    maf.ix[:, 'Tumor_Seq_Allele1'] = vcf.ix[:, 'ALT']
     maf.ix[:, ['Tumor_Sample_UUID', 'Matched_Norm_Sample_UUID']] = sample
 
     return maf
