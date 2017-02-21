@@ -235,13 +235,14 @@ def read_vcf(filepath, verbose=False):
     return vcf
 
 
-def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None):
+def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1):
     """
 
-    :param vcf:
+    :param vcf: DataFrame or str;
     :param ensg_to_entrez:
     :param sample_name:
-    :return:
+    :param n_ann: int;
+    :return: DataFrame; MAF
     """
 
     if isinstance(vcf, DataFrame):
@@ -249,7 +250,7 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None):
             raise ValueError('If vcf is a DataFrame, provide sample_name.')
     elif isinstance(vcf, str):
         vcf_dict = read_vcf(vcf)
-        sample = vcf_dict['samples'][0]
+        sample_name = vcf_dict['samples'][0]
         vcf = vcf_dict['data']
     else:
         raise ValueError('vcf must be either a DataFrame or a filepath to a VCF.')
@@ -295,21 +296,42 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None):
         'Tumor_Sample_UUID',
         'Matched_Norm_Sample_UUID',
     ]
-    maf = DataFrame(columns=maf_header)
+    maf = DataFrame(index=range(vcf.shape[0]), columns=maf_header)
 
-    maf.ix[:, 'Hugo_Symbol'] = get_ann(vcf, 'gene_name')
-    maf.ix[:, 'Entrez_Gene_Id'] = get_ann(vcf, 'gene_id').apply(ensg_to_entrez.get)
-    maf.ix[:, 'Chromosome'] = vcf.ix[:, 'CHROM']
-    start_end = get_start_end_positions(vcf)
-    maf.ix[:, 'Start_Position'] = start_end.apply(lambda t: t[0])
-    maf.ix[:, 'End_Position'] = start_end.apply(lambda t: t[1])
+    for i, vcf_row in vcf.iterrows():
+        chrom, pos, rsid, ref, alt, info = vcf_row.iloc[[0, 1, 2, 3, 4, 7]]
+        start, end = _get_variant_start_end_positions(pos, ref, alt)
+        vt = _get_variant_type(ref, alt)
+        for i_s in info.split(';'):  # For each INFO
+            if i_s.startswith('ANN='):  # ANN
+                i_s = i_s[len('ANN='):]
+                anns = i_s.split(',')
+                for a in anns[:min(len(anns), n_ann)]:  # For each ANN
+                    a_s = a.split('|')
+                    effect = a_s[1]
+                    vc = _get_maf_variant_classification(effect, vt)
+                    gene_name = a_s[3]
+                    gene_id = ensg_to_entrez.get(a_s[4])
+                    if gene_id:
+                        # TODO: handlel multiple gene IDs
+                        gene_id = gene_id.pop()
+                    else:
+                        gene_id = 0
+        maf.ix[i, [
+            'Hugo_Symbol',
+            'Entrez_Gene_Id',
+            'Chromosome',
+            'Start_Position',
+            'End_Position',
+            'Variant_Classification',
+            'Variant_Type',
+            'dbSNP_RS',
+            'Reference_Allele',
+            'Tumor_Seq_Allele1',
+        ]] = [gene_name, gene_id, chrom, start, end, vc, vt, rsid, ref, alt]
+
     maf.ix[:, 'Strand'] = '+'
-    maf.ix[:, 'Variant_Classification'] = get_maf_variant_classification(vcf)
-    maf.ix[:, 'Variant_Type'] = get_variant_type(vcf)
-    maf.ix[:, 'dbSNP_RS'] = vcf.ix[:, 'ID']
-    maf.ix[:, 'Reference_Allele'] = vcf.ix[:, 'REF']
-    maf.ix[:, 'Tumor_Seq_Allele1'] = vcf.ix[:, 'ALT']
-    maf.ix[:, ['Tumor_Sample_UUID', 'Matched_Norm_Sample_UUID']] = sample
+    maf.ix[:, ['Tumor_Sample_UUID', 'Matched_Norm_Sample_UUID']] = sample_name
 
     return maf
 
@@ -420,7 +442,7 @@ def get_maf_variant_classification(vcf_data, n_ann=1):
 
                 for a in anns[:min(len(anns), n_ann)]:  # For each ANN
                     effect = a.split('|')[1]
-                    return _get_maf_variant_classification(effect)
+                    return _get_maf_variant_classification(effect, 'DEL')
 
     s = vcf_data.apply(f, axis=1)
     s.name = 'maf_variant_classification'
@@ -622,16 +644,17 @@ def _get_variant_start_end_positions(pos, ref, alt):
     return s, e
 
 
-def _get_maf_variant_classification(effect):
+def _get_maf_variant_classification(es, vt):
     """
 
     :param e: str; effect or effects concatenated by '&'
+    :param vt: str; Variant type
     :return: str; MAF variant classification
     """
 
-    es = effect.split('&')
+    es = es.split('&')
     blah = [ANN_EFFECT_RANKING.index(e) for e in es]
-    vc = _convert_ann_effect_to_maf_variant_classification(es[argmin(blah)])
+    vc = _convert_ann_effect_to_maf_variant_classification(es[argmin(blah)], vt)
     return vc
 
 
