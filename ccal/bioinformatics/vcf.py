@@ -493,27 +493,27 @@ def parse_variant(vcf_row, n_anns=1, verbose=False):
     """
 
     variant = {
-        'CHROM': _cast('CHROM', vcf_row[0]),
-        'POS': _cast('POS', vcf_row[1]),
-        'REF': _cast('REF', vcf_row[3]),
-        'FILTER': _cast('FILTER', vcf_row[6]),
+        'CHROM': cast_vcf_field('CHROM', vcf_row[0]),
+        'POS': cast_vcf_field('POS', vcf_row[1]),
+        'REF': cast_vcf_field('REF', vcf_row[3]),
+        'FILTER': cast_vcf_field('FILTER', vcf_row[6]),
     }
     ref = variant['REF']
 
     # ID
     rsid = vcf_row[2]
     if rsid and rsid != '.':
-        variant['ID'] = _cast('ID', rsid)
+        variant['ID'] = cast_vcf_field('ID', rsid)
 
     # ALT
     alt = vcf_row[4]
     if alt and alt != '.':
-        variant['ALT'] = _cast('ALT', alt)
+        variant['ALT'] = cast_vcf_field('ALT', alt)
 
     # QUAL
     qual = vcf_row[5]
     if qual and qual != '.':
-        variant['QUAL'] = _cast('QUAL', qual)
+        variant['QUAL'] = cast_vcf_field('QUAL', qual)
 
     # Variant type
     if alt:
@@ -528,7 +528,7 @@ def parse_variant(vcf_row, n_anns=1, verbose=False):
 
         # Sample
         for k, v in zip(format_, s.split(':')):
-            s_d[k] = _cast(k, v)
+            s_d[k] = cast_vcf_field(k, v)
 
         # Genotype
         if 'ALT' in variant:
@@ -572,7 +572,7 @@ def parse_variant(vcf_row, n_anns=1, verbose=False):
                 k, v = i_s.split('=')
                 if v and v != '.':
                     # TODO: decode properly
-                    variant[k] = _cast(k, v)
+                    variant[k] = cast_vcf_field(k, v)
             except ValueError:
                 pass
                 # print('INFO error: {} (not key=value)'.format(i_s))
@@ -584,7 +584,7 @@ def parse_variant(vcf_row, n_anns=1, verbose=False):
     return variant
 
 
-def _cast(k, v, caster=VCF_FIELD_CASTER):
+def cast_vcf_field(k, v, caster=VCF_FIELD_CASTER):
     """
 
     :param k: str;
@@ -655,11 +655,11 @@ def _get_maf_variant_classification(es, vt):
     """
 
     es = es.split('&')
-    vc = _convert_ann_effect_to_maf_variant_classification(es[argmin([ANN_EFFECT_RANKING.index(e) for e in es])], vt)
+    vc = convert_ann_effect_to_maf_variant_classification(es[argmin([ANN_EFFECT_RANKING.index(e) for e in es])], vt)
     return vc
 
 
-def _convert_ann_effect_to_maf_variant_classification(e, vt):
+def convert_ann_effect_to_maf_variant_classification(e, vt):
     """
 
     :param e: str; Effect
@@ -805,7 +805,7 @@ def _convert_ann_effect_to_maf_variant_classification(e, vt):
     return vc
 
 
-def _convert_maf_variant_classification_to_mutsig_effect(vc):
+def convert_maf_variant_classification_to_mutsig_effect(vc):
     d = {
         '3\'-UTR': 'noncoding',
         '3\'Flank': 'noncoding',
