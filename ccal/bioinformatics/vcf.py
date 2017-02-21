@@ -9,6 +9,16 @@ Authors:
     Pablo Tamayo
         ptamayo@ucsd.edu
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
+
+
+Resources:
+    https://github.com/samtools/hts-specs
+    http://snpeff.sourceforge.net/VCFannotationformat_v1.0.pdf
+    http://snpeff.sourceforge.net/index.html
+    http://www.sequenceontology.org/
+    http://uswest.ensembl.org/info/genome/variation/predicted_data.html#consequences
+    https://wiki.nci.nih.gov/display/TCGA/Mutation+Annotation+Format+%28MAF%29+Specification+-+v2.4
+    https://github.com/mskcc/vcf2maf
 """
 
 import re
@@ -60,21 +70,21 @@ ANN_EFFECT_RANKING = [
     # Nonstart mutation
     'start_lost',
     'initiator_codon_variant',
-    # Altered transcript
+    # Altered transcript 1
     'transcript_amplification',
+    'protein_protein_contact',
     'transcript_variant',
     # InDel
     'disruptive_inframe_insertion',
     'disruptive_inframe_deletion',
     'inframe_insertion',
     'inframe_deletion',
-    # Missense mutation
-    'protein_protein_contact',
+    # Altered transcript 2
     'conservative_missense_variant',
     'rare_amino_acid_variant',
     'missense_variant',
     'protein_altering_variant',
-    # Altered splicing 2
+    # Altered intragenic region 1
     'splice_region_variant',
     # Nonstop mutation 2
     'incomplete_terminal_codon_variant',
@@ -95,7 +105,7 @@ ANN_EFFECT_RANKING = [
     # Altered non-coding exon region
     'non_coding_exon_variant',
     'non_coding_transcript_exon_variant',
-    # Altered intragenic region
+    # Altered intragenic region 2
     'intragenic_variant',
     'conserved_intron_variant',
     'intron_variant',
@@ -310,6 +320,11 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_anns=1, maf_file
 
         start, end = _get_variant_start_and_end_positions(pos, ref, alt)
 
+        if (len(ref) - len(alt)) % 3:
+            inframe = False
+        else:
+            inframe = True
+
         vt = _get_variant_type(ref, alt)
 
         for i_s in info.split(';'):  # For each INFO
@@ -323,7 +338,7 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_anns=1, maf_file
 
                     effect = a_s[1]
 
-                    vc = _get_maf_variant_classification(effect, vt)
+                    vc = _get_maf_variant_classification(effect, vt, inframe)
 
                     gene_name = a_s[3]
 
@@ -646,24 +661,27 @@ def _get_variant_start_and_end_positions(pos, ref, alt):
     return s, e
 
 
-def _get_maf_variant_classification(es, vt):
+def _get_maf_variant_classification(es, vt, inframe):
     """
 
     :param es: str; effect or effects concatenated by '&'
     :param vt: str; Variant type
+    :param inframe: bool;
     :return: str; MAF variant classification
     """
 
     es = es.split('&')
-    vc = convert_ann_effect_to_maf_variant_classification(es[argmin([ANN_EFFECT_RANKING.index(e) for e in es])], vt)
+    vc = convert_ann_effect_to_maf_variant_classification(es[argmin([ANN_EFFECT_RANKING.index(e) for e in es])], vt,
+                                                          inframe)
     return vc
 
 
-def convert_ann_effect_to_maf_variant_classification(e, vt):
+def convert_ann_effect_to_maf_variant_classification(e, vt, inframe):
     """
 
     :param e: str; Effect
     :param vt: str; Variant type
+    :param inframe: bool;
     :return: str; MAF variant classification
     """
 
@@ -672,7 +690,6 @@ def convert_ann_effect_to_maf_variant_classification(e, vt):
             'exon_loss_variant',
             'splice_acceptor_variant',
             'splice_donor_variant',
-            'splice_region_variant',
     ):
         vc = 'Splice_Site'
 
@@ -681,14 +698,18 @@ def convert_ann_effect_to_maf_variant_classification(e, vt):
     ):
         vc = 'Nonsense_Mutation'
 
-    elif e in (
+    elif vt == 'INS' and not inframe and e in (
             'frameshift_variant',
-    ) and vt == 'INS':
+            'protein_protein_contact',
+            'protein_altering_variant',
+    ):
         vc = 'Frame_Shift_Ins'
 
-    elif e in (
+    elif vt == 'DEL' and not inframe and e in (
             'frameshift_variant',
-    ) and vt == 'DEL':
+            'protein_protein_contact',
+            'protein_altering_variant',
+    ):
         vc = 'Frame_Shift_Del'
 
     elif e in (
@@ -702,46 +723,38 @@ def convert_ann_effect_to_maf_variant_classification(e, vt):
     ):
         vc = 'Translation_Start_Site'
 
-    elif e in (
+    elif vt == 'INS' and inframe and e in (
+            'protein_protein_contact',
             'disruptive_inframe_insertion',
             'inframe_insertion',
-    ) and vt == 'INS':
+            'protein_altering_variant',
+    ):
         vc = 'In_Frame_Ins'
 
-    elif e in (
-            'disruptive_inframe_deletion',
-            'inframe_deletion',
-    ) and vt == 'DEL':
+    elif vt == 'DEL' and inframe and e in (
+            'protein_protein_contact',
+            'disruptive_inframe_insertion',
+            'inframe_insertion',
+            'protein_altering_variant',
+    ):
         vc = 'In_Frame_Del'
 
     elif e in (
-            'protein_protein_contact',
             'transcript_variant',
             'conservative_missense_variant',
             'rare_amino_acid_variant',
             'missense_variant',
-            'protein_altering_variant',
             'coding_sequence_variant',
     ):
         vc = 'Missense_Mutation'
 
     elif e in (
             'transcript_amplification',
+            'splice_region_variant',
             'intragenic_variant',
             'conserved_intron_variant',
             'intron_variant',
             'INTRAGENIC',
-            'NMD_transcript_variant',
-            'TF_binding_site_ablation',
-            'TFBS_ablation',
-            'TF_binding_site_amplification',
-            'TFBS_amplification',
-            'TF_binding_site_variant',
-            'TFBS_variant',
-            'regulatory_region_ablation',
-            'regulatory_region_amplification',
-            'regulatory_region_variant',
-            'regulatory_region',
     ):
         vc = 'Intron'
 
@@ -750,6 +763,7 @@ def convert_ann_effect_to_maf_variant_classification(e, vt):
             'start_retained_variant',
             'stop_retained_variant',
             'synonymous_variant',
+            'NMD_transcript_variant',
     ):
         vc = 'Silent'
 
@@ -775,6 +789,16 @@ def convert_ann_effect_to_maf_variant_classification(e, vt):
         vc = '3\'UTR'
 
     elif e in (
+            'TF_binding_site_ablation',
+            'TFBS_ablation',
+            'TF_binding_site_amplification',
+            'TFBS_amplification',
+            'TF_binding_site_variant',
+            'TFBS_variant',
+            'regulatory_region_ablation',
+            'regulatory_region_amplification',
+            'regulatory_region_variant',
+            'regulatory_region',
             'feature_elongation',
             'feature_truncation',
             'conserved_intergenic_variant',
@@ -799,7 +823,7 @@ def convert_ann_effect_to_maf_variant_classification(e, vt):
         vc = 'Targeted_Region'
 
     else:
-        print('Unknown effect: {}.'.format(e))
+        print('Unknown: e={}, vt={}, & inframe={}.'.format(e, vt, inframe))
         vc = 'Targeted_Region'
 
     return vc
