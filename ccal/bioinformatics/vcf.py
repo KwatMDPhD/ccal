@@ -14,7 +14,7 @@ Authors:
 import re
 from pprint import pprint
 
-from numpy import argmin
+from numpy import argmin, empty
 from pandas import read_csv, DataFrame
 import tabix
 from Bio import bgzf
@@ -127,7 +127,6 @@ ANN_EFFECT_RANKING = [
     'conserved_intergenic_variant',
     'intergenic_variant',
     'intergenic_region',
-
     # Others
     'sequence_feature',
 ]
@@ -136,11 +135,10 @@ ANN_EFFECT_RANKING = [
 # ======================================================================================================================
 # DataFrame VCF
 # ======================================================================================================================
-def read_vcf(filepath, verbose=False):
+def read_vcf(filepath):
     """
     Read a VCF.
     :param filepath: str;
-    :param verbose: bool;
     :return: dict;
     """
 
@@ -226,39 +224,43 @@ def read_vcf(filepath, verbose=False):
     # Read data
     vcf['data'] = read_csv(filepath, sep='\t', comment='#', header=None, names=vcf['header'])
 
-    if verbose:
-        print('********* VCF dict (without data) *********')
-        for k, v in vcf.items():
-            if k != 'data':
-                pprint({k: v}, compact=True, width=110)
-        print('*******************************************')
+    print('********* VCF dict (without data) *********')
+    for k, v in vcf.items():
+        if k != 'data':
+            pprint({k: v}, compact=True, width=110)
+    print('*******************************************')
+
     return vcf
 
 
-def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1):
+def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filepath=None):
     """
 
     :param vcf: DataFrame or str;
-    :param ensg_to_entrez:
+    :param ensg_to_entrez: str; Filepath to a mapping file (ENSG ID<\t>Entrez ID)
     :param sample_name:
     :param n_ann: int;
+    :param maf_filepath: str; filepath to MAF.
     :return: DataFrame; MAF
     """
 
-    if isinstance(vcf, DataFrame):
-        if not sample_name:
+    if isinstance(vcf, DataFrame):  # DataFrame
+        if not sample_name:  # Sample_name must be provided
             raise ValueError('If vcf is a DataFrame, provide sample_name.')
-    elif isinstance(vcf, str):
+
+    elif isinstance(vcf, str):  # Filepath to a VCF
+        # Read VCF and get sample_name
         vcf_dict = read_vcf(vcf)
+        # TODO: handle multiple samples
         sample_name = vcf_dict['samples'][0]
         vcf = vcf_dict['data']
-    else:
-        raise ValueError('vcf must be either a DataFrame or a filepath to a VCF.')
+        assert isinstance(vcf, DataFrame)
 
-    if isinstance(ensg_to_entrez, str):
-        ensg_to_entrez = read_dict(ensg_to_entrez)
-    elif not isinstance(ensg_to_entrez, dict):
-        raise ValueError('ensg_to_entrez must be either a dict or a filepath to dictionary mapping.')
+    else:
+        raise ValueError('vcf must be either a DataFrame or filepath to a VCF.')
+
+    # Read mapping as dictionary
+    ensg_to_entrez = read_dict(ensg_to_entrez)
 
     maf_header = [
         'Hugo_Symbol',
@@ -296,42 +298,66 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1):
         'Tumor_Sample_UUID',
         'Matched_Norm_Sample_UUID',
     ]
-    maf = DataFrame(index=range(vcf.shape[0]), columns=maf_header)
+    maf = DataFrame(index=vcf.index, columns=maf_header)
 
-    for i, vcf_row in vcf.iterrows():
+    tmp = empty((vcf.shape[0], 10), dtype=object)
+
+    print('Iterating through VCF rows ...')
+    for i, vcf_row in vcf.iterrows():  # For each VCF row
+        if i % 10000 == 0:
+            print('\t VCF row {} ...'.format(i))
+
         chrom, pos, rsid, ref, alt, info = vcf_row.iloc[[0, 1, 2, 3, 4, 7]]
+
         start, end = _get_variant_start_end_positions(pos, ref, alt)
+
         vt = _get_variant_type(ref, alt)
+
         for i_s in info.split(';'):  # For each INFO
             if i_s.startswith('ANN='):  # ANN
-                i_s = i_s[len('ANN='):]
+                # Strip 'ANN=' prefix
+                i_s = i_s[4:]
                 anns = i_s.split(',')
-                for a in anns[:min(len(anns), n_ann)]:  # For each ANN
+
+                for a in anns[:n_ann]:  # For each ANN
                     a_s = a.split('|')
+
                     effect = a_s[1]
+
                     vc = _get_maf_variant_classification(effect, vt)
+
                     gene_name = a_s[3]
+
                     gene_id = ensg_to_entrez.get(a_s[4])
+
                     if gene_id:
-                        # TODO: handlel multiple gene IDs
+                        # TODO: handle multiple gene IDs
                         gene_id = gene_id.pop()
                     else:
                         gene_id = 0
-        maf.ix[i, [
-            'Hugo_Symbol',
-            'Entrez_Gene_Id',
-            'Chromosome',
-            'Start_Position',
-            'End_Position',
-            'Variant_Classification',
-            'Variant_Type',
-            'dbSNP_RS',
-            'Reference_Allele',
-            'Tumor_Seq_Allele1',
-        ]] = [gene_name, gene_id, chrom, start, end, vc, vt, rsid, ref, alt]
+        tmp[i] = gene_name, gene_id, chrom, start, end, vc, vt, rsid, ref, alt
 
+    maf.ix[:, [
+        'Hugo_Symbol',
+        'Entrez_Gene_Id',
+        'Chromosome',
+        'Start_Position',
+        'End_Position',
+        'Variant_Classification',
+        'Variant_Type',
+        'dbSNP_RS',
+        'Reference_Allele',
+        'Tumor_Seq_Allele1',
+    ]] = tmp
     maf.ix[:, 'Strand'] = '+'
-    maf.ix[:, ['Tumor_Sample_UUID', 'Matched_Norm_Sample_UUID']] = sample_name
+    maf.ix[:, ['Tumor_Sample_Barcode', 'Matched_Norm_Sample_Barcode',
+               'Tumor_Sample_UUID', 'Matched_Norm_Sample_UUID']] = sample_name
+
+    # Save
+    if maf_filepath:
+        if not maf_filepath.endswith('.maf'):
+            maf_filepath += '.maf'
+        maf.to_csv(maf_filepath, sep='\t', index=None)
 
     return maf
 
