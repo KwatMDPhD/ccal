@@ -15,7 +15,7 @@ import re
 from pprint import pprint
 
 from numpy import argmin
-from pandas import read_csv
+from pandas import read_csv, DataFrame
 import tabix
 from Bio import bgzf
 
@@ -24,7 +24,7 @@ from . import PATH_GRCH38, PATH_HG38, PATH_CHAIN_GRCH37_TO_GRCH38, PATH_CHAIN_HG
     PATH_DBSNP, PATH_CLINVAR, \
     PICARD, SNPEFF, SNPSIFT
 from ..support.str_ import split_ignoring_inside_quotes, remove_nested_quotes
-from ..support.file import bgzip_tabix, mark_filename
+from ..support.file import bgzip_tabix, mark_filename, read_dict
 from ..support.system import run_cmd
 
 VCF_FIELD_CASTER = {
@@ -229,6 +229,67 @@ def read_vcf(filepath, verbose=False):
                 pprint({k: v}, compact=True, width=110)
         print('*******************************************')
     return vcf
+
+
+def convert_vcf_to_maf(vcf_filepath, ensg_to_entrez):
+    vcf_dict = read_vcf(vcf_filepath)
+    vcf_data = vcf_dict['data']
+    sample = vcf_dict['sample']
+
+    ensg_to_entrez = read_dict(ensg_to_entrez)
+    maf_header = [
+        'Hugo_Symbol',
+        'Entrez_Gene_Id',
+        'Center',
+        'NCBI_Build',
+        'Chromosome',
+        'Start_Position',
+        'End_Position',
+        'Strand',
+        'Variant_Classification',
+        'Variant_Type',
+        'Reference_Allele',
+        'Tumor_Seq_Allele1',
+        'Tumor_Seq_Allele2',
+        'dbSNP_RS',
+        'dbSNP_Val_Status',
+        'Tumor_Sample_Barcode',
+        'Matched_Norm_Sample_Barcode',
+        'Matched_Norm_Seq_Allele1',
+        'Matched_Norm_Seq_Allele2',
+        'Tumor_Validation_Allele1',
+        'Tumor_Validation_Allele2',
+        'Match_Norm_Validation_Allele1',
+        'Match_Norm_Validation_Allele2',
+        'Verification_Status',
+        'Validation_Status',
+        'Mutation_Status',
+        'Sequencing_Phase',
+        'Sequence_Source',
+        'Validation_Method',
+        'Score',
+        'BAM_File',
+        'Sequencer',
+        'Tumor_Sample_UUID',
+        'Matched_Norm_Sample_UUID',
+    ]
+    maf = DataFrame(columns=maf_header)
+
+    maf.ix[:, 'Hugo_Symbol'] = get_ann(vcf_data, 'gene_name')
+    maf.ix[:, 'Entrez_Gene_Id'] = get_ann(vcf_data, 'gene_id').apply(ensg_to_entrez.get)
+    maf.ix[:, 'Chromosome'] = vcf_data.ix[:, 'CHROM']
+    start_end = get_start_end_positions(vcf_data)
+    maf.ix[:, 'Start_Position'] = start_end.apply(lambda t: t[0])
+    maf.ix[:, 'End_Position'] = start_end.apply(lambda t: t[1])
+    maf.ix[:, 'Strand'] = '+'
+    maf.ix[:, 'Variant_Classification'] = get_maf_variant_classification(vcf_data)
+    maf.ix[:, 'Variant_Type'] = get_variant_type(vcf_data)
+    maf.ix[:, 'dbSNP_RS'] = vcf_data.ix[:, 'ID']
+    maf.ix[:, 'Reference_Allele'] = vcf_data.ix[:, 'REF']
+    maf.ix[:, 'Tumor_Seq_Allele1'] = vcf_data.ix[:, 'ALT']
+    maf.ix[:, ['Tumor_Sample_UUID', 'Matched_Norm_Sample_UUID']] = sample
+
+    return maf
 
 
 def get_start_end_positions(vcf_data):
