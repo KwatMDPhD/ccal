@@ -733,8 +733,8 @@ def convert_ann_effect_to_maf_variant_classification(e, vt, inframe):
 
     elif vt == 'DEL' and inframe and e in (
             'protein_protein_contact',
-            'disruptive_inframe_insertion',
-            'inframe_insertion',
+            'disruptive_inframe_deletion',
+            'inframe_deletion',
             'protein_altering_variant',
     ):
         vc = 'In_Frame_Del'
