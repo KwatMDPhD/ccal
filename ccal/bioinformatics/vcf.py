@@ -48,7 +48,7 @@ ANN_EFFECT_RANKING = [
     # Loss of transcript or exon
     'transcript_ablation',
     'exon_loss_variant',
-    # Altered splicing 1
+    # Altered splicing
     'splice_acceptor_variant',
     'splice_donor_variant',
     # Nonsense mutation
@@ -141,14 +141,15 @@ def read_vcf(filepath, verbose=False):
     """
 
     vcf = {
-        'meta_information': {'INFO': {},
-                             'FILTER': {},
-                             'FORMAT': {},
-                             'reference': {}
-                             },
+        'meta_information': {
+            'INFO': {},
+            'FILTER': {},
+            'FORMAT': {},
+            'reference': {},
+        },
         'header': [],
         'samples': [],
-        'data': None
+        'data': None,
     }
 
     # Open VCF
@@ -557,100 +558,135 @@ def _convert_ann_effect_to_maf_variant_classificaton(e):
     :return: str; MAF variant classification
     """
 
-    if e in ('transcript_ablation',
-             'exon_loss_variant',
-             'splice_acceptor_variant',
-             'splice_donor_variant',
-             'splice_region_variant'):
+    if e in (
+            'transcript_ablation',
+            'exon_loss_variant',
+            'splice_acceptor_variant',
+            'splice_donor_variant',
+            'splice_region_variant',
+    ):
         vc = 'Splice_Site'
 
-    elif e in ('stop_gained'):
+    elif e in (
+            'stop_gained',
+    ):
         vc = 'Nonsense_Mutation'
 
-    elif e in ('frameshift_variant OR INS'):
+    elif e in (
+            'frameshift_variant OR INS',
+    ):
         vc = 'Frame_Shift_Ins'
 
-    elif e in ('frameshift_variant OR DEL'):
+    elif e in (
+            'frameshift_variant OR DEL',
+    ):
         vc = 'Frame_Shift_Del'
 
-    elif e in ('stop_lost'):
+    elif e in (
+            'stop_lost',
+    ):
         vc = 'Nonstop_Mutation'
 
-    elif e in ('start_lost',
-               'initiator_codon_variant'):
+    elif e in (
+            'start_lost',
+            'initiator_codon_variant',
+    ):
         vc = 'Translation_Start_Site'
 
-    elif e in ('disruptive_inframe_insertion',
-               'inframe_insertion'):
+    elif e in (
+            'disruptive_inframe_insertion',
+            'inframe_insertion',
+    ):
         vc = 'In_Frame_Ins'
 
-    elif e in ('disruptive_inframe_deletion',
-               'inframe_deletion'):
+    elif e in (
+            'disruptive_inframe_deletion',
+            'inframe_deletion',
+    ):
         vc = 'In_Frame_Del'
 
-    elif e in ('transcript_variant',
-               'conservative_missense_variant',
-               'rare_amino_acid_variant',
-               'missense_variant',
-               'protein_altering_variant',
-               'coding_sequence_variant'):
+    elif e in (
+            'transcript_variant',
+            'conservative_missense_variant',
+            'rare_amino_acid_variant',
+            'missense_variant',
+            'protein_altering_variant',
+            'coding_sequence_variant',
+    ):
         vc = 'Missense_Mutation'
 
-    elif e in ('transcript_amplification',
-               'intragenic_variant',
-               'conserved_intron_variant',
-               'intron_variant',
-               'INTRAGENIC',
-               'NMD_transcript_variant',
-               'TF_binding_site_ablation',
-               'TFBS_ablation',
-               'TF_binding_site_amplification',
-               'TFBS_amplification',
-               'TF_binding_site_variant',
-               'TFBS_variant',
-               'regulatory_region_ablation',
-               'regulatory_region_amplification',
-               'regulatory_region_variant',
-               'regulatory_region'):
+    elif e in (
+            'transcript_amplification',
+            'intragenic_variant',
+            'conserved_intron_variant',
+            'intron_variant',
+            'INTRAGENIC',
+            'NMD_transcript_variant',
+            'TF_binding_site_ablation',
+            'TFBS_ablation',
+            'TF_binding_site_amplification',
+            'TFBS_amplification',
+            'TF_binding_site_variant',
+            'TFBS_variant',
+            'regulatory_region_ablation',
+            'regulatory_region_amplification',
+            'regulatory_region_variant',
+            'regulatory_region',
+    ):
         vc = 'Intron'
 
-    elif e in ('incomplete_terminal_codon_variant',
-               'start_retained_variant',
-               'stop_retained_variant',
-               'synonymous_variant'):
+    elif e in (
+            'incomplete_terminal_codon_variant',
+            'start_retained_variant',
+            'stop_retained_variant',
+            'synonymous_variant',
+    ):
         vc = 'Silent'
 
-    elif e in ('exon_variant',
-               'mature_miRNA_variant',
-               'non_coding_exon_variant',
-               'non_coding_transcript_exon_variant',
-               'non_coding_transcript_variant',
-               'nc_transcript_variant'):
+    elif e in (
+            'exon_variant',
+            'mature_miRNA_variant',
+            'non_coding_exon_variant',
+            'non_coding_transcript_exon_variant',
+            'non_coding_transcript_variant',
+            'nc_transcript_variant',
+    ):
         vc = 'RNA'
 
-    elif e in ('5_prime_UTR_variant',
-               '5_prime_UTR_premature_start_codon_gain_variant'):
+    elif e in (
+            '5_prime_UTR_variant',
+            '5_prime_UTR_premature_start_codon_gain_variant',
+    ):
         vc = '%\'UTR'
 
-    elif e in ('3_prime_UTR_variant'):
+    elif e in (
+            '3_prime_UTR_variant',
+    ):
         vc = '3\'UTR'
 
-    elif e in ('feature_elongation',
-               'feature_truncation',
-               'conserved_intergenic_variant',
-               'intergenic_variant',
-               'intergenic_region'):
+    elif e in (
+            'feature_elongation',
+            'feature_truncation',
+            'conserved_intergenic_variant',
+            'intergenic_variant',
+            'intergenic_region',
+    ):
         vc = 'IGR'
 
-    elif e in ('upstream_gene_variant'):
+    elif e in (
+            'upstream_gene_variant',
+    ):
         vc = '5\'Flank'
 
-    elif e in ('downstream_gene_variant'):
+    elif e in (
+            'downstream_gene_variant',
+    ):
         vc = '3\'Flank'
 
     else:
         print('Unknown effect: {}.'.format(e))
         vc = 'Targeted_Region'
+
     return vc
 
 
