@@ -126,6 +126,9 @@ ANN_EFFECT_RANKING = [
     'conserved_intergenic_variant',
     'intergenic_variant',
     'intergenic_region',
+
+    # Others
+    'sequence_feature',
 ]
 
 
@@ -626,7 +629,8 @@ def _get_maf_variant_classification(effect):
     """
 
     es = effect.split('&')
-    vc = _convert_ann_effect_to_maf_variant_classificaton(es[argmin([ANN_EFFECT_RANKING.index(e) for e in es])])
+    blah  = [ANN_EFFECT_RANKING.index(e) for e in es]
+    vc = _convert_ann_effect_to_maf_variant_classificaton(es[argmin(blah)])
     return vc
 
 
