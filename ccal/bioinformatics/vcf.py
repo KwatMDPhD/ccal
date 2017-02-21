@@ -35,6 +35,10 @@ CASTER = {
     'CLNSIG': lambda x: max([int(s) for s in re.split('[,|]', x)]),
 }
 
+ANN_FIELDS = ['ALT', 'effect', 'impact', 'gene_name', 'gene_id', 'feature_type', 'feature_id',
+              'transcript_biotype', 'rank', 'hgvsc', 'hgvsp', 'cdna_position', 'cds_position', 'protein_position',
+              'distance_to_feature', 'error']
+
 # Prioritize Sequence Ontology terms in order of severity, as estimated by Ensembl and others:
 # http://useast.ensembl.org/info/genome/variation/predicted_data.html#consequences
 # http://snpeff.sourceforge.net/VCFannotationformat_v1.0.pdf
@@ -261,6 +265,7 @@ def get_allelic_frequencies(vcf_data, sample_iloc=9):
     """
 
     :param vcf_data: DataFrame;
+    :param sample_iloc: int;
     :return: list; list of lists which contain allelic frequencies for a sample
     """
 
@@ -279,54 +284,58 @@ def get_allelic_frequencies(vcf_data, sample_iloc=9):
     return s
 
 
-def get_effect(vcf_data):
+def get_ann(vcf_data, field, n_ann=1):
     """
 
     :param vcf_data: DataFrame;
+    :param field: str;
+    :param n_ann: int;
+    :return: list; list of lists which contain
+    """
+
+    i = ANN_FIELDS.index(field)
+
+    def f(vcf_row):
+        for i_s in vcf_row.iloc[7].split(';'):  # For each INFO
+
+            if i_s.startswith('ANN='):  # ANN
+                i_s = i_s[len('ANN='):]
+
+                to_return = []
+                anns = i_s.split(',')
+
+                for a in anns[:min(len(anns), n_ann)]:  # For each ANN
+                    to_return.append(a.split('|')[i])
+
+                if len(to_return) == 1:
+                    return to_return[0]
+                else:
+                    return to_return
+
+    s = vcf_data.apply(f, axis=1)
+    s.name = field
+    return s
+
+
+def get_maf_variant_classification(vcf_data, n_ann=1):
+    """
+
+    :param vcf_data: DataFrame;
+    :param n_ann: int;
     :return: list; list of lists which contain
     """
 
     def f(vcf_row):
         for i_s in vcf_row.iloc[7].split(';'):
             if i_s.startswith('ANN='):
-                return i_s.split('|')[2]
+                effects = []
+                for a in i_s.split(',')[:n_ann]:
+                    a_split = a.split('|')
+                    effects.append(a_split[2])
+                return effects
 
     s = vcf_data.apply(f, axis=1)
     s.name = 'effect'
-    return s
-
-
-def get_gene_names(vcf_data):
-    """
-
-    :param vcf_data: DataFrame;
-    :return: list; list of lists which contain
-    """
-
-    def f(vcf_row):
-        for i_s in vcf_row.iloc[7].split(';'):
-            if i_s.startswith('ANN='):
-                return i_s.split('|')[3]
-
-    s = vcf_data.apply(f, axis=1)
-    s.name = 'gene'
-    return s
-
-
-def get_gene_id(vcf_data):
-    """
-
-    :param vcf_data: DataFrame;
-    :return: list; list of lists which contain
-    """
-
-    def f(vcf_row):
-        for i_s in vcf_row.iloc[7].split(';'):
-            if i_s.startswith('ANN='):
-                return i_s.split('|')[4]
-
-    s = vcf_data.apply(f, axis=1)
-    s.name = 'geen_id'
     return s
 
 
