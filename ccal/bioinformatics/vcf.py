@@ -852,7 +852,7 @@ def convert_maf_variant_classification_to_mutsig_effect(vc):
         'Stop_Codon_Del': 'null',
         'Stop_Codon_Ins': 'null',
         'Synonymous': 'silent',
-        'Targeted_Region': 'null',
+        'Targeted_Region': 'silent',
         'Translation_Start_Site': 'null',
         'Variant_Classification': 'effect',
         'downstream': 'noncoding',
