@@ -251,7 +251,7 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filep
     elif isinstance(vcf, str):  # Filepath to a VCF
         # Read VCF and get sample_name
         vcf_dict = read_vcf(vcf)
-        # TODO: handle multiple samples
+        # TODO: handle multisamples
         sample_name = vcf_dict['samples'][0]
         vcf = vcf_dict['data']
         assert isinstance(vcf, DataFrame)
@@ -327,13 +327,8 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filep
 
                     gene_name = a_s[3]
 
-                    gene_id = ensg_to_entrez.get(a_s[4])
+                    gene_id = ensg_to_entrez.get(a_s[4], 0)
 
-                    if gene_id:
-                        # TODO: handle multiple gene IDs
-                        gene_id = gene_id.pop()
-                    else:
-                        gene_id = 0
         tmp[i] = gene_name, gene_id, chrom, start, end, vc, vt, rsid, ref, alt
 
     maf.ix[:, [
@@ -361,7 +356,7 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filep
     return maf
 
 
-def get_start_end_positions(vcf_data):
+def get_start_and_end_positions(vcf_data):
     """
 
     :param vcf_data: DataFrame;
@@ -390,29 +385,6 @@ def get_variant_type(vcf_data):
 
     s = vcf_data.apply(f, axis=1)
     s.name = 'variant_type'
-    return s
-
-
-def get_allelic_frequencies(vcf_data, sample_iloc=9):
-    """
-
-    :param vcf_data: DataFrame;
-    :param sample_iloc: int;
-    :return: list; list of lists which contain allelic frequencies for a sample
-    """
-
-    def f(vcf_row):
-        s_split = vcf_row.iloc[sample_iloc].split(':')
-        try:
-            dp = int(s_split[2])
-            return tuple(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
-        except ValueError:
-            return None
-        except ZeroDivisionError:
-            return None
-
-    s = vcf_data.apply(f, axis=1)
-    s.name = 'allelic_frequency'
     return s
 
 
@@ -447,6 +419,35 @@ def get_ann(vcf_data, field, n_ann=1):
 
     s = vcf_data.apply(f, axis=1)
     s.name = field
+    return s
+
+
+# TODO: handle multisample
+def get_allelic_frequencies(vcf_data, sample_iloc=9, join=True):
+    """
+
+    :param vcf_data: DataFrame;
+    :param sample_iloc: int;
+    :param join: bool;
+    :return: list; list of lists, or str if join=True, containing allelic frequencies for a sample
+    """
+
+    def f(vcf_row):
+        s_split = vcf_row.iloc[sample_iloc].split(':')
+        try:
+            dp = int(s_split[2])
+            return tuple(['{:0.2f}'.format(ad / dp) for ad in [int(i) for i in s_split[1].split(',')]])
+        except ValueError:
+            return ()
+        except ZeroDivisionError:
+            return ()
+
+    s = vcf_data.apply(f, axis=1)
+
+    if join:
+        s = s.apply(lambda t: ','.join(t))
+    s.name = 'allelic_frequency'
+
     return s
 
 
