@@ -263,33 +263,12 @@ def read_dict(filepath, comment_prefix='#', n_skipping_rows=0, sep='\t', switch_
     # Load mapping info; drop rows with NaN and duplicates
     mapping = read_csv(filepath, comment=comment_prefix, skiprows=n_skipping_rows, sep=sep, names=column_names).dropna()
 
-    # Sort by key
-    mapping.sort_values('key', inplace=True)
-
-    # Loop to make dictionary
-    dictionary = dict()
-    prev = None
-    temp = set()
-
+    d = {}
     for i, s in mapping.iterrows():
-
         # Key and value
-        k = s.ix['key']
-        v = s.ix['value']
+        d[s.ix['key']] = s.ix['value']
 
-        # Add to dictionary when seeing new key
-        if k != prev and prev:
-            dictionary[prev] = temp
-            temp = set()
-
-        # Keep accumulating value for consecutive key
-        temp.add(v)
-        prev = k
-
-    # Last addition to the dictionary for the edge case
-    dictionary[prev] = temp
-
-    return dictionary
+    return d
 
 
 def write_dict(dictionary, filepath, key_name, value_name, sep='\t'):

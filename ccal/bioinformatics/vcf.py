@@ -792,7 +792,7 @@ def _convert_ann_effect_to_maf_variant_classification(e, vt):
             '5_prime_UTR_variant',
             '5_prime_UTR_premature_start_codon_gain_variant',
     ):
-        vc = '%\'UTR'
+        vc = '5\'UTR'
 
     elif e in (
             '3_prime_UTR_variant',
