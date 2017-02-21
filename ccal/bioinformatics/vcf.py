@@ -300,9 +300,8 @@ def convert_vcf_to_maf(vcf, ensg_to_entrez, sample_name=None, n_ann=1, maf_filep
     ]
     maf = DataFrame(index=vcf.index, columns=maf_header)
 
-    tmp = empty((vcf.shape[0], 10), dtype=object)
-
     print('Iterating through VCF rows ...')
+    tmp = empty((vcf.shape[0], 10), dtype=object)
     for i, vcf_row in vcf.iterrows():  # For each VCF row
         if i % 10000 == 0:
             print('\t VCF row {} ...'.format(i))
@@ -432,12 +431,13 @@ def get_ann(vcf_data, field, n_ann=1):
         for i_s in vcf_row.iloc[7].split(';'):  # For each INFO
 
             if i_s.startswith('ANN='):  # ANN
-                i_s = i_s[len('ANN='):]
+                # Strip 'ANN=' prefix
+                i_s = i_s[4:]
 
                 to_return = []
                 anns = i_s.split(',')
 
-                for a in anns[:min(len(anns), n_ann)]:  # For each ANN
+                for a in anns[:n_ann]:  # For each ANN
                     to_return.append(a.split('|')[i])
 
                 if len(to_return) == 1:
@@ -447,31 +447,6 @@ def get_ann(vcf_data, field, n_ann=1):
 
     s = vcf_data.apply(f, axis=1)
     s.name = field
-    return s
-
-
-def get_maf_variant_classification(vcf_data, n_ann=1):
-    """
-
-    :param vcf_data: DataFrame;
-    :param n_ann: int;
-    :return: list; list of lists which contain
-    """
-
-    def f(vcf_row):
-        for i_s in vcf_row.iloc[7].split(';'):  # For each INFO
-
-            if i_s.startswith('ANN='):  # ANN
-                i_s = i_s[len('ANN='):]
-
-                anns = i_s.split(',')
-
-                for a in anns[:min(len(anns), n_ann)]:  # For each ANN
-                    effect = a.split('|')[1]
-                    return _get_maf_variant_classification(effect, 'DEL')
-
-    s = vcf_data.apply(f, axis=1)
-    s.name = 'maf_variant_classification'
     return s
 
 
@@ -673,7 +648,7 @@ def _get_variant_start_end_positions(pos, ref, alt):
 def _get_maf_variant_classification(es, vt):
     """
 
-    :param e: str; effect or effects concatenated by '&'
+    :param es: str; effect or effects concatenated by '&'
     :param vt: str; Variant type
     :return: str; MAF variant classification
     """
