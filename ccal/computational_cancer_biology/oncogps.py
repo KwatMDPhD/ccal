@@ -553,18 +553,16 @@ def make_oncogps(training_h,
 
     # Preprocess training-H matrix and training states
     training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
+    print_log('Training Onco-GPS with {} components, {} samples, & {} states ...'.format(*training_h.shape,
+                                                                                         len(set(training_states))))
+    print_log('\tComponents: {}.'.format(set(training_h.index)))
+    print_log('\tTraining states: {}.'.format(set(training_states)))
 
     if isinstance(testing_h, DataFrame):
 
         # Make sure the index is str (better for .ix)
         # TODO: enforce
         testing_h.index = testing_h.index.astype(str)
-
-        print_log('Testing Onco-GPS with {} components, {} samples, & {} states ...'.format(*testing_h.shape,
-                                                                                            len(set(testing_states))))
-        print_log('\tComponents: {}.'.format(set(testing_h.index)))
-        print_log('\tTraining states: {}.'.format(set(testing_states)))
-        print_log('\tNormalization: {}'.format(testing_h_normalization))
 
         if testing_h_normalization == 'using_training_h':
             normalize_testing_h = True
@@ -604,10 +602,11 @@ def make_oncogps(training_h,
         if not any(testing_states):  # Predict state labels for the testing samples
             testing_states = classify(training_h.T, training_states, testing_h.T)
 
-    print_log('Training Onco-GPS with {} components, {} samples, & {} states ...'.format(*training_h.shape,
-                                                                                         len(set(training_states))))
-    print_log('\tComponents: {}.'.format(set(training_h.index)))
-    print_log('\tTraining states: {}.'.format(set(training_states)))
+        print_log('Testing Onco-GPS with {} components, {} samples, & {} states ...'.format(*testing_h.shape,
+                                                                                            len(set(testing_states))))
+        print_log('\tComponents: {}.'.format(set(testing_h.index)))
+        print_log('\tTraining states: {}.'.format(set(testing_states)))
+        print_log('\tNormalization: {}'.format(testing_h_normalization))
 
     # Compute component coordinates
     if equilateral and training_h.shape[0] == 3:
@@ -667,12 +666,6 @@ def make_oncogps(training_h,
         samples = samples.ix[samples_to_plot, :]
 
     print_log('Plotting ...')
-    # TODO: remove
-    if colors == 'paper':
-        colors = ['#CD96CD', '#5CACEE', '#43CD80', '#FFA500', '#CD5555', '#F0A5AB', '#9AC7EF', '#D6A3FC', '#FFE1DC',
-                  '#FAF2BE', '#F3C7F2', '#C6FA60', '#F970F9', '#FC8962', '#F6E370', '#F0F442', '#AED4ED', '#D9D9D9',
-                  '#FD9B85', '#7FFF00', '#FFB90F', '#6E8B3D', '#8B8878', '#7FFFD4', '#00008B', '#D2B48C', '#006400']
-
     _plot_onco_gps(components=components,
                    samples=samples,
                    grid_probabilities=grid_probabilities,
