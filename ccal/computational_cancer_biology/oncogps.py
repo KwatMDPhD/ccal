@@ -908,11 +908,12 @@ def _compute_component_ratios(h, n):
     ratios = zeros(h.shape[1])
 
     if n and n < 1:  # If n is a fraction, compute its respective number
-        n = h.shape[0] * n
+        n = int(h.shape[0] * n)
 
     # Compute pull ratio for each sample (column)
     for i, (c_idx, c) in enumerate(h.iteritems()):
         c_sorted = c.sort_values(ascending=False)
+
         ratios[i] = c_sorted[:n].sum() / max(c_sorted[n:].sum(), EPS) * c.sum()
 
     return ratios
@@ -1293,12 +1294,14 @@ def _plot_onco_gps(components,
             cax.set_title('Normalized Values', **{'fontsize': 16, 'weight': 'bold'})
 
     else:  # Plot samples using state colors
+        samples.ix[:, 'component_ratio'] = normalize_dataframe_or_series(samples.ix[:, 'component_ratio'], '0-1')
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
             c = state_colors[s.ix['state']]
+            cr = s.ix['component_ratio']
             ax_map.plot(x, y, marker='o',
-                        markersize=sample_markersize, markerfacecolor=c,
+                        markersize=sample_markersize, markerfacecolor=c, alpha=cr,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
                         aa=True, clip_on=False, zorder=5)
 
@@ -1312,11 +1315,3 @@ def _plot_onco_gps(components,
 
     if filepath:
         save_plot(filepath)
-        #
-        # if isinstance(annotation, Series):
-        #     plt.figure(figsize=FIGURE_SIZE)
-        #     plot_violin_box_or_bar(x='state', y='annotation_value', data=samples, palette=state_colors,
-        #                            violin_or_box=violin_or_box)
-        #
-        #     if filepath:
-        #         save_plot(mark_filename(filepath, 'annotation', suffix='.pdf'))
