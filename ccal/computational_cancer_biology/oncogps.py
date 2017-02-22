@@ -851,10 +851,10 @@ def _process_samples(h, states, components, n_pulls, power, component_ratio):
     :param n_pulls:
     :param power:
     :param component_ratio:
-    :return: DataFrame; (n_samples, 4 [x, y, state, component_ratio])
+    :return: DataFrame; (n_samples, 3 (or 4) [x, y, state, (component_ratio)])
     """
 
-    samples = DataFrame(index=h.columns, columns=['x', 'y', 'state', 'component_ratio'])
+    samples = DataFrame(index=h.columns, columns=['x', 'y', 'state'])
     samples.ix[:, 'state'] = states
 
     print_log('Computing sample coordinates using {} components and {:.3f} power ...'.format(n_pulls, power))
@@ -862,9 +862,9 @@ def _process_samples(h, states, components, n_pulls, power, component_ratio):
 
     if component_ratio and 0 < component_ratio:
         print_log('Computing component ratios ...')
-        samples.ix[:, 'component_ratio'] = _compute_component_ratios(h, component_ratio)
-    else:
-        samples.ix[:, 'component_ratio'] = 1
+        component_ratios = _compute_component_ratios(h, component_ratio)
+        if 1 < len(set(component_ratios)):
+            samples.ix[:, 'component_ratio'] = component_ratios
 
     return samples
 
@@ -1294,14 +1294,18 @@ def _plot_onco_gps(components,
             cax.set_title('Normalized Values', **{'fontsize': 16, 'weight': 'bold'})
 
     else:  # Plot samples using state colors
-        samples.ix[:, 'component_ratio'] = normalize_dataframe_or_series(samples.ix[:, 'component_ratio'], '0-1')
+        if 'component_ratio' in samples:
+            samples.ix[:, 'component_ratio'] = normalize_dataframe_or_series(samples.ix[:, 'component_ratio'], '0-1')
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
             c = state_colors[s.ix['state']]
-            cr = s.ix['component_ratio']
+            if 'component_ratio' in samples:
+                a = s.ix['component_ratio']
+            else:
+                a = 1
             ax_map.plot(x, y, marker='o',
-                        markersize=sample_markersize, markerfacecolor=c, alpha=cr,
+                        markersize=sample_markersize, markerfacecolor=c, alpha=a,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
                         aa=True, clip_on=False, zorder=5)
 
