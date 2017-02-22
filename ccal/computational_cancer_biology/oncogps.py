@@ -548,14 +548,17 @@ def make_oncogps(training_h,
     # TODO: enforece
     training_h.index = training_h.index.astype(str)
 
+    # For normalization
+    dummy = training_h.copy()
+
+    # Preprocess training-H matrix and training states
+    training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
+
     if isinstance(testing_h, DataFrame):
 
         # Make sure the index is str (better for .ix)
         # TODO: enforce
         testing_h.index = testing_h.index.astype(str)
-
-        if not any(testing_states):  # Predict state labels for the testing samples
-            testing_states = classify(training_h.T, training_states, testing_h.T)
 
         print_log('Testing Onco-GPS with {} components, {} samples, & {} states ...'.format(*testing_h.shape,
                                                                                             len(set(testing_states))))
@@ -565,10 +568,10 @@ def make_oncogps(training_h,
 
         if testing_h_normalization == 'using_training_h':
             normalize_testing_h = True
-            normalizing_size = training_h.shape[1]
-            normalizing_mean = training_h.mean(axis=1)
-            normalizing_std = training_h.std(axis=1)
-            dummy = normalize_dataframe_or_series(training_h, '-0-', axis=1).clip(-std_max, std_max)
+            normalizing_size = dummy.shape[1]
+            normalizing_mean = dummy.mean(axis=1)
+            normalizing_std = dummy.std(axis=1)
+            dummy = normalize_dataframe_or_series(dummy, '-0-', axis=1).clip(-std_max, std_max)
             normalizing_min = dummy.min(axis=1)
             normalizing_max = dummy.max(axis=1)
 
@@ -598,13 +601,8 @@ def make_oncogps(training_h,
                                                            normalizing_min=normalizing_min,
                                                            normalizing_max=normalizing_max)
 
-    # Preprocess training-H matrix and training states
-    training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
-
-    if isinstance(testing_h, DataFrame) and not any(testing_states):  # Predict state labels for the testing samples
-        testing_states = classify(training_h.T, training_states, testing_h.T)
-    testing_states = Series(testing_states)
-    print('\n\n\n\n')
+        if not any(testing_states):  # Predict state labels for the testing samples
+            testing_states = classify(training_h.T, training_states, testing_h.T)
 
     print_log('Training Onco-GPS with {} components, {} samples, & {} states ...'.format(*training_h.shape,
                                                                                          len(set(training_states))))
@@ -748,7 +746,10 @@ def _process_h_and_states(h, states, std_max, normalize=True,
     :return: DataFrame and Series; processed H matrix and states
     """
 
+    # TODO: improve logic
     # Convert sample-state labels, which match sample, into Series
+    if not any(states):
+        states = zeros(h.shape[1])
     states = Series(states, index=h.columns)
 
     # Normalize H matrix and drop all-0 samples
