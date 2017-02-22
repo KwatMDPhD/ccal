@@ -150,59 +150,14 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     save_plot(filepath)
 
 
-def plot_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, estimator=None, ci=95,
-             n_boot=1000, units=None, orient=None, color=None, palette=None, saturation=0.75, errcolor='.26',
-             errwidth=2, capsize=0.1, ax=None,
-             title=None, xlabel=None, ylabel=None, filepath=None, **kwargs):
-    """
-
-    :param x:
-    :param y:
-    :param hue:
-    :param data:
-    :param order:
-    :param hue_order:
-    :param estimator:
-    :param ci:
-    :param n_boot:
-    :param units:
-    :param orient:
-    :param color:
-    :param palette:
-    :param saturation:
-    :param errcolor:
-    :param errwidth:
-    :param capsize:
-    :param ax:
-    :param title:
-    :param xlabel:
-    :param ylabel:
-    :param filepath:
-    :param kwargs:
-    :return:
-    """
-
-    if not ax:
-        plt.figure(figsize=FIGURE_SIZE)
-
-    # TODO: reincoorporate estimator=estimator
-    # TODO: reincoorporate barwidth=2
-    barplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, ci=ci, n_boot=n_boot,
-            units=units, orient=orient, color=color, palette=palette, saturation=saturation, errcolor=errcolor,
-            capsize=capsize, ax=ax, **kwargs)
-
-    decorate(title, xlabel, ylabel)
-    save_plot(filepath)
-
-
 def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
                            scale='count', scale_hue=True, gridsize=100, width=0.8, inner='quartile', split=False,
                            orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
                            fliersize=5, whis=1.5, notch=False,
-                           ci=95, n_boot=1000, units=None, errwidth=None, capsize=None,
+                           ci=95, n_boot=1000, units=None, errcolor='0.26', errwidth=None, capsize=None,
                            violin_or_box='violin', colors=(),
-                           figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None,
-                           filepath_prefix=None, **kwargs):
+                           figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None, filepath_prefix=None,
+                           **kwargs):
     """
     Plot violin plot.
     :param x:
@@ -231,15 +186,18 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     :param ci:
     :param n_boot:
     :param units:
+    :param errcolor:
     :param errwidth:
     :param capsize:
     :param violin_or_box:
+    :param colors: iterable;
+    :param figure_size: tuple;
     :param title:
     :param xlabel:
     :param ylabel:
     :param filepath_prefix:
     :param kwargs:
-    :return:
+    :return: None
     """
 
     # Initialize a figure
@@ -256,8 +214,8 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
 
     if len(set([v for v in y if v and ~isnan(v)])) <= 2:  # Use barplot for binary
         barplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, ci=ci, n_boot=n_boot, units=units,
-                orient=orient, color=color, palette=palette, saturation=saturation, errwidth=errwidth, capsize=capsize,
-                ax=ax, **kwargs)
+                orient=orient, color=color, palette=palette, saturation=saturation, errcolor=errcolor,
+                ax=ax, errwidth=errwidth, capsize=capsize, **kwargs)
     else:  # Use violin or box plot for continuous or categorical
         if violin_or_box == 'violin':
             violinplot(x=x, y=y, hue=hue, data=data, order=order, hue_order=hue_order, bw=bw, cut=cut, scale=scale,

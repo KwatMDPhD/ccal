@@ -698,18 +698,16 @@ def convert_ann_effect_to_maf_variant_classification(e, vt, inframe):
     ):
         vc = 'Nonsense_Mutation'
 
-    elif vt == 'INS' and not inframe and e in (
-            'frameshift_variant',
+    elif vt == 'INS' and (e == 'frameshift_variant' or (not inframe and e in (
             'protein_protein_contact',
             'protein_altering_variant',
-    ):
+    ))):
         vc = 'Frame_Shift_Ins'
 
-    elif vt == 'DEL' and not inframe and e in (
-            'frameshift_variant',
+    elif vt == 'DEL' and (e == 'frameshift_variant' or (not inframe and e in (
             'protein_protein_contact',
             'protein_altering_variant',
-    ):
+    ))):
         vc = 'Frame_Shift_Del'
 
     elif e in (
@@ -745,7 +743,7 @@ def convert_ann_effect_to_maf_variant_classification(e, vt, inframe):
             'rare_amino_acid_variant',
             'missense_variant',
             'coding_sequence_variant',
-    ):
+    ) or (vt not in ('INS', 'DEL') and e == 'protein_protein_contact'):
         vc = 'Missense_Mutation'
 
     elif e in (
