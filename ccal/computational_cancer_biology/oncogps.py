@@ -22,7 +22,6 @@ from matplotlib.path import Path
 from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma, sqrt
 from pandas import DataFrame, Series, read_csv, isnull
 from scipy.spatial import Delaunay, ConvexHull
-from sklearn.svm import SVC
 
 from .association import make_association_panel
 from .. import RANDOM_SEED
@@ -32,6 +31,7 @@ from ..machine_learning.multidimentional_scale import mds
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
+from ..machine_learning.classify import classify
 from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
@@ -555,9 +555,7 @@ def make_oncogps(training_h,
         testing_h.index = testing_h.index.astype(str)
 
         if not any(testing_states):  # Predict state labels for the testing samples
-            clf = SVC()
-            clf.fit(asarray(training_h.T), asarray(training_states))
-            testing_states = clf.predict(asarray(testing_h.T))
+            testing_states = classify(training_h.T, training_states, testing_h.T)
 
         print_log('Testing Onco-GPS with {} components, {} samples, & {} states ...'.format(*testing_h.shape,
                                                                                             len(set(testing_states))))
@@ -602,6 +600,11 @@ def make_oncogps(training_h,
 
     # Preprocess training-H matrix and training states
     training_h, training_states = _process_h_and_states(training_h, training_states, std_max)
+
+    if isinstance(testing_h, DataFrame) and not any(testing_states):  # Predict state labels for the testing samples
+        testing_states = classify(training_h.T, training_states, testing_h.T)
+    testing_states = Series(testing_states)
+    print('\n\n\n\n')
 
     print_log('Training Onco-GPS with {} components, {} samples, & {} states ...'.format(*training_h.shape,
                                                                                          len(set(training_states))))
