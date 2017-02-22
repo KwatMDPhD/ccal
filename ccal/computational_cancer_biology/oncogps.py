@@ -16,7 +16,7 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 from matplotlib.colorbar import make_axes, ColorbarBase
-from matplotlib.colors import Normalize,
+from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
 from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma, sqrt
