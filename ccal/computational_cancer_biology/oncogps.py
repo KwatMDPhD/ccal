@@ -16,7 +16,7 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 from matplotlib.colorbar import make_axes, ColorbarBase
-from matplotlib.colors import Normalize, ListedColormap, LinearSegmentedColormap, ColorConverter
+from matplotlib.colors import Normalize,
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
 from numpy import asarray, zeros, zeros_like, ones, empty, linspace, nansum, ma, sqrt
@@ -37,8 +37,8 @@ from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
 from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
 from ..support.log import print_log
-from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_CATEGORICAL_2, CMAP_BINARY, \
-    plot_heatmap, plot_points, plot_nmf, assign_colors_to_states, save_plot
+from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL_2, CMAP_BINARY, plot_heatmap, plot_points, \
+    plot_nmf, assign_colors_to_states, save_plot
 
 
 # ======================================================================================================================
