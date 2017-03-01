@@ -563,9 +563,9 @@ def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=False, co
     rows = []
     with open(filepath) as f:
         for line in f.readlines():
-            line_split = line.split('\t')
+            line_split = line.strip().split('\t')
             # Sort genes and add as a GMT gene set (row)
-            rows.append(line_split[:2] + sorted(line_split[2:]))
+            rows.append(line_split[:2] + sorted([g for g in line_split[2:] if g]))
 
     # Make a DataFrame
     gmt = DataFrame(rows)
@@ -617,7 +617,7 @@ def write_gmt(gmt, filepath):
 
 
 # ======================================================================================================================
-# .rnk functions
+# RNK functions
 # ======================================================================================================================
 def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None, comment=None):
     """
