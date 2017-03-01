@@ -14,8 +14,7 @@ Authors:
 from datetime import datetime
 from multiprocessing import current_process
 
-from .. import VERBOSE
-
+VERBOSE = True
 
 def print_log(string, print_process=False):
     """

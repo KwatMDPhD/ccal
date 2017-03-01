@@ -20,15 +20,15 @@ from pip import get_installed_distributions, main
 from .log import print_log
 
 
-def run_cmd(cmd):
+def run_command(command):
     """
     Execute cmd.
-    :param cmd: str;
+    :param command: str;
     :return: str;
     """
 
-    print_log(cmd)
-    output = run(cmd, shell=True, check=True, stdout=PIPE, universal_newlines=True)
+    print_log(command)
+    output = run(command, shell=True, check=True, stdout=PIPE, universal_newlines=True)
     return output
 
 
