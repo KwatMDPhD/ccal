@@ -155,7 +155,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
                            orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
                            fliersize=5, whis=1.5, notch=False,
                            ci=95, n_boot=1000, units=None, errcolor='0.26', errwidth=None, capsize=None,
-                           violin_or_box='violin', colors=(),
+                           violin_or_box='violin', colors=(), n_permutations=0,
                            figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None, filepath_prefix=None,
                            **kwargs):
     """
@@ -191,6 +191,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     :param capsize:
     :param violin_or_box:
     :param colors: iterable;
+    :param n_permutations: int;
     :param figure_size: tuple;
     :param title:
     :param xlabel:
@@ -234,10 +235,11 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     if isinstance(y, str):
         y = discretize_categories(data.ix[:, y])
 
-    score, pval = compute_association_and_pvalue(x, y, n_permutations=100)
-    l, r, b, t = plt.gca().axis()
-    plt.gca().text((l + r) / 2, t + 0.016 * t, 'IC = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
-                   horizontalalignment='center', **FONT_SUBTITLE)
+    if 0 < n_permutations:
+        score, pval = compute_association_and_pvalue(x, y, n_permutations=n_permutations)
+        l, r, b, t = plt.gca().axis()
+        plt.gca().text((l + r) / 2, t + 0.016 * t, 'IC = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
+                       horizontalalignment='center', **FONT_SUBTITLE)
 
     decorate(title, xlabel, ylabel)
 
@@ -517,6 +519,8 @@ def assign_colors_to_states(states, colors=None):
     :param colors:
     :return: dict; {state: color}
     """
+
+    # TODO: enable str states
 
     if isinstance(states, int):  # Number of states
         unique_states = range(1, states + 1)

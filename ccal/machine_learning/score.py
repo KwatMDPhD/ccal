@@ -123,30 +123,30 @@ def compute_geometric_mean(vector):
     return product ** (1 / len(vector))
 
 
-def compute_fold_change(dataframe, before_col_name, after_col_name):
+def compute_fold_change(dataframe, column_name_before, column_name_after):
     """
 
-    :param dataframe:
-    :param before_col_name:
-    :param after_col_name:
-    :return:
+    :param dataframe: DataFrame;
+    :param column_name_before: str or index;
+    :param column_name_after: str or index;
+    :return: DataFrame;
     """
 
-    fpkms1 = dataframe.ix[dataframe.ix[:, before_col_name] != 0, before_col_name]
-    fpkms2 = dataframe.ix[dataframe.ix[:, after_col_name] != 0, after_col_name]
+    tmp1 = dataframe.ix[dataframe.ix[:, column_name_before] != 0, column_name_before]
+    tmp2 = dataframe.ix[dataframe.ix[:, column_name_after] != 0, column_name_after]
 
-    fpkm1_min = fpkms1.min()
-    fpkm2_min = fpkms2.min()
-    norm_factor = 1 / (fpkms2.sum() / fpkms1.sum())
-    print('BEFORE min = {}\nAFTER min = {}\nNormalization factor={}'.format(fpkm1_min, fpkm2_min, norm_factor))
+    min_before = tmp1.min()
+    min_after = tmp2.min()
 
-    dataframe['Fold Change'] = dataframe.apply(compute_fold_change_for_a_feature, axis=1,
-                                               args=(before_col_name, after_col_name), **{'before_min': fpkm1_min,
-                                                                                          'after_min': fpkm2_min,
-                                                                                          'norm_factor': norm_factor})
-    dataframe.sort_values('Fold Change', ascending=False, inplace=True)
+    # Compute normalization factor
+    norm_factor = 1 / (tmp2.sum() / tmp1.sum())
 
-    return dataframe
+    print('min_before={}\nmin_after={}\nnorm_factor={}'.format(min_before, min_after, norm_factor))
+    return dataframe.apply(compute_fold_change_for_a_feature, axis=1, args=(column_name_before,
+                                                                            column_name_after,
+                                                                            min_before,
+                                                                            min_after,
+                                                                            norm_factor))
 
 
 def compute_fold_change_for_a_feature(series, before_col_name, after_col_name, before_min, after_min, norm_factor):

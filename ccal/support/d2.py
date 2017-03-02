@@ -160,7 +160,7 @@ def shuffle_matrix(matrix, axis=0, random_seed=RANDOM_SEED):
 
     seed(random_seed)
 
-    if isinstance(matrix, DataFrame):  # Work with 2D array
+    if isinstance(matrix, DataFrame):  # Work with 2D array (copy)
         a = array(matrix)
     else:
         a = matrix.copy()
