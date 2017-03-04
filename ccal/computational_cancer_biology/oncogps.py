@@ -26,13 +26,14 @@ from sklearn.svm import SVR
 
 from .association import make_association_panel
 from .. import RANDOM_SEED
+from ..machine_learning.classify import classify
 from ..machine_learning.cluster import hierarchical_consensus_cluster, nmf_consensus_cluster
 from ..machine_learning.fit import fit_matrix
+from ..machine_learning.matrix_decompose import save_nmf_w_h
 from ..machine_learning.multidimentional_scale import mds
 from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
-from ..machine_learning.classify import classify
 from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
@@ -94,7 +95,7 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
 
         print_log('Saving NMF decompositions and cophenetic correlation coefficients ...')
         # Save NMF decompositions
-        _save_nmf(nmf_results, join(directory_path, 'matrices', ''))
+        save_nmf_w_h(nmf_results, join(directory_path, 'matrices', ''))
         # Save cophenetic correlation coefficients
         write_dict(cophenetic_correlation_coefficient,
                    join(directory_path, 'cophenetic_correlation_coefficients.txt'),
@@ -132,21 +133,8 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
 
 
 # TODO: move to nmf.py or file.py
-def _save_nmf(nmf_results, filepath_prefix):
-    """
-    Save NMF decompositions.
-    :param nmf_results: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
-                              {k: Cophenetic Correlation Coefficient}
-    :param filepath_prefix: str; filepath_prefix_nmf_k{k}_{w, h}.gct and will be saved
-    :return: None
-    """
-
-    for k, v in nmf_results.items():
-        write_gct(v['w'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
-        write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
 
 
-# TODO: move to nmf.py or file.py
 def get_w_or_h_matrix(nmf_results, k, w_or_h):
     """
     Get W or H matrix from nmf_results.
@@ -371,35 +359,6 @@ def get_state_labels(clusterings, k):
     """
 
     return clusterings.ix[k, :].tolist()
-
-
-# TODO: use explode function, and remove this function
-def define_binary_state_labels(clusterings, k, state_relabeling=None):
-    """
-    Get state labels from clusterings and create binary variable for each state
-    :param clusterings: DataFrame;
-    :param k: int;
-    :param state_relabeling: int; [1, n_states]; new labels for the states or None
-    :return: DataFrame;
-    """
-
-    k_labels = clusterings.ix[k, :]
-
-    if state_relabeling:
-        for i in range(len(k_labels)):
-            k_labels.ix[i] = state_relabeling[k_labels.ix[i] - 1]
-
-    u_labels = k_labels.unique().tolist()
-    max_index = len(u_labels) + 1
-    u_labels.extend([max_index])
-
-    binary_labels = DataFrame(index=u_labels, columns=clusterings.columns)
-    for state in k_labels.unique():
-        binary_labels.ix[state, :] = (k_labels == state).astype('int')
-
-    binary_labels.ix[max_index, :] = k_labels
-
-    return binary_labels
 
 
 def make_oncogps(training_h,

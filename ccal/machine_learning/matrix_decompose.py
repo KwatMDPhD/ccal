@@ -15,12 +15,13 @@ from pandas import DataFrame
 from sklearn.decomposition import NMF
 
 from .. import RANDOM_SEED
+from ..support.file import write_gct
 
 
 def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_seed=RANDOM_SEED,
         alpha=0, l1_ratio=0, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
-    Nonenegative matrix factorize matrix with k from ks.
+    Non-negative matrix factorize matrix with k from ks.
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param init:
@@ -61,3 +62,17 @@ def nmf(matrix, ks, init='random', solver='cd', tol=1e-6, max_iter=1000, random_
         nmf_results[k] = {'w': w, 'h': h, 'e': err}
 
     return nmf_results
+
+
+def save_nmf_w_h(nmf_results, filepath_prefix):
+    """
+    Save NMF decompositions.
+    :param nmf_results: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
+                              {k: Cophenetic Correlation Coefficient}
+    :param filepath_prefix: str; filepath_prefix_nmf_k{k}_{w, h}.gct and will be saved
+    :return: None
+    """
+
+    for k, v in nmf_results.items():
+        write_gct(v['w'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
+        write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
