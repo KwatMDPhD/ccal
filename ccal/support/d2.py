@@ -129,23 +129,23 @@ def split_slices(df, index, splitter, ax=0):
 
 def drop_uniform_slice_from_dataframe(df, value, axis=0):
     """
-
-    :param df:
-    :param value:
-    :param axis:
-    :return:
+    Drop slice that contains only value from df.
+    :param df: DataFrame;
+    :param value: obj; if a slice contains only obj, the slice will be dropped
+    :param axis: int; 0 for dropping column; and 1 for dropping row
+    :return: DataFrame; DataFrame without any slice that contains only value
     """
 
     if axis == 0:
         dropped = (df == value).all(axis=0)
         if any(dropped):
-            print_log('Removed {} column index(ices) whoes values are all {}.'.format(dropped.sum(), value))
+            print_log('Removed {} column index(ices) whose values are all {}.'.format(dropped.sum(), value))
         return df.ix[:, ~dropped]
 
     elif axis == 1:
         dropped = (df == value).all(axis=1)
         if any(dropped):
-            print_log('Removed {} row index(ices) whoes values are all {}.'.format(dropped.sum(), value))
+            print_log('Removed {} row index(ices) whose values are all {}.'.format(dropped.sum(), value))
         return df.ix[~dropped, :]
 
 
