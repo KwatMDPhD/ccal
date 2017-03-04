@@ -197,7 +197,6 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
     return h_matrix
 
 
-# TODO: consider removing
 def select_features_and_nmf(testing, training,
                             target, target_type='categorical', feature_scores=None,
                             testing_name='Testing', training_name='Training', row_name='Feature', column_name='Sample',
@@ -395,6 +394,8 @@ def make_oncogps(training_h,
                  highlight_high_magnitude=True,
                  annotate_background=False,
 
+                 plot_3d=False,
+
                  title='Onco-GPS Map',
                  title_fontsize=26,
                  title_fontcolor='#3326C0',
@@ -421,6 +422,8 @@ def make_oncogps(training_h,
                  contour_linewidths=0.60,
                  contour_linecolor='#262626',
                  contour_alpha=0.8,
+
+                 state_boundary_color=(0.51, 0.51, 0.51),
 
                  sample_markersize=23,
                  sample_markeredgewidth=0.92,
@@ -690,7 +693,7 @@ def make_oncogps(training_h,
                    contour_linecolor=contour_linecolor,
                    contour_alpha=contour_alpha,
 
-                   boundary_color=(0.51, 0.51, 0.51),
+                   state_boundary_color=state_boundary_color,
 
                    sample_markersize=sample_markersize,
                    sample_markeredgewidth=sample_markeredgewidth,
@@ -902,7 +905,7 @@ def _plot_onco_gps(components,
                    contour_linecolor,
                    contour_alpha,
 
-                   boundary_color,
+                   state_boundary_color,
 
                    sample_markersize,
                    sample_markeredgewidth,
@@ -961,7 +964,7 @@ def _plot_onco_gps(components,
     :param contour_linecolor: matplotlib color;
     :param contour_alpha: float; [0, 1]
 
-    :param boundary_color: tuple; (r, g, b) where each color is between 0 and 1
+    :param state_boundary_color: tuple; (r, g, b) where each color is between 0 and 1
 
     :param sample_markersize: number;
     :param sample_markeredgewidth: number;
@@ -1100,7 +1103,7 @@ def _plot_onco_gps(components,
         #
         #         if convexhull_region.contains_point((fraction_grids[i], fraction_grids[j])) and (
         #                         grids[i, j] != grids[i + 1, j] or grids[i, j] != grids[i, j + 1]):
-        #             image[j, i] = boundary_color
+        #             image[j, i] = state_boundary_color
 
         ax_map.imshow(image, interpolation=None, origin='lower', aspect='auto', extent=ax_map.axis(),
                       clip_on=False, zorder=1)

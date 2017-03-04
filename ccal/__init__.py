@@ -14,12 +14,15 @@ Authors:
 RANDOM_SEED = 20121020
 
 import sys
+
 sys.setrecursionlimit(10000)
 
 from .support.system import install_libraries
+
 install_libraries([
     'rpy2',
     'biopython',
+    'plotly',
 ])
 
 from .computational_cancer_biology import association, imv, oncogps
