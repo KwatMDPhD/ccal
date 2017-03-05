@@ -14,6 +14,7 @@ Authors:
 from pandas import Series, DataFrame
 
 
+#TODO: enable for ndarray
 def normalize_dataframe_or_series(dataframe, method, axis=None, n_ranks=10000,
                                   normalizing_mean=None, normalizing_std=None,
                                   normalizing_min=None, normalizing_max=None,

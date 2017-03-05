@@ -394,8 +394,6 @@ def make_oncogps(training_h,
                  highlight_high_magnitude=True,
                  annotate_background=False,
 
-                 plot_3d=False,
-
                  title='Onco-GPS Map',
                  title_fontsize=26,
                  title_fontcolor='#3326C0',
@@ -494,12 +492,13 @@ def make_oncogps(training_h,
     else:
         if informational_mds:
             print_log('Computing component coordinates using informational distance ...')
-            distance_function = information_coefficient
+            dissimilarity = information_coefficient
         else:
             print_log('Computing component coordinates using Euclidean distance ...')
-            distance_function = None
-        component_coordinates = mds(training_h, dissimilarity=distance_function, random_seed=mds_seed,
-                                    normalize_coordinates=True)
+            dissimilarity = 'euclidean'
+        component_coordinates = mds(training_h, dissimilarity=dissimilarity, random_state=mds_seed)
+        component_coordinates = DataFrame(component_coordinates, index=training_h.index, columns=['x', 'y'])
+        component_coordinates = normalize_dataframe_or_series(component_coordinates, '-0-', axis=1)
 
     # ==================================================================================================================
     # Get training component power
@@ -518,8 +517,8 @@ def make_oncogps(training_h,
             try:
                 power = _compute_component_power(training_h, fit_min, fit_max, power_min, power_max)
             except RuntimeError as e:
-                print_log('\tCould\'t model with Ae^(kx) + C; {}.'.format(e))
                 power = 1
+                print_log('\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.format(e))
 
     # ==================================================================================================================
     # Compute training sample coordinates
@@ -557,7 +556,9 @@ def make_oncogps(training_h,
         # Series annotation
         # Keep only samples in H matrix
         # ==============================================================================================================
-        if training_annotation is not None:
+        if isinstance(training_annotation, Series):
+            training_samples.ix[:, 'annotation'] = training_annotation.ix[training_samples.index]
+        elif training_annotation is not None:
             training_samples.ix[:, 'annotation'] = training_annotation
 
         # ==============================================================================================================
@@ -731,28 +732,30 @@ def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
 def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_influencing_components, power):
     """
     Compute sample coordinates based on component coordinates (components pull samples).
-    :param component_x_coordinates: DataFrame; (n_points, 2 [x, y])
+    :param component_x_coordinates: DataFrame; (n_points, n_dimensions)
     :param component_x_samples: DataFrame; (n_points, n_samples)
-    :param n_influencing_components: int; [1, n_components]; number of components influencing a sample's coordinate
-    :param power: number; power to raise components' influence on each sample
-    :return: DataFrame; (n_samples, 2 [x, y]); sample_coordinates
+    :param n_influencing_components: int; [1, n_components]; number of components pulling a sample
+    :param power: number; power to raise components' pull power
+    :return: DataFrame; (n_samples, n_dimension); sample_coordinates
     """
 
     component_x_coordinates = asarray(component_x_coordinates)
 
-    sample_coordinates = empty((component_x_samples.shape[1], 2))
+    # (n_samples, n_dimensions)
+    sample_coordinates = empty((component_x_samples.shape[1], component_x_coordinates.shape[1]))
 
-    for i, (_, c) in enumerate(component_x_samples.iteritems()):
+    for i, (_, c) in enumerate(component_x_samples.iteritems()):  # For each sample
+
+        # Sample column
         c = asarray(c)
 
         # Silence components that are not pulling
         threshold = sorted(c)[-n_influencing_components]
         c[c < threshold] = 0
 
-        x = nansum(c ** power * component_x_coordinates[:, 0]) / nansum(c ** power)
-        y = nansum(c ** power * component_x_coordinates[:, 1]) / nansum(c ** power)
+        for d in range(component_x_coordinates.shape[1]):  # Compute coordinate in each dimension
+            sample_coordinates[i, d] = nansum(c ** power * component_x_coordinates[:, d]) / nansum(c ** power)
 
-        sample_coordinates[i] = x, y
     return sample_coordinates
 
 
@@ -1284,10 +1287,8 @@ def make_oncogps_in_3d(training_h,
                        power_max=5,
 
                        samples_to_plot=None,
-                       component_ratio=0,
 
-                       training_annotation=(),
-                       ):
+                       training_annotation=()):
     # ==================================================================================================================
     # Process training H matrix
     #   Set H matrix's indices to be str (better for .ix)
@@ -1312,12 +1313,13 @@ def make_oncogps_in_3d(training_h,
     # ==================================================================================================================
     if informational_mds:
         print_log('Computing component coordinates using informational distance ...')
-        distance_function = information_coefficient
+        dissimilarity = information_coefficient
     else:
         print_log('Computing component coordinates using Euclidean distance ...')
-        distance_function = None
-    component_coordinates = mds(training_h, dissimilarity=distance_function, random_seed=mds_seed,
-                                normalize_coordinates=True)
+        dissimilarity = 'euclidean'
+    components = mds(training_h, n_components=3, dissimilarity=dissimilarity, random_state=mds_seed)
+    components = DataFrame(components, index=training_h.index, columns=['x', 'y', 'z'])
+    components = normalize_dataframe_or_series(components, '-0-', axis=1)
 
     # ==================================================================================================================
     # Get training component power
@@ -1336,8 +1338,8 @@ def make_oncogps_in_3d(training_h,
             try:
                 power = _compute_component_power(training_h, fit_min, fit_max, power_min, power_max)
             except RuntimeError as e:
-                print_log('\tCould\'t model with Ae^(kx) + C; {}.'.format(e))
                 power = 1
+                print_log('\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.format(e))
 
     # ==================================================================================================================
     # Compute training sample coordinates
@@ -1345,140 +1347,43 @@ def make_oncogps_in_3d(training_h,
     #   Series states
     #   Keep only samples in H matrix
     # ==================================================================================================================
-    training_samples = DataFrame(index=training_h.columns, columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
+    training_samples = DataFrame(index=training_h.columns, columns=['x', 'y', 'z', 'state', 'annotation'])
 
     print_log('Computing training sample coordinates using {} components and {:.3f} power ...'.format(n_pulls, power))
-    training_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(component_coordinates, training_h, n_pulls, power)
+    training_samples.ix[:, ['x', 'y', 'z']] = _compute_sample_coordinates(components, training_h, n_pulls, power)
 
     training_samples.ix[:, 'state'] = Series(training_states, index=training_h.columns)
 
     # ==================================================================================================================
-    # Compute training component ratios
-    # ==================================================================================================================
-    if component_ratio and 0 < component_ratio:
-        print_log('Computing training component ratios ...')
-        training_samples.ix[:, 'component_ratio'] = _compute_component_ratios(training_h, component_ratio)
-
-    # ==================================================================================================================
-    # Compute grid probabilities and states
-    # ==================================================================================================================
-    print_log('Computing state grids and probabilities ...')
-    state_grids, state_grids_probabilities = _compute_grid_states_and_probabilities(training_samples,
-                                                                                    n_grids,
-                                                                                    kde_bandwidth_factor)
-    # ==================================================================================================================
     # Process training annotation
     # ==================================================================================================================
-    annotation_grids = annotation_grids_probabilities = None
     if any(training_annotation):
         # ==============================================================================================================
         # Series annotation
         # Keep only samples in H matrix
         # ==============================================================================================================
-        if training_annotation is not None:
+        if isinstance(training_annotation, Series):
+            training_samples.ix[:, 'annotation'] = training_annotation.ix[training_samples.index]
+        elif training_annotation is not None:
             training_samples.ix[:, 'annotation'] = training_annotation
-
-        # ==============================================================================================================
-        # Compute grid probabilities and annotation states
-        # ==============================================================================================================
-        if annotate_background:
-            print_log('Computing annotation grids and probabilities ...')
-            annotation_grids, annotation_grids_probabilities = _compute_grid_annotations_and_probabilities(
-                training_samples,
-                training_annotation,
-                n_grids)
-
-    # ==================================================================================================================
-    # Process testing data
-    # ==================================================================================================================
-    if isinstance(testing_h, DataFrame):
-        # ==============================================================================================================
-        # Process testing H matrix
-        #   Set H matrix's indices to be str (better for .ix)
-        #   Drop samples with all-0 values before normalization
-        #   Normalize H matrix (may use the normalizing parameters used in normalizing training H matrix)
-        #       -0- normalize
-        #       Clip values over 3 standard deviation
-        #       0-1 normalize
-        #   Drop samples with all-0 values after normalization
-        # ==============================================================================================================
-        # TODO: enforce
-        testing_h.index = testing_h.index.astype(str)
-
-        if testing_h_normalization:
-            testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
-
-            testing_h = normalize_dataframe_or_series(testing_h, '-0-', axis=1,
-                                                      normalizing_size=normalizing_size,
-                                                      normalizing_mean=normalizing_mean,
-                                                      normalizing_std=normalizing_std)
-
-            testing_h = testing_h.clip(-std_max, std_max)
-
-            testing_h = normalize_dataframe_or_series(testing_h, '0-1', axis=1,
-                                                      normalizing_size=normalizing_size,
-                                                      normalizing_min=normalizing_min,
-                                                      normalizing_max=normalizing_max)
-
-            testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
-
-        # ==============================================================================================================
-        # Compute testing sample coordinates
-        # Predict testing states
-        # ==============================================================================================================
-        testing_samples = DataFrame(index=testing_h.columns,
-                                    columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
-
-        print_log('Computing testing sample coordinates using {} components and {:.3f} power ...'.format(n_pulls,
-                                                                                                         power))
-        testing_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(component_coordinates, testing_h, n_pulls,
-                                                                        power)
-
-        testing_samples.ix[:, 'state'] = classify(training_samples.ix[:, ['x', 'y']], training_states,
-                                                  testing_samples.ix[:, ['x', 'y']])
-
-        # ==============================================================================================================
-        # Compute training component ratios
-        # ==============================================================================================================
-        if component_ratio and 0 < component_ratio:
-            print_log('Computing testing component ratios ...')
-            testing_samples.ix[:, 'component_ratio'] = _compute_component_ratios(testing_h, component_ratio)
-
-        # ==============================================================================================================
-        # Process testing annotation
-        # ==============================================================================================================
-        if testing_annotation is not None:
-            testing_samples.ix[:, 'annotation'] = testing_annotation
-
-        # ==============================================================================================================
-        # Use testing
-        # ==============================================================================================================
-        samples = testing_samples
-    else:
-        # ==============================================================================================================
-        # Use training
-        # ==============================================================================================================
-        samples = training_samples
 
     # ==================================================================================================================
     # Limit samples to plot
-    # Plot Onco-GPS
+    # Plot 3D Onco-GPS
     # ==================================================================================================================
     if samples_to_plot:
-        samples = samples.ix[samples_to_plot, :]
+        training_samples = training_samples.ix[samples_to_plot, :]
+
     print_log('Plotting ...')
     import plotly
     import plotly.plotly as py
     import plotly.graph_objs as go
-    import numpy as np
-
     plotly.tools.set_credentials_file(username='KwatME', api_key='BHwRMsoXLMoaJOjtbKpX')
 
-    x, y, z = np.random.multivariate_normal(np.array([0, 0, 0]), np.eye(3), 200).transpose()
     trace1 = go.Scatter3d(
-        x=x,
-        y=y,
-        z=z,
+        x=training_samples.ix[:, 'x'],
+        y=training_samples.ix[:, 'y'],
+        z=training_samples.ix[:, 'z'],
         mode='markers',
         marker=dict(
             size=12,
@@ -1490,23 +1395,6 @@ def make_oncogps_in_3d(training_h,
         )
     )
 
-    # x2, y2, z2 = np.random.multivariate_normal(np.array([0,0,0]), np.eye(3), 200).transpose()
-    # trace2 = go.Scatter3d(
-    #     x=x2,
-    #     y=y2,
-    #     z=z2,
-    #     mode='markers',
-    #     marker=dict(
-    #         color='rgb(127, 127, 127)',
-    #         size=12,
-    #         symbol='circle',
-    #         line=dict(
-    #             color='rgb(204, 204, 204)',
-    #             width=1
-    #         ),
-    #         opacity=0.9
-    #     )
-    # )
     data = [trace1]
     layout = go.Layout(
         margin=dict(
@@ -1517,4 +1405,4 @@ def make_oncogps_in_3d(training_h,
         )
     )
     fig = go.Figure(data=data, layout=layout)
-    py.plot(fig, filename='simple-3d-scatter')
+    py.plot(fig, filename='3D Onco-GPS')

@@ -20,7 +20,7 @@ from .. import RANDOM_SEED
 
 
 def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=1000, max_iter=1000, verbose=0,
-        eps=0.001, n_jobs=1, random_state=RANDOM_SEED, normalize_coordinates=True):
+        eps=0.001, n_jobs=1, random_state=RANDOM_SEED):
     """
     Multidimensional-scale rows of matrix from <n_dimensions>D into <n_components>D.
     :param matrix: DataFrame; (n_points, n_dimensions)
@@ -34,8 +34,7 @@ def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=1
     :param eps:
     :param n_jobs:
     :param random_state: int; random seed for the initial coordinates
-    :param normalize_coordinates: bool;
-    :return: DataFrame; (n_points, 2 ('x', 'y'))
+    :return: ndarray; (n_points, n_components)
     """
 
     if isinstance(dissimilarity, str):
@@ -46,13 +45,7 @@ def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=1
     else:  # Compute distances using dissimilarity, a function
         mds_obj = MDS(n_components=n_components, dissimilarity='precomputed', metric=metric, n_init=n_init,
                       max_iter=max_iter, verbose=verbose, eps=eps, n_jobs=n_jobs, random_state=random_state)
-        coordinates = mds_obj.fit_transform(compute_similarity_matrix(matrix, matrix, dissimilarity, is_distance=True,
-                                                                      axis=1))
-
-    # Convert to DataFrame
-    coordinates = DataFrame(coordinates, index=matrix.index, columns=['x', 'y'])
-
-    if normalize_coordinates:  # Rescale coordinates between 0 and 1
-        coordinates = normalize_dataframe_or_series(coordinates, method='0-1', axis=0)
+        coordinates = mds_obj.fit_transform(
+            compute_similarity_matrix(matrix, matrix, dissimilarity, is_distance=True, axis=1))
 
     return coordinates
