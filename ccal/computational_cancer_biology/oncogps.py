@@ -498,8 +498,8 @@ def make_oncogps(training_h,
         else:
             print_log('Computing component coordinates using Euclidean distance ...')
             distance_function = None
-        component_coordinates = mds(training_h, distance_function=distance_function, random_seed=mds_seed,
-                                    standardize=True)
+        component_coordinates = mds(training_h, dissimilarity=distance_function, random_seed=mds_seed,
+                                    normalize_coordinates=True)
 
     # ==================================================================================================================
     # Get training component power
@@ -1267,3 +1267,254 @@ def _plot_onco_gps(components,
 
     if filepath:
         save_plot(filepath)
+
+
+def make_oncogps_in_3d(training_h,
+                       training_states,
+                       std_max=3,
+
+                       informational_mds=True,
+                       mds_seed=RANDOM_SEED,
+
+                       n_pulls=None,
+                       power=None,
+                       fit_min=0,
+                       fit_max=2,
+                       power_min=1,
+                       power_max=5,
+
+                       samples_to_plot=None,
+                       component_ratio=0,
+
+                       training_annotation=(),
+                       ):
+    # ==================================================================================================================
+    # Process training H matrix
+    #   Set H matrix's indices to be str (better for .ix)
+    #   Drop samples with all-0 values before normalization
+    #   Normalize H matrix (May save normalizing parameters for normalizing testing H matrix later)
+    #       -0- normalize
+    #       Clip values over 3 standard deviation
+    #       0-1 normalize
+    #   Drop samples with all-0 values after normalization
+    # ==================================================================================================================
+    # TODO: enforce
+    training_h.index = training_h.index.astype(str)
+
+    training_h = drop_uniform_slice_from_dataframe(training_h, 0)
+    training_h = normalize_dataframe_or_series(training_h, '-0-', axis=1)
+    training_h = training_h.clip(-std_max, std_max)
+    training_h = normalize_dataframe_or_series(training_h, '0-1', axis=1)
+    training_h = drop_uniform_slice_from_dataframe(training_h, 0)
+
+    # ==================================================================================================================
+    # Get training component coordinates
+    # ==================================================================================================================
+    if informational_mds:
+        print_log('Computing component coordinates using informational distance ...')
+        distance_function = information_coefficient
+    else:
+        print_log('Computing component coordinates using Euclidean distance ...')
+        distance_function = None
+    component_coordinates = mds(training_h, dissimilarity=distance_function, random_seed=mds_seed,
+                                normalize_coordinates=True)
+
+    # ==================================================================================================================
+    # Get training component power
+    #   If n_pulls is not specified, all components pull a sample
+    #   If power is not specified, compute component power by fitting (power will be 1 if fitting fails)
+    # ==================================================================================================================
+    if not n_pulls:
+        n_pulls = training_h.shape[0]
+
+    if not power:
+        print_log('Computing component power ...')
+        if training_h.shape[0] < 4:
+            print_log('\tCould\'t model with Ae^(kx) + C; too few data points.')
+            power = 1
+        else:
+            try:
+                power = _compute_component_power(training_h, fit_min, fit_max, power_min, power_max)
+            except RuntimeError as e:
+                print_log('\tCould\'t model with Ae^(kx) + C; {}.'.format(e))
+                power = 1
+
+    # ==================================================================================================================
+    # Compute training sample coordinates
+    # Process training states
+    #   Series states
+    #   Keep only samples in H matrix
+    # ==================================================================================================================
+    training_samples = DataFrame(index=training_h.columns, columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
+
+    print_log('Computing training sample coordinates using {} components and {:.3f} power ...'.format(n_pulls, power))
+    training_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(component_coordinates, training_h, n_pulls, power)
+
+    training_samples.ix[:, 'state'] = Series(training_states, index=training_h.columns)
+
+    # ==================================================================================================================
+    # Compute training component ratios
+    # ==================================================================================================================
+    if component_ratio and 0 < component_ratio:
+        print_log('Computing training component ratios ...')
+        training_samples.ix[:, 'component_ratio'] = _compute_component_ratios(training_h, component_ratio)
+
+    # ==================================================================================================================
+    # Compute grid probabilities and states
+    # ==================================================================================================================
+    print_log('Computing state grids and probabilities ...')
+    state_grids, state_grids_probabilities = _compute_grid_states_and_probabilities(training_samples,
+                                                                                    n_grids,
+                                                                                    kde_bandwidth_factor)
+    # ==================================================================================================================
+    # Process training annotation
+    # ==================================================================================================================
+    annotation_grids = annotation_grids_probabilities = None
+    if any(training_annotation):
+        # ==============================================================================================================
+        # Series annotation
+        # Keep only samples in H matrix
+        # ==============================================================================================================
+        if training_annotation is not None:
+            training_samples.ix[:, 'annotation'] = training_annotation
+
+        # ==============================================================================================================
+        # Compute grid probabilities and annotation states
+        # ==============================================================================================================
+        if annotate_background:
+            print_log('Computing annotation grids and probabilities ...')
+            annotation_grids, annotation_grids_probabilities = _compute_grid_annotations_and_probabilities(
+                training_samples,
+                training_annotation,
+                n_grids)
+
+    # ==================================================================================================================
+    # Process testing data
+    # ==================================================================================================================
+    if isinstance(testing_h, DataFrame):
+        # ==============================================================================================================
+        # Process testing H matrix
+        #   Set H matrix's indices to be str (better for .ix)
+        #   Drop samples with all-0 values before normalization
+        #   Normalize H matrix (may use the normalizing parameters used in normalizing training H matrix)
+        #       -0- normalize
+        #       Clip values over 3 standard deviation
+        #       0-1 normalize
+        #   Drop samples with all-0 values after normalization
+        # ==============================================================================================================
+        # TODO: enforce
+        testing_h.index = testing_h.index.astype(str)
+
+        if testing_h_normalization:
+            testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
+
+            testing_h = normalize_dataframe_or_series(testing_h, '-0-', axis=1,
+                                                      normalizing_size=normalizing_size,
+                                                      normalizing_mean=normalizing_mean,
+                                                      normalizing_std=normalizing_std)
+
+            testing_h = testing_h.clip(-std_max, std_max)
+
+            testing_h = normalize_dataframe_or_series(testing_h, '0-1', axis=1,
+                                                      normalizing_size=normalizing_size,
+                                                      normalizing_min=normalizing_min,
+                                                      normalizing_max=normalizing_max)
+
+            testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
+
+        # ==============================================================================================================
+        # Compute testing sample coordinates
+        # Predict testing states
+        # ==============================================================================================================
+        testing_samples = DataFrame(index=testing_h.columns,
+                                    columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
+
+        print_log('Computing testing sample coordinates using {} components and {:.3f} power ...'.format(n_pulls,
+                                                                                                         power))
+        testing_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(component_coordinates, testing_h, n_pulls,
+                                                                        power)
+
+        testing_samples.ix[:, 'state'] = classify(training_samples.ix[:, ['x', 'y']], training_states,
+                                                  testing_samples.ix[:, ['x', 'y']])
+
+        # ==============================================================================================================
+        # Compute training component ratios
+        # ==============================================================================================================
+        if component_ratio and 0 < component_ratio:
+            print_log('Computing testing component ratios ...')
+            testing_samples.ix[:, 'component_ratio'] = _compute_component_ratios(testing_h, component_ratio)
+
+        # ==============================================================================================================
+        # Process testing annotation
+        # ==============================================================================================================
+        if testing_annotation is not None:
+            testing_samples.ix[:, 'annotation'] = testing_annotation
+
+        # ==============================================================================================================
+        # Use testing
+        # ==============================================================================================================
+        samples = testing_samples
+    else:
+        # ==============================================================================================================
+        # Use training
+        # ==============================================================================================================
+        samples = training_samples
+
+    # ==================================================================================================================
+    # Limit samples to plot
+    # Plot Onco-GPS
+    # ==================================================================================================================
+    if samples_to_plot:
+        samples = samples.ix[samples_to_plot, :]
+    print_log('Plotting ...')
+    import plotly
+    import plotly.plotly as py
+    import plotly.graph_objs as go
+    import numpy as np
+
+    plotly.tools.set_credentials_file(username='KwatME', api_key='BHwRMsoXLMoaJOjtbKpX')
+
+    x, y, z = np.random.multivariate_normal(np.array([0, 0, 0]), np.eye(3), 200).transpose()
+    trace1 = go.Scatter3d(
+        x=x,
+        y=y,
+        z=z,
+        mode='markers',
+        marker=dict(
+            size=12,
+            line=dict(
+                color='rgba(217, 217, 217, 0.14)',
+                width=0.5
+            ),
+            opacity=0.8
+        )
+    )
+
+    # x2, y2, z2 = np.random.multivariate_normal(np.array([0,0,0]), np.eye(3), 200).transpose()
+    # trace2 = go.Scatter3d(
+    #     x=x2,
+    #     y=y2,
+    #     z=z2,
+    #     mode='markers',
+    #     marker=dict(
+    #         color='rgb(127, 127, 127)',
+    #         size=12,
+    #         symbol='circle',
+    #         line=dict(
+    #             color='rgb(204, 204, 204)',
+    #             width=1
+    #         ),
+    #         opacity=0.9
+    #     )
+    # )
+    data = [trace1]
+    layout = go.Layout(
+        margin=dict(
+            l=0,
+            r=0,
+            b=0,
+            t=0
+        )
+    )
+    fig = go.Figure(data=data, layout=layout)
+    py.plot(fig, filename='simple-3d-scatter')
