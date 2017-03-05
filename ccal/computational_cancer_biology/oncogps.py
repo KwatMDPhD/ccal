@@ -39,7 +39,7 @@ from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
 from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
 from ..support.log import print_log
-from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL_2, CMAP_BINARY, plot_heatmap, plot_points, \
+from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, plot_heatmap, plot_points, \
     plot_nmf, assign_colors_to_states, save_plot
 
 
@@ -1187,7 +1187,7 @@ def _plot_onco_gps(components,
             annotation_max = samples.ix[:, 'annotation_for_plot'].max()
             # Set color map
             if annotation_type == 'categorical':
-                cmap = CMAP_CATEGORICAL_2
+                cmap = CMAP_CATEGORICAL
             elif annotation_type == 'binary':
                 cmap = CMAP_BINARY
             else:
@@ -1274,6 +1274,8 @@ def _plot_onco_gps(components,
 
 def make_oncogps_in_3d(training_h,
                        training_states,
+                       filepath,
+
                        std_max=3,
 
                        informational_mds=True,
@@ -1319,7 +1321,7 @@ def make_oncogps_in_3d(training_h,
         dissimilarity = 'euclidean'
     components = mds(training_h, n_components=3, dissimilarity=dissimilarity, random_state=mds_seed)
     components = DataFrame(components, index=training_h.index, columns=['x', 'y', 'z'])
-    components = normalize_dataframe_or_series(components, '-0-', axis=1)
+    components = normalize_dataframe_or_series(components, '-0-', axis=0)
 
     # ==================================================================================================================
     # Get training component power
@@ -1376,33 +1378,42 @@ def make_oncogps_in_3d(training_h,
 
     print_log('Plotting ...')
     import plotly
-    import plotly.plotly as py
-    import plotly.graph_objs as go
-    plotly.tools.set_credentials_file(username='KwatME', api_key='BHwRMsoXLMoaJOjtbKpX')
 
-    trace1 = go.Scatter3d(
-        x=training_samples.ix[:, 'x'],
-        y=training_samples.ix[:, 'y'],
-        z=training_samples.ix[:, 'z'],
+    trace_components = plotly.graph_objs.Scatter3d(
+        x=components.ix[:, 'x'],
+        y=components.ix[:, 'y'],
+        z=components.ix[:, 'z'],
         mode='markers',
         marker=dict(
-            size=12,
+            size=16,
+            color='#262626',
+            opacity='0.92',
             line=dict(
-                color='rgba(217, 217, 217, 0.14)',
-                width=0.5
-            ),
-            opacity=0.8
+                width=0.39,
+                color='#FFFFFF',
+            )
         )
     )
+    data = [trace_components]
 
-    data = [trace1]
-    layout = go.Layout(
-        margin=dict(
-            l=0,
-            r=0,
-            b=0,
-            t=0
+    for s in training_samples.ix[:, 'state'].unique():
+        trace = plotly.graph_objs.Scatter3d(
+            x=training_samples.ix[training_samples.ix[:, 'state'] == s, 'x'],
+            y=training_samples.ix[training_samples.ix[:, 'state'] == s, 'y'],
+            z=training_samples.ix[training_samples.ix[:, 'state'] == s, 'z'],
+            mode='markers',
+            marker={
+                'size': 10,
+                'color': 'rgba{}'.format(CMAP_CATEGORICAL(s)),
+                'opacity': '0.92',
+                'line': {
+                    'width': 0.39,
+                    'color': '#FFFFFF',
+                }
+            }
         )
-    )
-    fig = go.Figure(data=data, layout=layout)
-    py.plot(fig, filename='3D Onco-GPS')
+        data.append(trace)
+
+    fig = plotly.graph_objs.Figure(data=data)
+
+    plotly.offline.plot(fig, filename=filepath)
