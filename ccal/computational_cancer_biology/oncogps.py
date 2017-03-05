@@ -44,22 +44,25 @@ from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL_2, CMA
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=40, random_seed=RANDOM_SEED,
-                      directory_path=None):
+def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=40, algorithm='Lee & Seung',
+                      random_seed=RANDOM_SEED, directory_path=None):
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
+
     :param matrix: DataFrame or str; (n_rows, n_columns) or filepath to a .gct file
-    :param how_to_drop_na: str; 'all' or 'any'
     :param ks: iterable or int; iterable of int k used for NMF
+    :param how_to_drop_na: str; 'all' or 'any'
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
+    :param algorithm: str; 'Alternating Least Squares' or 'Lee & Seung'
     :param random_seed: int;
     :param directory_path: str; directory path where
             cophenetic_correlation_coefficients{.pdf, .gct}
             matrices/nmf_k{k}_{w, h}.gct
             figures/nmf_k{k}_{w, h}.pdf
         will be saved.
+
     :return: dict and dict; {k: {w: W matrix (n_rows, k), h: H matrix (k, n_columns), e: Reconstruction Error}} and
                             {k: Cophenetic Correlation Coefficient}
     """
@@ -78,7 +81,9 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
 
     # NMF-consensus cluster (while saving 1 NMF result per k)
     nmf_results, cophenetic_correlation_coefficient = nmf_consensus_cluster(matrix, ks,
-                                                                            n_jobs=n_jobs, n_clusterings=n_clusterings,
+                                                                            n_jobs=n_jobs,
+                                                                            n_clusterings=n_clusterings,
+                                                                            algorithm=algorithm,
                                                                             random_seed=random_seed)
 
     # Make NMF directory, where
@@ -452,7 +457,7 @@ def make_oncogps(training_h,
                  delaunay_linecolor='#000000',
 
                  colors=(),
-                 bad_color='wheat',
+                 bad_color='#000000',
                  max_background_saturation=1,
 
                  n_contours=26,
@@ -1251,8 +1256,10 @@ def _plot_onco_gps(components,
         for idx, s in samples.iterrows():
             x = s.ix['x']
             y = s.ix['y']
-            if isnull(s.ix['annotation_value']):
-                c = bad_color
+            # TODO: don't plot missing ones?
+            if isnull(s.ix['annotation_value']):  # Missing value
+                c = bad_color  # bad_color
+                sample_markersize = 1
             else:
                 if annotation_type == 'continuous':
                     c = cmap((s.ix['annotation_value'] - annotation_min) / annotation_range)

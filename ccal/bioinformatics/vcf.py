@@ -35,7 +35,7 @@ from . import PATH_GRCH38, PATH_HG38, PATH_CHAIN_GRCH37_TO_GRCH38, PATH_CHAIN_HG
     PICARD, SNPEFF, SNPSIFT
 from ..support.str_ import split_ignoring_inside_quotes, remove_nested_quotes
 from ..support.file import bgzip_tabix, mark_filename, read_dict
-from ..support.system import run_command
+from ..support.system import run_cmd
 
 VCF_FIELD_CASTER = {
     'POS': int,
@@ -914,7 +914,7 @@ def concat_sort(fnames, output_fname):
 
     cmd = 'bcftools concat -a ' + ' '.join(fnames) + ' > {}'.format(output_fname)
 
-    run_command(cmd)
+    run_cmd(cmd)
 
     return bgzip_tabix(output_fname)
 
@@ -933,7 +933,7 @@ def isec(fname1, fname2, output_directory):
 
     cmd = 'bcftools isec -O z -p {} {} {}'.format(output_directory, fname1, fname2)
 
-    run_command(cmd)
+    run_cmd(cmd)
 
 
 def remap_38(fname, source_assembly):
@@ -965,7 +965,7 @@ def remap_38(fname, source_assembly):
                                                                                               chain,
                                                                                               path_target_assembly)
 
-    run_command(cmd)
+    run_cmd(cmd)
 
     bgzip_tabix(reject_fname)
     return bgzip_tabix(output_fname)
@@ -983,7 +983,7 @@ def rename_chr_sort(fname):
 
     cmd = 'bcftools annotate --rename-chrs {} {} -o {}'.format(PATH_CHROMOSOME_MAP, fname, output_fname)
 
-    run_command(cmd)
+    run_cmd(cmd)
 
     return bgzip_tabix(output_fname)
 
@@ -1007,7 +1007,7 @@ def extract_chr(fname, chromosome_format):
     else:
         raise ValueError('Chromosome format {} not found in (chr#, #)'.format(chromosome_format))
 
-    run_command(cmd)
+    run_cmd(cmd)
 
     return bgzip_tabix(output_fname)
 
@@ -1037,7 +1037,7 @@ def snpeff(fname, genomic_assembly):
                                                                   fname,
                                                                   output_fname)
 
-    run_command(cmd)
+    run_cmd(cmd)
 
     return bgzip_tabix(output_fname)
 
@@ -1069,7 +1069,7 @@ def snpsift(fname, annotation):
 
     cmd = '{} annotate -noDownload -v -noLog {} {} {} > {}'.format(SNPSIFT, flag, path_annotation, fname, output_fname)
 
-    run_command(cmd)
+    run_cmd(cmd)
 
     return bgzip_tabix(output_fname)
 

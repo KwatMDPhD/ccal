@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from ..support.system import run_command
+from ..support.system import run_cmd
 
 
 def get_sequence(filepath, chromosome, start, end):
@@ -29,7 +29,7 @@ def get_sequence(filepath, chromosome, start, end):
 
     cmd = 'samtools faidx {} {}:{}-{}'.format(filepath, chromosome, start, end)
 
-    stdout = run_command(cmd).stdout
+    stdout = run_cmd(cmd).stdout
 
     s = ''.join(stdout.split('\n')[1:])
 

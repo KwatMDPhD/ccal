@@ -16,6 +16,7 @@ from multiprocessing import current_process
 
 VERBOSE = False
 
+
 def print_log(string, print_process=False):
     """
     Print string together with logging information.
