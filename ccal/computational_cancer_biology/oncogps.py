@@ -366,7 +366,7 @@ def make_oncogps(training_h,
                  testing_h=None,
                  testing_h_normalization='using_training_h',
 
-                 component_coordinates=None,
+                 components=None,
                  equilateral=False,
                  informational_mds=True,
                  mds_seed=RANDOM_SEED,
@@ -415,7 +415,7 @@ def make_oncogps(training_h,
                  bad_color='#000000',
                  max_background_saturation=1,
 
-                 n_contours=10,
+                 n_contours=26,
                  contour_linewidths=0.60,
                  contour_linecolor='#262626',
                  contour_alpha=0.8,
@@ -478,15 +478,15 @@ def make_oncogps(training_h,
     #   else, compute component coordinates using Newton's Laws
     # ==================================================================================================================
     if equilateral and training_h.shape[0] == 3:
-        print_log('Using equilateral-triangle component coordinates ...'.format(component_coordinates))
-        component_coordinates = DataFrame(index=['Vertex 1', 'Vertex 2', 'Vertex 3'], columns=['x', 'y'])
-        component_coordinates.iloc[0, :] = [0.5, sqrt(3) / 2]
-        component_coordinates.iloc[1, :] = [1, 0]
-        component_coordinates.iloc[2, :] = [0, 0]
+        print_log('Using equilateral-triangle component coordinates ...'.format(components))
+        components = DataFrame(index=['Vertex 1', 'Vertex 2', 'Vertex 3'], columns=['x', 'y'])
+        components.iloc[0, :] = [0.5, sqrt(3) / 2]
+        components.iloc[1, :] = [1, 0]
+        components.iloc[2, :] = [0, 0]
 
-    elif isinstance(component_coordinates, DataFrame):
-        print_log('Using given component coordinates ...'.format(component_coordinates))
-        component_coordinates.index = training_h.index
+    elif isinstance(components, DataFrame):
+        print_log('Using given component coordinates ...'.format(components))
+        components.index = training_h.index
 
     else:
         if informational_mds:
@@ -495,9 +495,9 @@ def make_oncogps(training_h,
         else:
             print_log('Computing component coordinates using Euclidean distance ...')
             dissimilarity = 'euclidean'
-        component_coordinates = mds(training_h, dissimilarity=dissimilarity, random_state=mds_seed)
-        component_coordinates = DataFrame(component_coordinates, index=training_h.index, columns=['x', 'y'])
-        component_coordinates = normalize_2d_or_1d(component_coordinates, '-0-', axis=1)
+        components = mds(training_h, dissimilarity=dissimilarity, random_state=mds_seed)
+        components = DataFrame(components, index=training_h.index, columns=['x', 'y'])
+        components = normalize_2d_or_1d(components, '0-1', axis=0)
 
     # ==================================================================================================================
     # Get training component power
@@ -528,7 +528,7 @@ def make_oncogps(training_h,
     training_samples = DataFrame(index=training_h.columns, columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
 
     print_log('Computing training sample coordinates using {} components and {:.3f} power ...'.format(n_pulls, power))
-    training_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(component_coordinates, training_h, n_pulls, power)
+    training_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(components, training_h, n_pulls, power)
 
     training_samples.ix[:, 'state'] = Series(training_states, index=training_h.columns)
 
@@ -613,7 +613,7 @@ def make_oncogps(training_h,
 
         print_log('Computing testing sample coordinates using {} components and {:.3f} power ...'.format(n_pulls,
                                                                                                          power))
-        testing_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(component_coordinates, testing_h, n_pulls,
+        testing_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(components, testing_h, n_pulls,
                                                                         power)
 
         testing_samples.ix[:, 'state'] = classify(training_samples.ix[:, ['x', 'y']], training_states,
@@ -649,7 +649,7 @@ def make_oncogps(training_h,
     if samples_to_plot:
         samples = samples.ix[samples_to_plot, :]
     print_log('Plotting ...')
-    _plot_onco_gps(components=component_coordinates,
+    _plot_onco_gps(components=components,
                    samples=samples,
                    state_grids=state_grids,
                    state_grids_probabilities=state_grids_probabilities,
@@ -1290,7 +1290,10 @@ def make_oncogps_in_3d(training_h,
 
                        samples_to_plot=None,
 
-                       training_annotation=()):
+                       training_annotation=(),
+
+                       colors=(),
+                       ):
     # ==================================================================================================================
     # Process training H matrix
     #   Set H matrix's indices to be str (better for .ix)
@@ -1379,6 +1382,9 @@ def make_oncogps_in_3d(training_h,
     print_log('Plotting ...')
     import plotly
 
+    # Assign colors to states
+    state_colors = assign_colors_to_states(training_samples.ix[:, 'state'].unique().size, colors=colors)
+
     trace_components = plotly.graph_objs.Scatter3d(
         x=components.ix[:, 'x'],
         y=components.ix[:, 'y'],
@@ -1396,7 +1402,7 @@ def make_oncogps_in_3d(training_h,
     )
     data = [trace_components]
 
-    for s in training_samples.ix[:, 'state'].unique():
+    for s in sorted(training_samples.ix[:, 'state'].unique()):
         trace = plotly.graph_objs.Scatter3d(
             x=training_samples.ix[training_samples.ix[:, 'state'] == s, 'x'],
             y=training_samples.ix[training_samples.ix[:, 'state'] == s, 'y'],
@@ -1404,7 +1410,7 @@ def make_oncogps_in_3d(training_h,
             mode='markers',
             marker={
                 'size': 10,
-                'color': 'rgba{}'.format(CMAP_CATEGORICAL(s)),
+                'color': 'rgba{}'.format(state_colors[s]),
                 'opacity': '0.92',
                 'line': {
                     'width': 0.39,

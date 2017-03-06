@@ -17,8 +17,9 @@ from .score import compute_similarity_matrix
 from .. import RANDOM_SEED
 
 
-def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=4, max_iter=10000, verbose=0,
-        eps=1e-9, n_jobs=1, random_state=RANDOM_SEED):
+# TODO: set better default parameters
+def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=1000, max_iter=1000, verbose=0,
+        eps=1e-3, n_jobs=1, random_state=RANDOM_SEED):
     """
     Multidimensional-scale rows of matrix from <n_dimensions>D into <n_components>D.
     :param matrix: DataFrame; (n_points, n_dimensions)

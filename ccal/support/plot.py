@@ -511,15 +511,14 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
         pdf.close()
 
 
-def assign_colors_to_states(states, colors=None):
+# TODO: enable str states
+def assign_colors_to_states(states, colors=()):
     """
     Assign colors to states
     :param states: int or iterable; number of states or iterable of int representing state
     :param colors:
     :return: dict; {state: color}
     """
-
-    # TODO: enable str states
 
     if isinstance(states, int):  # Number of states
         unique_states = range(1, states + 1)
@@ -533,7 +532,7 @@ def assign_colors_to_states(states, colors=None):
 
     elif any(colors):  # Use given colors to make a colormap
         color_converter = ColorConverter()
-        colors = color_converter.to_rgba_array(colors)
+        colors = [tuple(c) for c in color_converter.to_rgba_array(colors)]
 
     else:  # Use categorical colormap
         colors = [CMAP_CATEGORICAL(int(s / max(unique_states) * CMAP_CATEGORICAL.N)) for s in unique_states]
@@ -541,6 +540,7 @@ def assign_colors_to_states(states, colors=None):
     state_colors = {}
     for i, s in enumerate(unique_states):
         state_colors[s] = colors[i]
+
     return state_colors
 
 
