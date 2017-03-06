@@ -1290,20 +1290,26 @@ def make_oncogps_in_3d(training_h,
 
                        training_annotation=(),
 
-                       state_colors=(),
+                       title='3D Onco-GPS',
+                       titlefont_size=39,
+                       titlefont_color='4E41D9',
+                       paper_bgcolor='FFFFFF',
+                       plot_bgcolor='000000',
 
                        component_marker_size=26,
                        component_marker_opacity=0.92,
-                       component_marker_line_width=2.6,
-                       component_marker_line_color='4E41D9',  # '#20D9BA',
-                       component_marker_color='#000726',
-                       component_textfont_size=26,
-                       component_textfont_color='#FFFFFF',
+                       component_marker_line_width=2.2,
+                       component_marker_line_color='9017E6',
+                       component_marker_color='000726',
+                       component_textfont_size=22,
+                       component_textfont_color='FFFFFF',
+
+                       state_colors=(),
 
                        sample_marker_size=13,
                        sample_marker_opacity=0.92,
                        sample_marker_line_width=0.19,
-                       sample_marker_line_color='#9017E6',
+                       sample_marker_line_color='9017E6',
                        ):
     # ==================================================================================================================
     # Process training H matrix
@@ -1374,7 +1380,7 @@ def make_oncogps_in_3d(training_h,
         # ==============================================================================================================
         if isinstance(training_annotation, Series):
             training_samples.ix[:, 'annotation'] = training_annotation.ix[training_samples.index]
-        elif training_annotation is not None:
+        else:
             training_samples.ix[:, 'annotation'] = training_annotation
 
     # ==================================================================================================================
@@ -1387,9 +1393,23 @@ def make_oncogps_in_3d(training_h,
     print_log('Plotting ...')
     import plotly
 
-    # Assign colors to states
-    state_colors = assign_colors_to_states(training_samples.ix[:, 'state'].unique().size, colors=state_colors)
+    layout = plotly.graph_objs.Layout(
+        title=title,
+        titlefont=dict(
+            size=titlefont_size,
+            color=titlefont_color,
+        ),
+        # margin=dict(
+        #     l=0,
+        #     r=0,
+        #     b=0,
+        #     t=0,
+        # ),
+        paper_bgcolor=paper_bgcolor,
+        plot_bgcolor=plot_bgcolor,
+    )
 
+    data = []
     trace_components = plotly.graph_objs.Scatter3d(
         name='Component',
         x=components.ix[:, 'x'],
@@ -1412,8 +1432,10 @@ def make_oncogps_in_3d(training_h,
             color=component_textfont_color,
         )
     )
-    data = [trace_components]
+    data.append(trace_components)
 
+    # Assign colors to states
+    state_colors = assign_colors_to_states(training_samples.ix[:, 'state'].unique().size, colors=state_colors)
     for s in sorted(training_samples.ix[:, 'state'].unique()):
         trace = plotly.graph_objs.Scatter3d(
             name='State {}'.format(s),
@@ -1434,6 +1456,6 @@ def make_oncogps_in_3d(training_h,
         )
         data.append(trace)
 
-    fig = plotly.graph_objs.Figure(data=data)
+    fig = plotly.graph_objs.Figure(layout=layout, data=data)
 
     plotly.offline.plot(fig, filename=filepath)
