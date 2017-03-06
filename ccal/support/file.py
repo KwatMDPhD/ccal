@@ -11,23 +11,52 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from sys import platform
-from os import mkdir, listdir, remove, rename, environ
-from os.path import abspath, split, isdir, isfile, islink, join
 import gzip
-from csv import reader, writer, excel, excel_tab
+from os import mkdir, listdir, environ
+from os.path import abspath, split, isdir, isfile, islink, join
+from pprint import pprint
+from sys import platform
 
 from Bio import bgzf
-from matplotlib.colors import ListedColormap
 from pandas import Series, DataFrame, read_csv, concat
 
-from .log import print_log
-from .system import run_command
+from .str_ import split_ignoring_inside_quotes, remove_nested_quotes
 
 
 # ======================================================================================================================
 # General functions
 # ======================================================================================================================
+def get_home_dir():
+    """
+
+    :return: str; user-home directory
+    """
+
+    if 'linux' in platform or 'darwin' in platform:
+        home_dir = environ['HOME']
+    elif 'win' in platform:
+        home_dir = environ['HOMEPATH']
+    else:
+        raise ValueError('Unknown platform {}.'.format(platform))
+
+    return home_dir
+
+
+def list_only_dirs(directory_path):
+    """
+
+    :param directory_path: str; directory with all libraries
+    :return: list; sorted list of directories in directory_path
+    """
+
+    dirs = []
+    for f in listdir(directory_path):
+        fp = join(directory_path, f)
+        if isdir(fp):
+            dirs.append(fp)
+    return sorted(dirs)
+
+
 def establish_filepath(filepath):
     """
     If the path up to the deepest directory in filepath doesn't exist, make the path up to the deepest directory.
@@ -50,23 +79,7 @@ def establish_filepath(filepath):
     # Make missing directories
     for d in reversed(missing_directories):
         mkdir(d)
-        print_log('Created directory {}.'.format(d))
-
-
-def get_home_dir():
-    """
-
-    :return: str; user-home directory
-    """
-
-    if 'linux' in platform or 'darwin' in platform:
-        home_dir = environ['HOME']
-    elif 'win' in platform:
-        home_dir = environ['HOMEPATH']
-    else:
-        raise ValueError('Unknown platform {}.'.format(platform))
-
-    return home_dir
+        print('Created directory {}.'.format(d))
 
 
 def split_file_extension(filepath):
@@ -77,339 +90,29 @@ def split_file_extension(filepath):
     """
 
     split_filepath = filepath.split('.')
-    base = ''.join(split_filepath[:-1])
-    extension = split_filepath[-1]
-    return base, extension
+    return ''.join(split_filepath[:-1]), split_filepath[-1]
 
 
-def mark_filename(fname, mark, suffix):
+def mark_filename(filepath, mark, suffix):
     """
     Convert fname.suffix to fname.mark.suffix.
-    :param fname: str;
+    :param filepath: str;
     :param mark: str;
     :param suffix: str;
     :return: str;
     """
 
+    # Set up suffix to be added
     if not suffix.startswith('.'):
         suffix = '.{}'.format(suffix)
 
-    if suffix in fname:  # Suffix is found in the filename
-        i = fname.find(suffix)
-        fname = '{}.{}{}'.format(fname[:i], mark, fname[i:])
-
-        if fname.endswith('.gz'):
-            fname = fname[:-len('.gz')]
-
-    else:  # Suffix is not found in the filename
-        fname = '{}.{}{}'.format(fname, mark, suffix)
-
-    return fname
-
-
-def list_only_dirs(directory_path):
-    """
-
-    :param directory_path: str; directory with all libraries
-    :return: list; sorted list of directories in directory_path
-    """
-
-    dirs = []
-    for f in listdir(directory_path):
-        fp = join(directory_path, f)
-        if isdir(fp):
-            dirs.append(fp)
-    dirs = sorted(dirs)
-
-    return dirs
-
-
-def convert_csv_to_tsv(filepath):
-    """
-    Convert .csv file to .tsv file.
-    :param filepath: str; filepath
-    :return: None
-    """
-
-    # Open .csv
-    with open(filepath, 'rU') as input_filepath:
-        r = reader(input_filepath, dialect=excel)
-
-    # Open .tsv
-    with open(filepath.strip('.csv') + '.tsv', 'w') as output_filepath:
-        w = writer(output_filepath, dialect=excel_tab)
-
-    # Raed from .csv adn write to .tsv
-    for line in r:
-        w.writerow(line)
-
-
-def count_n_lines_in_file(filepath):
-    """
-    Count the number of lines in filepath.
-    :param filepath: str;
-    :return: int;
-    """
-
-    with open(filepath) as f:
-        i = -1
-        for i, x in enumerate(f):
-            pass
-    return i + 1
-
-
-# ======================================================================================================================
-# Compression functions
-# ======================================================================================================================
-def bgzip_tabix(fname):
-    """
-    bgzip and tabix <fname>.
-    :param fname:
-    :return: str;
-    """
-
-    if fname.endswith('.gz'):
-        if not isfile('{}.tbi'.format(fname)):  # tabixed
-            tabix(fname)
-        return fname
-    else:
-        bgzip_output_fname = bgzip(fname)
-        tabix(bgzip_output_fname)
-
-    return bgzip_output_fname
-
-
-def bgzip(fname):
-    """
-    bgzip <fname>.
-    :param fname: str;
-    :return: str;
-    """
-
-    cmd = 'bgzip -f {}'.format(fname)
-
-    run_command(cmd)
-
-    return '{}.gz'.format(fname)
-
-
-def tabix(fname):
-    """
-    tabix <fname>.
-    :param fname: str;
-    :return: str;
-    """
-
-    cmd = 'tabix -f {}'.format(fname)
-
-    run_command(cmd)
-
-    return '{}.tbi'.format(fname)
-
-
-def remove_file_family(filepath):
-    """
-    Remove filepath and its associated files.
-    :param filepath:
-    :return:
-    """
-
-    remove(filepath)
-    print_log('Removed {}.'.format(filepath))
-
-    # Remove other associated files
-    if filepath.endswith('.gz'):
-        remove('rm -rf {}.tbi'.format(filepath))
-        print_log('Removed {}.tbi.'.format(filepath))
-
-
-def convert_gzipped_to_bgzipped(gzipped_filename):
-    """
-
-    :param gzipped_filename:
-    :return: None
-    """
-
-    temp_filename = '{}_temp'.format(gzipped_filename)
-    with gzip.open(gzipped_filename, 'rt') as gzipped_file:
-        with bgzf.open(temp_filename, 'wt') as temp_bgzipped_file:
-            for line in gzipped_file:
-                temp_bgzipped_file.write(line)
-    remove(gzipped_filename)
-    rename(temp_filename, gzipped_filename)
-
-
-# ======================================================================================================================
-# .dict functions
-# ======================================================================================================================
-def read_dict(filepath, comment_prefix='#', n_skipping_rows=0, sep='\t', switch_key_and_value=False):
-    """
-    Make a dictionary from mapping_file: key<sep>value.
-    By default, 1st column is the key and the 2nd value, and use tab delimeter.
-    :param filepath:
-    :param comment_prefix: str;
-    :param n_skipping_rows: int;
-    :param sep:
-    :param switch_key_and_value:
-    :return: dict;
-    """
-
-    # Set column for key and value
-    if switch_key_and_value:
-        column_names = ['value', 'key']
-    else:
-        column_names = ['key', 'value']
-
-    # Load mapping info; drop rows with NaN and duplicates
-    mapping = read_csv(filepath, comment=comment_prefix, skiprows=n_skipping_rows, sep=sep, names=column_names).dropna()
-
-    d = {}
-    for i, s in mapping.iterrows():
-        # Key and value
-        d[s.ix['key']] = s.ix['value']
-
-    return d
-
-
-def write_dict(dictionary, filepath, key_name, value_name, sep='\t'):
-    """
-    Write a dictionary as a 2-column-tab-separated file.
-    :param dictionary: dict;
-    :param filepath: str;
-    :param key_name; str;
-    :param value_name; str;
-    :param sep: str; separator
-    :return: None
-    """
-
-    with open(filepath, 'w') as f:
-        f.write('{}\t{}\n'.format(key_name, value_name))
-        for k, v in sorted(dictionary.items()):
-            f.write('{}{}{}\n'.format(k, sep, v))
-
-
-# ======================================================================================================================
-# .colormap functions
-# ======================================================================================================================
-def read_colormap(filepath):
-    """
-
-    :param filepath:
-    :return:
-    """
-
-    rgbas = []
-    with open(filepath, 'r') as f:
-        for l in f:
-            rgbas.append([float(v) for v in l.split()])
-    return ListedColormap(rgbas)
-
-
-def write_colormap(cmap, filepath):
-    """
-
-    :param cmap:
-    :param filepath:
-    :return:
-    """
-
-    with open(filepath, 'w') as f:
-        for i in range(cmap.N):
-            f.writelines('\t'.join([str(c) for c in cmap(i)]) + '\n')
-
-
-# ======================================================================================================================
-# .data_table.txt functions
-# ======================================================================================================================
-def load_data_table(data_table, indices=None):
-    """
-
-    :param data_table: str or DataFrame; path to a .data_table.txt or data_table DataFrame
-    :param indices: dict;
-        {
-            'mutation': {
-                'index': ['GNAS_MUT', 'KRAS_MUT'],
-                'alias': ['GNAS Mutation', 'KRAS Mutation']
-            },
-            'gene_expression': {
-                'index': ['EGFR'],
-                'alias': ['EGFR Expression']
-            },
-            ...
-        }
-    :return: dict;
-        {
-            data_name: {
-                'dataframe': DataFrame,
-                'data_type': str ('continuous', 'categorical', or 'binary'),
-                'emphasis': str ('high' or 'low'),
-            }
-            ...
-        }
-    """
-
-    if isinstance(data_table, str):
-        data_table = read_data_table(data_table)
-
-    data_bundle = {}
-    for data_name, (data_type, emphasis, filepath) in data_table.iterrows():  # For each data
-        if isinstance(indices, dict) and data_name not in indices:
-            print_log('Skipped loading {} because indices were not specified.'.format(data_name))
-            continue
-
-        print_log('Making data bundle for {} ...'.format(data_name))
-        data_bundle[data_name] = {}
-        df = read_gct(join(filepath))
-        print_log('\tLoaded {}.'.format(filepath))
-        if isinstance(indices, dict):  # If indices is given
-            if data_name in indices:  # Keep specific indices
-                index = indices[data_name]['index']
-                df = df.ix[index, :]
-
-                # Save the original index names
-                data_bundle[data_name]['original_index'] = index
-
-                if 'alias' in indices[data_name]:  # Rename these specific indices
-                    df.index = indices[data_name]['alias']
-
-                print('\tSelected rows: {}.'.format(df.index.tolist()))
-
-        data_bundle[data_name]['dataframe'] = df
-        data_bundle[data_name]['data_type'] = data_type
-        data_bundle[data_name]['emphasis'] = emphasis
-
-    return data_bundle
-
-
-def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasis', 'Filepath')):
-    """
-    Write <data> to filepath.
-    :param data: iterable of tuples;
-        [('mutation', 'binary', 'high', 'filepath),
-        ('gene_expression', 'continuous', 'high', 'filepath),
-        ('drug_sensitivity', 'continuous', 'low', 'filepath),
-        ...]
-    :param filepath: str; file path to a .data_table (.data_table suffix will be automatically added if not present)
-    :param columns: iterable;
-    :return: None
-    """
-
-    df = DataFrame(data)
-    df.columns = columns
-    df.set_index(columns[0], inplace=True)
-    if not filepath.endswith('data_table.txt'):
-        filepath = '{}.data_table.txt'.format(filepath)
-    df.to_csv(filepath, sep='\t')
-
-
-def read_data_table(filepath):
-    """
-    Read .data_table.
-    :param filepath: str; file path to a .data_table
-    :return: DataFrame
-    """
-
-    return read_csv(filepath, sep='\t', index_col=0)
+    if suffix in filepath:  # suffix is found
+        i = filepath.find(suffix)
+        filepath = '{}.{}{}'.format(filepath[:i], mark, filepath[i:])
+    else:  # suffix is not found
+        filepath = '{}.{}{}'.format(filepath, mark, suffix)
+
+    return filepath
 
 
 # ======================================================================================================================
@@ -514,7 +217,101 @@ def write_gct(matrix, filepath, descriptions=None):
 
 
 # ======================================================================================================================
-# GMT functions
+# .data_table.txt functions
+# ======================================================================================================================
+def load_data_table(data_table, indices=None):
+    """
+
+    :param data_table: str or DataFrame; path to a .data_table.txt or data_table DataFrame
+    :param indices: dict;
+        {
+            'mutation': {
+                'index': ['GNAS_MUT', 'KRAS_MUT'],
+                'alias': ['GNAS Mutation', 'KRAS Mutation']
+            },
+            'gene_expression': {
+                'index': ['EGFR'],
+                'alias': ['EGFR Expression']
+            },
+            ...
+        }
+    :return: dict;
+        {
+            data_name: {
+                'dataframe': DataFrame,
+                'data_type': str ('continuous', 'categorical', or 'binary'),
+                'emphasis': str ('high' or 'low'),
+            }
+            ...
+        }
+    """
+
+    if isinstance(data_table, str):
+        data_table = read_data_table(data_table)
+
+    data_bundle = {}
+    for data_name, (data_type, emphasis, filepath) in data_table.iterrows():  # For each data
+        if isinstance(indices, dict) and data_name not in indices:
+            print('Skipped loading {} because indices were not specified.'.format(data_name))
+            continue
+
+        print('Making data bundle for {} ...'.format(data_name))
+        data_bundle[data_name] = {}
+        df = read_gct(join(filepath))
+        print('\tLoaded {}.'.format(filepath))
+        if isinstance(indices, dict):  # If indices is given
+            if data_name in indices:  # Keep specific indices
+                index = indices[data_name]['index']
+                df = df.ix[index, :]
+
+                # Save the original index names
+                data_bundle[data_name]['original_index'] = index
+
+                if 'alias' in indices[data_name]:  # Rename these specific indices
+                    df.index = indices[data_name]['alias']
+
+                print('\tSelected rows: {}.'.format(df.index.tolist()))
+
+        data_bundle[data_name]['dataframe'] = df
+        data_bundle[data_name]['data_type'] = data_type
+        data_bundle[data_name]['emphasis'] = emphasis
+
+    return data_bundle
+
+
+def read_data_table(filepath):
+    """
+    Read .data_table.
+    :param filepath: str; file path to a .data_table
+    :return: DataFrame
+    """
+
+    return read_csv(filepath, sep='\t', index_col=0)
+
+
+def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasis', 'Filepath')):
+    """
+    Write <data> to filepath.
+    :param data: iterable of tuples;
+        [('mutation', 'binary', 'high', 'filepath),
+        ('gene_expression', 'continuous', 'high', 'filepath),
+        ('drug_sensitivity', 'continuous', 'low', 'filepath),
+        ...]
+    :param filepath: str; file path to a .data_table (.data_table suffix will be automatically added if not present)
+    :param columns: iterable;
+    :return: None
+    """
+
+    df = DataFrame(data)
+    df.columns = columns
+    df.set_index(columns[0], inplace=True)
+    if not filepath.endswith('data_table.txt'):
+        filepath = '{}.data_table.txt'.format(filepath)
+    df.to_csv(filepath, sep='\t')
+
+
+# ======================================================================================================================
+# .gmt functions
 # ======================================================================================================================
 def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, collapse=False):
     """
@@ -617,7 +414,7 @@ def write_gmt(gmt, filepath):
 
 
 # ======================================================================================================================
-# RNK functions
+# .rnk functions
 # ======================================================================================================================
 def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None, comment=None):
     """
@@ -656,7 +453,7 @@ def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None
 # ======================================================================================================================
 # GEO functions
 # ======================================================================================================================
-def load_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!Sample_characteristics_ch1')):
+def read_geo_annotation(filepath, annotation_names=('!Sample_geo_accession', '!Sample_characteristics_ch1')):
     """
     Parse rows of GEO file.
     If the 1st column (annotation name) matches any of the annotation names in annotation_names,
@@ -744,6 +541,7 @@ def read_fpkm_tracking(filepath, signature=None):
 # ======================================================================================================================
 # .g*f functions
 # ======================================================================================================================
+# TODO: merge
 def read_gff3(feature_filename, sources, types):
     """
     Parse feature_filename and return:
@@ -856,3 +654,104 @@ def read_gtf(feature_filename, sources, types):
                         feature_to_id[gene_name] = ensembl_id
 
     return features, feature_to_id
+
+
+# ======================================================================================================================
+# .vcf functions
+# ======================================================================================================================
+def read_vcf(filepath):
+    """
+    Read a VCF.
+    :param filepath: str;
+    :return: dict;
+    """
+
+    vcf = {
+        'meta_information': {
+            'INFO': {},
+            'FILTER': {},
+            'FORMAT': {},
+            'reference': {},
+        },
+        'header': [],
+        'samples': [],
+        'data': None,
+    }
+
+    # Open VCF
+    try:
+        f = open(filepath)
+        f.readline()
+        f.seek(0)
+        bgzipped = False
+    except UnicodeDecodeError:
+        f = bgzf.open(filepath)
+        bgzipped = True
+
+    for row in f:
+
+        if bgzipped:
+            row = row.decode()
+        row = row.strip()
+
+        if row.startswith('##'):  # Meta-information
+            # Remove '##' prefix
+            row = row[2:]
+
+            # Find the 1st '='
+            ei = row.find('=')
+
+            # Get field name and field line
+            fn, fl = row[:ei], row[ei + 1:]
+
+            if fl.startswith('<') and fl.endswith('>'):
+                # Strip '<' and '>'
+                fl = fl[1:-1]
+
+                # Split field line
+                fl_split = split_ignoring_inside_quotes(fl, ',')
+
+                # Get ID
+                id_ = fl_split[0].split('=')[1]
+
+                # Parse field line
+                fd_v = {}
+                for s in fl_split[1:]:
+                    ei = s.find('=')
+                    k, v = s[:ei], s[ei + 1:]
+                    fd_v[k] = remove_nested_quotes(v)
+
+                # Save
+                if fn in vcf['meta_information']:
+                    if id_ in vcf['meta_information'][fn]:
+                        raise ValueError('Duplicated ID {}.'.format(id_))
+                    else:
+                        vcf['meta_information'][fn][id_] = fd_v
+                else:
+                    vcf['meta_information'][fn] = {id_: fd_v}
+            else:
+                print('Didn\'t parse: {}.'.format(fl))
+
+        elif row.startswith('#CHROM'):  # Header
+            # Remove '#' prefix
+            row = row[1:]
+
+            # Get header line number
+            vcf['header'] = row.split('\t')
+            vcf['samples'] = vcf['header'][9:]
+        else:
+            break
+
+    # Close VCF
+    f.close()
+
+    # Read data
+    vcf['data'] = read_csv(filepath, sep='\t', comment='#', header=None, names=vcf['header'])
+
+    print('********* VCF dict (without data) *********')
+    for k, v in vcf.items():
+        if k != 'data':
+            pprint({k: v}, compact=True, width=110)
+    print('*******************************************')
+
+    return vcf
