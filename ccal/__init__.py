@@ -21,7 +21,6 @@ from .support.system import install_libraries
 
 install_libraries([
     'rpy2',
-    'biopython',
     'plotly',
 ])
 
