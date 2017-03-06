@@ -25,6 +25,6 @@ install_libraries([
     'plotly',
 ])
 
-from .computational_cancer_biology import association, imv, oncogps
+from .computational_cancer_biology import association, mutual_vulnerability, oncogps
 from .support.plot import plot_heatmap, plot_clustermap, plot_points, plot_distribution, plot_violin_box_or_bar
 from .support.file import read_gct, write_gct, read_gmt, read_gmts, write_rnk, load_data_table, write_data_table
