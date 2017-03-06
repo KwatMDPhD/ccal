@@ -11,10 +11,8 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from pandas import DataFrame
 from sklearn.manifold import MDS
 
-from .normalize import normalize_dataframe_or_series
 from .score import compute_similarity_matrix
 from .. import RANDOM_SEED
 

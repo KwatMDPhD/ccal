@@ -25,10 +25,9 @@ from pandas import Series, DataFrame
 from seaborn import set_style, despine, distplot, barplot, violinplot, boxplot, heatmap, clustermap
 
 from .d1 import discretize_categories
-from .d2 import get_dendrogram_leaf_indices
+from .d2 import get_dendrogram_leaf_indices, normalize_2d_or_1d
 from .file import establish_filepath
 from .str_ import title_str, untitle_str
-from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
 
 # ======================================================================================================================
@@ -300,7 +299,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     df = dataframe.copy()
 
     if normalization_method:
-        df = normalize_dataframe_or_series(df, normalization_method, axis=normalization_axis).clip(-max_std, max_std)
+        df = normalize_2d_or_1d(df, normalization_method, axis=normalization_axis).clip(-max_std, max_std)
     values = unique(df.values)
 
     if any(row_annotation) or any(column_annotation):

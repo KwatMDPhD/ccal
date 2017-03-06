@@ -13,12 +13,13 @@ Authors:
 
 from numpy import array, ones, isnan
 from numpy.random import seed, shuffle
-from pandas import DataFrame, concat
+from pandas import DataFrame, concat, Series
 from scipy.cluster.hierarchy import linkage, dendrogram
 
+from ccal.support.d1 import normalize_1d
 from .. import RANDOM_SEED
-from ..support.log import print_log
 from ..support.d1 import drop_na_1d
+from ..support.log import print_log
 
 
 def drop_na_2d(df, axis='both', how='all'):
@@ -210,3 +211,91 @@ def split_dataframe(df, n_split, axis=0):
         splits.append(df.ix[i:])
 
     return splits
+
+
+def normalize_2d_or_1d(dataframe, method, axis=None, n_ranks=10000,
+                       normalizing_mean=None, normalizing_std=None,
+                       normalizing_min=None, normalizing_max=None,
+                       normalizing_size=None):
+    """
+    Normalize a DataFrame or Series.
+    :param dataframe: DataFrame or Series;
+    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
+    :param n_ranks: number; normalization factor for rank normalization: rank / size * n_ranks
+    :param axis: int; None for global, 0 for by-column, and 1 for by-row normalization
+    :param normalizing_mean:
+    :param normalizing_std:
+    :param normalizing_min:
+    :param normalizing_max:
+    :param normalizing_size:
+    :return: DataFrame or Series; normalized DataFrame or Series
+    """
+
+    if isinstance(dataframe, Series):  # Series
+        return normalize_1d(dataframe, method, n_ranks=n_ranks,
+                            normalizing_mean=normalizing_mean, normalizing_std=normalizing_std,
+                            normalizing_min=normalizing_min, normalizing_max=normalizing_max,
+                            normalizing_size=normalizing_size)
+
+    elif isinstance(dataframe, DataFrame):
+
+        if axis == 0 or axis == 1:  # Normalize Series by axis
+            return dataframe.apply(normalize_1d, **{'method': method, 'n_ranks': n_ranks,
+                                                    'normalizing_mean': normalizing_mean,
+                                                    'normalizing_std': normalizing_std,
+                                                    'normalizing_min': normalizing_min,
+                                                    'normalizing_max': normalizing_max,
+                                                    'normalizing_size': normalizing_size}, axis=axis)
+
+        else:  # Normalize globally
+
+            # Get size
+            if normalizing_size is not None:
+                size = normalizing_size
+            else:
+                size = dataframe.values.size
+
+            if method == '-0-':
+
+                # Get mean
+                if normalizing_mean is not None:
+                    mean = normalizing_mean
+                else:
+                    mean = dataframe.values.mean()
+
+                # Get STD
+                if normalizing_std is not None:
+                    std = normalizing_std
+                else:
+                    std = dataframe.values.std()
+
+                # Normalize
+                if std == 0:
+                    print('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
+                    return dataframe / size
+                else:
+                    return (dataframe - mean) / std
+
+            elif method == '0-1':
+
+                # Get min
+                if normalizing_min is not None:
+                    min_ = normalizing_min
+                else:
+                    min_ = dataframe.values.min()
+
+                # Get max
+                if normalizing_max is not None:
+                    max_ = normalizing_max
+                else:
+                    max_ = dataframe.values.max()
+
+                # Normalize
+                if max_ - min_ == 0:
+                    print('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
+                    return dataframe / size
+                else:
+                    return (dataframe - min_) / (max_ - min_)
+
+            elif method == 'rank':
+                raise ValueError('Normalizing combination of \'rank\' & axis=\'all\' has not been implemented yet.')

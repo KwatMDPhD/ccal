@@ -31,13 +31,12 @@ from ..machine_learning.cluster import hierarchical_consensus_cluster, nmf_conse
 from ..machine_learning.fit import fit_matrix
 from ..machine_learning.matrix_decompose import save_nmf_w_h
 from ..machine_learning.multidimentional_scale import mds
-from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
 from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
-from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
-from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
+from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d, normalize_2d_or_1d
+from ..support.file import read_gct, establish_filepath, write_dict, load_gct, write_gct
 from ..support.log import print_log
 from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, plot_heatmap, plot_points, \
     plot_nmf, assign_colors_to_states, save_plot
@@ -77,7 +76,7 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
 
     # Rank normalize the input matrix by column
     # TODO: try changing n_ranks (choose automatically)
-    matrix = normalize_dataframe_or_series(matrix, 'rank', n_ranks=10000, axis=0)
+    matrix = normalize_2d_or_1d(matrix, 'rank', n_ranks=10000, axis=0)
     plot_heatmap(matrix, title='(Rank-Normalized) Matrix to be Decomposed', xlabel='Sample', ylabel='Feature',
                  xticklabels=False, yticklabels=False, cluster=True)
 
@@ -102,8 +101,7 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
         # Save NMF decompositions
         save_nmf_w_h(nmf_results, join(directory_path, 'matrices', ''))
         # Save cophenetic correlation coefficients
-        write_dict(cophenetic_correlation_coefficient,
-                   join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+        write_dict(cophenetic_correlation_coefficient, join(directory_path, 'cophenetic_correlation_coefficients.txt'),
                    key_name='k', value_name='cophenetic_correlation_coefficient')
 
         # Saving filepath for cophenetic correlation coefficients figure
@@ -178,7 +176,7 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
 
     # Rank normalize the A matrix by column
     # TODO: try changing n_ranks (choose automatically)
-    a_matrix = normalize_dataframe_or_series(a_matrix, 'rank', n_ranks=10000, axis=0)
+    a_matrix = normalize_2d_or_1d(a_matrix, 'rank', n_ranks=10000, axis=0)
 
     # Normalize the W matrix by column
     # TODO: improve the normalization (why this normalization?)
@@ -303,8 +301,8 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=40,
         matrix = read_gct(matrix)
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
-    matrix = normalize_dataframe_or_series(normalize_dataframe_or_series(matrix, '-0-', axis=1).clip(-max_std, max_std),
-                                           method='0-1', axis=1)
+    matrix = normalize_2d_or_1d(normalize_2d_or_1d(matrix, '-0-', axis=1).clip(-max_std, max_std),
+                                method='0-1', axis=1)
 
     # Hierarchical-consensus cluster
     distance_matrix, clusterings, cophenetic_correlation_coefficients = \
@@ -318,8 +316,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=40,
         # Save results
         distance_matrix.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
         write_gct(clusterings, join(directory_path, 'clusterings.gct'))
-        write_dict(cophenetic_correlation_coefficients,
-                   join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+        write_dict(cophenetic_correlation_coefficients, join(directory_path, 'cophenetic_correlation_coefficients.txt'),
                    key_name='k', value_name='cophenetic_correlation_coefficient')
 
         # Set up filepath to save plots
@@ -459,7 +456,7 @@ def make_oncogps(training_h,
 
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
 
-    training_h = normalize_dataframe_or_series(training_h, '-0-', axis=1)
+    training_h = normalize_2d_or_1d(training_h, '-0-', axis=1)
 
     training_h = training_h.clip(-std_max, std_max)
 
@@ -470,7 +467,7 @@ def make_oncogps(training_h,
         normalizing_min = None
         normalizing_max = None
 
-    training_h = normalize_dataframe_or_series(training_h, '0-1', axis=1)
+    training_h = normalize_2d_or_1d(training_h, '0-1', axis=1)
 
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
 
@@ -500,7 +497,7 @@ def make_oncogps(training_h,
             dissimilarity = 'euclidean'
         component_coordinates = mds(training_h, dissimilarity=dissimilarity, random_state=mds_seed)
         component_coordinates = DataFrame(component_coordinates, index=training_h.index, columns=['x', 'y'])
-        component_coordinates = normalize_dataframe_or_series(component_coordinates, '-0-', axis=1)
+        component_coordinates = normalize_2d_or_1d(component_coordinates, '-0-', axis=1)
 
     # ==================================================================================================================
     # Get training component power
@@ -593,17 +590,17 @@ def make_oncogps(training_h,
         if testing_h_normalization:
             testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
 
-            testing_h = normalize_dataframe_or_series(testing_h, '-0-', axis=1,
-                                                      normalizing_size=normalizing_size,
-                                                      normalizing_mean=normalizing_mean,
-                                                      normalizing_std=normalizing_std)
+            testing_h = normalize_2d_or_1d(testing_h, '-0-', axis=1,
+                                           normalizing_size=normalizing_size,
+                                           normalizing_mean=normalizing_mean,
+                                           normalizing_std=normalizing_std)
 
             testing_h = testing_h.clip(-std_max, std_max)
 
-            testing_h = normalize_dataframe_or_series(testing_h, '0-1', axis=1,
-                                                      normalizing_size=normalizing_size,
-                                                      normalizing_min=normalizing_min,
-                                                      normalizing_max=normalizing_max)
+            testing_h = normalize_2d_or_1d(testing_h, '0-1', axis=1,
+                                           normalizing_size=normalizing_size,
+                                           normalizing_min=normalizing_min,
+                                           normalizing_max=normalizing_max)
 
             testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
 
@@ -835,7 +832,7 @@ def _compute_grid_annotations_and_probabilities(samples, annotation, n_grids, sv
     :param n_grids:
     :return:
     """
-    annotation = normalize_dataframe_or_series(annotation, '-0-')
+    annotation = normalize_2d_or_1d(annotation, '-0-')
 
     svr_state = SVR(kernel=svr_kernel)
     svr_probability = SVR(kernel=svr_kernel)
@@ -1163,8 +1160,8 @@ def _plot_onco_gps(components,
             if samples.ix[:, 'annotation'].dtype == object:
                 raise TypeError('Continuous annotation values must be numbers (float, int, etc).')
             # Normalize annotation
-            samples.ix[:, 'annotation_for_plot'] = normalize_dataframe_or_series(samples.ix[:, 'annotation'],
-                                                                                 '-0-').clip(-std_max, std_max)
+            samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:, 'annotation'],
+                                                                      '-0-').clip(-std_max, std_max)
             # Get annotation statistics
             annotation_min = -std_max
             annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
@@ -1252,7 +1249,7 @@ def _plot_onco_gps(components,
             cax.set_title('Normalized Values', **{'fontsize': 16, 'weight': 'bold'})
 
     else:  # Plot samples using state colors
-        normalized_component_ratio = normalize_dataframe_or_series(samples.ix[:, 'component_ratio'], '0-1')
+        normalized_component_ratio = normalize_2d_or_1d(samples.ix[:, 'component_ratio'], '0-1')
         if 1 < normalized_component_ratio.unique().size:
             samples.ix[:, 'component_ratio_for_plot'] = normalized_component_ratio
         else:
@@ -1308,9 +1305,9 @@ def make_oncogps_in_3d(training_h,
     training_h.index = training_h.index.astype(str)
 
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
-    training_h = normalize_dataframe_or_series(training_h, '-0-', axis=1)
+    training_h = normalize_2d_or_1d(training_h, '-0-', axis=1)
     training_h = training_h.clip(-std_max, std_max)
-    training_h = normalize_dataframe_or_series(training_h, '0-1', axis=1)
+    training_h = normalize_2d_or_1d(training_h, '0-1', axis=1)
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
 
     # ==================================================================================================================
@@ -1324,7 +1321,7 @@ def make_oncogps_in_3d(training_h,
         dissimilarity = 'euclidean'
     components = mds(training_h, n_components=3, dissimilarity=dissimilarity, random_state=mds_seed)
     components = DataFrame(components, index=training_h.index, columns=['x', 'y', 'z'])
-    components = normalize_dataframe_or_series(components, '-0-', axis=0)
+    components = normalize_2d_or_1d(components, '-0-', axis=0)
 
     # ==================================================================================================================
     # Get training component power

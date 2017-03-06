@@ -115,6 +115,22 @@ def mark_filename(filepath, mark, suffix):
     return filepath
 
 
+def write_dict(dict_, filepath, key_name, value_name):
+    """
+    Write dictionary as 2 column table.
+    :param dict_: dict;
+    :param filepath: str;
+    :param key_name: str;
+    :param value_name: str;
+    :return: None
+    """
+
+    s = Series(dict_)
+    s.index.name = key_name
+    s.name = value_name
+    s.to_csv(filepath, sep='\t')
+
+
 # ======================================================================================================================
 # .gct functions
 # ======================================================================================================================
@@ -539,9 +555,109 @@ def read_fpkm_tracking(filepath, signature=None):
 
 
 # ======================================================================================================================
+# .vcf functions
+# ======================================================================================================================
+def read_vcf(filepath):
+    """
+    Read a VCF.
+    :param filepath: str;
+    :return: dict;
+    """
+
+    vcf = {
+        'meta_information': {
+            'INFO': {},
+            'FILTER': {},
+            'FORMAT': {},
+            'reference': {},
+        },
+        'header': [],
+        'samples': [],
+        'data': None,
+    }
+
+    # Open VCF
+    try:
+        f = open(filepath)
+        f.readline()
+        f.seek(0)
+        bgzipped = False
+    except UnicodeDecodeError:
+        f = bgzf.open(filepath)
+        bgzipped = True
+
+    for row in f:
+
+        if bgzipped:
+            row = row.decode()
+        row = row.strip()
+
+        if row.startswith('##'):  # Meta-information
+            # Remove '##' prefix
+            row = row[2:]
+
+            # Find the 1st '='
+            ei = row.find('=')
+
+            # Get field name and field line
+            fn, fl = row[:ei], row[ei + 1:]
+
+            if fl.startswith('<') and fl.endswith('>'):
+                # Strip '<' and '>'
+                fl = fl[1:-1]
+
+                # Split field line
+                fl_split = split_ignoring_inside_quotes(fl, ',')
+
+                # Get ID
+                id_ = fl_split[0].split('=')[1]
+
+                # Parse field line
+                fd_v = {}
+                for s in fl_split[1:]:
+                    ei = s.find('=')
+                    k, v = s[:ei], s[ei + 1:]
+                    fd_v[k] = remove_nested_quotes(v)
+
+                # Save
+                if fn in vcf['meta_information']:
+                    if id_ in vcf['meta_information'][fn]:
+                        raise ValueError('Duplicated ID {}.'.format(id_))
+                    else:
+                        vcf['meta_information'][fn][id_] = fd_v
+                else:
+                    vcf['meta_information'][fn] = {id_: fd_v}
+            else:
+                print('Didn\'t parse: {}.'.format(fl))
+
+        elif row.startswith('#CHROM'):  # Header
+            # Remove '#' prefix
+            row = row[1:]
+
+            # Get header line number
+            vcf['header'] = row.split('\t')
+            vcf['samples'] = vcf['header'][9:]
+        else:
+            break
+
+    # Close VCF
+    f.close()
+
+    # Read data
+    vcf['data'] = read_csv(filepath, sep='\t', comment='#', header=None, names=vcf['header'])
+
+    print('********* VCF dict (without data) *********')
+    for k, v in vcf.items():
+        if k != 'data':
+            pprint({k: v}, compact=True, width=110)
+    print('*******************************************')
+
+    return vcf
+
+
+# ======================================================================================================================
 # .g*f functions
 # ======================================================================================================================
-# TODO: merge
 def read_gff3(feature_filename, sources, types):
     """
     Parse feature_filename and return:
@@ -654,104 +770,3 @@ def read_gtf(feature_filename, sources, types):
                         feature_to_id[gene_name] = ensembl_id
 
     return features, feature_to_id
-
-
-# ======================================================================================================================
-# .vcf functions
-# ======================================================================================================================
-def read_vcf(filepath):
-    """
-    Read a VCF.
-    :param filepath: str;
-    :return: dict;
-    """
-
-    vcf = {
-        'meta_information': {
-            'INFO': {},
-            'FILTER': {},
-            'FORMAT': {},
-            'reference': {},
-        },
-        'header': [],
-        'samples': [],
-        'data': None,
-    }
-
-    # Open VCF
-    try:
-        f = open(filepath)
-        f.readline()
-        f.seek(0)
-        bgzipped = False
-    except UnicodeDecodeError:
-        f = bgzf.open(filepath)
-        bgzipped = True
-
-    for row in f:
-
-        if bgzipped:
-            row = row.decode()
-        row = row.strip()
-
-        if row.startswith('##'):  # Meta-information
-            # Remove '##' prefix
-            row = row[2:]
-
-            # Find the 1st '='
-            ei = row.find('=')
-
-            # Get field name and field line
-            fn, fl = row[:ei], row[ei + 1:]
-
-            if fl.startswith('<') and fl.endswith('>'):
-                # Strip '<' and '>'
-                fl = fl[1:-1]
-
-                # Split field line
-                fl_split = split_ignoring_inside_quotes(fl, ',')
-
-                # Get ID
-                id_ = fl_split[0].split('=')[1]
-
-                # Parse field line
-                fd_v = {}
-                for s in fl_split[1:]:
-                    ei = s.find('=')
-                    k, v = s[:ei], s[ei + 1:]
-                    fd_v[k] = remove_nested_quotes(v)
-
-                # Save
-                if fn in vcf['meta_information']:
-                    if id_ in vcf['meta_information'][fn]:
-                        raise ValueError('Duplicated ID {}.'.format(id_))
-                    else:
-                        vcf['meta_information'][fn][id_] = fd_v
-                else:
-                    vcf['meta_information'][fn] = {id_: fd_v}
-            else:
-                print('Didn\'t parse: {}.'.format(fl))
-
-        elif row.startswith('#CHROM'):  # Header
-            # Remove '#' prefix
-            row = row[1:]
-
-            # Get header line number
-            vcf['header'] = row.split('\t')
-            vcf['samples'] = vcf['header'][9:]
-        else:
-            break
-
-    # Close VCF
-    f.close()
-
-    # Read data
-    vcf['data'] = read_csv(filepath, sep='\t', comment='#', header=None, names=vcf['header'])
-
-    print('********* VCF dict (without data) *********')
-    for k, v in vcf.items():
-        if k != 'data':
-            pprint({k: v}, compact=True, width=110)
-    print('*******************************************')
-
-    return vcf
