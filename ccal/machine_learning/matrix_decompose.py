@@ -17,6 +17,7 @@ from pandas import DataFrame
 from sklearn.decomposition import NMF
 
 from .. import RANDOM_SEED
+from ..support.file import write_gct
 
 
 def nmf(matrix_, ks, algorithm='Lee & Seung',
@@ -121,3 +122,16 @@ def nmf_div(V, k, n_max_iterations=1000, random_seed=RANDOM_SEED):
 
     return W, H, err
 
+
+def save_nmf_results(nmf_results, filepath_prefix):
+    """
+    Save NMF decompositions.
+    :param nmf_results: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
+                              {k: Cophenetic Correlation Coefficient}
+    :param filepath_prefix: str; filepath_prefix_nmf_k{k}_{w, h}.gct and will be saved
+    :return: None
+    """
+
+    for k, v in nmf_results.items():
+        write_gct(v['w'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
+        write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))

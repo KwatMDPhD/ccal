@@ -29,7 +29,7 @@ from .. import RANDOM_SEED
 from ..machine_learning.classify import classify
 from ..machine_learning.cluster import hierarchical_consensus_cluster, nmf_consensus_cluster
 from ..machine_learning.fit import fit_matrix
-from ..machine_learning.matrix_decompose import save_nmf_w_h
+from ..machine_learning.matrix_decompose import save_nmf_results
 from ..machine_learning.multidimentional_scale import mds
 from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
@@ -99,7 +99,7 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
 
         print_log('Saving NMF decompositions and cophenetic correlation coefficients ...')
         # Save NMF decompositions
-        save_nmf_w_h(nmf_results, join(directory_path, 'matrices', ''))
+        save_nmf_results(nmf_results, join(directory_path, 'matrices', ''))
         # Save cophenetic correlation coefficients
         write_dict(cophenetic_correlation_coefficient, join(directory_path, 'cophenetic_correlation_coefficients.txt'),
                    key_name='k', value_name='cophenetic_correlation_coefficient')
