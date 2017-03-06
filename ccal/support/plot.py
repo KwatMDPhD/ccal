@@ -528,9 +528,9 @@ def assign_colors_to_states(states, colors=()):
         raise ValueError('Error with states.')
 
     if isinstance(colors, ListedColormap) or isinstance(colors, LinearSegmentedColormap):  # Use given colormap
-        colors = [colors[s] for s in unique_states]
+        colors = [colors(s) for s in unique_states]
 
-    elif any(colors):  # Use given colors to make a colormap
+    elif len(colors):  # Use given colors to make a colormap
         color_converter = ColorConverter()
         colors = [tuple(c) for c in color_converter.to_rgba_array(colors)]
 

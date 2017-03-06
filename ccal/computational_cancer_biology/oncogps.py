@@ -411,7 +411,7 @@ def make_oncogps(training_h,
                  delaunay_linewidth=0.7,
                  delaunay_linecolor='#000000',
 
-                 colors=(),
+                 state_colors=(),
                  bad_color='#000000',
                  max_background_saturation=1,
 
@@ -425,7 +425,7 @@ def make_oncogps(training_h,
                  sample_markersize=23,
                  sample_markeredgewidth=0.92,
                  sample_markeredgecolor='#000000',
-                 sample_name_size=16,
+                 sample_name_fontsize=16,
                  sample_name_color=None,
 
                  legend_markersize=16,
@@ -684,7 +684,7 @@ def make_oncogps(training_h,
                    delaunay_linewidth=delaunay_linewidth,
                    delaunay_linecolor=delaunay_linecolor,
 
-                   colors=colors,
+                   colors=state_colors,
                    bad_color=bad_color,
                    max_background_saturation=max_background_saturation,
 
@@ -698,7 +698,7 @@ def make_oncogps(training_h,
                    sample_markersize=sample_markersize,
                    sample_markeredgewidth=sample_markeredgewidth,
                    sample_markeredgecolor=sample_markeredgecolor,
-                   sample_name_size=sample_name_size,
+                   sample_name_size=sample_name_fontsize,
                    sample_name_color=sample_name_color,
 
                    legend_markersize=legend_markersize,
@@ -1278,21 +1278,32 @@ def make_oncogps_in_3d(training_h,
 
                        std_max=3,
 
-                       informational_mds=True,
                        mds_seed=RANDOM_SEED,
 
-                       n_pulls=None,
                        power=None,
                        fit_min=0,
                        fit_max=2,
                        power_min=1,
                        power_max=5,
 
-                       samples_to_plot=None,
+                       samples_to_plot=(),
 
                        training_annotation=(),
 
-                       colors=(),
+                       state_colors=(),
+
+                       component_marker_size=26,
+                       component_marker_opacity=0.92,
+                       component_marker_line_width=1.9,
+                       component_marker_line_color='#20D9BA',
+                       component_marker_color='#000726',
+                       component_textfont_size=26,
+                       component_textfont_color='#20D9BA',
+
+                       sample_marker_size=13,
+                       sample_marker_opacity=0.92,
+                       sample_marker_line_width=0.19,
+                       sample_marker_line_color='#9017E6',
                        ):
     # ==================================================================================================================
     # Process training H matrix
@@ -1316,12 +1327,8 @@ def make_oncogps_in_3d(training_h,
     # ==================================================================================================================
     # Get training component coordinates
     # ==================================================================================================================
-    if informational_mds:
-        print_log('Computing component coordinates using informational distance ...')
-        dissimilarity = information_coefficient
-    else:
-        print_log('Computing component coordinates using Euclidean distance ...')
-        dissimilarity = 'euclidean'
+    print_log('Computing component coordinates using informational distance ...')
+    dissimilarity = information_coefficient
     components = mds(training_h, n_components=3, dissimilarity=dissimilarity, random_state=mds_seed)
     components = DataFrame(components, index=training_h.index, columns=['x', 'y', 'z'])
     components = normalize_2d_or_1d(components, '-0-', axis=0)
@@ -1331,9 +1338,7 @@ def make_oncogps_in_3d(training_h,
     #   If n_pulls is not specified, all components pull a sample
     #   If power is not specified, compute component power by fitting (power will be 1 if fitting fails)
     # ==================================================================================================================
-    if not n_pulls:
-        n_pulls = training_h.shape[0]
-
+    n_pulls = training_h.shape[0]
     if not power:
         print_log('Computing component power ...')
         if training_h.shape[0] < 4:
@@ -1362,7 +1367,7 @@ def make_oncogps_in_3d(training_h,
     # ==================================================================================================================
     # Process training annotation
     # ==================================================================================================================
-    if any(training_annotation):
+    if len(training_annotation):
         # ==============================================================================================================
         # Series annotation
         # Keep only samples in H matrix
@@ -1376,47 +1381,56 @@ def make_oncogps_in_3d(training_h,
     # Limit samples to plot
     # Plot 3D Onco-GPS
     # ==================================================================================================================
-    if samples_to_plot:
+    if len(samples_to_plot):
         training_samples = training_samples.ix[samples_to_plot, :]
 
     print_log('Plotting ...')
     import plotly
 
     # Assign colors to states
-    state_colors = assign_colors_to_states(training_samples.ix[:, 'state'].unique().size, colors=colors)
+    state_colors = assign_colors_to_states(training_samples.ix[:, 'state'].unique().size, colors=state_colors)
 
     trace_components = plotly.graph_objs.Scatter3d(
+        name='Component',
         x=components.ix[:, 'x'],
         y=components.ix[:, 'y'],
         z=components.ix[:, 'z'],
-        mode='markers',
+        text=components.index,
+        mode='markers+text',
         marker=dict(
-            size=16,
-            color='#262626',
-            opacity='0.92',
+            size=component_marker_size,
+            opacity=component_marker_opacity,
             line=dict(
-                width=0.39,
-                color='#FFFFFF',
-            )
+                width=component_marker_line_width,
+                color=component_marker_line_color,
+            ),
+            color=component_marker_color,
+        ),
+        textposition='middle center',
+        textfont=dict(
+            size=component_textfont_size,
+            color=component_textfont_color,
         )
     )
     data = [trace_components]
 
     for s in sorted(training_samples.ix[:, 'state'].unique()):
         trace = plotly.graph_objs.Scatter3d(
+            name='State {}'.format(s),
             x=training_samples.ix[training_samples.ix[:, 'state'] == s, 'x'],
             y=training_samples.ix[training_samples.ix[:, 'state'] == s, 'y'],
             z=training_samples.ix[training_samples.ix[:, 'state'] == s, 'z'],
+            text=training_samples.index[training_samples.ix[:, 'state'] == s],
             mode='markers',
-            marker={
-                'size': 10,
-                'color': 'rgba{}'.format(state_colors[s]),
-                'opacity': '0.92',
-                'line': {
-                    'width': 0.39,
-                    'color': '#FFFFFF',
-                }
-            }
+            marker=dict(
+                size=sample_marker_size,
+                opacity=sample_marker_opacity,
+                line=dict(
+                    width=sample_marker_line_width,
+                    color=sample_marker_line_color,
+                ),
+                color='rgba{}'.format(state_colors[s]),
+            ),
         )
         data.append(trace)
 

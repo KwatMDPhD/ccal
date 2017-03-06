@@ -17,7 +17,7 @@ from .score import compute_similarity_matrix
 from .. import RANDOM_SEED
 
 
-# TODO: set better default parameters
+# TODO: set better default parameters: lower eps and n_init
 def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=1000, max_iter=1000, verbose=0,
         eps=1e-3, n_jobs=1, random_state=RANDOM_SEED):
     """

@@ -25,5 +25,6 @@ install_libraries([
 ])
 
 from .computational_cancer_biology import association, oncogps, mutual_vulnerability, gsea, inference
-from .support.plot import plot_points, plot_distribution, plot_violin_box_or_bar, plot_heatmap, plot_clustermap
+from .support.plot import plot_points, plot_distribution, plot_violin_box_or_bar, plot_heatmap, plot_clustermap, \
+    plot_nmf
 from .support.file import read_gct, write_gct, read_gmt, read_gmts, write_rnk, load_data_table, write_data_table
