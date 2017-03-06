@@ -46,22 +46,25 @@ from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=40, random_seed=RANDOM_SEED,
-                      directory_path=None):
+def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=40, algorithm='Lee & Seung',
+                      random_seed=RANDOM_SEED, directory_path=None):
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
+
     :param matrix: DataFrame or str; (n_rows, n_columns) or filepath to a .gct file
-    :param how_to_drop_na: str; 'all' or 'any'
     :param ks: iterable or int; iterable of int k used for NMF
+    :param how_to_drop_na: str; 'all' or 'any'
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
+    :param algorithm: str; 'Alternating Least Squares' or 'Lee & Seung'
     :param random_seed: int;
     :param directory_path: str; directory path where
             cophenetic_correlation_coefficients{.pdf, .gct}
             matrices/nmf_k{k}_{w, h}.gct
             figures/nmf_k{k}_{w, h}.pdf
         will be saved.
+
     :return: dict and dict; {k: {w: W matrix (n_rows, k), h: H matrix (k, n_columns), e: Reconstruction Error}} and
                             {k: Cophenetic Correlation Coefficient}
     """
@@ -80,7 +83,9 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
 
     # NMF-consensus cluster (while saving 1 NMF result per k)
     nmf_results, cophenetic_correlation_coefficient = nmf_consensus_cluster(matrix, ks,
-                                                                            n_jobs=n_jobs, n_clusterings=n_clusterings,
+                                                                            n_jobs=n_jobs,
+                                                                            n_clusterings=n_clusterings,
+                                                                            algorithm=algorithm,
                                                                             random_seed=random_seed)
 
     # Make NMF directory, where
@@ -130,9 +135,6 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
         plot_nmf(nmf_results, k, filepath=filepath_nmf)
 
     return nmf_results, cophenetic_correlation_coefficient
-
-
-# TODO: move to nmf.py or file.py
 
 
 def get_w_or_h_matrix(nmf_results, k, w_or_h):
@@ -413,7 +415,7 @@ def make_oncogps(training_h,
                  delaunay_linecolor='#000000',
 
                  colors=(),
-                 bad_color='wheat',
+                 bad_color='#000000',
                  max_background_saturation=1,
 
                  n_contours=10,
@@ -1207,8 +1209,9 @@ def _plot_onco_gps(components,
             samples.sort_values('annotation_for_plot', ascending=annotation_ascending, inplace=True)
         for idx, s in samples.iterrows():
             a = s.ix['annotation_for_plot']
-            if isnull(a):
+            if isnull(a):  # Missing annotation
                 c = bad_color
+                sample_markersize = 1
             else:
                 if annotation_type == 'continuous':
                     c = cmap((a - annotation_min) / annotation_range)

@@ -16,6 +16,8 @@ from multiprocessing import current_process
 
 VERBOSE = False
 
+
+# TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
 def print_log(string, print_process=False):
     """
     Print string together with logging information.
@@ -24,7 +26,6 @@ def print_log(string, print_process=False):
     :return: None
     """
 
-    # TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
     if VERBOSE:
         to_print = '<{}> {}'.format(timestamp(time_only=True), string)
         if print_process:

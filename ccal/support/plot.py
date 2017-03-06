@@ -155,7 +155,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
                            orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
                            fliersize=5, whis=1.5, notch=False,
                            ci=95, n_boot=1000, units=None, errcolor='0.26', errwidth=None, capsize=None,
-                           violin_or_box='violin', colors=(), n_permutations=0,
+                           violin_or_box='violin', colors=(), n_permutations=1000,
                            figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None, filepath_prefix=None,
                            **kwargs):
     """
@@ -414,7 +414,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     save_plot(filepath)
 
 
-def plot_clustermap(dataframe, pivot_kws=None, method='average', metric='euclidean', z_score=None, standard_scale=None,
+def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclidean', z_score=None, standard_scale=None,
                     figsize=FIGURE_SIZE, cbar_kws=None, row_cluster=True, col_cluster=True, row_linkage=None,
                     col_linkage=None,
                     row_colors=None, col_colors=None, annotate=False, mask=None, cmap=CMAP_CONTINUOUS,

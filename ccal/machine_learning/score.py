@@ -20,7 +20,8 @@ from ..mathematics.information import information_coefficient
 from ..support.log import print_log
 
 
-def compute_association_and_pvalue(x, y, function=information_coefficient, n_permutations=100, random_seed=RANDOM_SEED):
+def compute_association_and_pvalue(x, y, function=information_coefficient, n_permutations=1000,
+                                   random_seed=RANDOM_SEED):
     """
     Compute function(x, y) and p-value using permutation test.
     :param x: array-like;

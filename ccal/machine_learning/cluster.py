@@ -128,15 +128,19 @@ def _hierarchical_cluster_consensus_matrix(consensus_matrix, force_diagonal=True
 # ======================================================================================================================
 # NMF consensus cluster
 # ======================================================================================================================
-def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
-                          init='random', solver='cd', tol=1e-4, max_iter=1500, random_seed=RANDOM_SEED, alpha=1,
-                          l1_ratio=1, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
+def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100, algorithm='Lee & Seung',
+                          init=None, solver='cd', tol=1e-7, max_iter=1000, random_seed=RANDOM_SEED, alpha=0.0,
+                          l1_ratio=0.0, verbose=0, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
     """
-    Perform NMF with k from ks and _score each NMF decomposition.
+    Perform NMF with k from ks and score each NMF decomposition.
+
     :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param n_jobs: int;
-    :param n_clusterings:
+    :param n_clusterings: int;
+
+    :param algorithm: str; 'Alternating Least Squares' or 'Lee & Seung'
+
     :param init:
     :param solver:
     :param tol:
@@ -144,12 +148,14 @@ def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
     :param random_seed:
     :param alpha:
     :param l1_ratio:
+    :param verbose:
     :param shuffle_:
     :param nls_max_iter:
     :param sparseness:
     :param beta:
     :param eta:
-    :return: dict and dict; {k: {W:w_matrix, H:h_matrix, ERROR:reconstruction_error}} and
+
+    :return: dict and dict; {k: {w:w_matrix, h:h_matrix, e:reconstruction_error}} and
                             {k: cophenetic correlation coefficient}
     """
 
@@ -165,16 +171,17 @@ def nmf_consensus_cluster(matrix, ks, n_jobs=1, n_clusterings=100,
 
     if len(ks) > 1:
         print_log('Parallelizing ...')
-        args = [[matrix, k, n_clusterings, init, solver, tol, max_iter, random_seed, alpha, l1_ratio, shuffle_,
-                 nls_max_iter, sparseness, beta, eta] for k in ks]
+        args = [[matrix, k, n_clusterings, algorithm, init, solver, tol, max_iter, random_seed, alpha, l1_ratio,
+                 verbose, shuffle_, nls_max_iter, sparseness, beta, eta] for k in ks]
 
         for nmf_result, nmf_score in parallelize(_nmf_and_score, args, n_jobs=n_jobs):
             nmf_results.update(nmf_result)
             cophenetic_correlation_coefficients.update(nmf_score)
     else:
         print_log('Not parallelizing ...')
-        nmf_result, nmf_score = _nmf_and_score([matrix, ks[0], n_clusterings, init, solver, tol, max_iter, random_seed,
-                                                alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta])
+        nmf_result, nmf_score = _nmf_and_score([matrix, ks[0], n_clusterings, algorithm, init, solver, tol, max_iter,
+                                                random_seed, alpha, l1_ratio, verbose, shuffle_, nls_max_iter,
+                                                sparseness, beta, eta])
         nmf_results.update(nmf_result)
         cophenetic_correlation_coefficients.update(nmf_score)
 
@@ -188,8 +195,8 @@ def _nmf_and_score(args):
     :return:
     """
 
-    matrix, k, n_clusterings = args[:3]
-    init, solver, tol, max_iter, random_seed, alpha, l1_ratio, shuffle_, nls_max_iter, sparseness, beta, eta = args[3:]
+    matrix, k, n_clusterings, algorithm, init, solver, tol, max_iter, random_seed, alpha, l1_ratio, verbose, shuffle_, \
+    nls_max_iter, sparseness, beta, eta = args
 
     print_log('NMF and scoring k={} ...'.format(k))
 
@@ -204,9 +211,9 @@ def _nmf_and_score(args):
             print_log('\t(k={}) NMF ({}/{}) ...'.format(k, i, n_clusterings))
 
         # NMF
-        nmf_result = nmf(matrix, k,
+        nmf_result = nmf(matrix, k, algorithm=algorithm,
                          init=init, solver=solver, tol=tol, max_iter=max_iter, random_seed=random_seed + i,
-                         alpha=alpha, l1_ratio=l1_ratio, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
+                         alpha=alpha, l1_ratio=l1_ratio, verbose=verbose, shuffle_=shuffle_, nls_max_iter=nls_max_iter,
                          sparseness=sparseness, beta=beta, eta=eta)[k]
 
         # Save the first NMF decomposition for each k
@@ -259,3 +266,4 @@ def _get_consensus(sample_x_clustering):
     coclusterings /= n_clusterings
 
     return DataFrame(coclusterings, index=sample_x_clustering.index, columns=sample_x_clustering.index)
+
