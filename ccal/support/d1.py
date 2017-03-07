@@ -155,7 +155,7 @@ def get_unique_in_order(iterable):
     return unique_in_order
 
 
-def explode(series):
+def explode_series(series):
     """
     Make a label-x-sample binary matrix from a Series.
     :param series: Series;

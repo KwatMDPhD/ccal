@@ -90,7 +90,7 @@ def hierarchical_consensus_cluster(matrix, ks, distance_matrix=None, function=in
 
         # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
         hierarchical_clustering, cophenetic_correlation_coefficient = \
-            _hierarchical_cluster_consensus_matrix(consensus_matrix, method='ward')
+            _hierarchical_cluster_consensus_matrix(consensus_matrix)
         cophenetic_correlation_coefficients[k] = cophenetic_correlation_coefficient
 
         # Get labels from hierarchical clustering
@@ -266,4 +266,3 @@ def _get_consensus(sample_x_clustering):
     coclusterings /= n_clusterings
 
     return DataFrame(coclusterings, index=sample_x_clustering.index, columns=sample_x_clustering.index)
-

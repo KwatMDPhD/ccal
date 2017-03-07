@@ -90,8 +90,6 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
     if 'ax' not in kwargs:
         plt.figure(figsize=FIGURE_SIZE)
 
-    set_style('ticks')
-
     # Preprocess args
     processed_args = []
     for i, a in enumerate(args):
@@ -102,7 +100,7 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
 
     plot(*processed_args, marker='o', **kwargs)
 
-    decorate(title, xlabel, ylabel)
+    decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
     save_plot(filepath)
 
@@ -138,13 +136,11 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     if not ax:
         plt.figure(figsize=FIGURE_SIZE)
 
-    set_style('ticks')
-
     distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, fit=fit, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
              fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
              ax=ax)
 
-    decorate(title, xlabel, ylabel)
+    decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
     save_plot(filepath)
 
@@ -240,11 +236,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
         plt.gca().text((l + r) / 2, t + 0.016 * t, 'IC = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
                        horizontalalignment='center', **FONT_SUBTITLE)
 
-    decorate(title, xlabel, ylabel)
-
-    # Set plot aesthetics
-    set_style('whitegrid')
-    despine(left=True)
+    decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
     if filepath_prefix:
         save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
@@ -253,7 +245,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
 def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust=False, annot=None, fmt='.2g',
                  annot_kws=None, linewidths=0, linecolor='white', cbar=False, cbar_kws=None, cbar_ax=None, square=False,
                  xticklabels=True, yticklabels=True, mask=None,
-                 data_type='continuous', normalization_method='-0-', normalization_axis=0, max_std=3, sort_axis=None,
+                 data_type='continuous', normalization_method='-0-', normalization_axis=0, max_std=3, axis_to_sort=None,
                  cluster=False, row_annotation=(), column_annotation=(), annotation_colors=(),
                  title=None, xlabel=None, ylabel=None, xlabel_rotation=0, ylabel_rotation=90,
                  filepath=None, **kwargs):
@@ -281,7 +273,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     :param normalization_method:
     :param normalization_axis:
     :param max_std:
-    :param sort_axis:
+    :param axis_to_sort:
     :param cluster:
     :param row_annotation:
     :param column_annotation:
@@ -302,11 +294,11 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
         df = normalize_2d_or_1d(df, normalization_method, axis=normalization_axis).clip(-max_std, max_std)
     values = unique(df.values)
 
-    if any(row_annotation) or any(column_annotation):
-        if any(row_annotation):
+    if len(row_annotation) or len(column_annotation):
+        if len(row_annotation):
             if isinstance(row_annotation, Series):
                 row_annotation = row_annotation.copy()
-                if not any(row_annotation.index & df.index):  # Series but without proper index
+                if not len(row_annotation.index & df.index):  # Series but without proper index
                     row_annotation.index = df.index
             else:
                 row_annotation = Series(row_annotation, index=df.index)
@@ -314,10 +306,10 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
             row_annotation.sort_values(inplace=True)
             df = df.ix[row_annotation.index, :]
 
-        if any(column_annotation):
+        if len(column_annotation):
             if isinstance(column_annotation, Series):
                 column_annotation = column_annotation.copy()
-                if not any(column_annotation.index & df.columns):  # Series but without proper index
+                if not len(column_annotation.index & df.columns):  # Series but without proper index
                     column_annotation.index = df.columns
             else:
                 column_annotation = Series(column_annotation, index=df.columns)
@@ -325,9 +317,9 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
             column_annotation.sort_values(inplace=True)
             df = df.ix[:, column_annotation.index]
 
-    if sort_axis in (0, 1):
+    if axis_to_sort in (0, 1):
         a = array(df)
-        a.sort(axis=sort_axis)
+        a.sort(axis=axis_to_sort)
         df = DataFrame(a, index=df.index)
 
     elif cluster:
@@ -367,11 +359,15 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
             cbar_ax=cbar_ax, square=square, ax=ax_center, xticklabels=xticklabels, yticklabels=yticklabels, mask=mask,
             **kwargs)
 
-    decorate(title, xlabel, ylabel, xlabel_rotation=xlabel_rotation, ylabel_rotation=ylabel_rotation,
-             max_xtick_size=10,
-             ax=ax_center)
+    if data_type == 'continuous':  # Plot colorbar
+        cax, kw = make_axes(ax_bottom, location='bottom', fraction=0.16,
+                            cmap=CMAP_CONTINUOUS,
+                            norm=Normalize(values.min(), values.max()),
+                            ticks=[values.min(), values.mean(), values.max()])
+        ColorbarBase(cax, **kw)
+        decorate(ax=cax)
 
-    if data_type in ('categorical', 'binary'):
+    elif data_type in ('categorical', 'binary'):  # Plot category legends
         if len(values) < 30:
             horizontal_span = ax_center.axis()[1]
             vertival_span = ax_center.axis()[3]
@@ -381,30 +377,26 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
                 ax_center.plot(x, y, 'o', markersize=16, aa=True, clip_on=False)
                 ax_center.text(x, y - vertival_span * 0.05, v, horizontalalignment='center', **FONT)
 
-    if data_type == 'continuous':
-        cax, kw = make_axes(ax_bottom, location='bottom', fraction=0.16,
-                            cmap=CMAP_CONTINUOUS,
-                            norm=Normalize(values.min(), values.max()),
-                            ticks=[values.min(), values.mean(), values.max()])
-        ColorbarBase(cax, **kw)
-        for t in cax.get_xticklabels():
-            t.set(**FONT)
+    decorate(title=title, xlabel=xlabel, ylabel=ylabel,
+             xlabel_rotation=xlabel_rotation, ylabel_rotation=ylabel_rotation,
+             max_xtick_size=10,
+             ax=ax_center)
 
-    if any(row_annotation):
+    if len(row_annotation):
         if len(set(row_annotation)) <= 2:
             cmap = CMAP_BINARY
         else:
-            if any(annotation_colors):
+            if len(annotation_colors):
                 cmap = ListedColormap(annotation_colors)
             else:
                 cmap = CMAP_CATEGORICAL
         heatmap(DataFrame(row_annotation), ax=ax_right, cbar=False, xticklabels=False, yticklabels=False, cmap=cmap)
 
-    if any(column_annotation):
+    if len(column_annotation):
         if len(set(column_annotation)) <= 2:
             cmap = CMAP_BINARY
         else:
-            if any(annotation_colors):
+            if len(annotation_colors):
                 cmap = ListedColormap(annotation_colors)
             else:
                 cmap = CMAP_CATEGORICAL
@@ -459,7 +451,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
 
     ax_heatmap = clustergrid.ax_heatmap
 
-    decorate(title, xlabel, ylabel, ax=ax_heatmap)
+    decorate(title=title, xlabel=xlabel, ylabel=ylabel, ax=ax_heatmap)
 
     save_plot(filepath)
 
@@ -544,10 +536,13 @@ def assign_colors_to_states(states, colors=()):
     return state_colors
 
 
-def decorate(title,
-             xlabel, ylabel, xlabel_rotation=0, ylabel_rotation=90,
+def decorate(style=None,
+             title=None,
+             xlabel=None, ylabel=None,
+             xlabel_rotation=0, ylabel_rotation=90,
              xticks=None, yticks=None,
-             max_n_xticks=80, max_n_yticks=50, max_xtick_size=None, max_ytick_size=None,
+             max_n_xticks=80, max_n_yticks=50,
+             max_xtick_size=None, max_ytick_size=None,
              ax=None):
     """
 
@@ -562,22 +557,25 @@ def decorate(title,
     :param max_n_yticks:
     :param max_xtick_size:
     :param max_ytick_size:
-    :param ax:
+    :param ax: Axes; sets the current ax to be ax
     :return:
     """
 
-    # TODO: set aesthetics here
-    # Set plot aesthetics
-    # set_style('whitegrid')
-    # despine(left=True)
+    # Set ax
+    if not ax:
+        ax = plt.gca()
+    else:
+        plt.sca(ax)
+
+    # Set global plot aesthetics
+    if style:
+        set_style(style)
+        if style == 'ticks':
+            despine(top=True, right=True)
 
     # Title
     if title:
         plt.suptitle(title_str(title), **FONT_TITLE)
-
-    # Get ax
-    if not ax:
-        ax = plt.gca()
 
     # Label x axis
     if not xlabel:

@@ -94,9 +94,9 @@ def get_dendrogram_leaf_indices(matrix):
     :return:
     """
 
-    row_dendro_leaves = dendrogram(linkage(matrix), no_plot=True)['leaves']
-    col_dendro_leaves = dendrogram(linkage(matrix.T), no_plot=True)['leaves']
-    return row_dendro_leaves, col_dendro_leaves
+    row_leaves = dendrogram(linkage(matrix), no_plot=True)['leaves']
+    col_leaves = dendrogram(linkage(matrix.T), no_plot=True)['leaves']
+    return row_leaves, col_leaves
 
 
 def split_slices(df, index, splitter, ax=0):

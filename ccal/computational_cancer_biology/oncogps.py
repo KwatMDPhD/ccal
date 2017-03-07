@@ -19,7 +19,7 @@ from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
-from numpy import asarray, ma, zeros, zeros_like, ones, empty, linspace, nansum, sqrt
+from numpy import ndarray, asarray, ma, zeros, zeros_like, ones, empty, linspace, nansum, sqrt
 from pandas import DataFrame, Series, read_csv, isnull
 from scipy.spatial import Delaunay, ConvexHull
 from sklearn.svm import SVR
@@ -301,8 +301,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=40,
         matrix = read_gct(matrix)
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
-    matrix = normalize_2d_or_1d(normalize_2d_or_1d(matrix, '-0-', axis=1).clip(-max_std, max_std),
-                                method='0-1', axis=1)
+    matrix = normalize_2d_or_1d(normalize_2d_or_1d(matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
 
     # Hierarchical-consensus cluster
     distance_matrix, clusterings, cophenetic_correlation_coefficients = \
@@ -336,7 +335,7 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=40,
                  xticklabels=False, yticklabels=False, filepath=filepath_distance_matrix_plot)
 
     # Plot clusterings
-    plot_heatmap(clusterings, sort_axis=1, data_type='categorical', normalization_method=None,
+    plot_heatmap(clusterings, axis_to_sort=1, data_type='categorical', normalization_method=None,
                  title='Clustering per k', xticklabels=False, filepath=filepath_clusterings_plot)
 
     # Plot cophenetic correlation coefficients
@@ -445,6 +444,8 @@ def make_oncogps(training_h,
     # TODO: enforce
     training_h.index = training_h.index.astype(str)
 
+    training_h_initial = training_h.copy()
+
     if isinstance(testing_h, DataFrame) and testing_h_normalization == 'using_training_h':
         normalizing_size = training_h.shape[1]
         normalizing_mean = training_h.mean(axis=1)
@@ -543,21 +544,21 @@ def make_oncogps(training_h,
     # Compute grid probabilities and states
     # ==================================================================================================================
     print_log('Computing state grids and probabilities ...')
-    state_grids, state_grids_probabilities = _compute_grid_states_and_probabilities(training_samples,
+    state_grids, state_grids_probabilities = _compute_state_grids_and_probabilities(training_samples,
                                                                                     n_grids,
                                                                                     kde_bandwidth_factor)
     # ==================================================================================================================
     # Process training annotation
     # ==================================================================================================================
     annotation_grids = annotation_grids_probabilities = None
-    if any(training_annotation):
+    if len(training_annotation):
         # ==============================================================================================================
         # Series annotation
         # Keep only samples in H matrix
         # ==============================================================================================================
         if isinstance(training_annotation, Series):
             training_samples.ix[:, 'annotation'] = training_annotation.ix[training_samples.index]
-        elif training_annotation is not None:
+        elif len(training_annotation):
             training_samples.ix[:, 'annotation'] = training_annotation
 
         # ==============================================================================================================
@@ -565,7 +566,7 @@ def make_oncogps(training_h,
         # ==============================================================================================================
         if annotate_background:
             print_log('Computing annotation grids and probabilities ...')
-            annotation_grids, annotation_grids_probabilities = _compute_grid_annotations_and_probabilities(
+            annotation_grids, annotation_grids_probabilities = _compute_annotation_grids_and_probabilities(
                 training_samples,
                 training_annotation,
                 n_grids)
@@ -618,6 +619,17 @@ def make_oncogps(training_h,
 
         testing_samples.ix[:, 'state'] = classify(training_samples.ix[:, ['x', 'y']], training_states,
                                                   testing_samples.ix[:, ['x', 'y']])
+        # TODO: classify in nD
+        # if not testing_h_normalization:
+        #     print('No normalization.')
+        #     print(training_h_initial.T.head())
+        #     print(testing_h.T.head())
+        #     testing_samples.ix[:, 'state'] = classify(training_h_initial.T, training_states, testing_h.T)
+        # else:
+        #     print('Yes normalization.')
+        #     print(training_h.T.head())
+        #     print(testing_h.T.head())
+        #     testing_samples.ix[:, 'state'] = classify(training_h.T, training_states, testing_h.T)
 
         # ==============================================================================================================
         # Compute training component ratios
@@ -629,7 +641,7 @@ def make_oncogps(training_h,
         # ==============================================================================================================
         # Process testing annotation
         # ==============================================================================================================
-        if testing_annotation is not None:
+        if len(testing_annotation):
             testing_samples.ix[:, 'annotation'] = testing_annotation
 
         # ==============================================================================================================
@@ -780,7 +792,7 @@ def _compute_component_ratios(h, n):
     return ratios
 
 
-def _compute_grid_states_and_probabilities(samples, n_grids, kde_bandwidths_factor):
+def _compute_state_grids_and_probabilities(samples, n_grids, kde_bandwidths_factor):
     """
 
     :param samples:
@@ -824,7 +836,7 @@ def _compute_grid_states_and_probabilities(samples, n_grids, kde_bandwidths_fact
     return grids, grids_probabilities
 
 
-def _compute_grid_annotations_and_probabilities(samples, annotation, n_grids, svr_kernel='rbf'):
+def _compute_annotation_grids_and_probabilities(samples, annotation, n_grids, svr_kernel='rbf'):
     """
 
     :param samples:
@@ -1059,9 +1071,9 @@ def _plot_onco_gps(components,
     fraction_grids = linspace(0, 1, state_grids.shape[0])
     image = ones((*state_grids.shape, 3))
 
-    if annotate_background:
-        grids_probabilities = annotation_grids_probabilities
+    if isinstance(annotation_grids, ndarray):
         grids = annotation_grids
+        grids_probabilities = annotation_grids_probabilities
 
         grid_probabilities_min = grids_probabilities.min()
         grid_probabilities_max = grids_probabilities.max()
@@ -1152,7 +1164,7 @@ def _plot_onco_gps(components,
         ax_legend.text(0.16, y, 'State {} (n={})'.format(s, (samples.ix[:, 'state'] == s).sum()),
                        fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
-    if 1 < samples.ix[:, 'annotation'].unique().size:
+    if 1 < len(samples.ix[:, 'annotation'].unique()):
         # Plot samples, annotation, sample legends, and annotation legends
 
         # Set up annotation min, mean, max, colormap, and range
@@ -1160,8 +1172,8 @@ def _plot_onco_gps(components,
             if samples.ix[:, 'annotation'].dtype == object:
                 raise TypeError('Continuous annotation values must be numbers (float, int, etc).')
             # Normalize annotation
-            samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:, 'annotation'],
-                                                                      '-0-').clip(-std_max, std_max)
+            samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:, 'annotation'], '-0-').clip(-std_max,
+                                                                                                               std_max)
             # Get annotation statistics
             annotation_min = -std_max
             annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
@@ -1207,9 +1219,10 @@ def _plot_onco_gps(components,
         for idx, s in samples.iterrows():
             a = s.ix['annotation_for_plot']
             if isnull(a):  # Missing annotation
+                markersize = 1
                 c = bad_color
-                sample_markersize = 1
             else:
+                markersize = sample_markersize
                 if annotation_type == 'continuous':
                     c = cmap((a - annotation_min) / annotation_range)
                 elif annotation_type in ('categorical', 'binary'):
@@ -1220,7 +1233,7 @@ def _plot_onco_gps(components,
                 else:
                     raise ValueError('annotation_type must be one of {continuous, categorical, binary}.')
             ax_map.plot(s.ix['x'], s.ix['y'], marker='o',
-                        markersize=sample_markersize, markerfacecolor=c,
+                        markersize=markersize, markerfacecolor=c,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
                         aa=True, clip_on=False, zorder=5)
 
