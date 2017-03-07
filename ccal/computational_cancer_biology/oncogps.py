@@ -412,7 +412,7 @@ def make_oncogps(training_h,
 
                  state_colors=(),
                  bad_color='#000000',
-                 max_background_saturation=1,
+                 background_alpha_factor=1,
 
                  n_contours=26,
                  contour_linewidths=0.60,
@@ -698,7 +698,7 @@ def make_oncogps(training_h,
 
                    colors=state_colors,
                    bad_color=bad_color,
-                   max_background_saturation=max_background_saturation,
+                   background_alpha_factor=background_alpha_factor,
 
                    n_contours=n_contours,
                    contour_linewidth=contour_linewidths,
@@ -912,7 +912,7 @@ def _plot_onco_gps(components,
 
                    colors,
                    bad_color,
-                   max_background_saturation,
+                   background_alpha_factor,
 
                    n_contours,
                    contour_linewidth,
@@ -971,7 +971,7 @@ def _plot_onco_gps(components,
 
     :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
     :param bad_color: matplotlib color;
-    :param max_background_saturation: float; [0, 1]
+    :param background_alpha_factor: float; [0, 1]
 
     :param n_contours: int; set to 0 to disable drawing contours
     :param contour_linewidth: number;
@@ -1089,7 +1089,7 @@ def _plot_onco_gps(components,
                         c = (0, 0, 1)
                     hsv = rgb_to_hsv(*c)
                     a = (grids_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
-                    image[j, i] = hsv_to_rgb(hsv[0], a * max_background_saturation, hsv[2] * a + (1 - a))
+                    image[j, i] = hsv_to_rgb(hsv[0], min(a * background_alpha_factor, 1), hsv[2] * a + (1 - a))
 
         grids = state_grids
 
@@ -1135,7 +1135,7 @@ def _plot_onco_gps(components,
                 if convexhull_region.contains_point((fraction_grids[i], fraction_grids[j])):
                     hsv = rgb_to_hsv(*state_colors[grids[i, j]][:3])
                     a = (grids_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
-                    image[j, i] = hsv_to_rgb(hsv[0], a * max_background_saturation, hsv[2] * a + (1 - a))
+                    image[j, i] = hsv_to_rgb(hsv[0], min(a * background_alpha_factor, 1), hsv[2] * a + (1 - a))
         ax_map.imshow(image, interpolation=None, origin='lower', aspect='auto', extent=ax_map.axis(),
                       clip_on=False, zorder=1)
 
