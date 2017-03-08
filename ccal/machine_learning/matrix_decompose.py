@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import finfo, dot, multiply, divide, sum, log, matrix
+from numpy import finfo, dot, multiply, divide, sum, log, matrix, ndarray
 from numpy.random import seed, rand
 from pandas import DataFrame
 from sklearn.decomposition import NMF
@@ -96,27 +96,23 @@ def nmf_div(V, k, n_max_iterations=1000, random_seed=RANDOM_SEED):
     N = V.shape[0]
     M = V.shape[1]
     V = matrix(V)
-
     seed(random_seed)
     W = rand(N, k)
     H = rand(k, M)
-
     for t in range(n_max_iterations):
         VP = dot(W, H)
         W_t = matrix.transpose(W)
         H = multiply(H, dot(W_t, divide(V, VP))) + eps
-
         for i in range(k):
             W_sum = 0
             for j in range(N):
                 W_sum += W[j, i]
             for j in range(M):
                 H[i, j] = H[i, j] / W_sum
-
         VP = dot(W, H)
         H_t = matrix.transpose(H)
         W = multiply(W, dot(divide(V, VP + eps), H_t)) + eps
-        W = divide(W, sum(H, axis=1, keepdims=False))
+        W = divide(W, ndarray.sum(H, axis=1, keepdims=False))
 
     err = sum(multiply(V, log(divide(V + eps, VP + eps))) - V + VP) / (M * N)
 

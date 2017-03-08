@@ -74,14 +74,15 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
     # Drop na rows & columns
     matrix = drop_na_2d(matrix, how=how_to_drop_na)
 
-    # Rank normalize the input matrix by column
+    # Rank normalize the input matrix columns
     # TODO: try changing n_ranks (choose automatically)
     matrix = normalize_2d_or_1d(matrix, 'rank', n_ranks=10000, axis=0)
-    plot_heatmap(matrix, title='(Rank-Normalized) Matrix to be Decomposed', xlabel='Sample', ylabel='Feature',
+    plot_heatmap(matrix, title='Matrix to be Decomposed (rank-normalized columns)', xlabel='Sample', ylabel='Feature',
                  xticklabels=False, yticklabels=False, cluster=True)
 
     # NMF-consensus cluster (while saving 1 NMF result per k)
-    nmf_results, cophenetic_correlation_coefficient = nmf_consensus_cluster(matrix, ks,
+    nmf_results, cophenetic_correlation_coefficient = nmf_consensus_cluster(matrix,
+                                                                            ks,
                                                                             n_jobs=n_jobs,
                                                                             n_clusterings=n_clusterings,
                                                                             algorithm=algorithm,
@@ -97,26 +98,27 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
         directory_path = join(directory_path, 'nmf', '')
         establish_filepath(directory_path)
 
-        print_log('Saving NMF decompositions and cophenetic correlation coefficients ...')
+        print_log('Saving NMF decompositions (W & H matrices) and NMF-CC cophenetic correlation coefficients ...')
         # Save NMF decompositions
         save_nmf_results(nmf_results, join(directory_path, 'matrices', ''))
         # Save cophenetic correlation coefficients
-        write_dict(cophenetic_correlation_coefficient, join(directory_path, 'cophenetic_correlation_coefficients.txt'),
-                   key_name='k', value_name='cophenetic_correlation_coefficient')
+        write_dict(cophenetic_correlation_coefficient,
+                   join(directory_path, 'nmf_cc_cophenetic_correlation_coefficients.txt'),
+                   key_name='K', value_name='NMF-CC Cophenetic Correlation Coefficient')
 
         # Saving filepath for cophenetic correlation coefficients figure
-        filepath_ccc_pdf = join(directory_path, 'cophenetic_correlation_coefficients.pdf')
+        filepath_ccc_pdf = join(directory_path, 'nmf_cc_cophenetic_correlation_coefficients.pdf')
 
     else:
         # Not saving cophenetic correlation coefficients figure
         filepath_ccc_pdf = None
 
-    print_log('Plotting NMF decompositions and cophenetic correlation coefficients ...')
+    print_log('Plotting NMF decompositions (W & H matrices) & NMF-CC cophenetic correlation coefficients ...')
     # Plot cophenetic correlation coefficients
     plot_points(sorted(cophenetic_correlation_coefficient.keys()),
                 [cophenetic_correlation_coefficient[k] for k in sorted(cophenetic_correlation_coefficient.keys())],
-                title='NMF Cophenetic Correlation Coefficient vs. k',
-                xlabel='k', ylabel='NMF Cophenetic Correlation Coefficient',
+                title='NMF-CC Cophenetic Correlation Coefficient vs. K',
+                xlabel='K', ylabel='NMF-CC Cophenetic Correlation Coefficient',
                 filepath=filepath_ccc_pdf)
 
     if isinstance(ks, int):
@@ -124,7 +126,7 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
 
     # Plot NMF decompositions
     for k in ks:
-        print_log('\tPlotting k={} ...'.format(k))
+        print_log('\tPlotting K={} ...'.format(k))
         if directory_path:
             filepath_nmf = join(directory_path, 'figures', 'nmf_k{}.pdf'.format(k))
         else:

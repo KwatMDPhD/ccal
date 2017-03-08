@@ -16,9 +16,8 @@ from numpy.random import seed, shuffle
 from pandas import DataFrame, concat, Series
 from scipy.cluster.hierarchy import linkage, dendrogram
 
-from ccal.support.d1 import normalize_1d
 from .. import RANDOM_SEED
-from ..support.d1 import drop_na_1d
+from ..support.d1 import drop_na_1d, normalize_1d
 from ..support.log import print_log
 
 

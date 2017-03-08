@@ -27,7 +27,6 @@ from seaborn import set_style, despine, distplot, barplot, violinplot, boxplot, 
 from .d1 import discretize_categories
 from .d2 import get_dendrogram_leaf_indices, normalize_2d_or_1d
 from .file import establish_filepath
-from .str_ import title_str, untitle_str
 from ..machine_learning.score import compute_association_and_pvalue
 
 # ======================================================================================================================
@@ -90,15 +89,7 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
     if 'ax' not in kwargs:
         plt.figure(figsize=FIGURE_SIZE)
 
-    # Preprocess args
-    processed_args = []
-    for i, a in enumerate(args):
-        if isinstance(a, Series):
-            processed_args.append(a.tolist())
-        else:
-            processed_args.append(a)
-
-    plot(*processed_args, marker='o', **kwargs)
+    plot(*[list(a) for a in args], marker='o', **kwargs)
 
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
@@ -151,7 +142,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
                            fliersize=5, whis=1.5, notch=False,
                            ci=95, n_boot=1000, units=None, errcolor='0.26', errwidth=None, capsize=None,
                            violin_or_box='violin', colors=(), n_permutations=1000,
-                           figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None, filepath_prefix=None,
+                           figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None, filepath=None,
                            **kwargs):
     """
     Plot violin plot.
@@ -191,7 +182,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     :param title:
     :param xlabel:
     :param ylabel:
-    :param filepath_prefix:
+    :param filepath:
     :param kwargs:
     :return: None
     """
@@ -238,14 +229,14 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
 
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
-    if filepath_prefix:
-        save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
+    if filepath:
+        save_plot(filepath)
 
 
 def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust=False, annot=None, fmt='.2g',
                  annot_kws=None, linewidths=0, linecolor='white', cbar=False, cbar_kws=None, cbar_ax=None, square=False,
                  xticklabels=True, yticklabels=True, mask=None,
-                 data_type='continuous', normalization_method='-0-', normalization_axis=0, max_std=3, axis_to_sort=None,
+                 data_type='continuous', normalization_method=None, normalization_axis=0, max_std=3, axis_to_sort=None,
                  cluster=False, row_annotation=(), column_annotation=(), annotation_colors=(),
                  title=None, xlabel=None, ylabel=None, xlabel_rotation=0, ylabel_rotation=90,
                  filepath=None, **kwargs):
@@ -575,17 +566,17 @@ def decorate(style=None,
 
     # Title
     if title:
-        plt.suptitle(title_str(title), **FONT_TITLE)
+        plt.suptitle(title, **FONT_TITLE)
 
     # Label x axis
     if not xlabel:
         xlabel = ax.get_xlabel()
-    ax.set_xlabel(title_str(xlabel), rotation=xlabel_rotation, **FONT_SUBTITLE)
+    ax.set_xlabel(xlabel, rotation=xlabel_rotation, **FONT_SUBTITLE)
 
     # Label y axis
     if not ylabel:
         ylabel = ax.get_ylabel()
-    ax.set_ylabel(title_str(ylabel), rotation=ylabel_rotation, **FONT_SUBTITLE)
+    ax.set_ylabel(ylabel, rotation=ylabel_rotation, **FONT_SUBTITLE)
 
     # Label x ticks
     if not xticks:
