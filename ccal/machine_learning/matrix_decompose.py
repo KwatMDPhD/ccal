@@ -11,13 +11,17 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
+from os.path import join
+
+from matplotlib.backends.backend_pdf import PdfPages
 from numpy import finfo, dot, multiply, divide, sum, log, matrix, ndarray
 from numpy.random import seed, rand
 from pandas import DataFrame
 from sklearn.decomposition import NMF
 
 from .. import RANDOM_SEED
-from ..support.file import write_gct
+from ..support.file import establish_filepath, write_gct
+from ..support.plot import plot_nmf
 
 
 def nmf(matrix_, ks, algorithm='Lee & Seung',
@@ -88,7 +92,9 @@ def nmf_div(V, k, n_max_iterations=1000, random_seed=RANDOM_SEED):
     Non-negative matrix factorize matrix with k from ks using divergence.
     :param V: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param k: int; number of components
-    :param random_seed: int; random state
+    :param n_max_iterations: int;
+    :param random_seed:
+    :return:
     """
 
     eps = finfo(float).eps
@@ -119,15 +125,21 @@ def nmf_div(V, k, n_max_iterations=1000, random_seed=RANDOM_SEED):
     return W, H, err
 
 
-def save_nmf_results(nmf_results, filepath_prefix):
+def save_and_plot_nmf_decompositions(nmf_decompositions, directory_path):
     """
-    Save NMF decompositions.
-    :param nmf_results: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
+    Save and plot NMF decompositions.
+    :param nmf_decompositions: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
                               {k: Cophenetic Correlation Coefficient}
-    :param filepath_prefix: str; filepath_prefix_nmf_k{k}_{w, h}.gct and will be saved
+    :param directory_path: str; directory_path/nmf.pdf & directory_path/matrices/nmf_k{k}_{w, h}.gct will be saved
     :return: None
     """
 
-    for k, v in nmf_results.items():
-        write_gct(v['w'], filepath_prefix + 'nmf_k{}_w.gct'.format(k))
-        write_gct(v['h'], filepath_prefix + 'nmf_k{}_h.gct'.format(k))
+    establish_filepath(join(directory_path, 'nmf/'))
+    with PdfPages(join(directory_path, 'nmf/nmf.pdf')) as pdf:
+        for k, nmf_d in nmf_decompositions.items():
+            print('Saving and plotting NMF decompositions with K={} ...'.format(k))
+
+            write_gct(nmf_d['w'], join(directory_path, 'nmf/nmf_k{}_w.gct'.format(k)))
+            write_gct(nmf_d['h'], join(directory_path, 'nmf/nmf_k{}_h.gct'.format(k)))
+
+            plot_nmf(nmf_decompositions, k, pdf=pdf)
