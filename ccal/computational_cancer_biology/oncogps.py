@@ -77,7 +77,8 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
     # Rank normalize the input matrix columns
     # TODO: try changing n_ranks (choose automatically)
     matrix = normalize_2d_or_1d(matrix, 'rank', n_ranks=10000, axis=0)
-    plot_heatmap(matrix, title='Matrix to be Decomposed (rank-normalized columns)', xlabel='Sample', ylabel='Feature',
+    plot_heatmap(matrix,
+                 title='Matrix to be Decomposed (rank-normalized columns)', xlabel='Sample', ylabel='Feature',
                  xticklabels=False, yticklabels=False, cluster=True)
 
     # NMF-consensus cluster (while saving 1 NMF result per k)
@@ -87,6 +88,10 @@ def define_components(matrix, ks, how_to_drop_na='all', n_jobs=1, n_clusterings=
                                                                             n_clusterings=n_clusterings,
                                                                             algorithm=algorithm,
                                                                             random_seed=random_seed)
+    # Name NMF components
+    for k, nmf_d in nmf_results.items():
+        nmf_d['w'].columns = ['C{}'.format(c) for c in range(1, k + 1)]
+        nmf_d['h'].index = ['C{}'.format(c) for c in range(1, k + 1)]
 
     # Make NMF directory, where
     #     cophenetic_correlation_coefficients{.pdf, .gct}
@@ -421,7 +426,7 @@ def make_oncogps(training_h,
                  contour_linecolor='#262626',
                  contour_alpha=0.8,
 
-                 state_boundary_color=(0.51, 0.51, 0.51),
+                 state_boundary_color=None,
 
                  sample_markersize=23,
                  sample_markeredgewidth=0.92,
@@ -443,9 +448,6 @@ def make_oncogps(training_h,
     #       0-1 normalize
     #   Drop samples with all-0 values after normalization
     # ==================================================================================================================
-    # TODO: enforce
-    training_h.index = training_h.index.astype(str)
-
     training_h_initial = training_h.copy()
 
     if isinstance(testing_h, DataFrame) and testing_h_normalization == 'using_training_h':
@@ -587,9 +589,6 @@ def make_oncogps(training_h,
         #       0-1 normalize
         #   Drop samples with all-0 values after normalization
         # ==============================================================================================================
-        # TODO: enforce
-        testing_h.index = testing_h.index.astype(str)
-
         if testing_h_normalization:
             testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
 
@@ -674,7 +673,6 @@ def make_oncogps(training_h,
                    annotation_ascending=annotation_ascending,
                    highlight_high_magnitude=highlight_high_magnitude,
 
-                   annotate_background=annotate_background,
                    annotation_grids=annotation_grids,
                    annotation_grids_probabilities=annotation_grids_probabilities,
 
@@ -888,7 +886,6 @@ def _plot_onco_gps(components,
                    annotation_ascending,
                    highlight_high_magnitude,
 
-                   annotate_background,
                    annotation_grids,
                    annotation_grids_probabilities,
 
@@ -947,7 +944,6 @@ def _plot_onco_gps(components,
     :param annotation_ascending: logical True or False
     :param highlight_high_magnitude: bool;
 
-    :param annotate_background: bool;
     :param annotation_grids: numpy 2D array; (n_grids, n_grids)
     :param annotation_grids_probabilities: numpy 2D array; (n_grids, n_grids)
 
@@ -1112,14 +1108,14 @@ def _plot_onco_gps(components,
                            linestyle='solid',
                            aa=True, clip_on=False, zorder=2)
 
-        # TODO: consider removing
-        # # Plot boundary
-        # for i in range(0, grids.shape[0] - 1):
-        #     for j in range(0, grids.shape[1] - 1):
-        #
-        #         if convexhull_region.contains_point((fraction_grids[i], fraction_grids[j])) and (
-        #                         grids[i, j] != grids[i + 1, j] or grids[i, j] != grids[i, j + 1]):
-        #             image[j, i] = state_boundary_color
+        # Plot boundary
+        if state_boundary_color:
+            for i in range(0, grids.shape[0] - 1):
+                for j in range(0, grids.shape[1] - 1):
+
+                    if convexhull_region.contains_point((fraction_grids[i], fraction_grids[j])) and (
+                                    grids[i, j] != grids[i + 1, j] or grids[i, j] != grids[i, j + 1]):
+                        image[j, i] = state_boundary_color
 
         ax_map.imshow(image, interpolation=None, origin='lower', aspect='auto', extent=ax_map.axis(),
                       clip_on=False, zorder=1)
@@ -1336,9 +1332,6 @@ def make_oncogps_in_3d(training_h,
     #       0-1 normalize
     #   Drop samples with all-0 values after normalization
     # ==================================================================================================================
-    # TODO: enforce
-    training_h.index = training_h.index.astype(str)
-
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
     training_h = normalize_2d_or_1d(training_h, '-0-', axis=1)
     training_h = training_h.clip(-std_max, std_max)
