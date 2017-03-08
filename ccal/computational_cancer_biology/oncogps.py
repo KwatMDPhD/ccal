@@ -586,7 +586,7 @@ def make_oncogps(training_h,
 
         testing_samples.ix[:, 'state'] = classify(training_samples.ix[:, ['x', 'y']], training_states,
                                                   testing_samples.ix[:, ['x', 'y']])
-        # TODO: classify in nD
+        # TODO: classify in ND
         # if not testing_h_normalization:
         #     print('No normalization.')
         #     print(training_h_initial.T.head())
