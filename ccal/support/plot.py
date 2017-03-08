@@ -620,7 +620,7 @@ def decorate(style=None,
         ax.set_yticklabels(yticks, **FONT)
 
 
-def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
+def save_plot(filepath, overwrite=True, dpi=DPI):
     """
     Establish filepath and save plot (.pdf) at dpi resolution.
     :param filepath: str;
@@ -629,11 +629,7 @@ def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
     :param dpi: int;
     :return: None
     """
-
     if filepath:
-        if not filepath.endswith(suffix):
-            filepath += suffix
-
         if not isfile(filepath) or overwrite:  # If the figure doesn't exist or overwriting
             establish_filepath(filepath)
             plt.savefig(filepath, dpi=dpi, bbox_inches='tight')
