@@ -15,6 +15,7 @@ from colorsys import rgb_to_hsv, hsv_to_rgb
 from os.path import join
 
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
@@ -312,44 +313,45 @@ def define_states(matrix, ks, distance_matrix=None, max_std=3, n_clusterings=40,
 
     # Hierarchical-consensus cluster
     distance_matrix, clusterings, cophenetic_correlation_coefficients = \
-        hierarchical_consensus_cluster(matrix, ks, distance_matrix=distance_matrix, n_clusterings=n_clusterings,
+        hierarchical_consensus_cluster(matrix,
+                                       ks,
+                                       distance_matrix=distance_matrix,
+                                       n_clusterings=n_clusterings,
                                        random_seed=random_seed)
 
-    if directory_path:  # Save and plot distance matrix, clusterings, and cophenetic correlation coefficients
-        directory_path = join(directory_path, 'clusterings', '')
-        establish_filepath(directory_path)
+    # Save and plot distance matrix, clusterings, and cophenetic correlation coefficients
+    directory_path = join(directory_path, 'clusterings/')
+    establish_filepath(directory_path)
 
-        # Save results
-        distance_matrix.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
-        write_gct(clusterings, join(directory_path, 'clusterings.gct'))
-        write_dict(cophenetic_correlation_coefficients, join(directory_path, 'cophenetic_correlation_coefficients.txt'),
-                   key_name='k', value_name='cophenetic_correlation_coefficient')
+    distance_matrix.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
+    write_gct(clusterings, join(directory_path, 'clusterings.gct'))
+    write_dict(cophenetic_correlation_coefficients, join(directory_path, 'cophenetic_correlation_coefficients.txt'),
+               key_name='k', value_name='cophenetic_correlation_coefficient')
 
-        # Set up filepath to save plots
-        filepath_distance_matrix_plot = join(directory_path, 'distance_matrix.pdf')
-        filepath_clusterings_plot = join(directory_path, 'clusterings.pdf')
-        filepath_cophenetic_correlation_coefficients_plot = join(directory_path,
-                                                                 'cophenetic_correlation_coefficients.pdf')
+    with PdfPages(join(directory_path, 'define_states.pdf')) as pdf:
+        # Plot distance matrix
+        plot_heatmap(distance_matrix, cluster=True,
+                     title='Distance Matrix', xlabel='Sample', ylabel='Sample', xticklabels=False, yticklabels=False)
+        pdf.savefig()
 
-    else:  # Don't save results and plots
-        filepath_distance_matrix_plot = None
-        filepath_clusterings_plot = None
-        filepath_cophenetic_correlation_coefficients_plot = None
+        # Plot clusterings
+        plot_heatmap(clusterings, axis_to_sort=1, data_type='categorical', title='Clustering per k', xticklabels=False)
+        pdf.savefig()
 
-    # Plot distance matrix
-    plot_heatmap(distance_matrix, cluster=True,
-                 title='Distance Matrix', xlabel='Sample', ylabel='Sample',
-                 xticklabels=False, yticklabels=False, filepath=filepath_distance_matrix_plot)
+        # Plot cophenetic correlation coefficients
+        plot_points(sorted(cophenetic_correlation_coefficients.keys()),
+                    [cophenetic_correlation_coefficients[k] for k in
+                     sorted(cophenetic_correlation_coefficients.keys())],
+                    title='Consensus-Clustering Cophenetic-Correlation Coefficients vs. K',
+                    xlabel='K', ylabel='Cophenetic Score')
+        pdf.savefig()
 
-    # Plot clusterings
-    plot_heatmap(clusterings, axis_to_sort=1, data_type='categorical', normalization_method=None,
-                 title='Clustering per k', xticklabels=False, filepath=filepath_clusterings_plot)
-
-    # Plot cophenetic correlation coefficients
-    plot_points(sorted(cophenetic_correlation_coefficients.keys()),
-                [cophenetic_correlation_coefficients[k] for k in sorted(cophenetic_correlation_coefficients.keys())],
-                title='Consensus-Clustering-Cophenetic-Correlation Coefficients vs. k',
-                xlabel='k', ylabel='Cophenetic Score', filepath=filepath_cophenetic_correlation_coefficients_plot)
+        #
+        for k in ks:
+            plot_heatmap(matrix, column_annotation=clusterings.ix[k, :],
+                         normalization_method='-0-', normalization_axis=1,
+                         title='{} States'.format(k), xlabel='Sample', ylabel='Component')
+            pdf.savefig()
 
     return distance_matrix, clusterings, cophenetic_correlation_coefficients
 
