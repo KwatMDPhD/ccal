@@ -609,7 +609,15 @@ def make_oncogps(training_h,
         # Process testing annotation
         # ==============================================================================================================
         if len(testing_annotation):
-            testing_samples.ix[:, 'annotation'] = testing_annotation
+            # ==============================================================================================================
+            # Series annotation
+            # Keep only samples in testing H matrix
+            # ==============================================================================================================
+            if isinstance(testing_annotation, Series):
+                testing_samples.ix[:, 'annotation'] = testing_annotation.ix[testing_samples.index]
+            elif len(testing_annotation):
+                testing_samples.ix[:, 'annotation'] = testing_annotation
+
 
         # ==============================================================================================================
         # Use testing
@@ -627,6 +635,7 @@ def make_oncogps(training_h,
     # ==================================================================================================================
     if samples_to_plot:
         samples = samples.ix[samples_to_plot, :]
+
     print_log('Plotting ...')
     _plot_onco_gps(components=components,
                    samples=samples,
@@ -802,6 +811,7 @@ def _compute_state_grids_and_probabilities(samples, n_grids, kde_bandwidths_fact
     return grids, grids_probabilities
 
 
+# TODO: use 1 regressor instead of 2
 def _compute_annotation_grids_and_probabilities(samples, annotation, n_grids, svr_kernel='rbf'):
     """
 
@@ -810,13 +820,16 @@ def _compute_annotation_grids_and_probabilities(samples, annotation, n_grids, sv
     :param n_grids:
     :return:
     """
+
+    i = ~annotation.isnull()
+
     annotation = normalize_2d_or_1d(annotation, '-0-')
 
     svr_state = SVR(kernel=svr_kernel)
     svr_probability = SVR(kernel=svr_kernel)
 
-    svr_state.fit(asarray(samples.ix[:, ['x', 'y']]), asarray(annotation))
-    svr_probability.fit(asarray(samples.ix[:, ['x', 'y']]), asarray(annotation.abs()))
+    svr_state.fit(asarray(samples.ix[i, ['x', 'y']]), asarray(annotation.ix[i]))
+    svr_probability.fit(asarray(samples.ix[i, ['x', 'y']]), asarray(annotation.ix[i].abs()))
 
     grids = empty((n_grids, n_grids), dtype=int)
     grids_probability = empty((n_grids, n_grids))
