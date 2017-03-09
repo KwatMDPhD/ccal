@@ -351,7 +351,7 @@ def make_oncogps(training_h,
                  power_max=5,
 
                  n_grids=256,
-                 kde_bandwidth_factor=2,
+                 kde_bandwidth_factor=1,
 
                  samples_to_plot=None,
                  component_ratio=0,
@@ -1140,7 +1140,7 @@ def _plot_onco_gps(components,
         ax_legend.text(0.16, y, 'State {} (n={})'.format(s, (samples.ix[:, 'state'] == s).sum()),
                        fontsize=legend_fontsize, weight='bold', verticalalignment='center')
 
-    if 1 < len(samples.ix[:, 'annotation'].unique()):
+    if not samples.ix[:, 'annotation'].isnull().all():
         # Plot samples, annotation, sample legends, and annotation legends
 
         # Set up annotation min, mean, max, colormap, and range
@@ -1239,7 +1239,7 @@ def _plot_onco_gps(components,
 
     else:  # Plot samples using state colors
         normalized_component_ratio = normalize_2d_or_1d(samples.ix[:, 'component_ratio'], '0-1')
-        if 1 < normalized_component_ratio.unique().size:
+        if not normalized_component_ratio.isnull().all():
             samples.ix[:, 'component_ratio_for_plot'] = normalized_component_ratio
         else:
             samples.ix[:, 'component_ratio_for_plot'] = 1
