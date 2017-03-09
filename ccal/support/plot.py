@@ -42,10 +42,12 @@ FONT_SUBTITLE = {'fontsize': 20, 'weight': 'bold'}
 FONT = {'fontsize': 12, 'weight': 'bold'}
 
 # Color maps
+C_BAD = 'wheat'
 
 # Continuous 1
 CMAP_CONTINUOUS = bwr
 CMAP_CONTINUOUS.set_bad('yellow')
+CMAP_CONTINUOUS.set_bad(C_BAD)
 
 # Continuous 2
 reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
@@ -54,21 +56,18 @@ colordict = {'red': tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
              'green': tuple([(0.1 * i, r, r) for i, r in enumerate(greens_half + [1] + list(reversed(greens_half)))]),
              'blue': tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])}
 CMAP_ASSOCIATION = LinearSegmentedColormap('association', colordict)
-# TODO: consider using yellow here too
-CMAP_ASSOCIATION.set_bad('wheat')
+CMAP_ASSOCIATION.set_bad(C_BAD)
 
 # Categorical
 CMAP_CATEGORICAL = Paired
 CMAP_CATEGORICAL_2 = Dark2
-# TODO: consider using yellow here too
-CMAP_CATEGORICAL.set_bad('wheat')
+CMAP_CATEGORICAL.set_bad(C_BAD)
 
 # Binary
-CMAP_BINARY = ListedColormap(['#CDCDCD', '#404040'])
-# TODO: consider using yellow here too
-CMAP_BINARY.set_bad('wheat')
+CMAP_BINARY = ListedColormap(['#cdcdcd', '#404040'])
+CMAP_BINARY.set_bad(C_BAD)
 
-DPI = 1000
+DPI = 100
 
 
 # ======================================================================================================================

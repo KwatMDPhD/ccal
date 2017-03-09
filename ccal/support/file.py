@@ -327,7 +327,7 @@ def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasi
 
 
 # ======================================================================================================================
-# .gmt functions
+# GMT functions
 # ======================================================================================================================
 def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, collapse=False):
     """
@@ -469,7 +469,7 @@ def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None
 # ======================================================================================================================
 # GEO functions
 # ======================================================================================================================
-def read_geo_annotation(filepath, annotation_names=('!Sample_geo_accession', '!Sample_characteristics_ch1')):
+def read_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!Sample_characteristics_ch1')):
     """
     Parse rows of GEO file.
     If the 1st column (annotation name) matches any of the annotation names in annotation_names,
