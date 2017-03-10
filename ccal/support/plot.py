@@ -106,6 +106,7 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
     decorate(title, xlabel, ylabel)
 
     save_plot(filepath)
+    return plt.gcf()
 
 
 def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
@@ -148,6 +149,7 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     decorate(title, xlabel, ylabel)
 
     save_plot(filepath)
+    return plt.gcf()
 
 
 def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
@@ -249,6 +251,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
 
     if filepath_prefix:
         save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
+    return plt.gcf()
 
 
 def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust=False, annot=None, fmt='.2g',
@@ -412,6 +415,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
         heatmap(DataFrame(column_annotation).T, ax=ax_top, cbar=False, xticklabels=False, yticklabels=False, cmap=cmap)
 
     save_plot(filepath)
+    return plt.gcf()
 
 
 def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclidean', z_score=None, standard_scale=None,
@@ -463,6 +467,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
     decorate(title, xlabel, ylabel, ax=ax_heatmap)
 
     save_plot(filepath)
+    return plt.gcf()
 
 
 def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, filepath=None):
@@ -510,6 +515,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
 
     if filepath:
         pdf.close()
+    return plt.gcf()
 
 
 def assign_colors_to_states(states, colors=None):
