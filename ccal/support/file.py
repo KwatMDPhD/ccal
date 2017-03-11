@@ -11,7 +11,6 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-import gzip
 from os import mkdir, listdir, environ
 from os.path import abspath, split, isdir, isfile, islink, join
 from sys import platform
@@ -466,66 +465,6 @@ def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None
 
 
 # ======================================================================================================================
-# GEO functions
-# ======================================================================================================================
-def read_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!Sample_characteristics_ch1')):
-    """
-    Parse rows of GEO compress.
-    If the 1st column (annotation name) matches any of the annotation names in annotation_names,
-    split the row by '\t' and save the split list as a row in the dataframe to returned.
-    :param filepath: str; filepath to a GEO compress (.txt or .gz)
-    :param annotation_names: iterable; list of str
-    :return DataFrame; (n_matched_annotation_names, n_tabs (n_samples))
-    """
-
-    df = DataFrame()
-
-    # Open GEO compress
-    if filepath.endswith('.gz'):
-        f = gzip.open(filepath)
-    else:
-        f = open(filepath)
-
-    # Parse rows
-    for line in f.readlines():
-
-        if isinstance(line, bytes):
-            line = line.decode()
-
-        if any([line.startswith(a_n) for a_n in annotation_names]):  # Annotation name matches
-
-            # Parse row
-            split_line = line.strip().split('\t')
-            name = split_line[0]
-            annotation = [s[1:-1] for s in split_line[1:]]
-
-            # Avoid same names
-            i = 2
-            formatter = '_${}'
-            while name in df.columns:
-                name = name.split(formatter.format(i - 1))[0] + formatter.format(i)
-                i += 1
-
-            # Make Series
-            s = Series(annotation, name=name)
-
-            # Concatenate to DataFrame
-            df = concat([df, s], axis=1)
-
-    # Close GEO compress
-    f.close()
-
-    df = df.T
-
-    if '!Sample_geo_accession' in annotation_names:  # Set columns indices to be sample accessions
-        df.columns = df.ix['!Sample_geo_accession', :]
-        df.columns.name = 'GEO Sample Accession'
-        df.drop('!Sample_geo_accession', inplace=True)
-
-    return df
-
-
-# ======================================================================================================================
 # .fpkm_tracking functions
 # ======================================================================================================================
 def read_fpkm_tracking(filepath, signature=None):
@@ -554,7 +493,7 @@ def read_fpkm_tracking(filepath, signature=None):
 
 
 # ======================================================================================================================
-# .vcf functions
+# VCF functions
 # ======================================================================================================================
 def read_vcf(filepath):
     """
@@ -649,7 +588,7 @@ def read_vcf(filepath):
 
 
 # ======================================================================================================================
-# .genome_engine*f functions
+# G*F functions
 # ======================================================================================================================
 def read_gff3(feature_filename, sources, types):
     """
