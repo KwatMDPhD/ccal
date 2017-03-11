@@ -13,12 +13,12 @@ Authors:
 
 from os.path import isfile
 
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.cm import Paired, Dark2, bwr
 from matplotlib.colorbar import make_axes, ColorbarBase
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap, Normalize, ColorConverter
 from matplotlib.gridspec import GridSpec
+from matplotlib.pyplot import figure, savefig, gca, gcf, sca, subplot, suptitle
 from matplotlib.pyplot import plot
 from numpy import array, unique, isnan
 from pandas import Series, DataFrame
@@ -80,17 +80,19 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
     :param ylabel:
     :param filepath:
     :param kwargs:
-    :return: None
+    :return: matplotlib figure
     """
 
     if 'ax' not in kwargs:
-        plt.figure(figsize=FIGURE_SIZE)
+        figure(figsize=FIGURE_SIZE)
 
     plot(*[list(a) for a in args], marker='o', **kwargs)
 
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
     save_plot(filepath)
+
+    return gcf()
 
 
 def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
@@ -118,11 +120,11 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     :param xlabel:
     :param ylabel:
     :param filepath:
-    :return:
+    :return: matplotlib figure
     """
 
     if not ax:
-        plt.figure(figsize=FIGURE_SIZE)
+        figure(figsize=FIGURE_SIZE)
 
     distplot(a, bins=bins, hist=hist, kde=kde, rug=rug, fit=fit, hist_kws=hist_kws, kde_kws=kde_kws, rug_kws=rug_kws,
              fit_kws=fit_kws, color=color, vertical=vertical, norm_hist=norm_hist, axlabel=axlabel, label=label,
@@ -131,6 +133,8 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
     save_plot(filepath)
+
+    return gcf()
 
 
 def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
@@ -180,12 +184,12 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     :param ylabel:
     :param filepath:
     :param kwargs:
-    :return: None
+    :return: matplotlib figure
     """
 
     # Initialize a figure
     if not ax:
-        plt.figure(figsize=figure_size)
+        figure(figsize=figure_size)
 
     if isinstance(x, str):
         x = data[x]
@@ -215,6 +219,8 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
 
     if filepath:
         save_plot(filepath)
+
+    return gcf()
 
 
 def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust=False, annot=None, fmt='.2g',
@@ -260,7 +266,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     :param ylabel_rotation:
     :param filepath:
     :param kwargs:
-    :return:
+    :return: matplotlib figure;
     """
 
     df = dataframe.copy()
@@ -304,15 +310,15 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
             row_annotation = row_annotation.iloc[row_indices]
         if isinstance(column_annotation, Series):
             column_annotation = column_annotation.iloc[column_indices]
-    plt.figure(figsize=FIGURE_SIZE)
+    figure(figsize=FIGURE_SIZE)
 
     gridspec = GridSpec(10, 10)
 
-    ax_top = plt.subplot(gridspec[0:1, 2:-2])
-    ax_center = plt.subplot(gridspec[1:8, 2:-2])
-    ax_bottom = plt.subplot(gridspec[8:10, 2:-2])
-    ax_left = plt.subplot(gridspec[1:8, 1:2])
-    ax_right = plt.subplot(gridspec[1:8, 8:9])
+    ax_top = subplot(gridspec[0:1, 2:-2])
+    ax_center = subplot(gridspec[1:8, 2:-2])
+    ax_bottom = subplot(gridspec[8:10, 2:-2])
+    ax_left = subplot(gridspec[1:8, 1:2])
+    ax_right = subplot(gridspec[1:8, 8:9])
 
     ax_top.axis('off')
     ax_bottom.axis('off')
@@ -379,6 +385,8 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
 
     save_plot(filepath)
 
+    return gcf()
+
 
 def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclidean', z_score=None, standard_scale=None,
                     figsize=FIGURE_SIZE, cbar_kws=None, row_cluster=True, col_cluster=True, row_linkage=None,
@@ -411,11 +419,11 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
     :param yticklabels:
     :param filepath:
     :param kwargs:
-    :return:
+    :return: matplotlib figure;
     """
 
     # Initialize a figure
-    plt.figure(figsize=figsize)
+    figure(figsize=figsize)
 
     # Plot cluster map
     clustergrid = clustermap(dataframe, pivot_kws=pivot_kws, method=method, metric=metric, z_score=z_score,
@@ -430,6 +438,8 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
 
     save_plot(filepath)
 
+    return gcf()
+
 
 def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, pdf=None, filepath=None):
     """
@@ -441,7 +451,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
     :param max_std: number; threshold to clip standardized values
     :param pdf: PdfPages;
     :param filepath: str;
-    :return: None
+    :return: matplotlib figure
     """
 
     # Check for W and H matrix
@@ -463,24 +473,26 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
         close_pdf = True
 
     # Initialize a figure
-    plt.figure(figsize=FIGURE_SIZE)
+    figure(figsize=FIGURE_SIZE)
 
     # Plot W matrix
     plot_heatmap(w_matrix, cluster=True,
                  title='W Matrix for k={}'.format(w_matrix.shape[1]), xlabel='Component', ylabel='Feature',
                  yticklabels=False, normalization_method='-0-', normalization_axis=0, max_std=max_std)
     if pdf:
-        plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
+        savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
     # Plot cluster map for H
     plot_heatmap(h_matrix, cluster=True,
                  title='H Matrix for k={}'.format(h_matrix.shape[0]), xlabel='Sample', ylabel='Component',
                  xticklabels=False, normalization_method='-0-', normalization_axis=1, max_std=max_std)
     if pdf:
-        plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
+        savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
     if pdf and close_pdf:
         pdf.close()
+
+    return gcf()
 
 
 # TODO: enable str states
@@ -544,9 +556,9 @@ def decorate(style=None,
 
     # Set ax
     if not ax:
-        ax = plt.gca()
+        ax = gca()
     else:
-        plt.sca(ax)
+        sca(ax)
 
     # Set global plot aesthetics
     if style:
@@ -556,7 +568,7 @@ def decorate(style=None,
 
     # Title
     if title:
-        plt.suptitle(title, **FONT_TITLE)
+        suptitle(title, **FONT_TITLE)
 
     # Label x axis
     if not xlabel:
@@ -607,14 +619,16 @@ def decorate(style=None,
 
 def save_plot(filepath, overwrite=True, dpi=DPI):
     """
-    Establish filepath and save plot (.pdf) at dpi resolution.
+    Establish filepath and save plot (.pdf) at dpi resolution if filepath does not exists or overwrite is True.
     :param filepath: str;
     :param suffix: str;
     :param overwrite: bool;
     :param dpi: int;
     :return: None
     """
-    if filepath:
-        if not isfile(filepath) or overwrite:  # If the figure doesn't exist or overwriting
-            establish_filepath(filepath)
-            plt.savefig(filepath, dpi=dpi, bbox_inches='tight')
+
+    if not isfile(filepath) or overwrite:  # If the figure doesn't exist or overwriting
+        establish_filepath(filepath)
+        savefig(filepath, dpi=dpi, bbox_inches='tight')
+    else:
+        print('Did not overwrite {}.'.format(filepath))
