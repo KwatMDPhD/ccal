@@ -365,6 +365,8 @@ def make_oncogps(training_h,
                  highlight_high_magnitude=True,
                  annotate_background=False,
 
+                 plot_samples_with_missing_annotation=False,
+
                  title='Onco-GPS Map',
                  title_fontsize=26,
                  title_fontcolor='#3326C0',
@@ -647,6 +649,8 @@ def make_oncogps(training_h,
                    annotation_ascending=annotation_ascending,
                    highlight_high_magnitude=highlight_high_magnitude,
 
+                   plot_samples_with_missing_annotation=plot_samples_with_missing_annotation,
+
                    annotation_grids=annotation_grids,
                    annotation_grids_probabilities=annotation_grids_probabilities,
 
@@ -863,6 +867,8 @@ def _plot_onco_gps(components,
                    annotation_type,
                    annotation_ascending,
                    highlight_high_magnitude,
+
+                   plot_samples_with_missing_annotation,
 
                    annotation_grids,
                    annotation_grids_probabilities,
@@ -1195,8 +1201,11 @@ def _plot_onco_gps(components,
         for idx, s in samples.iterrows():
             a = s.ix['annotation_for_plot']
             if isnull(a):  # Missing annotation
-                markersize = 1
-                c = bad_color
+                if not plot_samples_with_missing_annotation:
+                    continue
+                else:
+                    markersize = 1
+                    c = bad_color
             else:
                 markersize = sample_markersize
                 if annotation_type == 'continuous':

@@ -14,7 +14,6 @@ Authors:
 import gzip
 from os import mkdir, listdir, environ
 from os.path import abspath, split, isdir, isfile, islink, join
-from pprint import pprint
 from sys import platform
 
 from Bio import bgzf
@@ -70,7 +69,7 @@ def establish_filepath(filepath):
 
     # Get missing directories
     missing_directories = []
-    while not (isdir(prefix) or isfile(prefix) or islink(prefix)):  # prefix isn't file, directory, or link
+    while not (isdir(prefix) or isfile(prefix) or islink(prefix)):  # prefix isn't compress, directory, or link
         missing_directories.append(prefix)
 
         # Check prefix's prefix next
@@ -84,9 +83,9 @@ def establish_filepath(filepath):
 
 def split_file_extension(filepath):
     """
-    Get filepath without file suffix and the suffix from filepath; get foo and txt from foo.txt
+    Get filepath without compress suffix and the suffix from filepath; get foo and txt from foo.txt
     :param filepath: str; filepath
-    :return: str and str; filepath without file suffix and the suffix
+    :return: str and str; filepath without compress suffix and the suffix
     """
 
     split_filepath = filepath.split('.')
@@ -145,7 +144,7 @@ def load_gct(matrix):
         matrix = read_gct(matrix)
 
     elif not isinstance(matrix, DataFrame):  # .gct is not a filepath or DataFrame
-        raise ValueError('Matrix must be either a DataFrame or a path to a .gct file.')
+        raise ValueError('Matrix must be either a DataFrame or a path to a .gct compress.')
 
     return matrix
 
@@ -298,7 +297,7 @@ def load_data_table(data_table, indices=None):
 def read_data_table(filepath):
     """
     Read .data_table.
-    :param filepath: str; file path to a .data_table
+    :param filepath: str; compress path to a .data_table
     :return: DataFrame
     """
 
@@ -313,7 +312,7 @@ def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasi
         ('gene_expression', 'continuous', 'high', 'filepath),
         ('drug_sensitivity', 'continuous', 'low', 'filepath),
         ...]
-    :param filepath: str; file path to a .data_table (.data_table suffix will be automatically added if not present)
+    :param filepath: str; compress path to a .data_table (.data_table suffix will be automatically added if not present)
     :param columns: iterable;
     :return: None
     """
@@ -332,7 +331,7 @@ def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasi
 def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, collapse=False):
     """
     Read 1 or more GMTs.
-    :param filepaths: str; filepath to a .gmt file
+    :param filepaths: str; filepath to a .gmt compress
     :param gene_sets: iterable: list of gene set names to keep
     :param drop_description: bool; drop Description column (2nd column) or not
     :param save_clean: bool; Save as .gmt (cleaned version) or not
@@ -364,7 +363,7 @@ def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, c
 def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=False, collapse=False):
     """
     Read GMT.
-    :param filepath: str; filepath to a .gmt file
+    :param filepath: str; filepath to a .gmt compress
     :param gene_sets: iterable: list of gene set names to keep
     :param drop_description: bool; drop Description column (2nd column) or not
     :param save_clean: bool; Save as .gmt (cleaned version) or not
@@ -413,7 +412,7 @@ def write_gmt(gmt, filepath):
     """
     Write a GMT DataFrame to filepath.gmt.
     :param gmt: DataFrame;
-    :param filepath: str; filepath to a GMT file
+    :param filepath: str; filepath to a GMT compress
     :return: DataFrame; GMT
     """
 
@@ -439,7 +438,7 @@ def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None
     :param filepath: str;
     :param gene_column: str; column name; dataframe index is the default
     :param score_column: str; column name; 1st column is the default
-    :param comment: str; comments; '# comments' is added to the beginning of the file
+    :param comment: str; comments; '# comments' is added to the beginning of the compress
     :return: None
     """
 
@@ -471,17 +470,17 @@ def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None
 # ======================================================================================================================
 def read_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!Sample_characteristics_ch1')):
     """
-    Parse rows of GEO file.
+    Parse rows of GEO compress.
     If the 1st column (annotation name) matches any of the annotation names in annotation_names,
     split the row by '\t' and save the split list as a row in the dataframe to returned.
-    :param filepath: str; filepath to a GEO file (.txt or .gz)
+    :param filepath: str; filepath to a GEO compress (.txt or .gz)
     :param annotation_names: iterable; list of str
     :return DataFrame; (n_matched_annotation_names, n_tabs (n_samples))
     """
 
     df = DataFrame()
 
-    # Open GEO file
+    # Open GEO compress
     if filepath.endswith('.gz'):
         f = gzip.open(filepath)
     else:
@@ -513,7 +512,7 @@ def read_geo_annotations(filepath, annotation_names=('!Sample_geo_accession', '!
             # Concatenate to DataFrame
             df = concat([df, s], axis=1)
 
-    # Close GEO file
+    # Close GEO compress
     f.close()
 
     df = df.T
@@ -646,17 +645,11 @@ def read_vcf(filepath):
     # Read data
     vcf['data'] = read_csv(filepath, sep='\t', comment='#', header=None, names=vcf['header'])
 
-    print('********* VCF dict (without data) *********')
-    for k, v in vcf.items():
-        if k != 'data':
-            pprint({k: v}, compact=True, width=110)
-    print('*******************************************')
-
     return vcf
 
 
 # ======================================================================================================================
-# .g*f functions
+# .genome_engine*f functions
 # ======================================================================================================================
 def read_gff3(feature_filename, sources, types):
     """

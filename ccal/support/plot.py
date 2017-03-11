@@ -24,10 +24,8 @@ from numpy import array, unique, isnan
 from pandas import Series, DataFrame
 from seaborn import set_style, despine, distplot, barplot, violinplot, boxplot, heatmap, clustermap
 
-from .d1 import discretize_categories
 from .d2 import get_dendrogram_leaf_indices, normalize_2d_or_1d
 from .file import establish_filepath
-from ..machine_learning.score import compute_association_and_pvalue
 
 # ======================================================================================================================
 # Parameter
@@ -140,7 +138,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
                            orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None,
                            fliersize=5, whis=1.5, notch=False,
                            ci=95, n_boot=1000, units=None, errcolor='0.26', errwidth=None, capsize=None,
-                           violin_or_box='violin', colors=(), n_permutations=1000,
+                           violin_or_box='violin', colors=(),
                            figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None, filepath=None,
                            **kwargs):
     """
@@ -176,7 +174,6 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     :param capsize:
     :param violin_or_box:
     :param colors: iterable;
-    :param n_permutations: int;
     :param figure_size: tuple;
     :param title:
     :param xlabel:
@@ -213,18 +210,6 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
                     whis=whis, notch=notch, ax=ax, **kwargs)
         else:
             raise ValueError('\'violin_or_box\' must be either \'violin\' or \'box\'.')
-
-    # Score; discretize str valued iterables if not already discretized
-    if isinstance(x, str):
-        x = discretize_categories(data.ix[:, x])
-    if isinstance(y, str):
-        y = discretize_categories(data.ix[:, y])
-
-    if 0 < n_permutations:
-        score, pval = compute_association_and_pvalue(x, y, n_permutations=n_permutations)
-        l, r, b, t = plt.gca().axis()
-        plt.gca().text((l + r) / 2, t + 0.016 * t, 'IC = {0:.3f} & P-val = {1:.3f}'.format(score, pval),
-                       horizontalalignment='center', **FONT_SUBTITLE)
 
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
@@ -541,19 +526,20 @@ def decorate(style=None,
              ax=None):
     """
 
-    :param title:
-    :param xlabel:
-    :param ylabel:
+    :param style: str;
+    :param title: str;
+    :param xlabel: str;
+    :param ylabel: str;
     :param xlabel_rotation:
     :param ylabel_rotation:
-    :param xticks:
-    :param yticks:
+    :param xticks: iterable;
+    :param yticks: iterable;
     :param max_n_xticks:
     :param max_n_yticks:
     :param max_xtick_size:
     :param max_ytick_size:
     :param ax: Axes; sets the current ax to be ax
-    :return:
+    :return: None
     """
 
     # Set ax
