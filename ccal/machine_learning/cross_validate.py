@@ -13,7 +13,7 @@ Authors:
 
 from numpy import average
 from scipy.stats import pearsonr
-from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 
 
 def cross_validate(model, data, target, n_partitions):
@@ -27,7 +27,7 @@ def cross_validate(model, data, target, n_partitions):
     """
 
     # Initialize indexes for cross validation folds
-    folds = KFold(len(data), n_partitions, shuffle=True)
+    folds = KFold(len(data), n_partitions)
 
     # List to keep cross validation scores
     scores = []

@@ -39,7 +39,7 @@ def install_libraries(libraries_needed):
     :return: None
     """
 
-    print_log('Checking library dependencies ...')
+    print_log('Checking dependencies ({}) ...'.format(', '.join(libraries_needed)))
 
     # Get currently installed libraries
     libraries_installed = [lib.key for lib in get_installed_distributions()]

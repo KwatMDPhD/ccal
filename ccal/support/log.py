@@ -14,9 +14,10 @@ Authors:
 from datetime import datetime
 from multiprocessing import current_process
 
-VERBOSE = False
+VERBOSE = True
 
 
+# TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
 def print_log(string, print_process=False):
     """
     Print string together with logging information.
@@ -25,11 +26,10 @@ def print_log(string, print_process=False):
     :return: None
     """
 
-    # TODO: use logging (https://docs.python.org/3.5/howto/logging.html)
     if VERBOSE:
-        to_print = '<{}> {}'.format(timestamp(time_only=True), string)
+        to_print = '[{}] {}'.format(timestamp(time_only=False), string)
         if print_process:
-            to_print = '[{}] {}'.format(current_process().name, to_print)
+            to_print = '<{}> {}'.format(current_process().name, to_print)
         print(to_print)
 
 
@@ -41,7 +41,7 @@ def timestamp(time_only=False):
     """
 
     if time_only:
-        formatter = '%H%M%S'
+        formatter = '%H:%M:%S'
     else:
-        formatter = '%Y%m%d%H%M%S'
+        formatter = '%Y-%m-%d %H:%M:%S'
     return datetime.now().strftime(formatter)

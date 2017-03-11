@@ -11,12 +11,17 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import finfo, dot, multiply, divide, sum, log, matrix
+from os.path import join
+
+from matplotlib.backends.backend_pdf import PdfPages
+from numpy import finfo, dot, multiply, divide, sum, log, matrix, ndarray
 from numpy.random import seed, rand
 from pandas import DataFrame
 from sklearn.decomposition import NMF
 
 from .. import RANDOM_SEED
+from ..support.file import establish_filepath, write_gct
+from ..support.plot import plot_nmf
 
 
 def nmf(matrix_, ks, algorithm='Lee & Seung',
@@ -87,7 +92,9 @@ def nmf_div(V, k, n_max_iterations=1000, random_seed=RANDOM_SEED):
     Non-negative matrix factorize matrix with k from ks using divergence.
     :param V: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
     :param k: int; number of components
-    :param random_seed: int; random state
+    :param n_max_iterations: int;
+    :param random_seed:
+    :return:
     """
 
     eps = finfo(float).eps
@@ -95,28 +102,44 @@ def nmf_div(V, k, n_max_iterations=1000, random_seed=RANDOM_SEED):
     N = V.shape[0]
     M = V.shape[1]
     V = matrix(V)
-
     seed(random_seed)
     W = rand(N, k)
     H = rand(k, M)
-
     for t in range(n_max_iterations):
         VP = dot(W, H)
         W_t = matrix.transpose(W)
         H = multiply(H, dot(W_t, divide(V, VP))) + eps
-
         for i in range(k):
             W_sum = 0
             for j in range(N):
                 W_sum += W[j, i]
             for j in range(M):
                 H[i, j] = H[i, j] / W_sum
-
         VP = dot(W, H)
         H_t = matrix.transpose(H)
         W = multiply(W, dot(divide(V, VP + eps), H_t)) + eps
-        W = divide(W, sum(H, axis=1, keepdims=False))
+        W = divide(W, ndarray.sum(H, axis=1, keepdims=False))
 
     err = sum(multiply(V, log(divide(V + eps, VP + eps))) - V + VP) / (M * N)
 
     return W, H, err
+
+
+def save_and_plot_nmf_decompositions(nmf_decompositions, directory_path):
+    """
+    Save and plot NMF decompositions.
+    :param nmf_decompositions: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
+                              {k: Cophenetic Correlation Coefficient}
+    :param directory_path: str; directory_path/nmf.pdf & directory_path/matrices/nmf_k{k}_{w, h}.gct will be saved
+    :return: None
+    """
+
+    establish_filepath(join(directory_path, 'nmf/'))
+    with PdfPages(join(directory_path, 'nmf/nmf.pdf')) as pdf:
+        for k, nmf_d in nmf_decompositions.items():
+            print('Saving and plotting NMF decompositions with K={} ...'.format(k))
+
+            write_gct(nmf_d['w'], join(directory_path, 'nmf/nmf_k{}_w.gct'.format(k)))
+            write_gct(nmf_d['h'], join(directory_path, 'nmf/nmf_k{}_h.gct'.format(k)))
+
+            plot_nmf(nmf_decompositions, k, pdf=pdf)
