@@ -124,17 +124,6 @@ def remove_nested_quotes(str_):
     return str_
 
 
-def indent_str(str_, n_tabs=1):
-    """
-    Indent block of text by adding a n_tabs number of tabs (default 1) to the beginning of each line.
-    :param str_:
-    :param n_tabs:
-    :return:
-    """
-
-    return '\n'.join(['\t' * n_tabs + line for line in str_.split('\n')])
-
-
 def reset_encoding(str_):
     """
 
@@ -170,3 +159,21 @@ def split_ignoring_inside_quotes(str_, sep):
             else:
                 to_return.append(s)
     return to_return
+
+
+def sort_numerically(string_iterable, reverse=False):
+    """
+
+    :param string_iterable:
+    :param reverse:
+    :return:
+    """
+    digit_parser = re.compile(r'[A-Za-z]+|\d+')
+
+    def maybe_int(s):
+        try:
+            return int(s)
+        except ValueError:
+            return s
+
+    return sorted(string_iterable, key=lambda x: [maybe_int(s) for s in re.findall(digit_parser, x)], reverse=reverse)

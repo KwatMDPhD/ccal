@@ -25,11 +25,10 @@ from seaborn import heatmap
 from statsmodels.sandbox.stats.multicomp import multipletests
 
 from .. import RANDOM_SEED
-from ..machine_learning.normalize import normalize_dataframe_or_series
 from ..machine_learning.score import compute_similarity_matrix
 from ..mathematics.information import information_coefficient
 from ..support.d1 import get_unique_in_order
-from ..support.d2 import get_top_and_bottom_indices, split_dataframe
+from ..support.d2 import get_top_and_bottom_indices, split_dataframe, normalize_2d_or_1d
 from ..support.file import establish_filepath
 from ..support.log import print_log
 from ..support.parallel_computing import parallelize
@@ -49,6 +48,7 @@ def make_association_summary_panel(target, data_bundle, annotation_files, order=
     :param data_bundle: dict;
     :param annotation_files: dict;
     :param order: iterable;
+    :param target_ascending: bool;
     :param target_type: str;
     :param title; str;
     :param filepath: str;
@@ -661,7 +661,7 @@ def _plot_association_panel(target, features, annotations,
 
 def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
     if data_type == 'continuous':
-        return normalize_dataframe_or_series(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_ASSOCIATION
+        return normalize_2d_or_1d(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_ASSOCIATION
     elif data_type == 'categorical':
         return dataframe.copy(), 0, len(unique(dataframe)), CMAP_CATEGORICAL
     elif data_type == 'binary':

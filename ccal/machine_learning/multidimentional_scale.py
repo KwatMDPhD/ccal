@@ -11,39 +11,40 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from pandas import DataFrame
 from sklearn.manifold import MDS
 
-from .normalize import normalize_dataframe_or_series
 from .score import compute_similarity_matrix
 from .. import RANDOM_SEED
 
 
-def mds(matrix, distance_function=None, random_seed=RANDOM_SEED, n_init=1000, max_iter=1000, standardize=True):
+# TODO: set better default parameters: lower eps and n_init
+def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=1000, max_iter=1000, verbose=0,
+        eps=1e-3, n_jobs=1, random_state=RANDOM_SEED):
     """
-    Multidimentional-scale rows of matrix from <n_cols>D into 2D.
-    :param matrix: DataFrame; (n_points, n_dimentions)
-    :param distance_function: function; capable of computing the distance between 2 vectors
-    :param random_seed: int; random seed for setting the coordinates of the multidimensional scaling
+    Multidimensional-scale rows of matrix from <n_dimensions>D into <n_components>D.
+    :param matrix: DataFrame; (n_points, n_dimensions)
+    :param matrix:
+    :param n_components:
+    :param dissimilarity: str or function; given metric or capable of computing the distance between 2 array-likes
+    :param metric:
     :param n_init: int;
     :param max_iter: int;
-    :param standardize: bool;
-    :return: DataFrame; (n_points, 2 ('x', 'y'))
+    :param verbose:
+    :param eps:
+    :param n_jobs:
+    :param random_state: int; random seed for the initial coordinates
+    :return: ndarray; (n_points, n_components)
     """
 
-    if distance_function:  # Use precomputed distances
-        mds_obj = MDS(dissimilarity='precomputed', random_state=random_seed, n_init=n_init, max_iter=max_iter)
-        coordinates = mds_obj.fit_transform(
-            compute_similarity_matrix(matrix, matrix, distance_function, is_distance=True, axis=1))
-
-    else:  # Use Euclidean distances
-        mds_obj = MDS(random_state=random_seed, n_init=n_init, max_iter=max_iter)
+    if isinstance(dissimilarity, str):
+        mds_obj = MDS(n_components=n_components, dissimilarity=dissimilarity, metric=metric, n_init=n_init,
+                      max_iter=max_iter, verbose=verbose, eps=eps, n_jobs=n_jobs, random_state=random_state)
         coordinates = mds_obj.fit_transform(matrix)
 
-    # Convert to DataFrame
-    coordinates = DataFrame(coordinates, index=matrix.index, columns=['x', 'y'])
-
-    if standardize:  # Rescale coordinates between 0 and 1
-        coordinates = normalize_dataframe_or_series(coordinates, method='0-1', axis=0)
+    else:  # Compute distances using dissimilarity, a function
+        mds_obj = MDS(n_components=n_components, dissimilarity='precomputed', metric=metric, n_init=n_init,
+                      max_iter=max_iter, verbose=verbose, eps=eps, n_jobs=n_jobs, random_state=random_state)
+        coordinates = mds_obj.fit_transform(
+            compute_similarity_matrix(matrix, matrix, dissimilarity, is_distance=True, axis=1))
 
     return coordinates

@@ -1,5 +1,5 @@
 {
-  "library_path": "CompBio/ccal",
+  "library_path": "Jumis/tools/ccal",
   "tasks": [
     {
       "label": "Read .GCT File",
