@@ -39,8 +39,9 @@ from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d, normalize_2d_or_1d
 from ..support.file import read_gct, establish_filepath, write_dict, load_gct, write_gct
 from ..support.log import print_log
-from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, DPI, plot_heatmap, \
-    plot_points, plot_nmf, assign_colors_to_states, save_plot
+from ..support.plot import FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, plot_heatmap, plot_points, \
+    plot_nmf, assign_colors_to_states, save_plot
+
 
 
 # ======================================================================================================================
@@ -404,8 +405,82 @@ def make_oncogps(training_h,
 
                  legend_markersize=16,
                  legend_fontsize=16,
+                 filepath=None,
+                 format='pdf',
+                 dpi=DPI):
+    """
+    :param training_h: DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param training_states: iterable of int; (n_samples); sample states
+    :param std_max: number; threshold to clip standardized values
 
-                 filepath=None):
+    :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
+    :param testing_states: iterable of int; (n_samples); sample states
+    :param testing_h_normalization: str or None; {'using_training_h', 'using_testing_h', None}
+
+    :param components: DataFrame; (n_components, 2 [x, y]); component coordinates
+    :param equilateral: bool;
+    :param informational_mds: bool; use informational MDS or not
+    :param mds_seed: int; random seed for setting the coordinates of the multidimensional scaling
+
+    :param n_pulls: int; [1, n_components]; number of components influencing a sample's coordinate
+    :param power: str or number; power to raise components' influence on each sample
+    :param fit_min: number;
+    :param fit_max: number;
+    :param power_min: number;
+    :param power_max: number;
+
+    :param n_grids: int; number of grids; larger the n_grids, higher the resolution
+    :param kde_bandwidths_factor: number; factor to multiply KDE bandwidths
+
+    :param samples_to_plot: indexer; (n_training_samples), (n_testing_samples), or (n_sample_indices)
+    :param component_ratio: number; number if int; percentile if float & < 1
+
+    :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
+    :param annotation_name: str;
+    :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+    :param annotation_ascending: bool;
+    :param highlight_high_magnitude: bool;
+
+    :param title: str;
+    :param title_fontsize: number;
+    :param title_fontcolor: matplotlib color;
+
+    :param subtitle_fontsize: number;
+    :param subtitle_fontcolor: matplotlib color;
+
+    :param component_marker: str;
+    :param component_markersize: number;
+    :param component_markerfacecolor: matplotlib color;
+    :param component_markeredgewidth: number;
+    :param component_markeredgecolor: matplotlib color;
+    :param component_names: iterable; (n_components)
+    :param component_fontsize: number;
+
+    :param delaunay_linewidth: number;
+    :param delaunay_linecolor: matplotlib color;
+
+    :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
+    :param bad_color: matplotlib color;
+    :param max_background_saturation: float; [0, 1]
+
+    :param n_contours: int; set to 0 to disable drawing contours
+    :param contour_linewidth: number;
+    :param contour_linecolor: matplotlib color;
+    :param contour_alpha: float; [0, 1]
+
+    :param sample_markersize: number;
+    :param sample_markeredgewidth: number;
+    :param sample_markeredgecolor: matplotlib color;
+    :param sample_name_size: number;
+    :param sample_name_color: matplotlib color; not plotting sample if None
+
+    :param legend_markersize: number;
+    :param legend_fontsize: number;
+
+    :param filepath: str;
+    :param format: str;
+    :param dpi: number;
+    """
     # ==================================================================================================================
     # Process training H matrix
     #   Set H matrix's indices to be str (better for .ix)
@@ -426,6 +501,7 @@ def make_oncogps(training_h,
         normalizing_size = None
         normalizing_mean = None
         normalizing_std = None
+
 
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
 
@@ -694,7 +770,9 @@ def make_oncogps(training_h,
                    legend_markersize=legend_markersize,
                    legend_fontsize=legend_fontsize,
 
-                   filepath=filepath)
+                   filepath=filepath,
+                   format=format,
+                   dpi=dpi)
 
 
 def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
@@ -913,7 +991,9 @@ def _plot_onco_gps(components,
                    legend_markersize,
                    legend_fontsize,
 
-                   filepath):
+                   filepath,
+                   format,
+                   dpi):
     """
     Plot Onco-GPS map.
 
@@ -950,7 +1030,7 @@ def _plot_onco_gps(components,
 
     :param delaunay_linewidth: number;
     :param delaunay_linecolor: matplotlib color;
-
+    
     :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
     :param bad_color: matplotlib color;
     :param background_alpha_factor: float; [0, 1]
@@ -972,7 +1052,9 @@ def _plot_onco_gps(components,
     :param legend_fontsize: number;
 
     :param filepath: str;
-
+    :param format: str;
+    :param dpi: number;
+    
     :return: None
     """
 
@@ -1267,7 +1349,7 @@ def _plot_onco_gps(components,
                         zorder=7)
 
     if filepath:
-        save_plot(filepath)
+        save_plot(filepath, format=format, dpi=dpi)
 
 
 def make_oncogps_in_3d(training_h,
