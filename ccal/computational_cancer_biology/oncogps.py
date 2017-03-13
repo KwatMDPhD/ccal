@@ -37,7 +37,7 @@ from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d
 from ..support.file import read_gct, establish_filepath, load_gct, write_gct, write_dict
 from ..support.log import print_log
-from ..support.plot import FIGURE_SIZE, CMAP_CONTINUOUS, CMAP_CATEGORICAL_2, CMAP_BINARY, plot_heatmap, plot_points, \
+from ..support.plot import FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL_2, CMAP_BINARY, plot_heatmap, plot_points, \
     plot_nmf, assign_colors_to_states, save_plot
 
 
@@ -474,7 +474,9 @@ def make_oncogps(training_h,
                  legend_markersize=16,
                  legend_fontsize=16,
 
-                 filepath=None):
+                 filepath=None,
+                 format='pdf',
+                 dpi=DPI):
     """
     :param training_h: DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param training_states: iterable of int; (n_samples); sample states
@@ -545,6 +547,8 @@ def make_oncogps(training_h,
     :param legend_fontsize: number;
 
     :param filepath: str;
+    :param format: str;
+    :param dpi: number;
 
     :return: None
     """
@@ -721,7 +725,9 @@ def make_oncogps(training_h,
                    legend_markersize=legend_markersize,
                    legend_fontsize=legend_fontsize,
 
-                   filepath=filepath)
+                   filepath=filepath,
+                   format=format,
+                   dpi=dpi)
 
 
 # ======================================================================================================================
@@ -1044,7 +1050,9 @@ def _plot_onco_gps(components,
                    legend_markersize,
                    legend_fontsize,
 
-                   filepath):
+                   filepath,
+                   format,
+                   dpi):
     """
     Plot Onco-GPS map.
     :param components: DataFrame; (n_components, 2 [x, y]);
@@ -1088,6 +1096,8 @@ def _plot_onco_gps(components,
     :param legend_markersize: number;
     :param legend_fontsize: number;
     :param filepath: str;
+    :param format: str;
+    :param dpi: number;
     :return: None
     """
 
@@ -1325,4 +1335,4 @@ def _plot_onco_gps(components,
                         zorder=7)
 
     if filepath:
-        save_plot(filepath)
+        save_plot(filepath, format=format, dpi=dpi)

@@ -76,7 +76,7 @@ DPI = 1000
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
+def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, format='pdf', dpi=DPI, **kwargs):
     """
 
     :param args:
@@ -84,6 +84,8 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
     :param xlabel:
     :param ylabel:
     :param filepath:
+    :param format:
+    :param dpi:
     :param kwargs:
     :return: None
     """
@@ -105,13 +107,13 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, **kwargs):
 
     decorate(title, xlabel, ylabel)
 
-    save_plot(filepath)
+    save_plot(filepath, format, dpi)
     return plt.gcf()
 
 
 def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
                       fit_kws=None, color=None, vertical=False, norm_hist=False, axlabel=None, label=None,
-                      ax=None, title='', xlabel='', ylabel='Frequency', filepath=None):
+                      ax=None, title='', xlabel='', ylabel='Frequency', filepath=None, format='pdf', dpi=DPI):
     """
 
     :param a:
@@ -134,6 +136,8 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     :param xlabel:
     :param ylabel:
     :param filepath:
+    :param format:
+    :param dpi:
     :return:
     """
 
@@ -148,7 +152,7 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
 
     decorate(title, xlabel, ylabel)
 
-    save_plot(filepath)
+    save_plot(filepath, format, dpi)
     return plt.gcf()
 
 
@@ -158,7 +162,8 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
                            fliersize=5, whis=1.5, notch=False,
                            ci=95, n_boot=1000, units=None, errcolor='0.26', errwidth=None, capsize=None,
                            violin_or_box='violin', colors=(), n_permutations=1000,
-                           figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None, filepath_prefix=None,
+                           figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None,
+                           filepath_prefix=None, format='pdf', dpi=DPI,
                            **kwargs):
     """
     Plot violin plot.
@@ -199,6 +204,8 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     :param xlabel:
     :param ylabel:
     :param filepath_prefix:
+    :param format:
+    :param dpi:
     :param kwargs:
     :return: None
     """
@@ -250,7 +257,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     despine(left=True)
 
     if filepath_prefix:
-        save_plot(filepath_prefix + '{}.pdf'.format(untitle_str(title)))
+        save_plot(filepath_prefix + '{}.{}'.format(untitle_str(title), format), format, dpi)
     return plt.gcf()
 
 
@@ -260,7 +267,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
                  data_type='continuous', normalization_method='-0-', normalization_axis=0, max_std=3, sort_axis=None,
                  cluster=False, row_annotation=(), column_annotation=(), annotation_colors=(),
                  title=None, xlabel=None, ylabel=None, xlabel_rotation=0, ylabel_rotation=90,
-                 filepath=None, **kwargs):
+                 filepath=None, format='pdf', dpi=DPI, **kwargs):
     """
     Plot heatmap.
     :param dataframe:
@@ -296,6 +303,8 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     :param xlabel_rotation:
     :param ylabel_rotation:
     :param filepath:
+    :param format:
+    :param dpi:
     :param kwargs:
     :return:
     """
@@ -414,7 +423,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
                 cmap = CMAP_CATEGORICAL
         heatmap(DataFrame(column_annotation).T, ax=ax_top, cbar=False, xticklabels=False, yticklabels=False, cmap=cmap)
 
-    save_plot(filepath)
+    save_plot(filepath, format=format, dpi=dpi)
     return plt.gcf()
 
 
@@ -422,7 +431,8 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
                     figsize=FIGURE_SIZE, cbar_kws=None, row_cluster=True, col_cluster=True, row_linkage=None,
                     col_linkage=None,
                     row_colors=None, col_colors=None, annotate=False, mask=None, cmap=CMAP_CONTINUOUS,
-                    title=None, xlabel=None, ylabel=None, xticklabels=True, yticklabels=True, filepath=None, **kwargs):
+                    title=None, xlabel=None, ylabel=None, xticklabels=True, yticklabels=True,
+                    filepath=None, format='pdf', dpi=DPI, **kwargs):
     """
 
     :param dataframe:
@@ -448,6 +458,8 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
     :param xticklabels:
     :param yticklabels:
     :param filepath:
+    :param format:
+    :param dpi:
     :param kwargs:
     :return:
     """
@@ -466,7 +478,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
 
     decorate(title, xlabel, ylabel, ax=ax_heatmap)
 
-    save_plot(filepath)
+    save_plot(filepath, format, dpi)
     return plt.gcf()
 
 
@@ -479,6 +491,8 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
     :param h_matrix: DataFrame
     :param max_std: number; threshold to clip standardized values
     :param filepath: str;
+    :param format:
+    :param dpi:
     :return: None
     """
 
@@ -633,9 +647,9 @@ def decorate(title,
         ax.set_yticklabels(yticks, **FONT)
 
 
-def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
+def save_plot(filepath, format='pdf', overwrite=True, dpi=DPI):
     """
-    Establish filepath and save plot (.pdf) at dpi resolution.
+    Establish filepath and save plot (.pdf default) at dpi resolution.
     :param filepath: str;
     :param suffix: str;
     :param overwrite: bool;
@@ -644,9 +658,9 @@ def save_plot(filepath, suffix='.pdf', overwrite=True, dpi=DPI):
     """
 
     if filepath:
-        if not filepath.endswith(suffix):
-            filepath += suffix
+        if not filepath.endswith('.' + format):
+            filepath += '.' + format
 
         if not isfile(filepath) or overwrite:  # If the figure doesn't exist or overwriting
             establish_filepath(filepath)
-            plt.savefig(filepath, dpi=dpi, bbox_inches='tight')
+            plt.savefig(filepath, dpi=dpi, bbox_inches='tight', format=format)
