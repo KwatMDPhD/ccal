@@ -22,6 +22,7 @@ from .support.system import install_libraries
 install_libraries([
     'rpy2',
     'plotly',
+    'biopython',
 ])
 
 from .computational_cancer_biology import association, oncogps, mutual_vulnerability, gsea, inference
