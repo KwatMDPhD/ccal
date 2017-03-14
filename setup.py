@@ -22,6 +22,7 @@ setup(name='ccal',
                    'Programming Language :: Python :: 3.5'],
       keywords=['computational cancer biology genomics'],
       install_requires=[
+          'biopython',
           'rpy2',
           'plotly',
       ],
