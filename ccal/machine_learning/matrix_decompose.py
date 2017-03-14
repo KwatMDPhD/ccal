@@ -143,3 +143,41 @@ def save_and_plot_nmf_decompositions(nmf_decompositions, directory_path):
             write_gct(nmf_d['h'], join(directory_path, 'nmf/nmf_k{}_h.gct'.format(k)))
 
             plot_nmf(nmf_decompositions, k, pdf=pdf)
+
+
+def nmf_bcv(x, nmf, nfold=2, nrepeat=1):
+    """
+    Bi-crossvalidation of NMF as in Owen and Perry (2009).
+    Note that this implementation does not require the intermediates to be non-negative. Details of how to add this
+    constraint can be found on page 11 (beginning of section 5) of Owen and Perry (2009); the authors did not seem to
+    consider it especially important for quality of model selection.
+    :param x: data array to be decomposed, (nsamples, nfeatures)
+    :param nmf: sklearn NMF object, already initialized
+    :param nfold: number of folds for cross-validation (O&P suggest 2)
+    :param nrepeat: how many times to repeat, to average out variation based on which rows and columns were held out
+    :return: mean_error, mean mse across nrepeat
+    """
+    errors = []
+    for rep in range(nrepeat):
+        kf_rows = KFold(x.shape[0], nfold, shuffle=True)
+        kf_cols = KFold(x.shape[1], nfold, shuffle=True)
+        for row_train, row_test in kf_rows:
+            for col_train, col_test in kf_cols:
+                a = x[row_test][:, col_test]
+                base_error = mean_squared_error(a, np.zeros(a.shape))
+                b = x[row_test][:, col_train]
+                c = x[row_train][:, col_test]
+                d = x[row_train][:, col_train]
+                nmf.fit(d)
+                hd = nmf.components_
+                wd = nmf.transform(d)
+                wa = np.dot(b, hd.T)
+                ha = np.dot(wd.T, c)
+                a_prime = np.dot(wa, ha)
+                a_notzero = a != 0
+                scaling_factor = np.mean(np.divide(a_prime, a)[a_notzero])
+                scaled_a_prime = a_prime / scaling_factor
+                error = mean_squared_error(a, scaled_a_prime) / base_error
+                errors.append(error)
+    mean_error = np.mean(errors)
+    return mean_error
