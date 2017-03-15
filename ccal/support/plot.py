@@ -71,7 +71,7 @@ DPI = 100
 # ======================================================================================================================
 # Functions
 # ======================================================================================================================
-def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, file_format='pdf', dpi=DPI, **kwargs):
+def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, format='pdf', dpi=DPI, **kwargs):
     """
 
     :param args:
@@ -79,7 +79,7 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, file_forma
     :param xlabel:
     :param ylabel:
     :param filepath:
-    :param file_format:
+    :param format:
     :param dpi:
     :param kwargs:
     :return: matplotlib figure
@@ -93,14 +93,14 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, file_forma
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
     if filepath:
-        save_plot(filepath, file_format=file_format, dpi=dpi)
+        save_plot(filepath, format=format, dpi=dpi)
 
     return gcf()
 
 
 def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
                       fit_kws=None, color=None, vertical=False, norm_hist=False, axlabel=None, label=None,
-                      ax=None, title='', xlabel='', ylabel='Frequency', filepath=None, file_format='pdf', dpi=DPI):
+                      ax=None, title='', xlabel='', ylabel='Frequency', filepath=None, format='pdf', dpi=DPI):
     """
 
     :param a:
@@ -123,7 +123,7 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     :param xlabel:
     :param ylabel:
     :param filepath:
-    :param file_format:
+    :param format:
     :param dpi:
     :return: matpotlib figure
     """
@@ -138,7 +138,7 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
     if filepath:
-        save_plot(filepath, file_format=file_format, dpi=dpi)
+        save_plot(filepath, format=format, dpi=dpi)
 
     return gcf()
 
@@ -150,7 +150,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
                            ci=95, n_boot=1000, units=None, errcolor='0.26', errwidth=None, capsize=None,
                            violin_or_box='violin', colors=(),
                            figure_size=FIGURE_SIZE, title=None, xlabel=None, ylabel=None,
-                           filepath=None, file_format='pdf', dpi=DPI,
+                           filepath=None, format='pdf', dpi=DPI,
                            **kwargs):
     """
     Plot violin plot.
@@ -190,7 +190,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     :param xlabel:
     :param ylabel:
     :param filepath:
-    :param file_format:
+    :param format:
     :param dpi:
     :param kwargs:
     :return: matplotlib figure
@@ -228,7 +228,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 
     if filepath:
-        save_plot(filepath, file_format=file_format, dpi=dpi)
+        save_plot(filepath, format=format, dpi=dpi)
 
     return gcf()
 
@@ -239,7 +239,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
                  data_type='continuous', normalization_method=None, normalization_axis=0, max_std=3, axis_to_sort=None,
                  cluster=False, row_annotation=(), column_annotation=(), annotation_colors=(),
                  title=None, xlabel=None, ylabel=None, xlabel_rotation=0, ylabel_rotation=90,
-                 filepath=None, file_format='pdf', dpi=DPI, **kwargs):
+                 filepath=None, format='pdf', dpi=DPI, **kwargs):
     """
     Plot heatmap.
     :param dataframe:
@@ -275,7 +275,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     :param xlabel_rotation:
     :param ylabel_rotation:
     :param filepath:
-    :param file_format:
+    :param format:
     :param dpi:
     :param kwargs:
     :return: matplotlib figure;
@@ -404,7 +404,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
                 xticklabels=False, yticklabels=False, cmap=cmap)
 
     if filepath:
-        save_plot(filepath, file_format=file_format, dpi=dpi)
+        save_plot(filepath, format=format, dpi=dpi)
 
     return gcf()
 
@@ -414,7 +414,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
                     col_linkage=None,
                     row_colors=None, col_colors=None, annotate=False, mask=None, cmap=CMAP_CONTINUOUS,
                     title=None, xlabel=None, ylabel=None, xticklabels=True, yticklabels=True,
-                    filepath=None, file_format='pdf', dpi=DPI, **kwargs):
+                    filepath=None, format='pdf', dpi=DPI, **kwargs):
     """
 
     :param dataframe:
@@ -440,7 +440,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
     :param xticklabels:
     :param yticklabels:
     :param filepath:
-    :param file_format:
+    :param format:
     :param dpi:
     :param kwargs:
     :return: matplotlib figure;
@@ -461,7 +461,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
     decorate(title=title, xlabel=xlabel, ylabel=ylabel, ax=ax_heatmap)
 
     if filepath:
-        save_plot(filepath, file_format=file_format, dpi=dpi)
+        save_plot(filepath, format=format, dpi=dpi)
 
     return gcf()
 
@@ -476,7 +476,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
     :param max_std: number; threshold to clip standardized values
     :param pdf: PdfPages;
     :param filepath: str;
-    :param file_format:
+    :param format:
     :param dpi:
     :return: matplotlib figure
     """
@@ -647,16 +647,16 @@ def decorate(style=None,
         ax.set_yticklabels(yticks, **FONT)
 
 
-def save_plot(filepath, overwrite=True, file_format='pdf', dpi=DPI):
+def save_plot(filepath, overwrite=True, format='pdf', dpi=DPI):
     """
     Establish filepath and save plot (default .pdf) at dpi resolution if filepath does not exists or overwrite is True.
     :param filepath: str;
     :param overwrite: bool;
-    :param file_format: str;
+    :param format: str;
     :param dpi: int;
     :return: None
     """
 
     if not isfile(filepath) or overwrite:  # If the figure doesn't exist or overwriting
         establish_filepath(filepath)
-        savefig(filepath, format=file_format, dpi=dpi, bbox_inches='tight')
+        savefig(filepath, format=format, dpi=dpi, bbox_inches='tight')

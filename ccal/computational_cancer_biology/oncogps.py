@@ -163,7 +163,8 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
     w_matrix = w_matrix.apply(lambda c: c / c.sum() * 1000)
 
     # Solve W * H = A
-    print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(*w_matrix.shape, *a_matrix.shape))
+    print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(*
+                                                                           w_matrix.shape, *a_matrix.shape))
     h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix, method=method)
 
     if filepath_prefix:  # Save H matrix
@@ -278,6 +279,7 @@ def define_states(matrix, ks, directory_path, distance_matrix=None, max_std=3, n
         distance_matrix (n_samples, n_samples),
         clusterings (n_ks, n_columns), and
         cophenetic correlation coefficients (n_ks)
+        d, c, ccc = define_states(...)
     """
 
     if isinstance(matrix, str):  # Read form a .gct file
@@ -628,6 +630,15 @@ def make_oncogps(training_h,
                                 'annotation'] = training_annotation.ix[training_samples.index]
         elif len(training_annotation):
             training_samples.ix[:, 'annotation'] = training_annotation
+
+        # ==============================================================================================================
+        # Guess annotation data type
+        # ==============================================================================================================
+        if annotation_type == 'continuous' and training_annotation.dtypes == 'object':
+            if training_annotation.dropna().unique().size <= 2:
+                annotation_type = 'binary'
+            else:
+                annotation_type = 'categorical'
 
         # ==============================================================================================================
         # Compute grid probabilities and annotation states
