@@ -508,14 +508,14 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
                  title='W Matrix for k={}'.format(w_matrix.shape[1]), xlabel='Component', ylabel='Feature',
                  yticklabels=False, normalization_method='-0-', normalization_axis=0, max_std=max_std)
     if pdf:
-        savefig(pdf, file_format='pdf', dpi=DPI, bbox_inches='tight')
+        savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
     # Plot cluster map for H
     plot_heatmap(h_matrix, cluster=True,
                  title='H Matrix for k={}'.format(h_matrix.shape[0]), xlabel='Sample', ylabel='Component',
                  xticklabels=False, normalization_method='-0-', normalization_axis=1, max_std=max_std)
     if pdf:
-        savefig(pdf, file_format='pdf', dpi=DPI, bbox_inches='tight')
+        savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
     if pdf and close_pdf:
         pdf.close()
@@ -659,4 +659,4 @@ def save_plot(filepath, overwrite=True, file_format='pdf', dpi=DPI):
 
     if not isfile(filepath) or overwrite:  # If the figure doesn't exist or overwriting
         establish_filepath(filepath)
-        savefig(filepath, dpi=dpi, file_format=file_format, bbox_inches='tight')
+        savefig(filepath, format=file_format, dpi=dpi, bbox_inches='tight')
