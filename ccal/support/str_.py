@@ -93,7 +93,7 @@ def cast_str_to_int_float_bool_or_str(str_, fmt='{:.3f}'):
     :return: int, float, bool, or str;
     """
 
-    value = str_.strip()
+    value = str(str_).strip()
 
     for var_type in [int, float]:
         try:

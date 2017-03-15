@@ -11,10 +11,11 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import array, asarray, empty_like
+from numpy import nan, array, asarray, empty_like
 from pandas import DataFrame, Series
 
 from .log import print_log
+from .str_ import cast_str_to_int_float_bool_or_str
 
 
 def make_series(iterable, index=None, name=None):
@@ -27,6 +28,26 @@ def make_series(iterable, index=None, name=None):
     """
 
     return Series(iterable, index=index, name=name)
+
+
+def type_series(s, drops=['unknown', 'n/a', '--', 'NA', 'na', 'nan', 'NAN', 'NaN']):
+    """
+
+    :param s: Series;
+    :param drops: iterable;
+    :return: Series;
+    """
+
+    new_s = []
+    for a in s:
+        if a in drops:
+            new_s.append(nan)
+        else:
+            new_s.append(cast_str_to_int_float_bool_or_str(a))
+    try:
+        return Series(new_s, index=s.index, dtype=float)
+    except TypeError:
+        return Series(new_s, index=s.index)
 
 
 def drop_na_1d(df, axis=0, how='all'):

@@ -633,15 +633,6 @@ def make_oncogps(training_h,
             training_samples.ix[:, 'annotation'] = training_annotation
 
         # ==============================================================================================================
-        # Guess annotation data type
-        # ==============================================================================================================
-        if annotation_type == 'continuous' and training_annotation.dtypes == 'object':
-            if training_annotation.dropna().unique().size <= 2:
-                annotation_type = 'binary'
-            else:
-                annotation_type = 'categorical'
-
-        # ==============================================================================================================
         # Compute grid probabilities and annotation states
         # ==============================================================================================================
         if annotate_background:
@@ -739,6 +730,15 @@ def make_oncogps(training_h,
         # Use training
         # ==============================================================================================================
         samples = training_samples
+
+    # ==============================================================================================================
+    # Guess annotation data type
+    # ==============================================================================================================
+    if annotation_type == 'continuous' and samples.ix[:, 'annotation'].dtypes == 'object':
+        if samples.ix[:, 'annotation'].dropna().unique().size <= 2:
+            annotation_type = 'binary'
+        else:
+            annotation_type = 'categorical'
 
     # ==================================================================================================================
     # Limit samples to plot
@@ -1281,9 +1281,10 @@ def _plot_onco_gps(components,
 
         # Set up annotation min, mean, max, colormap, and range
         if annotation_type == 'continuous':
-            if samples.ix[:, 'annotation'].dtype == object:
-                raise TypeError(
-                    'Continuous annotation values must be numbers (float, int, etc).')
+            # TODO: refactor
+            # if samples.ix[:, 'annotation'].dtype == object:
+            #     raise TypeError(
+            #         'Continuous annotation values must be numbers (float, int, etc).')
             # Normalize annotation
             samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:, 'annotation'], '-0-').clip(-std_max,
                                                                                                                std_max)
@@ -1334,7 +1335,7 @@ def _plot_onco_gps(components,
             ).sort_values(na_position='first').index, :]
         else:
             samples.sort_values('annotation_for_plot',
-                                ascending=annotation_ascending, inplace=True)
+                                ascending=annotation_ascending, na_position='first', inplace=True)
         for idx, s in samples.iterrows():
             a = s.ix['annotation_for_plot']
             if isnull(a):  # Missing annotation
