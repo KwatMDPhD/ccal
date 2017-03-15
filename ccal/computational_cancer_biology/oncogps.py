@@ -39,9 +39,8 @@ from ..mathematics.information import EPS, kde2d, bcv, information_coefficient
 from ..support.d2 import drop_uniform_slice_from_dataframe, drop_na_2d, normalize_2d_or_1d
 from ..support.file import read_gct, establish_filepath, write_dict, load_gct, write_gct
 from ..support.log import print_log
-from ..support.plot import FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, plot_heatmap, plot_points, \
-    plot_nmf, assign_colors_to_states, save_plot
-
+from ..support.plot import FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, CMAP_BINARY, plot_heatmap, \
+    plot_points, plot_nmf, assign_colors_to_states, save_plot
 
 
 # ======================================================================================================================
@@ -98,13 +97,15 @@ def define_components(matrix, ks, directory_path, how_to_drop_na='all', n_jobs=1
     directory_path = join(directory_path, 'nmf_cc/')
     establish_filepath(directory_path)
 
-    print_log('Saving and plotting NMF-CC cophenetic-correlation coefficients and W & H matrices ...')
+    print_log(
+        'Saving and plotting NMF-CC cophenetic-correlation coefficients and W & H matrices ...')
     # Save and plot cophenetic correlation coefficients
     write_dict(cophenetic_correlation_coefficient,
                join(directory_path, 'cophenetic_correlation_coefficients.txt'),
                key_name='K', value_name='NMF-CC Cophenetic-Correlation Coefficient')
     plot_points(sorted(cophenetic_correlation_coefficient.keys()),
-                [cophenetic_correlation_coefficient[k] for k in sorted(cophenetic_correlation_coefficient.keys())],
+                [cophenetic_correlation_coefficient[k]
+                    for k in sorted(cophenetic_correlation_coefficient.keys())],
                 title='NMF-CC Cophenetic-Correlation Coefficient vs. K',
                 xlabel='K', ylabel='NMF-CC Cophenetic-Correlation Coefficient',
                 filepath=join(directory_path, 'cophenetic_correlation_coefficients.pdf'))
@@ -166,8 +167,10 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
     h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix, method=method)
 
     if filepath_prefix:  # Save H matrix
-        write_gct(h_matrix, filepath_prefix + '_solved_nmf_h_k{}.gct'.format(h_matrix.shape[0]))
-        plot_filepath = filepath_prefix + '_solved_nmf_h_k{}.pdf'.format(h_matrix.shape[0])
+        write_gct(h_matrix, filepath_prefix +
+                  '_solved_nmf_h_k{}.gct'.format(h_matrix.shape[0]))
+        plot_filepath = filepath_prefix + \
+            '_solved_nmf_h_k{}.pdf'.format(h_matrix.shape[0])
     else:
         plot_filepath = None
 
@@ -255,7 +258,7 @@ def select_features_and_nmf(testing, training,
 # ======================================================================================================================
 # Define states
 # ======================================================================================================================
-def define_states(matrix, ks, directory_path, d=None, max_std=3, n_clusterings=40,
+def define_states(matrix, ks, directory_path, distance_matrix=None, max_std=3, n_clusterings=40,
                   random_seed=RANDOM_SEED):
     """
     Hierarchical-consensus cluster samples (matrix columns) and compute cophenetic correlation coefficients.
@@ -267,7 +270,7 @@ def define_states(matrix, ks, directory_path, d=None, max_std=3, n_clusterings=4
             clusterings/cophenetic_correlation_coefficients.txt
             clusterings/clusterings.pdf
         will be saved
-    :param d: str or DataFrame; (n_columns, n_columns); distance matrix to hierarchical cluster
+    :param distance_matrix: str or DataFrame; (n_columns, n_columns); distance matrix to hierarchical cluster
     :param max_std: number; threshold to clip standardized values
     :param n_clusterings: int; number of hierarchical clusterings for consensus clustering
     :param random_seed: int;
@@ -281,13 +284,16 @@ def define_states(matrix, ks, directory_path, d=None, max_std=3, n_clusterings=4
         matrix = read_gct(matrix)
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
-    matrix = normalize_2d_or_1d(normalize_2d_or_1d(matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
+    matrix = normalize_2d_or_1d(normalize_2d_or_1d(
+        matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
 
     # Hierarchical-consensus cluster
     d, cs, ccc = hierarchical_consensus_cluster(matrix, ks,
-                                                distance_matrix=d, n_clusterings=n_clusterings, random_seed=random_seed)
+                                                distance_matrix=distance_matrix,
+                                                n_clusterings=n_clusterings, random_seed=random_seed)
 
-    # Save and plot distance matrix, clusterings, and cophenetic correlation coefficients
+    # Save and plot distance matrix, clusterings, and cophenetic correlation
+    # coefficients
     directory_path = join(directory_path, 'clusterings/')
     establish_filepath(directory_path)
 
@@ -303,7 +309,8 @@ def define_states(matrix, ks, directory_path, d=None, max_std=3, n_clusterings=4
         plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
         # Plot clusterings
-        plot_heatmap(cs, axis_to_sort=1, data_type='categorical', title='Clustering per K', xticklabels=False)
+        plot_heatmap(cs, axis_to_sort=1, data_type='categorical',
+                     title='Clustering per K', xticklabels=False)
         plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
         # Plot cophenetic correlation coefficients
@@ -502,7 +509,6 @@ def make_oncogps(training_h,
         normalizing_mean = None
         normalizing_std = None
 
-
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
 
     training_h = normalize_2d_or_1d(training_h, '-0-', axis=1)
@@ -527,8 +533,10 @@ def make_oncogps(training_h,
     #   else, compute component coordinates using Newton's Laws
     # ==================================================================================================================
     if equilateral and training_h.shape[0] == 3:
-        print_log('Using equilateral-triangle component coordinates ...'.format(components))
-        components = DataFrame(index=['Vertex 1', 'Vertex 2', 'Vertex 3'], columns=['x', 'y'])
+        print_log(
+            'Using equilateral-triangle component coordinates ...'.format(components))
+        components = DataFrame(
+            index=['Vertex 1', 'Vertex 2', 'Vertex 3'], columns=['x', 'y'])
         components.iloc[0, :] = [0.5, sqrt(3) / 2]
         components.iloc[1, :] = [1, 0]
         components.iloc[2, :] = [0, 0]
@@ -539,13 +547,17 @@ def make_oncogps(training_h,
 
     else:
         if informational_mds:
-            print_log('Computing component coordinates using informational distance ...')
+            print_log(
+                'Computing component coordinates using informational distance ...')
             dissimilarity = information_coefficient
         else:
-            print_log('Computing component coordinates using Euclidean distance ...')
+            print_log(
+                'Computing component coordinates using Euclidean distance ...')
             dissimilarity = 'euclidean'
-        components = mds(training_h, dissimilarity=dissimilarity, random_state=mds_seed)
-        components = DataFrame(components, index=training_h.index, columns=['x', 'y'])
+        components = mds(
+            training_h, dissimilarity=dissimilarity, random_state=mds_seed)
+        components = DataFrame(
+            components, index=training_h.index, columns=['x', 'y'])
         components = normalize_2d_or_1d(components, '0-1', axis=0)
 
     # ==================================================================================================================
@@ -563,10 +575,12 @@ def make_oncogps(training_h,
             power = 1
         else:
             try:
-                power = _compute_component_power(training_h, fit_min, fit_max, power_min, power_max)
+                power = _compute_component_power(
+                    training_h, fit_min, fit_max, power_min, power_max)
             except RuntimeError as e:
                 power = 1
-                print_log('\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.format(e))
+                print_log(
+                    '\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.format(e))
 
     # ==================================================================================================================
     # Compute training sample coordinates
@@ -574,19 +588,24 @@ def make_oncogps(training_h,
     #   Series states
     #   Keep only samples in H matrix
     # ==================================================================================================================
-    training_samples = DataFrame(index=training_h.columns, columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
+    training_samples = DataFrame(index=training_h.columns, columns=[
+                                 'x', 'y', 'state', 'component_ratio', 'annotation'])
 
-    print_log('Computing training sample coordinates using {} components and {:.3f} power ...'.format(n_pulls, power))
-    training_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(components, training_h, n_pulls, power)
+    print_log('Computing training sample coordinates using {} components and {:.3f} power ...'.format(
+        n_pulls, power))
+    training_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(
+        components, training_h, n_pulls, power)
 
-    training_samples.ix[:, 'state'] = Series(training_states, index=training_h.columns)
+    training_samples.ix[:, 'state'] = Series(
+        training_states, index=training_h.columns)
 
     # ==================================================================================================================
     # Compute training component ratios
     # ==================================================================================================================
     if component_ratio and 0 < component_ratio:
         print_log('Computing training component ratios ...')
-        training_samples.ix[:, 'component_ratio'] = _compute_component_ratios(training_h, component_ratio)
+        training_samples.ix[:, 'component_ratio'] = _compute_component_ratios(
+            training_h, component_ratio)
 
     # ==================================================================================================================
     # Compute grid probabilities and states
@@ -605,7 +624,8 @@ def make_oncogps(training_h,
         # Keep only samples in H matrix
         # ==============================================================================================================
         if isinstance(training_annotation, Series):
-            training_samples.ix[:, 'annotation'] = training_annotation.ix[training_samples.index]
+            training_samples.ix[:,
+                                'annotation'] = training_annotation.ix[training_samples.index]
         elif len(training_annotation):
             training_samples.ix[:, 'annotation'] = training_annotation
 
@@ -681,7 +701,8 @@ def make_oncogps(training_h,
         # ==============================================================================================================
         if component_ratio and 0 < component_ratio:
             print_log('Computing testing component ratios ...')
-            testing_samples.ix[:, 'component_ratio'] = _compute_component_ratios(testing_h, component_ratio)
+            testing_samples.ix[:, 'component_ratio'] = _compute_component_ratios(
+                testing_h, component_ratio)
 
         # ==============================================================================================================
         # Process testing annotation
@@ -692,7 +713,8 @@ def make_oncogps(training_h,
             # Keep only samples in testing H matrix
             # ==============================================================================================================
             if isinstance(testing_annotation, Series):
-                testing_samples.ix[:, 'annotation'] = testing_annotation.ix[testing_samples.index]
+                testing_samples.ix[:,
+                                   'annotation'] = testing_annotation.ix[testing_samples.index]
             elif len(testing_annotation):
                 testing_samples.ix[:, 'annotation'] = testing_annotation
 
@@ -786,7 +808,8 @@ def _compute_component_power(h, fit_min, fit_max, power_min, power_max):
     :return: float; power
     """
 
-    fit_parameters = fit_matrix(h, define_exponential_function, sort_matrix=True)
+    fit_parameters = fit_matrix(
+        h, define_exponential_function, sort_matrix=True)
     k = fit_parameters[1]
 
     # Linear transform
@@ -809,7 +832,8 @@ def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_
     component_x_coordinates = asarray(component_x_coordinates)
 
     # (n_samples, n_dimensions)
-    sample_coordinates = empty((component_x_samples.shape[1], component_x_coordinates.shape[1]))
+    sample_coordinates = empty(
+        (component_x_samples.shape[1], component_x_coordinates.shape[1]))
 
     for i, (_, c) in enumerate(component_x_samples.iteritems()):  # For each sample
 
@@ -820,8 +844,10 @@ def _compute_sample_coordinates(component_x_coordinates, component_x_samples, n_
         threshold = sorted(c)[-n_influencing_components]
         c[c < threshold] = 0
 
-        for d in range(component_x_coordinates.shape[1]):  # Compute coordinate in each dimension
-            sample_coordinates[i, d] = nansum(c ** power * component_x_coordinates[:, d]) / nansum(c ** power)
+        # Compute coordinate in each dimension
+        for d in range(component_x_coordinates.shape[1]):
+            sample_coordinates[i, d] = nansum(
+                c ** power * component_x_coordinates[:, d]) / nansum(c ** power)
 
     return sample_coordinates
 
@@ -860,11 +886,13 @@ def _compute_state_grids_and_probabilities(samples, n_grids, kde_bandwidths_fact
     grids = zeros((n_grids, n_grids), dtype=int)
     grids_probabilities = zeros((n_grids, n_grids))
 
-    # Compute bandwidths created from all states' x & y coordinates and rescale them
+    # Compute bandwidths created from all states' x & y coordinates and
+    # rescale them
     bandwidths = asarray([bcv(asarray(samples.ix[:, 'x'].tolist()))[0],
                           bcv(asarray(samples.ix[:, 'y'].tolist()))[0]]) * kde_bandwidths_factor
 
-    # Estimate kernel density for each state using bandwidth created from all states' x & y coordinates
+    # Estimate kernel density for each state using bandwidth created from all
+    # states' x & y coordinates
     kdes = {}
     for s in samples.ix[:, 'state'].unique():
         coordinates = samples.ix[samples.ix[:, 'state'] == s, ['x', 'y']]
@@ -909,8 +937,10 @@ def _compute_annotation_grids_and_probabilities(samples, annotation, n_grids, sv
     svr_state = SVR(kernel=svr_kernel)
     svr_probability = SVR(kernel=svr_kernel)
 
-    svr_state.fit(asarray(samples.ix[i, ['x', 'y']]), asarray(annotation.ix[i]))
-    svr_probability.fit(asarray(samples.ix[i, ['x', 'y']]), asarray(annotation.ix[i].abs()))
+    svr_state.fit(
+        asarray(samples.ix[i, ['x', 'y']]), asarray(annotation.ix[i]))
+    svr_probability.fit(
+        asarray(samples.ix[i, ['x', 'y']]), asarray(annotation.ix[i].abs()))
 
     grids = empty((n_grids, n_grids), dtype=int)
     grids_probability = empty((n_grids, n_grids))
@@ -1030,7 +1060,7 @@ def _plot_onco_gps(components,
 
     :param delaunay_linewidth: number;
     :param delaunay_linecolor: matplotlib color;
-    
+
     :param colors: matplotlib.colors.ListedColormap, matplotlib.colors.LinearSegmentedColormap, or iterable;
     :param bad_color: matplotlib color;
     :param background_alpha_factor: float; [0, 1]
@@ -1054,7 +1084,7 @@ def _plot_onco_gps(components,
     :param filepath: str;
     :param format: str;
     :param dpi: number;
-    
+
     :return: None
     """
 
@@ -1114,7 +1144,8 @@ def _plot_onco_gps(components,
             v_shift = 0.0475
         else:
             v_shift = 0
-        if convexhull_region.contains_point((components.ix[i, 'x'] + h_shift, components.ix[i, 'y'] + v_shift)):  # Flip
+        # Flip
+        if convexhull_region.contains_point((components.ix[i, 'x'] + h_shift, components.ix[i, 'y'] + v_shift)):
             h_shift *= -1
             v_shift *= -1
         x += h_shift
@@ -1152,12 +1183,15 @@ def _plot_onco_gps(components,
                     else:
                         c = (0, 0, 1)
                     hsv = rgb_to_hsv(*c)
-                    a = (grids_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
-                    image[j, i] = hsv_to_rgb(hsv[0], min(a * background_alpha_factor, 1), hsv[2] * a + (1 - a))
+                    a = (
+                        grids_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
+                    image[j, i] = hsv_to_rgb(hsv[0], min(
+                        a * background_alpha_factor, 1), hsv[2] * a + (1 - a))
 
         grids = state_grids
 
-        # Plot soft contours for each state (masking points outside of Onco-GPS)
+        # Plot soft contours for each state (masking points outside of
+        # Onco-GPS)
         for s in range(1, n_training_states + 1):
             mask = zeros_like(grids, dtype=bool)
             for i in range(grids.shape[0]):
@@ -1180,7 +1214,7 @@ def _plot_onco_gps(components,
                 for j in range(0, grids.shape[1] - 1):
 
                     if convexhull_region.contains_point((fraction_grids[i], fraction_grids[j])) and (
-                                    grids[i, j] != grids[i + 1, j] or grids[i, j] != grids[i, j + 1]):
+                            grids[i, j] != grids[i + 1, j] or grids[i, j] != grids[i, j + 1]):
                         image[j, i] = state_boundary_color
 
         ax_map.imshow(image, interpolation=None, origin='lower', aspect='auto', extent=ax_map.axis(),
@@ -1198,8 +1232,10 @@ def _plot_onco_gps(components,
 
                 if convexhull_region.contains_point((fraction_grids[i], fraction_grids[j])):
                     hsv = rgb_to_hsv(*state_colors[grids[i, j]][:3])
-                    a = (grids_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
-                    image[j, i] = hsv_to_rgb(hsv[0], min(a * background_alpha_factor, 1), hsv[2] * a + (1 - a))
+                    a = (
+                        grids_probabilities[i, j] - grid_probabilities_min) / grid_probabilities_range
+                    image[j, i] = hsv_to_rgb(hsv[0], min(
+                        a * background_alpha_factor, 1), hsv[2] * a + (1 - a))
         ax_map.imshow(image, interpolation=None, origin='lower', aspect='auto', extent=ax_map.axis(),
                       clip_on=False, zorder=1)
 
@@ -1234,7 +1270,8 @@ def _plot_onco_gps(components,
         # Set up annotation min, mean, max, colormap, and range
         if annotation_type == 'continuous':
             if samples.ix[:, 'annotation'].dtype == object:
-                raise TypeError('Continuous annotation values must be numbers (float, int, etc).')
+                raise TypeError(
+                    'Continuous annotation values must be numbers (float, int, etc).')
             # Normalize annotation
             samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:, 'annotation'], '-0-').clip(-std_max,
                                                                                                                std_max)
@@ -1253,9 +1290,11 @@ def _plot_onco_gps(components,
                     # 1-to-1 map
                     a_to_value[a] = a_i
                     value_to_a[a_i] = a
-                samples.ix[:, 'annotation_for_plot'] = samples.ix[:, 'annotation'].apply(a_to_value.get)
+                samples.ix[:, 'annotation_for_plot'] = samples.ix[:,
+                                                                  'annotation'].apply(a_to_value.get)
             else:
-                samples.ix[:, 'annotation_for_plot'] = samples.ix[:, 'annotation']
+                samples.ix[:, 'annotation_for_plot'] = samples.ix[:,
+                                                                  'annotation']
             # Get annotation statistics
             annotation_min = 0
             annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
@@ -1266,20 +1305,24 @@ def _plot_onco_gps(components,
             elif annotation_type == 'binary':
                 cmap = CMAP_BINARY
             else:
-                raise ValueError('annotation_type must be one of {continuous, categorical, binary}.')
+                raise ValueError(
+                    'annotation_type must be one of {continuous, categorical, binary}.')
         # Get annotation range
         annotation_range = annotation_max - annotation_min
 
         # Compute and plot IC
-        score, p_val = compute_association_and_pvalue(samples.ix[:, 'annotation_for_plot'], samples.ix[:, 'state'])
+        score, p_val = compute_association_and_pvalue(
+            samples.ix[:, 'annotation_for_plot'], samples.ix[:, 'state'])
         ax_legend.text(0.5, 1, '{}\nIC={:.3f} (p-val={:.3f})'.format(annotation_name, score, p_val),
                        fontsize=legend_fontsize * 1.26, weight='bold', horizontalalignment='center')
 
         # Set plotting order and plot
         if highlight_high_magnitude:
-            samples = samples.ix[samples.ix[:, 'annotation_for_plot'].abs().sort_values(na_position='first').index, :]
+            samples = samples.ix[samples.ix[:, 'annotation_for_plot'].abs(
+            ).sort_values(na_position='first').index, :]
         else:
-            samples.sort_values('annotation_for_plot', ascending=annotation_ascending, inplace=True)
+            samples.sort_values('annotation_for_plot',
+                                ascending=annotation_ascending, inplace=True)
         for idx, s in samples.iterrows():
             a = s.ix['annotation_for_plot']
             if isnull(a):  # Missing annotation
@@ -1298,13 +1341,15 @@ def _plot_onco_gps(components,
                     else:
                         c = cmap(0)
                 else:
-                    raise ValueError('annotation_type must be one of {continuous, categorical, binary}.')
+                    raise ValueError(
+                        'annotation_type must be one of {continuous, categorical, binary}.')
             ax_map.plot(s.ix['x'], s.ix['y'], marker='o',
                         markersize=markersize, markerfacecolor=c,
                         markeredgewidth=sample_markeredgewidth, markeredgecolor=sample_markeredgecolor,
                         aa=True, clip_on=False, zorder=5)
 
-        if samples.ix[:, 'annotation'].dtype == object:  # Plot categorical legends below the map
+        # Plot categorical legends below the map
+        if samples.ix[:, 'annotation'].dtype == object:
             for i, a in enumerate(sorted(a_to_value, reverse=True)):
                 v = a_to_value.get(a)
                 x = 1 - float(1 / (len(a_to_value) + 1)) * (i + 1)
@@ -1317,19 +1362,23 @@ def _plot_onco_gps(components,
                     rotation = 90
                 else:
                     rotation = 0
-                ax_map.plot(x, y, marker='o', markersize=legend_markersize, markerfacecolor=c, aa=True, clip_on=False)
+                ax_map.plot(x, y, marker='o', markersize=legend_markersize,
+                            markerfacecolor=c, aa=True, clip_on=False)
                 ax_map.text(x, y - 0.03, a, fontsize=legend_fontsize, weight='bold', color=title_fontcolor,
                             rotation=rotation, horizontalalignment='center', verticalalignment='top')
 
         if annotation_type == 'continuous':  # Plot color bar
             cax, kw = make_axes(ax_legend, location='bottom', fraction=0.1, shrink=1, aspect=8,
-                                cmap=cmap, norm=Normalize(vmin=annotation_min, vmax=annotation_max),
+                                cmap=cmap, norm=Normalize(
+                                    vmin=annotation_min, vmax=annotation_max),
                                 ticks=[annotation_min, annotation_mean, annotation_max])
             ColorbarBase(cax, **kw)
-            cax.set_title('Normalized Values', **{'fontsize': 16, 'weight': 'bold'})
+            cax.set_title('Normalized Values', **
+                          {'fontsize': 16, 'weight': 'bold'})
 
     else:  # Plot samples using state colors
-        normalized_component_ratio = normalize_2d_or_1d(samples.ix[:, 'component_ratio'], '0-1')
+        normalized_component_ratio = normalize_2d_or_1d(
+            samples.ix[:, 'component_ratio'], '0-1')
         if not normalized_component_ratio.isnull().all():
             samples.ix[:, 'component_ratio_for_plot'] = normalized_component_ratio
         else:
@@ -1412,8 +1461,10 @@ def make_oncogps_in_3d(training_h,
     # ==================================================================================================================
     print_log('Computing component coordinates using informational distance ...')
     dissimilarity = information_coefficient
-    components = mds(training_h, n_components=3, dissimilarity=dissimilarity, random_state=mds_seed)
-    components = DataFrame(components, index=training_h.index, columns=['x', 'y', 'z'])
+    components = mds(training_h, n_components=3,
+                     dissimilarity=dissimilarity, random_state=mds_seed)
+    components = DataFrame(
+        components, index=training_h.index, columns=['x', 'y', 'z'])
     components = normalize_2d_or_1d(components, '-0-', axis=0)
 
     # ==================================================================================================================
@@ -1429,10 +1480,12 @@ def make_oncogps_in_3d(training_h,
             power = 1
         else:
             try:
-                power = _compute_component_power(training_h, fit_min, fit_max, power_min, power_max)
+                power = _compute_component_power(
+                    training_h, fit_min, fit_max, power_min, power_max)
             except RuntimeError as e:
                 power = 1
-                print_log('\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.format(e))
+                print_log(
+                    '\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.format(e))
 
     # ==================================================================================================================
     # Compute training sample coordinates
@@ -1440,12 +1493,16 @@ def make_oncogps_in_3d(training_h,
     #   Series states
     #   Keep only samples in H matrix
     # ==================================================================================================================
-    training_samples = DataFrame(index=training_h.columns, columns=['x', 'y', 'z', 'state', 'annotation'])
+    training_samples = DataFrame(index=training_h.columns, columns=[
+                                 'x', 'y', 'z', 'state', 'annotation'])
 
-    print_log('Computing training sample coordinates using {} components and {:.3f} power ...'.format(n_pulls, power))
-    training_samples.ix[:, ['x', 'y', 'z']] = _compute_sample_coordinates(components, training_h, n_pulls, power)
+    print_log('Computing training sample coordinates using {} components and {:.3f} power ...'.format(
+        n_pulls, power))
+    training_samples.ix[:, ['x', 'y', 'z']] = _compute_sample_coordinates(
+        components, training_h, n_pulls, power)
 
-    training_samples.ix[:, 'state'] = Series(training_states, index=training_h.columns)
+    training_samples.ix[:, 'state'] = Series(
+        training_states, index=training_h.columns)
 
     # ==================================================================================================================
     # Process training annotation
@@ -1456,7 +1513,8 @@ def make_oncogps_in_3d(training_h,
         # Keep only samples in H matrix
         # ==============================================================================================================
         if isinstance(training_annotation, Series):
-            training_samples.ix[:, 'annotation'] = training_annotation.ix[training_samples.index]
+            training_samples.ix[:,
+                                'annotation'] = training_annotation.ix[training_samples.index]
         else:
             training_samples.ix[:, 'annotation'] = training_annotation
 
@@ -1512,7 +1570,8 @@ def make_oncogps_in_3d(training_h,
     data.append(trace_components)
 
     # Assign colors to states
-    state_colors = assign_colors_to_states(training_samples.ix[:, 'state'].unique().size, colors=state_colors)
+    state_colors = assign_colors_to_states(
+        training_samples.ix[:, 'state'].unique().size, colors=state_colors)
     for s in sorted(training_samples.ix[:, 'state'].unique()):
         trace = plotly.graph_objs.Scatter3d(
             name='State {}'.format(s),
