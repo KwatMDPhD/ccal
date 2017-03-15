@@ -153,6 +153,7 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
     common_indices = set(a_matrix.index) & set(w_matrix.index)
     w_matrix = w_matrix.ix[common_indices, :]
     a_matrix = a_matrix.ix[common_indices, :]
+    print_log('{} shared indices.'.format(len(common_indices)))
 
     # Rank normalize the A matrix by column
     # TODO: try changing n_ranks (choose automatically)
