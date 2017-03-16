@@ -82,7 +82,7 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, format='pd
     :param format:
     :param dpi:
     :param kwargs:
-    :return: matplotlib figure
+    :return: None
     """
 
     if 'ax' not in kwargs:
@@ -94,8 +94,6 @@ def plot_points(*args, title='', xlabel='', ylabel='', filepath=None, format='pd
 
     if filepath:
         save_plot(filepath, format=format, dpi=dpi)
-
-    return gcf()
 
 
 def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
@@ -125,7 +123,7 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
     :param filepath:
     :param format:
     :param dpi:
-    :return: matpotlib figure
+    :return: None
     """
 
     if not ax:
@@ -139,8 +137,6 @@ def plot_distribution(a, bins=None, hist=True, kde=True, rug=False, fit=None, hi
 
     if filepath:
         save_plot(filepath, format=format, dpi=dpi)
-
-    return gcf()
 
 
 def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_order=None, bw='scott', cut=2,
@@ -193,7 +189,7 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
     :param format:
     :param dpi:
     :param kwargs:
-    :return: matplotlib figure
+    :return: None
     """
 
     # Initialize a figure
@@ -229,8 +225,6 @@ def plot_violin_box_or_bar(x=None, y=None, hue=None, data=None, order=None, hue_
 
     if filepath:
         save_plot(filepath, format=format, dpi=dpi)
-
-    return gcf()
 
 
 def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust=False, annot=None, fmt='.2g',
@@ -278,7 +272,7 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     :param format:
     :param dpi:
     :param kwargs:
-    :return: matplotlib figure;
+    :return: None
     """
 
     df = dataframe.copy()
@@ -406,8 +400,6 @@ def plot_heatmap(dataframe, vmin=None, vmax=None, cmap=None, center=None, robust
     if filepath:
         save_plot(filepath, format=format, dpi=dpi)
 
-    return gcf()
-
 
 def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclidean', z_score=None, standard_scale=None,
                     figsize=FIGURE_SIZE, cbar_kws=None, row_cluster=True, col_cluster=True, row_linkage=None,
@@ -443,7 +435,7 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
     :param format:
     :param dpi:
     :param kwargs:
-    :return: matplotlib figure;
+    :return: None
     """
 
     # Initialize a figure
@@ -463,8 +455,6 @@ def plot_clustermap(dataframe, pivot_kws=None, method='complete', metric='euclid
     if filepath:
         save_plot(filepath, format=format, dpi=dpi)
 
-    return gcf()
-
 
 def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, pdf=None, filepath=None):
     """
@@ -478,7 +468,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
     :param filepath: str;
     :param format:
     :param dpi:
-    :return: matplotlib figure
+    :return: None
     """
 
     # Check for W and H matrix
@@ -520,10 +510,7 @@ def plot_nmf(nmf_results=None, k=None, w_matrix=None, h_matrix=None, max_std=3, 
     if pdf and close_pdf:
         pdf.close()
 
-    return gcf()
 
-
-# TODO: enable str states
 def assign_colors_to_states(states, colors=()):
     """
     Assign colors to states
@@ -531,6 +518,7 @@ def assign_colors_to_states(states, colors=()):
     :param colors:
     :return: dict; {state: color}
     """
+    # TODO: enable str states
 
     if isinstance(states, int):  # Number of states
         unique_states = range(1, states + 1)
@@ -555,7 +543,6 @@ def assign_colors_to_states(states, colors=()):
         state_colors[s] = colors[i]
 
     return state_colors
-    return 'a'
 
 
 def decorate(style=None,
