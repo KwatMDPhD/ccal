@@ -46,32 +46,6 @@ from ..support.plot import FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, 
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def normalize_a_matrix(a_matrix, a_matrix_normalization_method='standardize', std_max=3):
-    """
-    """
-
-    # Normaliza A matrix
-    if a_matrix_normalization_method == 'standardize':  # standardize A matrix by column
-        a_matrix = normalize_2d_or_1d(
-            a_matrix, method='-0-', axis=0)
-        a_matrix = a_matrix.clip(lower=-std_max, upper=std_max)
-        a_matrix += std_max
-    elif a_matrix_normalization_method == 'rank':  # Rank normalize A matrix by column
-        # TODO: try changing n_ranks or choose automatically
-        a_matrix = normalize_2d_or_1d(a_matrix, 'rank', n_ranks=10000, axis=0)
-    else:
-        print_log('Not normalizing A matrix ...')
-
-    # Plot after normalization
-    plot_heatmap(a_matrix,
-                 title='Matrix to be Decomposed ({}-normalized columns)'.format(
-                     a_matrix_normalization_method),
-                 xlabel='Sample', ylabel='Feature',
-                 xticklabels=False, yticklabels=False, cluster=True)
-
-    return a_matrix
-
-
 def define_components(a_matrix, ks, directory_path,
                       how_to_drop_na_in_a_matrix='all', a_matrix_normalization_method='standardize', std_max=3,
                       n_jobs=1, n_clusterings=40,
@@ -158,8 +132,8 @@ def get_w_or_h_matrix(nmf_results, k, w_or_h):
 
 
 def solve_for_components(w_matrix, a_matrix,
-                         w_matrix_normalization='sum',
-                         how_to_drop_na_in_a_matrix='all', a_matrix_normalization='standardize', std_max=3,
+                         w_matrix_normalization_method='sum',
+                         how_to_drop_na_in_a_matrix='all', a_matrix_normalization_method='standardize', std_max=3,
                          method='nnls',
                          filepath_prefix=None):
     """
@@ -217,6 +191,32 @@ def solve_for_components(w_matrix, a_matrix,
     plot_nmf(w_matrix=w_matrix, h_matrix=h_matrix, filepath=plot_filepath)
 
     return h_matrix
+
+
+def normalize_a_matrix(a_matrix, a_matrix_normalization_method='standardize', std_max=3):
+    """
+    """
+
+    # Normaliza A matrix
+    if a_matrix_normalization_method == 'standardize':  # standardize A matrix by column
+        a_matrix = normalize_2d_or_1d(
+            a_matrix, method='-0-', axis=0)
+        a_matrix = a_matrix.clip(lower=-std_max, upper=std_max)
+        a_matrix += std_max
+    elif a_matrix_normalization_method == 'rank':  # Rank normalize A matrix by column
+        # TODO: try changing n_ranks or choose automatically
+        a_matrix = normalize_2d_or_1d(a_matrix, 'rank', n_ranks=10000, axis=0)
+    else:
+        print_log('Not normalizing A matrix ...')
+
+    # Plot after normalization
+    plot_heatmap(a_matrix,
+                 title='Matrix to be Decomposed ({}-normalized columns)'.format(
+                     a_matrix_normalization_method),
+                 xlabel='Sample', ylabel='Feature',
+                 xticklabels=False, yticklabels=False, cluster=True)
+
+    return a_matrix
 
 
 def select_features_and_nmf(testing, training,
@@ -1324,8 +1324,9 @@ def _plot_onco_gps(components,
             #     raise TypeError(
             #         'Continuous annotation values must be numbers (float, int, etc).')
             # Normalize annotation
-            samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:, 'annotation'], '-0-').clip(lower=-std_max,
-                                                                                                               upper=std_max)
+            samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:,
+                                                                                 'annotation'], '-0-').clip(lower=-std_max,
+                                                                                                            upper=std_max)
             # Get annotation statistics
             annotation_min = -std_max
             annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()

@@ -46,7 +46,11 @@ def type_series(s, drops=['unknown', 'n/a', '--', 'NA', 'na', 'nan', 'NAN', 'NaN
             new_s.append(cast_str_to_int_float_bool_or_str(a))
     try:
         return Series(new_s, index=s.index, dtype=float)
-    except TypeError:
+    except TypeError as e:
+        print(e)
+        return Series(new_s, index=s.index)
+    except ValueError as e:
+        print(e)
         return Series(new_s, index=s.index)
 
 
