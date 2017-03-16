@@ -46,20 +46,50 @@ from ..support.plot import FIGURE_SIZE, DPI, CMAP_CONTINUOUS, CMAP_CATEGORICAL, 
 # ======================================================================================================================
 # Define components
 # ======================================================================================================================
-def define_components(matrix, ks, directory_path, how_to_drop_na='all', n_jobs=1, n_clusterings=40,
+def normalize_a_matrix(a_matrix, a_matrix_normalization_method='standardize', std_max=3):
+    """
+    """
+
+    # Normaliza A matrix
+    if a_matrix_normalization_method == 'standardize':  # standardize A matrix by column
+        a_matrix = normalize_2d_or_1d(
+            a_matrix, method='-0-', axis=0)
+        a_matrix = a_matrix.clip(lower=-std_max, upper=std_max)
+        a_matrix += std_max
+    elif a_matrix_normalization_method == 'rank':  # Rank normalize A matrix by column
+        # TODO: try changing n_ranks or choose automatically
+        a_matrix = normalize_2d_or_1d(a_matrix, 'rank', n_ranks=10000, axis=0)
+    else:
+        print_log('Not normalizing A matrix ...')
+
+    # Plot after normalization
+    plot_heatmap(a_matrix,
+                 title='Matrix to be Decomposed ({}-normalized columns)'.format(
+                     a_matrix_normalization_method),
+                 xlabel='Sample', ylabel='Feature',
+                 xticklabels=False, yticklabels=False, cluster=True)
+
+    return a_matrix
+
+
+def define_components(a_matrix, ks, directory_path,
+                      how_to_drop_na_in_a_matrix='all', a_matrix_normalization_method='standardize', std_max=3,
+                      n_jobs=1, n_clusterings=40,
                       algorithm='Lee & Seung', random_seed=RANDOM_SEED):
     """
     NMF-consensus cluster samples (matrix columns) and compute cophenetic-correlation coefficients, and save 1 NMF
     results for each k.
 
-    :param matrix: DataFrame or str; (n_rows, n_columns) or filepath to a .gct file
+    :param a_matrix: DataFrame or str; (n_rows, n_columns), A matrix, or filepath to a .gct file
     :param ks: iterable or int; iterable of int k used for NMF
     :param directory_path: str; directory path where
                 nmf_cc/cophenetic_correlation_coefficients{.pdf, .gct}
                 nmf_cc/nmf/nmf.pdf
                 nmf_cc/nmf/nmf_k{k}_{w, h}.gct
             will be saved
-    :param how_to_drop_na: str; 'all' or 'any'
+    :param how_to_drop_na_in_a_matrix: str; {'all', 'any'}
+    :param a_matrix_normalization_method: str; {'standardize', 'rank'}
+    :param std_max: number;
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
     :param algorithm: str; 'Alternating Least Squares' or 'Lee & Seung'
@@ -68,30 +98,27 @@ def define_components(matrix, ks, directory_path, how_to_drop_na='all', n_jobs=1
                             {k: Cophenetic Correlation Coefficient}
     """
 
-    if isinstance(matrix, str):  # Read from a GCT
-        matrix = read_gct(matrix)
+    # Load A matrix
+    a_matrix = load_gct(a_matrix)
 
     # Drop na rows & columns
-    matrix = drop_na_2d(matrix, how=how_to_drop_na)
+    a_matrix = drop_na_2d(a_matrix, how=how_to_drop_na_in_a_matrix)
 
-    # Rank normalize the input matrix columns
-    # TODO: try changing n_ranks (choose automatically)
-    matrix = normalize_2d_or_1d(matrix, 'rank', n_ranks=10000, axis=0)
-    plot_heatmap(matrix,
-                 title='Matrix to be Decomposed (rank-normalized columns)', xlabel='Sample', ylabel='Feature',
-                 xticklabels=False, yticklabels=False, cluster=True)
+    # Normaliza A matrix
+    a_matrix = normalize_a_matrix(a_matrix,
+                                  a_matrix_normalization_method=a_matrix_normalization_method, std_max=std_max)
 
     # NMF-consensus cluster (while saving 1 NMF result per k)
-    nmf_results, cophenetic_correlation_coefficient = nmf_consensus_cluster(matrix,
-                                                                            ks,
-                                                                            n_jobs=n_jobs,
-                                                                            n_clusterings=n_clusterings,
-                                                                            algorithm=algorithm,
-                                                                            random_seed=random_seed)
+    nmfs, ccc = nmf_consensus_cluster(a_matrix,
+                                      ks,
+                                      n_jobs=n_jobs,
+                                      n_clusterings=n_clusterings,
+                                      algorithm=algorithm,
+                                      random_seed=random_seed)
     # Name NMF components
-    for k, nmf_d in nmf_results.items():
-        nmf_d['w'].columns = ['C{}'.format(c) for c in range(1, k + 1)]
-        nmf_d['h'].index = ['C{}'.format(c) for c in range(1, k + 1)]
+    for k, nmf in nmfs.items():
+        nmf['w'].columns = ['C{}'.format(c) for c in range(1, k + 1)]
+        nmf['h'].index = ['C{}'.format(c) for c in range(1, k + 1)]
 
     # Save results in nmf/
     directory_path = join(directory_path, 'nmf_cc/')
@@ -100,19 +127,18 @@ def define_components(matrix, ks, directory_path, how_to_drop_na='all', n_jobs=1
     print_log(
         'Saving and plotting NMF-CC cophenetic-correlation coefficients and W & H matrices ...')
     # Save and plot cophenetic correlation coefficients
-    write_dict(cophenetic_correlation_coefficient,
+    write_dict(ccc,
                join(directory_path, 'cophenetic_correlation_coefficients.txt'),
                key_name='K', value_name='NMF-CC Cophenetic-Correlation Coefficient')
-    plot_points(sorted(cophenetic_correlation_coefficient.keys()),
-                [cophenetic_correlation_coefficient[k]
-                    for k in sorted(cophenetic_correlation_coefficient.keys())],
+    plot_points(sorted(ccc.keys()),
+                [ccc[k] for k in sorted(ccc.keys())],
                 title='NMF-CC Cophenetic-Correlation Coefficient vs. K',
                 xlabel='K', ylabel='NMF-CC Cophenetic-Correlation Coefficient',
                 filepath=join(directory_path, 'cophenetic_correlation_coefficients.pdf'))
     # Save and plot NMF W & H matrices
-    save_and_plot_nmf_decompositions(nmf_results, directory_path)
+    save_and_plot_nmf_decompositions(nmfs, directory_path)
 
-    return nmf_results, cophenetic_correlation_coefficient
+    return nmfs, ccc
 
 
 def get_w_or_h_matrix(nmf_results, k, w_or_h):
@@ -131,14 +157,20 @@ def get_w_or_h_matrix(nmf_results, k, w_or_h):
     return nmf_results[k][w_or_h.lower()]
 
 
-def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_rows_of_a_matrix=True,
+def solve_for_components(w_matrix, a_matrix,
+                         w_matrix_normalization='sum',
+                         how_to_drop_na_in_a_matrix='all', a_matrix_normalization='standardize', std_max=3,
+                         method='nnls',
                          filepath_prefix=None):
     """
     Get H matrix of a_matrix in the space of w_matrix by solving W * H = A for H.
     :param w_matrix: str or DataFrame; (n_rows, k)
     :param a_matrix: str or DataFrame; (n_rows, n_columns)
-    :param method: str; {nnls, pinv}
-    :param average_duplicated_rows_of_a_matrix: bool; Average duplicate rows of the A matrix or not
+    :param w_matrix_normalization_method: str; {'sum'}
+    :param how_to_drop_na_in_a_matrix: str; {'all', 'any'}
+    :param a_matrix_normalization_method: str; {'standardize', 'rank'}
+    :param std_max: number;
+    :param method: str; {'nnls', 'pinv'}
     :param filepath_prefix: str; filepath_prefix_solved_nmf_h_k{}.{gct, pdf} will be saved
     :return: DataFrame; (k, n_columns)
     """
@@ -146,26 +178,32 @@ def solve_for_components(w_matrix, a_matrix, method='nnls', average_duplicated_r
     # Load A and W matrices
     w_matrix = load_gct(w_matrix)
     a_matrix = load_gct(a_matrix)
-    if average_duplicated_rows_of_a_matrix:  # Average duplicate rows of the A matrix
-        a_matrix = a_matrix.groupby(level=0).mean()
+
+    # Drop na rows & columns
+    a_matrix = drop_na_2d(a_matrix, how=how_to_drop_na_in_a_matrix)
 
     # Keep only indices shared by both
-    common_indices = set(a_matrix.index) & set(w_matrix.index)
+    common_indices = set(w_matrix.index) & set(a_matrix.index)
     w_matrix = w_matrix.ix[common_indices, :]
     a_matrix = a_matrix.ix[common_indices, :]
-    print_log('{} shared indices.'.format(len(common_indices)))
+    print_log('{} W-matrix indices.'.format(w_matrix.shape[0]))
+    print_log('{} A-matrix indices.'.format(a_matrix.shape[0]))
+    print_log('{} common indices.'.format(len(common_indices)))
 
-    # Rank normalize the A matrix by column
-    # TODO: try changing n_ranks (choose automatically)
-    a_matrix = normalize_2d_or_1d(a_matrix, 'rank', n_ranks=10000, axis=0)
+    # Normalize W matrix
+    if w_matrix_normalization_method == 'sum':
+        # Sum normalize W matrix by column
+        w_matrix = w_matrix.apply(lambda c: c / c.sum())
+    else:
+        print_log('Not normalizing W matrix ...')
 
-    # Normalize the W matrix by column
-    # TODO: improve the normalization (why this normalization?)
-    w_matrix = w_matrix.apply(lambda c: c / c.sum() * 1000)
+    # Normaliza A matrix
+    a_matrix = normalize_a_matrix(a_matrix,
+                                  a_matrix_normalization_method=a_matrix_normalization_method, std_max=std_max)
 
     # Solve W * H = A
-    print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(*
-                                                                           w_matrix.shape, *a_matrix.shape))
+    print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(*w_matrix.shape,
+                                                                           *a_matrix.shape))
     h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix, method=method)
 
     if filepath_prefix:  # Save H matrix
@@ -288,7 +326,7 @@ def define_states(matrix, ks, directory_path, distance_matrix=None, max_std=3, n
 
     # '-0-' normalize by rows and clip values max_std standard deviation away; then '0-1' normalize by rows
     matrix = normalize_2d_or_1d(normalize_2d_or_1d(
-        matrix, '-0-', axis=1).clip(-max_std, max_std), method='0-1', axis=1)
+        matrix, '-0-', axis=1).clip(lower=-max_std, upper=max_std), method='0-1', axis=1)
 
     # Hierarchical-consensus cluster
     d, cs, ccc = hierarchical_consensus_cluster(matrix, ks,
@@ -516,7 +554,7 @@ def make_oncogps(training_h,
 
     training_h = normalize_2d_or_1d(training_h, '-0-', axis=1)
 
-    training_h = training_h.clip(-std_max, std_max)
+    training_h = training_h.clip(lower=-std_max, upper=std_max)
 
     if testing_h_normalization == 'using_training_h':
         normalizing_min = training_h.min(axis=1)
@@ -664,7 +702,7 @@ def make_oncogps(training_h,
                                            normalizing_mean=normalizing_mean,
                                            normalizing_std=normalizing_std)
 
-            testing_h = testing_h.clip(-std_max, std_max)
+            testing_h = testing_h.clip(lower=-std_max, upper=std_max)
 
             testing_h = normalize_2d_or_1d(testing_h, '0-1', axis=1,
                                            normalizing_size=normalizing_size,
@@ -1286,8 +1324,8 @@ def _plot_onco_gps(components,
             #     raise TypeError(
             #         'Continuous annotation values must be numbers (float, int, etc).')
             # Normalize annotation
-            samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:, 'annotation'], '-0-').clip(-std_max,
-                                                                                                               std_max)
+            samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:, 'annotation'], '-0-').clip(lower=-std_max,
+                                                                                                               upper=std_max)
             # Get annotation statistics
             annotation_min = -std_max
             annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
@@ -1465,7 +1503,7 @@ def make_oncogps_in_3d(training_h,
     # ==================================================================================================================
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
     training_h = normalize_2d_or_1d(training_h, '-0-', axis=1)
-    training_h = training_h.clip(-std_max, std_max)
+    training_h = training_h.clip(lower=-std_max, upper=std_max)
     training_h = normalize_2d_or_1d(training_h, '0-1', axis=1)
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
 
