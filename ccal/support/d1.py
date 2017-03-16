@@ -75,9 +75,12 @@ def drop_na_1d(df, axis=0, how='all'):
     else:
         raise ValueError('Unknown \'how\' \'{}\'; pick from (\'any\', \'all\').'.format(how))
 
-    if any(nas):
-        df = df.ix[~nas, :]
-        print_log('Dropped {} {}(s) without any value: {}'.format(nas.sum(), axis_name, nas.index[nas].tolist()))
+    if nas.any():
+        if axis == 0:
+            df = df.ix[:, ~nas]
+        else:
+            df = df.ix[~nas, :]
+    print_log('Dropped {} {} with {} NaN: {}.'.format(nas.sum(), axis_name, how, nas.index[nas].tolist()))
 
     return df
 
