@@ -1324,9 +1324,9 @@ def _plot_onco_gps(components,
             #     raise TypeError(
             #         'Continuous annotation values must be numbers (float, int, etc).')
             # Normalize annotation
-            samples.ix[:, 'annotation_for_plot'] = normalize_2d_or_1d(samples.ix[:,
-                                                                                 'annotation'], '-0-').clip(lower=-std_max,
-                                                                                                            upper=std_max)
+            samples.ix[:, 'annotation_for_plot'] = \
+                normalize_2d_or_1d(
+                    samples.ix[:, 'annotation'], '-0-').clip(lower=-std_max, upper=std_max)
             # Get annotation statistics
             annotation_min = -std_max
             annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
