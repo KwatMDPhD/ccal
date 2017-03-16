@@ -73,14 +73,16 @@ def drop_na_1d(df, axis=0, how='all'):
     elif how == 'all':
         nas = df.isnull().all(axis=axis)
     else:
-        raise ValueError('Unknown \'how\' \'{}\'; pick from (\'any\', \'all\').'.format(how))
+        raise ValueError(
+            'Unknown \'how\' \'{}\'; pick from (\'any\', \'all\').'.format(how))
 
     if nas.any():
         if axis == 0:
             df = df.ix[:, ~nas]
         else:
             df = df.ix[~nas, :]
-    print_log('Dropped {} {} with {} NaN: {}.'.format(nas.sum(), axis_name, how, nas.index[nas].tolist()))
+    print_log('Dropped {} {} with {} NaN: {}.'.format(
+        nas.sum(), axis_name, how, nas.index[nas].tolist()))
 
     return df
 
@@ -246,7 +248,8 @@ def normalize_1d(series, method, n_ranks=10000,
 
         # Normalize
         if std == 0:
-            print('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
+            print(
+                'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
             return series / size
         else:
             return (series - mean) / std
@@ -271,7 +274,8 @@ def normalize_1d(series, method, n_ranks=10000,
 
         # Normalize
         if max_ - min_ == 0:
-            print('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
+            print(
+                'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
             return series / size
         else:
             return (series - min_) / (max_ - min_)
