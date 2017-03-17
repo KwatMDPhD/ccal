@@ -11,7 +11,8 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import array, sortfrom scipy.optimize import curve_fit
+from numpy import array, sort
+from scipy.optimize import curve_fit
 
 
 
