@@ -18,8 +18,10 @@ from matplotlib.backends.backend_pdf import PdfPages
 from numpy import divide, dot, finfo, log, matrix, multiply, ndarray, sum
 from numpy.random import rand, seed
 from pandas import DataFrame
-from sklearn import KFold, mean_squared_error
 from sklearn.decomposition import NMF
+from sklearn.model_selection import KFold
+
+from sklearn.metrics import mean_squared_error
 
 from .. import RANDOM_SEED
 from ..support.file import establish_filepath, write_gct

@@ -49,9 +49,9 @@ from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL, CMAP_CONTINUOUS,
 from .association import make_association_panel
 
 
-# ======================================================================================================================
+# ==============================================================================
 # Define components
-# ======================================================================================================================
+# ==============================================================================
 def define_components(a_matrix,
                       ks,
                       directory_path,
@@ -363,9 +363,9 @@ def select_features_and_nmf(testing,
     return nmf_results, cophenetic_correlation_coefficients
 
 
-# ======================================================================================================================
+# ==============================================================================
 # Define states
-# ======================================================================================================================
+# ==============================================================================
 def define_states(matrix,
                   ks,
                   directory_path,
@@ -612,7 +612,7 @@ def make_oncogps(training_h,
     :param format: str;
     :param dpi: number;
     """
-    # ==================================================================================================================
+    # ==========================================================================
     # Process training H matrix
     #   Set H matrix's indices to be str (better for .ix)
     #   Drop samples with all-0 values before normalization
@@ -621,7 +621,7 @@ def make_oncogps(training_h,
     #       Clip values over 3 standard deviation
     #       0-1 normalize
     #   Drop samples with all-0 values after normalization
-    # ==================================================================================================================
+    # ==========================================================================
     training_h_initial = training_h.copy()
 
     if isinstance(testing_h,
@@ -651,12 +651,12 @@ def make_oncogps(training_h,
 
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Get training component coordinates
     #   If there are 3 components and equilateral == True, then use equilateral-triangle component coordinates;
     #   else if component coordinates are specified, use them;
     #   else, compute component coordinates using Newton's Laws
-    # ==================================================================================================================
+    # ==========================================================================
     if equilateral and training_h.shape[0] == 3:
         print_log('Using equilateral-triangle component coordinates ...'.
                   format(components))
@@ -687,11 +687,11 @@ def make_oncogps(training_h,
             components, index=training_h.index, columns=['x', 'y'])
         components = normalize_2d_or_1d(components, '0-1', axis=0)
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Get training component power
     #   If n_pulls is not specified, all components pull a sample
     #   If power is not specified, compute component power by fitting (power will be 1 if fitting fails)
-    # ==================================================================================================================
+    # ==========================================================================
     if not n_pulls:
         n_pulls = training_h.shape[0]
 
@@ -711,12 +711,12 @@ def make_oncogps(training_h,
                     '\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.
                     format(e))
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Compute training sample coordinates
     # Process training states
     #   Series states
     #   Keep only samples in H matrix
-    # ==================================================================================================================
+    # ==========================================================================
     training_samples = DataFrame(
         index=training_h.columns,
         columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
@@ -730,48 +730,48 @@ def make_oncogps(training_h,
     training_samples.ix[:, 'state'] = Series(
         training_states, index=training_h.columns)
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Compute training component ratios
-    # ==================================================================================================================
+    # ==========================================================================
     if component_ratio and 0 < component_ratio:
         print_log('Computing training component ratios ...')
         training_samples.ix[:, 'component_ratio'] = _compute_component_ratios(
             training_h, component_ratio)
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Compute grid probabilities and states
-    # ==================================================================================================================
+    # ==========================================================================
     print_log('Computing state grids and probabilities ...')
     state_grids, state_grids_probabilities = _compute_state_grids_and_probabilities(
         training_samples, n_grids, kde_bandwidth_factor)
-    # ==================================================================================================================
+    # ==========================================================================
     # Process training annotation
-    # ==================================================================================================================
+    # ==========================================================================
     annotation_grids = annotation_grids_probabilities = None
     if len(training_annotation):
-        # ==============================================================================================================
+        # ======================================================================
         # Series annotation
         # Keep only samples in H matrix
-        # ==============================================================================================================
+        # ======================================================================
         if isinstance(training_annotation, Series):
             training_samples.ix[:, 'annotation'] = training_annotation.ix[
                 training_samples.index]
         elif len(training_annotation):
             training_samples.ix[:, 'annotation'] = training_annotation
 
-        # ==============================================================================================================
+        # ======================================================================
         # Compute grid probabilities and annotation states
-        # ==============================================================================================================
+        # ======================================================================
         if annotate_background:
             print_log('Computing annotation grids and probabilities ...')
             annotation_grids, annotation_grids_probabilities = _compute_annotation_grids_and_probabilities(
                 training_samples, training_annotation, n_grids)
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Process testing data
-    # ==================================================================================================================
+    # ==========================================================================
     if isinstance(testing_h, DataFrame):
-        # ==============================================================================================================
+        # ======================================================================
         # Process testing H matrix
         #   Set H matrix's indices to be str (better for .ix)
         #   Drop samples with all-0 values before normalization
@@ -780,7 +780,7 @@ def make_oncogps(training_h,
         #       Clip values over 3 standard deviation
         #       0-1 normalize
         #   Drop samples with all-0 values after normalization
-        # ==============================================================================================================
+        # ======================================================================
         if testing_h_normalization:
             testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
 
@@ -804,10 +804,10 @@ def make_oncogps(training_h,
 
             testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
 
-        # ==============================================================================================================
+        # ======================================================================
         # Compute testing sample coordinates
         # Predict testing states
-        # ==============================================================================================================
+        # ======================================================================
         testing_samples = DataFrame(
             index=testing_h.columns,
             columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
@@ -833,42 +833,42 @@ def make_oncogps(training_h,
         #     print(testing_h.T.head())
         #     testing_samples.ix[:, 'state'] = classify(training_h.T, training_states, testing_h.T)
 
-        # ==============================================================================================================
+        # ======================================================================
         # Compute training component ratios
-        # ==============================================================================================================
+        # ======================================================================
         if component_ratio and 0 < component_ratio:
             print_log('Computing testing component ratios ...')
             testing_samples.ix[:,
                                'component_ratio'] = _compute_component_ratios(
                                    testing_h, component_ratio)
 
-        # ==============================================================================================================
+        # ======================================================================
         # Process testing annotation
-        # ==============================================================================================================
+        # ======================================================================
         if len(testing_annotation):
-            # ==============================================================================================================
+            # ==================================================================
             # Series annotation
             # Keep only samples in testing H matrix
-            # ==============================================================================================================
+            # ==================================================================
             if isinstance(testing_annotation, Series):
                 testing_samples.ix[:, 'annotation'] = testing_annotation.ix[
                     testing_samples.index]
             elif len(testing_annotation):
                 testing_samples.ix[:, 'annotation'] = testing_annotation
 
-        # ==============================================================================================================
+        # ======================================================================
         # Use testing
-        # ==============================================================================================================
+        # ======================================================================
         samples = testing_samples
     else:
-        # ==============================================================================================================
+        # ======================================================================
         # Use training
-        # ==============================================================================================================
+        # ======================================================================
         samples = training_samples
 
-    # ==============================================================================================================
+    # ==========================================================================
     # Guess annotation data type
-    # ==============================================================================================================
+    # ==========================================================================
     if annotation_type == 'continuous' and samples.ix[:,
                                                       'annotation'].dtypes == 'object':
         if samples.ix[:, 'annotation'].dropna().unique().size <= 2:
@@ -876,10 +876,10 @@ def make_oncogps(training_h,
         else:
             annotation_type = 'categorical'
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Limit samples to plot
     # Plot Onco-GPS
-    # ==================================================================================================================
+    # ==========================================================================
     if samples_to_plot:
         samples = samples.ix[samples_to_plot, :]
 
@@ -1109,9 +1109,9 @@ def _compute_annotation_grids_and_probabilities(samples,
     return grids, grids_probability
 
 
-# ======================================================================================================================
+# ==============================================================================
 # Plot Onco-GPS map
-# ======================================================================================================================
+# ==============================================================================
 def _plot_onco_gps(
         components, samples, state_grids, state_grids_probabilities,
         n_training_states, annotation_name, annotation_type,
@@ -1676,7 +1676,7 @@ def make_oncogps_in_3d(
         sample_marker_opacity=0.92,
         sample_marker_line_width=0.19,
         sample_marker_line_color='9017E6', ):
-    # ==================================================================================================================
+    # ==========================================================================
     # Process training H matrix
     #   Set H matrix's indices to be str (better for .ix)
     #   Drop samples with all-0 values before normalization
@@ -1685,16 +1685,16 @@ def make_oncogps_in_3d(
     #       Clip values over 3 standard deviation
     #       0-1 normalize
     #   Drop samples with all-0 values after normalization
-    # ==================================================================================================================
+    # ==========================================================================
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
     training_h = normalize_2d_or_1d(training_h, '-0-', axis=1)
     training_h = training_h.clip(lower=-std_max, upper=std_max)
     training_h = normalize_2d_or_1d(training_h, '0-1', axis=1)
     training_h = drop_uniform_slice_from_dataframe(training_h, 0)
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Get training component coordinates
-    # ==================================================================================================================
+    # ==========================================================================
     print_log(
         'Computing component coordinates using informational distance ...')
     dissimilarity = information_coefficient
@@ -1706,11 +1706,11 @@ def make_oncogps_in_3d(
         components, index=training_h.index, columns=['x', 'y', 'z'])
     components = normalize_2d_or_1d(components, '-0-', axis=0)
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Get training component power
     #   If n_pulls is not specified, all components pull a sample
     #   If power is not specified, compute component power by fitting (power will be 1 if fitting fails)
-    # ==================================================================================================================
+    # ==========================================================================
     n_pulls = training_h.shape[0]
     if not power:
         print_log('Computing component power ...')
@@ -1728,12 +1728,12 @@ def make_oncogps_in_3d(
                     '\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.
                     format(e))
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Compute training sample coordinates
     # Process training states
     #   Series states
     #   Keep only samples in H matrix
-    # ==================================================================================================================
+    # ==========================================================================
     training_samples = DataFrame(
         index=training_h.columns,
         columns=['x', 'y', 'z', 'state', 'annotation'])
@@ -1747,24 +1747,24 @@ def make_oncogps_in_3d(
     training_samples.ix[:, 'state'] = Series(
         training_states, index=training_h.columns)
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Process training annotation
-    # ==================================================================================================================
+    # ==========================================================================
     if len(training_annotation):
-        # ==============================================================================================================
+        # ======================================================================
         # Series annotation
         # Keep only samples in H matrix
-        # ==============================================================================================================
+        # ======================================================================
         if isinstance(training_annotation, Series):
             training_samples.ix[:, 'annotation'] = training_annotation.ix[
                 training_samples.index]
         else:
             training_samples.ix[:, 'annotation'] = training_annotation
 
-    # ==================================================================================================================
+    # ==========================================================================
     # Limit samples to plot
     # Plot 3D Onco-GPS
-    # ==================================================================================================================
+    # ==========================================================================
     if len(samples_to_plot):
         training_samples = training_samples.ix[samples_to_plot, :]
 

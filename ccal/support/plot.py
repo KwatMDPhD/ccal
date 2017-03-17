@@ -20,7 +20,7 @@ from matplotlib.colors import (ColorConverter, LinearSegmentedColormap,
                                ListedColormap, Normalize)
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import (figure, gca, plot, savefig, sca, subplot,
-                               suptitle)
+                               suptitle, tight_layout)
 from numpy import array, isnan, unique
 from pandas import DataFrame, Series
 from seaborn import (barplot, boxplot, clustermap, despine, distplot, heatmap,
@@ -480,6 +480,7 @@ def plot_heatmap(dataframe,
             row_annotation = row_annotation.iloc[row_indices]
         if isinstance(column_annotation, Series):
             column_annotation = column_annotation.iloc[column_indices]
+
     figure(figsize=FIGURE_SIZE)
 
     gridspec = GridSpec(10, 10)
@@ -600,6 +601,52 @@ def plot_heatmap(dataframe,
 
     if filepath:
         save_plot(filepath, format=format, dpi=dpi)
+
+
+def plot_columns(df, title='Columns'):
+    """
+    """
+
+    fig = figure(figsize=FIGURE_SIZE)
+
+    n_cols = df.shape[1]
+
+    gs = GridSpec(2, n_cols)
+
+    axes_heatmap = []
+    for i in range(n_cols):
+        axes_heatmap.append(subplot(gs[0, i:i + 1]))
+
+    for i, (c_n, c) in enumerate(df.items()):
+        ax = axes_heatmap[i]
+        heatmap(
+            DataFrame(c),
+            xticklabels=False,
+            yticklabels=False,
+            ax=ax,
+            cbar=False,
+            cmap=CMAP_CONTINUOUS)
+        ax.set_title(c_n, **FONT_SUBTITLE)
+        if 0 < i:
+            ax.set_ylabel('')
+        else:
+            ax.set_ylabel(ax.get_ylabel(), **FONT_SUBTITLE)
+    tight_layout()
+
+    for i, (c_n, c) in enumerate(df.items()):
+        ax = axes_heatmap[i]
+
+        cax, kw = make_axes(
+            ax,
+            location='bottom',
+            norm=Normalize(c.min(), c.max()),
+            ticks=[c.min(), c.max()],
+            cmap=CMAP_CONTINUOUS)
+        ColorbarBase(cax, **kw)
+        cax.set_xticklabels(
+            ['{0:.1e}'.format(v) for v in [c.min(), c.max()]],
+            rotation='vertical',
+            **FONT)
 
 
 def plot_clustermap(dataframe,
