@@ -15,17 +15,18 @@ RANDOM_SEED = 20121020
 
 import sys
 
-sys.setrecursionlimit(10000)
-
+from .computational_cancer_biology import (association, gsea, inference,
+                                           mutual_vulnerability, oncogps)
+from .support.file import (load_data_table, read_gct, read_gmt,
+                           write_data_table, write_gct, write_rnk)
+from .support.plot import (plot_clustermap, plot_distribution, plot_heatmap,
+                           plot_nmf, plot_points, plot_violin_box_or_bar)
 from .support.system import install_libraries
+
+sys.setrecursionlimit(10000)
 
 install_libraries([
     'rpy2',
     'biopython',
     'plotly',
 ])
-
-from .computational_cancer_biology import association, oncogps, mutual_vulnerability, gsea, inference
-from .support.plot import plot_points, plot_distribution, plot_violin_box_or_bar, plot_heatmap, plot_clustermap, \
-    plot_nmf
-from .support.file import read_gct, write_gct, read_gmt, read_gmts, write_rnk, load_data_table, write_data_table

@@ -12,8 +12,8 @@ Authors:
 """
 
 import rpy2.robjects as ro
-from numpy import finfo, asarray, sign, sqrt, exp, log, isnan
-from numpy.random import seed, random_sample
+from numpy import asarray, exp, finfo, isnan, log, sign, sqrt
+from numpy.random import random_sample, seed
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
 from scipy.stats import pearsonr
@@ -30,7 +30,11 @@ bcv = mass.bcv
 kde2d = mass.kde2d
 
 
-def information_coefficient(x, y, n_grids=25, jitter=1E-10, random_seed=RANDOM_SEED):
+def information_coefficient(x,
+                            y,
+                            n_grids=25,
+                            jitter=1E-10,
+                            random_seed=RANDOM_SEED):
     """
     Compute the information coefficient between x and y, which can be composed of either continuous,
     categorical, or binary values.
@@ -67,7 +71,9 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10, random_seed=RANDOM_S
     bandwidth_y = asarray(bcv(y)[0]) * (1 + (-0.75) * abs(cor))
 
     # Compute P(x, y), P(x), P(y)
-    fxy = asarray(kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[2]) + EPS
+    fxy = asarray(
+        kde2d(x, y, asarray([bandwidth_x, bandwidth_y]), n=asarray([n_grids]))[
+            2]) + EPS
     dx = (x.max() - x.min()) / (n_grids - 1)
     dy = (y.max() - y.min()) / (n_grids - 1)
     pxy = fxy / (fxy.sum() * dx * dy)
@@ -75,7 +81,8 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10, random_seed=RANDOM_S
     py = pxy.sum(axis=0) * dx
 
     # Compute mutual information;
-    mi = (pxy * log(pxy / (asarray([px] * n_grids).T * asarray([py] * n_grids)))).sum() * dx * dy
+    mi = (pxy * log(pxy / (asarray([px] * n_grids).T * asarray(
+        [py] * n_grids)))).sum() * dx * dy
 
     # # Get H(x, y), H(x), and H(y)
     # hxy = - (pxy * log(pxy)).sum() * dx * dy
@@ -84,7 +91,7 @@ def information_coefficient(x, y, n_grids=25, jitter=1E-10, random_seed=RANDOM_S
     # mi = hx + hy - hxy
 
     # Compute information coefficient
-    ic = sign(cor) * sqrt(1 - exp(- 2 * mi))
+    ic = sign(cor) * sqrt(1 - exp(-2 * mi))
 
     # TODO: debug when MI < 0 and |MI|  ~ 0 resulting in IC = nan
     if isnan(ic):

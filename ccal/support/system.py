@@ -12,9 +12,9 @@ Authors:
 """
 
 from os import environ
-from subprocess import PIPE, run, Popen
+from subprocess import PIPE, Popen, run
 
-from numpy.random import seed, get_state
+from numpy.random import get_state, seed
 from pip import get_installed_distributions, main
 
 from .log import print_log
@@ -28,7 +28,11 @@ def run_command(command):
     """
 
     print_log(command)
-    output = run(command, shell=True, check=True, stdout=PIPE, universal_newlines=True)
+    output = run(command,
+                 shell=True,
+                 check=True,
+                 stdout=PIPE,
+                 universal_newlines=True)
     return output
 
 
@@ -39,12 +43,13 @@ def install_libraries(libraries_needed):
     :return: None
     """
 
-    print_log('Checking dependencies ({}) ...'.format(', '.join(libraries_needed)))
+    print_log('Trying to install ({}) ...'.format(', '.join(libraries_needed)))
 
     # Get currently installed libraries
     libraries_installed = [lib.key for lib in get_installed_distributions()]
 
-    # If any of the libraries_needed is not in the currently installed libraries, then install it using pip
+    # If any of the libraries_needed is not in the currently installed libraries,
+    # then install it using pip
     for lib in libraries_needed:
         if lib not in libraries_installed:
             print_log('{} not found; installing it using pip ...'.format(lib))
@@ -60,7 +65,11 @@ def source_environment(filepath):
 
     print_log('Sourcing {} ...'.format(filepath))
 
-    for line in Popen('./{}; env'.format(filepath), stdout=PIPE, universal_newlines=True, shell=True).stdout:
+    for line in Popen(
+            './{}; env'.format(filepath),
+            stdout=PIPE,
+            universal_newlines=True,
+            shell=True).stdout:
         key, _, value = line.partition('=')
         key, value = key.strip(), value.strip()
         environ[key] = value
@@ -96,9 +105,13 @@ def print_random_state(mark='', print_process=False):
 
     _, keys, pos, _, _ = random_state
     try:
-        print_log('[{}] Seed0={}\ti={}\t@={}'.format(mark, keys[0], pos, keys[pos]), print_process=print_process)
+        print_log(
+            '[{}] Seed0={}\ti={}\t@={}'.format(mark, keys[0], pos, keys[pos]),
+            print_process=print_process)
     except IndexError:
-        print_log('[{}] Seed0={}\ti={}'.format(mark, keys[0], pos), print_process=print_process)
+        print_log(
+            '[{}] Seed0={}\ti={}'.format(mark, keys[0], pos),
+            print_process=print_process)
 
 
 def skip_random_states(random_seed, n_skips, skipper='', for_skipper=None):

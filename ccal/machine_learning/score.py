@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import array, asarray, empty, zeros, log2
+from numpy import array, asarray, empty, log2, zeros
 from numpy.random import seed, shuffle
 from pandas import DataFrame
 
@@ -20,7 +20,10 @@ from ..mathematics.information import information_coefficient
 from ..support.log import print_log
 
 
-def compute_association_and_pvalue(x, y, function=information_coefficient, n_permutations=1000,
+def compute_association_and_pvalue(x,
+                                   y,
+                                   function=information_coefficient,
+                                   n_permutations=1000,
                                    random_seed=RANDOM_SEED):
     """
     Compute function(x, y) and p-value using permutation test.
@@ -55,7 +58,11 @@ def compute_association_and_pvalue(x, y, function=information_coefficient, n_per
     return score, p_val
 
 
-def compute_similarity_matrix(matrix1, matrix2, function, axis=0, is_distance=False):
+def compute_similarity_matrix(matrix1,
+                              matrix2,
+                              function,
+                              axis=0,
+                              is_distance=False):
     """
     Make association or distance matrix of matrix1 and matrix2 by row (axis=1) or by column (axis=0).
     :param matrix1: pandas DataFrame;
@@ -85,7 +92,9 @@ def compute_similarity_matrix(matrix1, matrix2, function, axis=0, is_distance=Fa
     # Compare
     compared_matrix = empty((n_1, n_2))
     for i_1 in range(n_1):
-        print_log('Computing associations (axis={}) between matrices ({}/{}) ...'.format(axis, i_1, n_1))
+        print_log(
+            'Computing associations (axis={}) between matrices ({}/{}) ...'.
+            format(axis, i_1, n_1))
         for i_2 in range(n_2):
             compared_matrix[i_1, i_2] = function(m1[i_1, :], m2[i_2, :])
 
@@ -93,7 +102,8 @@ def compute_similarity_matrix(matrix1, matrix2, function, axis=0, is_distance=Fa
         print_log('Converting association to distance (1 - association) ...')
         compared_matrix = 1 - compared_matrix
 
-    return DataFrame(compared_matrix, index=matrix1.index, columns=matrix2.index)
+    return DataFrame(
+        compared_matrix, index=matrix1.index, columns=matrix2.index)
 
 
 def compute_sliding_mean(vector, window_size=1):
@@ -106,8 +116,9 @@ def compute_sliding_mean(vector, window_size=1):
 
     m = zeros(len(vector))
     for i in range(len(vector)):
-        m[i] = (vector[max(0, i - window_size):min(len(vector), i + window_size + 1)]).sum() / float(
-            window_size * 2 + 1)
+        m[i] = (vector[max(0, i - window_size):min(
+            len(vector), i + window_size + 1)]
+                ).sum() / float(window_size * 2 + 1)
     return m
 
 
@@ -121,7 +132,7 @@ def compute_geometric_mean(vector):
     product = vector[0]
     for n in vector[1:]:
         product *= n
-    return product ** (1 / len(vector))
+    return product**(1 / len(vector))
 
 
 def compute_fold_change(dataframe, column_name_before, column_name_after):
@@ -133,8 +144,10 @@ def compute_fold_change(dataframe, column_name_before, column_name_after):
     :return: DataFrame;
     """
 
-    tmp1 = dataframe.ix[dataframe.ix[:, column_name_before] != 0, column_name_before]
-    tmp2 = dataframe.ix[dataframe.ix[:, column_name_after] != 0, column_name_after]
+    tmp1 = dataframe.ix[dataframe.ix[:, column_name_before] != 0,
+                        column_name_before]
+    tmp2 = dataframe.ix[dataframe.ix[:, column_name_after] != 0,
+                        column_name_after]
 
     min_before = tmp1.min()
     min_after = tmp2.min()
@@ -142,15 +155,17 @@ def compute_fold_change(dataframe, column_name_before, column_name_after):
     # Compute normalization factor
     norm_factor = 1 / (tmp2.sum() / tmp1.sum())
 
-    print('min_before={}\nmin_after={}\nnorm_factor={}'.format(min_before, min_after, norm_factor))
-    return dataframe.apply(compute_fold_change_for_a_feature, axis=1, args=(column_name_before,
-                                                                            column_name_after,
-                                                                            min_before,
-                                                                            min_after,
-                                                                            norm_factor))
+    print('min_before={}\nmin_after={}\nnorm_factor={}'.format(
+        min_before, min_after, norm_factor))
+    return dataframe.apply(
+        compute_fold_change_for_a_feature,
+        axis=1,
+        args=(column_name_before, column_name_after, min_before, min_after,
+              norm_factor))
 
 
-def compute_fold_change_for_a_feature(series, before_col_name, after_col_name, before_min, after_min, norm_factor):
+def compute_fold_change_for_a_feature(series, before_col_name, after_col_name,
+                                      before_min, after_min, norm_factor):
     """
 
     :param series:

@@ -14,12 +14,12 @@ Authors:
 from math import ceil, sqrt
 from os.path import join
 
-from matplotlib.colorbar import make_axes, ColorbarBase
+from matplotlib.colorbar import ColorbarBase, make_axes
 from matplotlib.gridspec import GridSpec
 from matplotlib.pyplot import figure, subplot
 from numpy import array, unique
-from numpy.random import seed, set_state, shuffle, choice, get_state
-from pandas import Series, DataFrame, read_csv, concat
+from numpy.random import choice, get_state, seed, set_state, shuffle
+from pandas import DataFrame, Series, concat, read_csv
 from scipy.stats import norm
 from seaborn import heatmap
 from statsmodels.sandbox.stats.multicomp import multipletests
@@ -28,20 +28,28 @@ from .. import RANDOM_SEED
 from ..machine_learning.score import compute_similarity_matrix
 from ..mathematics.information import information_coefficient
 from ..support.d1 import get_unique_in_order
-from ..support.d2 import get_top_and_bottom_indices, split_dataframe, normalize_2d_or_1d
+from ..support.d2 import (get_top_and_bottom_indices, normalize_2d_or_1d,
+                          split_dataframe)
 from ..support.file import establish_filepath
 from ..support.log import print_log
 from ..support.parallel_computing import parallelize
-from ..support.plot import FIGURE_SIZE, SPACING, CMAP_ASSOCIATION, CMAP_CATEGORICAL, CMAP_BINARY, FONT, FONT_TITLE, \
-    FONT_SUBTITLE, save_plot, plot_clustermap
+from ..support.plot import (CMAP_ASSOCIATION, CMAP_BINARY, CMAP_CATEGORICAL,
+                            FIGURE_SIZE, FONT, FONT_SUBTITLE, FONT_TITLE,
+                            SPACING, plot_clustermap, save_plot)
 from ..support.str_ import title_str, untitle_str
 
 
 # ======================================================================================================================
 # Association summary panel
 # ======================================================================================================================
-def make_association_summary_panel(target, data_bundle, annotation_files, order=(), target_ascending=False,
-                                   target_type='continuous', title=None, filepath=None):
+def make_association_summary_panel(target,
+                                   data_bundle,
+                                   annotation_files,
+                                   order=(),
+                                   target_ascending=False,
+                                   target_type='continuous',
+                                   title=None,
+                                   filepath=None):
     """
     Plot summary association panel.
     :param target: Series; (n_elements);
@@ -56,7 +64,8 @@ def make_association_summary_panel(target, data_bundle, annotation_files, order=
     """
 
     # Prepare target for plotting
-    target, target_min, target_max, target_cmap = _prepare_data_for_plotting(target, target_type)
+    target, target_min, target_max, target_cmap = _prepare_data_for_plotting(
+        target, target_type)
 
     #
     # Set up figure
@@ -77,7 +86,8 @@ def make_association_summary_panel(target, data_bundle, annotation_files, order=
     #
     r_i = 0
     if not title:
-        title = 'Association Summary Panel for {}'.format(title_str(target.name))
+        title = 'Association Summary Panel for {}'.format(
+            title_str(target.name))
     fig.suptitle(title, horizontalalignment='center', **FONT_TITLE)
     plot_annotation_header = True
 
@@ -89,30 +99,32 @@ def make_association_summary_panel(target, data_bundle, annotation_files, order=
         features = features_dict['dataframe']
 
         # Prepare features for plotting
-        features, features_min, features_max, features_cmap = _prepare_data_for_plotting(features,
-                                                                                         features_dict['data_type'])
+        features, features_min, features_max, features_cmap = _prepare_data_for_plotting(
+            features, features_dict['data_type'])
 
         # Keep only columns shared by target and features
         shared = target.index & features.columns
         if any(shared):
-            a_target = target.ix[shared].sort_values(ascending=target_ascending)
+            a_target = target.ix[shared].sort_values(
+                ascending=target_ascending)
             features = features.ix[:, a_target.index]
-            print_log('Target {} ({} cols) and features ({} cols) have {} shared columns.'.format(target.name,
-                                                                                                  target.size,
-                                                                                                  features.shape[1],
-                                                                                                  len(shared)))
+            print_log(
+                'Target {} ({} cols) and features ({} cols) have {} shared columns.'.
+                format(target.name, target.size, features.shape[1], len(
+                    shared)))
         else:
-            raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared column.'.format(target.name,
-                                                                                                       target.size,
-                                                                                                       features.shape[
-                                                                                                           1]))
+            raise ValueError(
+                'Target {} ({} cols) and features ({} cols) have 0 shared column.'.
+                format(target.name, target.size, features.shape[1]))
 
         # Read corresponding annotations file
-        annotations = read_csv(annotation_files[features_name], sep='\t', index_col=0)
+        annotations = read_csv(
+            annotation_files[features_name], sep='\t', index_col=0)
         # Keep only features in the features dataframe and sort by score
         annotations = annotations.ix[features_dict['original_index'], :]
         annotations.index = features.index
-        annotations.sort_values('score', ascending=features_dict['emphasis'] == 'low')
+        annotations.sort_values(
+            'score', ascending=features_dict['emphasis'] == 'low')
 
         # Apply the sorted index to featuers
         features = features.ix[annotations.index, :]
@@ -124,54 +136,88 @@ def make_association_summary_panel(target, data_bundle, annotation_files, order=
 
         # Set up axes
         r_i += 1
-        title_ax = subplot(gridspec[r_i: r_i + 1, 0])
+        title_ax = subplot(gridspec[r_i:r_i + 1, 0])
         title_ax.axis('off')
         r_i += 1
-        target_ax = subplot(gridspec[r_i: r_i + 1, 0])
+        target_ax = subplot(gridspec[r_i:r_i + 1, 0])
         r_i += 1
-        features_ax = subplot(gridspec[r_i: r_i + features.shape[0], 0])
+        features_ax = subplot(gridspec[r_i:r_i + features.shape[0], 0])
         r_i += features.shape[0]
 
         # Plot title
-        title_ax.text(title_ax.axis()[1] * 0.5, title_ax.axis()[3] * 0.3,
-                      '{} (n={})'.format(title_str(features_name), len(shared)),
-                      horizontalalignment='center', **FONT_SUBTITLE)
+        title_ax.text(
+            title_ax.axis()[1] * 0.5,
+            title_ax.axis()[3] * 0.3,
+            '{} (n={})'.format(title_str(features_name), len(shared)),
+            horizontalalignment='center',
+            **FONT_SUBTITLE)
 
         # Plot target
-        heatmap(DataFrame(a_target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
-                xticklabels=False, yticklabels=True, cbar=False)
+        heatmap(
+            DataFrame(a_target).T,
+            ax=target_ax,
+            vmin=target_min,
+            vmax=target_max,
+            cmap=target_cmap,
+            xticklabels=False,
+            yticklabels=True,
+            cbar=False)
         for t in target_ax.get_yticklabels():
             t.set(rotation=0, **FONT)
 
         if plot_annotation_header:  # Plot header only for the 1st target axis
-            target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
-                           ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR', verticalalignment='center',
-                           **FONT)
+            target_ax.text(
+                target_ax.axis()[1] + target_ax.axis()[1] * SPACING,
+                target_ax.axis()[3] * 0.5,
+                ' ' * 1 + 'IC(\u0394)' + ' ' * 6 + 'P-val' + ' ' * 15 + 'FDR',
+                verticalalignment='center',
+                **FONT)
             plot_annotation_header = False
 
         # Plot features
-        heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap, xticklabels=False,
-                cbar=False)
+        heatmap(
+            features,
+            ax=features_ax,
+            vmin=features_min,
+            vmax=features_max,
+            cmap=features_cmap,
+            xticklabels=False,
+            cbar=False)
         for t in features_ax.get_yticklabels():
             t.set(rotation=0, **FONT)
 
         # Plot annotations
         for i, (a_i, a) in enumerate(annotations.iterrows()):
             # TODO: add confidence interval
-            features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * SPACING,
-                             features_ax.axis()[3] - i * (features_ax.axis()[3] / features.shape[0]) - 0.5,
-                             '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[['score', 'p-value', 'fdr']]).expandtabs(),
-                             verticalalignment='center', **FONT)
+            features_ax.text(
+                features_ax.axis()[1] + features_ax.axis()[1] * SPACING,
+                features_ax.axis()[3] - i *
+                (features_ax.axis()[3] / features.shape[0]) - 0.5,
+                '{0:.3f}\t{1:.2e}\t{2:.2e}'.format(*a.ix[
+                    ['score', 'p-value', 'fdr']]).expandtabs(),
+                verticalalignment='center',
+                **FONT)
 
         # Plot colorbar
         if r_i == n - 1:
             colorbar_ax = subplot(gridspec[r_i:r_i + 1, 0])
             colorbar_ax.axis('off')
-            cax, kw = make_axes(colorbar_ax, location='bottom', pad=0.026, fraction=0.26, shrink=2.6, aspect=26,
-                                cmap=target_cmap, ticks=[])
+            cax, kw = make_axes(
+                colorbar_ax,
+                location='bottom',
+                pad=0.026,
+                fraction=0.26,
+                shrink=2.6,
+                aspect=26,
+                cmap=target_cmap,
+                ticks=[])
             ColorbarBase(cax, **kw)
-            cax.text(cax.axis()[1] * 0.5, cax.axis()[3] * -2.6, 'Standardized Profile for Target and Features',
-                     horizontalalignment='center', **FONT)
+            cax.text(
+                cax.axis()[1] * 0.5,
+                cax.axis()[3] * -2.6,
+                'Standardized Profile for Target and Features',
+                horizontalalignment='center',
+                **FONT)
     # Save
     save_plot(filepath)
 
@@ -179,10 +225,18 @@ def make_association_summary_panel(target, data_bundle, annotation_files, order=
 # ======================================================================================================================
 # Association panel
 # ======================================================================================================================
-def make_association_panels(target, data_bundle, dropna='all', target_ascending=False,
-                            target_prefix='', data_prefix='',
+def make_association_panels(target,
+                            data_bundle,
+                            dropna='all',
+                            target_ascending=False,
+                            target_prefix='',
+                            data_prefix='',
                             target_type='continuous',
-                            n_jobs=1, n_features=0.95, n_samplings=30, n_permutations=30, random_seed=RANDOM_SEED,
+                            n_jobs=1,
+                            n_features=0.95,
+                            n_samplings=30,
+                            n_permutations=30,
+                            random_seed=RANDOM_SEED,
                             directory_path=None):
     """
     Annotate target with each features in the features bundle.
@@ -214,7 +268,8 @@ def make_association_panels(target, data_bundle, dropna='all', target_ascending=
                 target_prefix += ' '
             if data_prefix and not data_prefix.endswith(' '):
                 data_prefix += ' '
-            title = title_str('{}{} vs {}{}'.format(target_prefix, t_i, data_prefix, data_name))
+            title = title_str('{}{} vs {}{}'.format(target_prefix, t_i,
+                                                    data_prefix, data_name))
             print('{} ...'.format(title))
 
             if directory_path:
@@ -222,23 +277,42 @@ def make_association_panels(target, data_bundle, dropna='all', target_ascending=
             else:
                 filepath_prefix = None
 
-            make_association_panel(t, data_dict['dataframe'], dropna=dropna,
-                                   target_ascending=target_ascending,
-                                   n_jobs=n_jobs, features_ascending=data_dict['emphasis'] == 'low',
-                                   n_features=n_features, n_samplings=n_samplings, n_permutations=n_permutations,
-                                   random_seed=random_seed,
-                                   target_name=t_i, target_type=target_type,
-                                   features_type=data_dict['data_type'],
-                                   title=title,
-                                   filepath_prefix=filepath_prefix)
+            make_association_panel(
+                t,
+                data_dict['dataframe'],
+                dropna=dropna,
+                target_ascending=target_ascending,
+                n_jobs=n_jobs,
+                features_ascending=data_dict['emphasis'] == 'low',
+                n_features=n_features,
+                n_samplings=n_samplings,
+                n_permutations=n_permutations,
+                random_seed=random_seed,
+                target_name=t_i,
+                target_type=target_type,
+                features_type=data_dict['data_type'],
+                title=title,
+                filepath_prefix=filepath_prefix)
 
 
-def make_association_panel(target, features, dropna='all', filepath_scores=None,
-                           target_ascending=False, features_ascending=False,
-                           n_jobs=1, n_features=0.95, max_n_features=100, n_samplings=30, n_permutations=30,
+def make_association_panel(target,
+                           features,
+                           dropna='all',
+                           filepath_scores=None,
+                           target_ascending=False,
+                           features_ascending=False,
+                           n_jobs=1,
+                           n_features=0.95,
+                           max_n_features=100,
+                           n_samplings=30,
+                           n_permutations=30,
                            random_seed=RANDOM_SEED,
-                           target_name=None, target_type='continuous', features_type='continuous',
-                           title=None, plot_colname=False, filepath_prefix=None):
+                           target_name=None,
+                           target_type='continuous',
+                           features_type='continuous',
+                           title=None,
+                           plot_colname=False,
+                           filepath_prefix=None):
     """
     Compute: score_i = function(target, feature_i) for all features.
     Compute confidence interval (CI) for n_features features.
@@ -274,7 +348,8 @@ def make_association_panel(target, features, dropna='all', filepath_scores=None,
         # Make sure target is a Series and features a DataFrame
         # Keep samples found in both target and features
         # Drop features with less than 2 unique values
-        target, features = _preprocess_target_and_features(target, features, target_ascending=target_ascending)
+        target, features = _preprocess_target_and_features(
+            target, features, target_ascending=target_ascending)
 
         scores = read_csv(filepath_scores, sep='\t', index_col=0)
 
@@ -285,44 +360,69 @@ def make_association_panel(target, features, dropna='all', filepath_scores=None,
         else:
             filepath = None
 
-        target, features, scores = compute_association(target, features, dropna=dropna,
-                                                       target_ascending=target_ascending,
-                                                       n_jobs=n_jobs, features_ascending=features_ascending,
-                                                       n_features=n_features, n_samplings=n_samplings,
-                                                       n_permutations=n_permutations,
-                                                       random_seed=random_seed,
-                                                       filepath=filepath)
+        target, features, scores = compute_association(
+            target,
+            features,
+            dropna=dropna,
+            target_ascending=target_ascending,
+            n_jobs=n_jobs,
+            features_ascending=features_ascending,
+            n_features=n_features,
+            n_samplings=n_samplings,
+            n_permutations=n_permutations,
+            random_seed=random_seed,
+            filepath=filepath)
 
     # Keep only scores and features to plot
-    indices_to_plot = get_top_and_bottom_indices(scores, 'score', n_features, max_n=max_n_features)
+    indices_to_plot = get_top_and_bottom_indices(
+        scores, 'score', n_features, max_n=max_n_features)
     scores_to_plot = scores.ix[indices_to_plot, :]
     features_to_plot = features.ix[indices_to_plot, :]
 
     print_log('Making annotations ...')
-    annotations = DataFrame(index=scores_to_plot.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
+    annotations = DataFrame(
+        index=scores_to_plot.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
 
     # Add IC (0.95 confidence interval), P-val, and FDR
-    annotations.ix[:, 'IC(\u0394)'] = scores_to_plot.ix[:, ['score', '0.95 moe']].apply(
+    annotations.ix[:, 'IC(\u0394)'] = scores_to_plot.ix[:, [
+        'score', '0.95 moe'
+    ]].apply(
         lambda s: '{0:.3f}({1:.3f})'.format(*s), axis=1)
-    annotations.ix[:, 'P-val'] = scores_to_plot.ix[:, 'p-value'].apply('{:.2e}'.format)
-    annotations.ix[:, 'FDR'] = scores_to_plot.ix[:, 'fdr'].apply('{:.2e}'.format)
+    annotations.ix[:, 'P-val'] = scores_to_plot.ix[:, 'p-value'].apply(
+        '{:.2e}'.format)
+    annotations.ix[:, 'FDR'] = scores_to_plot.ix[:, 'fdr'].apply(
+        '{:.2e}'.format)
 
     print_log('Plotting ...')
     if filepath_prefix:
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    _plot_association_panel(target, features_to_plot, annotations,
-                            target_name=target_name, target_type=target_type,
-                            features_type=features_type,
-                            title=title, plot_colname=plot_colname, filepath=filepath)
+    _plot_association_panel(
+        target,
+        features_to_plot,
+        annotations,
+        target_name=target_name,
+        target_type=target_type,
+        features_type=features_type,
+        title=title,
+        plot_colname=plot_colname,
+        filepath=filepath)
 
     return scores
 
 
-def compute_association(target, features, function=information_coefficient, dropna='all',
-                        target_ascending=False, features_ascending=False,
-                        n_jobs=1, min_n_per_job=100, n_features=0.95, n_samplings=30, confidence=0.95,
+def compute_association(target,
+                        features,
+                        function=information_coefficient,
+                        dropna='all',
+                        target_ascending=False,
+                        features_ascending=False,
+                        n_jobs=1,
+                        min_n_per_job=100,
+                        n_features=0.95,
+                        n_samplings=30,
+                        confidence=0.95,
                         n_permutations=30,
                         random_seed=RANDOM_SEED,
                         filepath=None):
@@ -355,12 +455,16 @@ def compute_association(target, features, function=information_coefficient, drop
     # Make sure target is a Series and features a DataFrame
     # Keep samples found in both target and features
     # Drop features with less than 2 unique values
-    target, features = _preprocess_target_and_features(target, features, dropna=dropna,
-                                                       target_ascending=target_ascending)
+    target, features = _preprocess_target_and_features(
+        target, features, dropna=dropna, target_ascending=target_ascending)
 
-    results = DataFrame(index=features.index, columns=['score', '{} moe'.format(confidence),
-                                                       'p-value (forward)', 'p-value (reverse)', 'p-value',
-                                                       'fdr (forward)', 'fdr (reverse)', 'fdr'])
+    results = DataFrame(
+        index=features.index,
+        columns=[
+            'score', '{} moe'.format(confidence), 'p-value (forward)',
+            'p-value (reverse)', 'p-value', 'fdr (forward)', 'fdr (reverse)',
+            'fdr'
+        ])
 
     #
     # Compute: score_i = function(target, feature_i)
@@ -373,7 +477,10 @@ def compute_association(target, features, function=information_coefficient, drop
     split_features = split_dataframe(features, n_jobs)
 
     # Score
-    scores = concat(parallelize(_score, [(target, f, function) for f in split_features], n_jobs), verify_integrity=True)
+    scores = concat(
+        parallelize(_score, [(target, f, function) for f in split_features],
+                    n_jobs),
+        verify_integrity=True)
 
     # Load scores and sort results by scores
     results.ix[scores.index, 'score'] = scores
@@ -389,21 +496,29 @@ def compute_association(target, features, function=information_coefficient, drop
         print_log('Not computing CI because 0.632 * n_samples < 3.')
 
     else:
-        print_log('Computing {} CI for using distributions built by {} bootstraps ...'.format(confidence, n_samplings))
-        indices_to_bootstrap = get_top_and_bottom_indices(results, 'score', n_features)
+        print_log(
+            'Computing {} CI for using distributions built by {} bootstraps ...'.
+            format(confidence, n_samplings))
+        indices_to_bootstrap = get_top_and_bottom_indices(results, 'score',
+                                                          n_features)
 
         # Bootstrap: for n_sampling times, randomly choose 63.2% of the samples, score, and build score distribution
-        sampled_scores = DataFrame(index=indices_to_bootstrap, columns=range(n_samplings))
+        sampled_scores = DataFrame(
+            index=indices_to_bootstrap, columns=range(n_samplings))
         seed(random_seed)
         for c_i in sampled_scores:
             # Random sample
-            ramdom_samples = choice(features.columns.tolist(), int(ceil(0.632 * features.shape[1]))).tolist()
+            ramdom_samples = choice(
+                features.columns.tolist(),
+                int(ceil(0.632 * features.shape[1]))).tolist()
             sampled_target = target.ix[ramdom_samples]
-            sampled_features = features.ix[indices_to_bootstrap, ramdom_samples]
+            sampled_features = features.ix[indices_to_bootstrap,
+                                           ramdom_samples]
             rs = get_state()
 
             # Score
-            sampled_scores.ix[:, c_i] = sampled_features.apply(lambda f: function(sampled_target, f), axis=1)
+            sampled_scores.ix[:, c_i] = sampled_features.apply(
+                lambda f: function(sampled_target, f), axis=1)
 
             set_state(rs)
 
@@ -412,8 +527,9 @@ def compute_association(target, features, function=information_coefficient, drop
         z_critical = norm.ppf(q=confidence)
 
         # Load confidence interval
-        results.ix[sampled_scores.index, '{} moe'.format(confidence)] = sampled_scores.apply(
-            lambda f: z_critical * (f.std() / sqrt(n_samplings)), axis=1)
+        results.ix[sampled_scores.index, '{} moe'.format(
+            confidence)] = sampled_scores.apply(
+                lambda f: z_critical * (f.std() / sqrt(n_samplings)), axis=1)
 
     #
     # Compute P-values and FDRs by sores against permuted target
@@ -422,13 +538,15 @@ def compute_association(target, features, function=information_coefficient, drop
         print_log('Not computing P-value and FDR because n_perm < 1.')
     else:
         print_log(
-            'Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.format(n_permutations,
-                                                                                                    n_jobs))
+            'Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.
+            format(n_permutations, n_jobs))
 
         # Permute and score
-        permutation_scores = concat(parallelize(_permute_and_score,
-                                                [(target, f, function, n_permutations, random_seed) for f in
-                                                 split_features], n_jobs), verify_integrity=True)
+        permutation_scores = concat(
+            parallelize(_permute_and_score,
+                        [(target, f, function, n_permutations, random_seed)
+                         for f in split_features], n_jobs),
+            verify_integrity=True)
 
         print_log('\tComputing P-value and FDR ...')
         # All scores
@@ -438,29 +556,37 @@ def compute_association(target, features, function=information_coefficient, drop
             s = r.ix['score']
 
             # Compute forward P-value
-            p_value_forward = (all_permutation_scores >= s).sum() / len(all_permutation_scores)
+            p_value_forward = (all_permutation_scores >= s
+                               ).sum() / len(all_permutation_scores)
             if not p_value_forward:
                 p_value_forward = float(1 / len(all_permutation_scores))
             results.ix[r_i, 'p-value (forward)'] = p_value_forward
 
             # Compute reverse P-value
-            p_value_reverse = (all_permutation_scores <= s).sum() / len(all_permutation_scores)
+            p_value_reverse = (all_permutation_scores <= s
+                               ).sum() / len(all_permutation_scores)
             if not p_value_reverse:
                 p_value_reverse = float(1 / len(all_permutation_scores))
             results.ix[r_i, 'p-value (reverse)'] = p_value_reverse
 
         # Compute forward FDR
-        results.ix[:, 'fdr (forward)'] = multipletests(results.ix[:, 'p-value (forward)'], method='fdr_bh')[1]
+        results.ix[:, 'fdr (forward)'] = multipletests(
+            results.ix[:, 'p-value (forward)'], method='fdr_bh')[1]
 
         # Compute reverse FDR
-        results.ix[:, 'fdr (reverse)'] = multipletests(results.ix[:, 'p-value (reverse)'], method='fdr_bh')[1]
+        results.ix[:, 'fdr (reverse)'] = multipletests(
+            results.ix[:, 'p-value (reverse)'], method='fdr_bh')[1]
 
         # Creating the summary P-value and FDR
         forward = results.ix[:, 'score'] >= 0
-        results.ix[:, 'p-value'] = concat([results.ix[forward, 'p-value (forward)'], results.ix[~forward,
-                                                                                                'p-value (reverse)']])
-        results.ix[:, 'fdr'] = concat([results.ix[forward, 'fdr (forward)'], results.ix[~forward,
-                                                                                        'fdr (reverse)']])
+        results.ix[:, 'p-value'] = concat([
+            results.ix[forward, 'p-value (forward)'],
+            results.ix[~forward, 'p-value (reverse)']
+        ])
+        results.ix[:, 'fdr'] = concat([
+            results.ix[forward, 'fdr (forward)'],
+            results.ix[~forward, 'fdr (reverse)']
+        ])
 
     # Save
     if filepath:
@@ -470,7 +596,11 @@ def compute_association(target, features, function=information_coefficient, drop
     return target, features, results
 
 
-def _preprocess_target_and_features(target, features, dropna='all', target_ascending=False, min_n_unique_values=2):
+def _preprocess_target_and_features(target,
+                                    features,
+                                    dropna='all',
+                                    target_ascending=False,
+                                    min_n_unique_values=2):
     """
     Make sure target is a Series and features a DataFrame.
     Keep samples found in both target and features.
@@ -483,7 +613,9 @@ def _preprocess_target_and_features(target, features, dropna='all', target_ascen
     :return: Series and DataFrame;
     """
 
-    if isinstance(features, Series):  # Convert Series-features into DataFrame-features with 1 row
+    if isinstance(
+            features, Series
+    ):  # Convert Series-features into DataFrame-features with 1 row
         features = DataFrame(features).T
 
     features.dropna(axis=1, how=dropna, inplace=True)
@@ -497,21 +629,24 @@ def _preprocess_target_and_features(target, features, dropna='all', target_ascen
     # Keep only columns shared by target and features
     shared = target.index & features.columns
     if any(shared):
-        print_log('Target ({} cols) and features ({} cols) have {} shared columns.'.format(target.size,
-                                                                                           features.shape[1],
-                                                                                           len(shared)))
+        print_log(
+            'Target ({} cols) and features ({} cols) have {} shared columns.'.
+            format(target.size, features.shape[1], len(shared)))
         target = target.ix[shared].sort_values(ascending=target_ascending)
         features = features.ix[:, target.index]
     else:
-        raise ValueError('Target {} ({} cols) and features ({} cols) have 0 shared columns.'.format(target.name,
-                                                                                                    target.size,
-                                                                                                    features.shape[1]))
+        raise ValueError(
+            'Target {} ({} cols) and features ({} cols) have 0 shared columns.'.
+            format(target.name, target.size, features.shape[1]))
 
     # Drop features having less than 2 unique values
-    print_log('Dropping features with less than {} unique values ...'.format(min_n_unique_values))
-    features = features.ix[features.apply(lambda f: len(set(f)), axis=1) >= min_n_unique_values]
+    print_log('Dropping features with less than {} unique values ...'.format(
+        min_n_unique_values))
+    features = features.ix[features.apply(lambda f: len(set(f)), axis=1) >=
+                           min_n_unique_values]
     if features.empty:
-        raise ValueError('No feature has at least {} unique values.'.format(min_n_unique_values))
+        raise ValueError('No feature has at least {} unique values.'.format(
+            min_n_unique_values))
     else:
         print_log('\tKept {} features.'.format(features.shape[0]))
 
@@ -542,7 +677,9 @@ def _permute_and_score(args):
     """
 
     if len(args) != 5:
-        raise ValueError('args is not length of 5 (target, features, function, n_perms, and random_state).')
+        raise ValueError(
+            'args is not length of 5 (target, features, function, n_perms, and random_state).'
+        )
     else:
         t, f, func, n_perms, random_seed = args
 
@@ -553,7 +690,9 @@ def _permute_and_score(args):
 
     seed(random_seed)
     for p in range(n_perms):
-        print_log('\tScoring against permuted target ({}/{}) ...'.format(p, n_perms), print_process=True)
+        print_log(
+            '\tScoring against permuted target ({}/{}) ...'.format(p, n_perms),
+            print_process=True)
 
         shuffle(permuted_t)
         rs = get_state()
@@ -565,10 +704,14 @@ def _permute_and_score(args):
     return scores
 
 
-def _plot_association_panel(target, features, annotations,
-                            target_name=None, target_type='continuous',
+def _plot_association_panel(target,
+                            features,
+                            annotations,
+                            target_name=None,
+                            target_type='continuous',
                             features_type='continuous',
-                            title=None, plot_colname=False,
+                            title=None,
+                            plot_colname=False,
                             filepath=None):
     """
     Plot association panel.
@@ -585,15 +728,18 @@ def _plot_association_panel(target, features, annotations,
     """
 
     # Prepare target for plotting
-    target, target_min, target_max, target_cmap = _prepare_data_for_plotting(target, target_type)
+    target, target_min, target_max, target_cmap = _prepare_data_for_plotting(
+        target, target_type)
     if target_name:
         target.name = target_name
 
     # Prepare features for plotting
-    features, features_min, features_max, features_cmap = _prepare_data_for_plotting(features, features_type)
+    features, features_min, features_max, features_cmap = _prepare_data_for_plotting(
+        features, features_type)
 
     # Set up figure
-    figure(figsize=(min(pow(features.shape[1], 0.7), 7), pow(features.shape[0], 0.9)))
+    figure(figsize=(min(pow(features.shape[1], 0.7), 7), pow(features.shape[0],
+                                                             0.9)))
 
     # Set up axis grids
     gridspec = GridSpec(features.shape[0] + 1, 1)
@@ -605,14 +751,21 @@ def _plot_association_panel(target, features, annotations,
     # Plot target, target label, and title
     #
     # Plot target
-    heatmap(DataFrame(target).T, ax=target_ax, vmin=target_min, vmax=target_max, cmap=target_cmap,
-            xticklabels=False, cbar=False)
+    heatmap(
+        DataFrame(target).T,
+        ax=target_ax,
+        vmin=target_min,
+        vmax=target_max,
+        cmap=target_cmap,
+        xticklabels=False,
+        cbar=False)
 
     # Adjust target name
     for t in target_ax.get_yticklabels():
         t.set(rotation=0, **FONT)
 
-    if target_type in ('binary', 'categorical'):  # Add binary or categorical target labels
+    if target_type in ('binary', 'categorical'
+                       ):  # Add binary or categorical target labels
         boundaries = [0]
 
         # Get values
@@ -633,27 +786,49 @@ def _plot_association_panel(target, features, annotations,
 
         # Plot values to their corresponding positions
         for i, x in enumerate(label_horizontal_positions):
-            target_ax.text(x, target_ax.axis()[3] * (1 + SPACING), unique_target_labels[i],
-                           horizontalalignment='center', **FONT)
+            target_ax.text(
+                x,
+                target_ax.axis()[3] * (1 + SPACING),
+                unique_target_labels[i],
+                horizontalalignment='center',
+                **FONT)
 
     if title:  # Plot title
-        target_ax.text(target_ax.axis()[1] * 0.5, target_ax.axis()[3] * 1.9, title, horizontalalignment='center',
-                       **FONT_TITLE)
+        target_ax.text(
+            target_ax.axis()[1] * 0.5,
+            target_ax.axis()[3] * 1.9,
+            title,
+            horizontalalignment='center',
+            **FONT_TITLE)
 
     # Plot annotation header
-    target_ax.text(target_ax.axis()[1] + target_ax.axis()[1] * SPACING, target_ax.axis()[3] * 0.5,
-                   ' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR', verticalalignment='center', **FONT)
+    target_ax.text(
+        target_ax.axis()[1] + target_ax.axis()[1] * SPACING,
+        target_ax.axis()[3] * 0.5,
+        ' ' * 6 + 'IC(\u0394)' + ' ' * 12 + 'P-val' + ' ' * 14 + 'FDR',
+        verticalalignment='center',
+        **FONT)
 
     # Plot features
-    heatmap(features, ax=features_ax, vmin=features_min, vmax=features_max, cmap=features_cmap,
-            xticklabels=plot_colname, cbar=False)
+    heatmap(
+        features,
+        ax=features_ax,
+        vmin=features_min,
+        vmax=features_max,
+        cmap=features_cmap,
+        xticklabels=plot_colname,
+        cbar=False)
     for t in features_ax.get_yticklabels():
         t.set(rotation=0, **FONT)
 
     # Plot annotations
     for i, (a_i, a) in enumerate(annotations.iterrows()):
-        features_ax.text(features_ax.axis()[1] + features_ax.axis()[1] * SPACING, features_ax.axis()[3] - i - 0.5,
-                         '\t'.join(a.tolist()).expandtabs(), verticalalignment='center', **FONT)
+        features_ax.text(
+            features_ax.axis()[1] + features_ax.axis()[1] * SPACING,
+            features_ax.axis()[3] - i - 0.5,
+            '\t'.join(a.tolist()).expandtabs(),
+            verticalalignment='center',
+            **FONT)
 
     # Save
     save_plot(filepath)
@@ -661,20 +836,31 @@ def _plot_association_panel(target, features, annotations,
 
 def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
     if data_type == 'continuous':
-        return normalize_2d_or_1d(dataframe, method='-0-', axis=1), -max_std, max_std, CMAP_ASSOCIATION
+        return normalize_2d_or_1d(
+            dataframe, method='-0-',
+            axis=1), -max_std, max_std, CMAP_ASSOCIATION
     elif data_type == 'categorical':
         return dataframe.copy(), 0, len(unique(dataframe)), CMAP_CATEGORICAL
     elif data_type == 'binary':
         return dataframe.copy(), 0, 1, CMAP_BINARY
     else:
-        raise ValueError('Target data type must be one of {continuous, categorical, binary}.')
+        raise ValueError(
+            'Target data type must be one of {continuous, categorical, binary}.'
+        )
 
 
 # ======================================================================================================================
 # Comparison panel
 # ======================================================================================================================
-def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_label='Matrix 2',
-                          function=information_coefficient, axis=0, is_distance=False, annotate=True, title=None,
+def make_comparison_panel(matrix1,
+                          matrix2,
+                          matrix1_label='Matrix 1',
+                          matrix2_label='Matrix 2',
+                          function=information_coefficient,
+                          axis=0,
+                          is_distance=False,
+                          annotate=True,
+                          title=None,
                           filepath_prefix=None):
     """
     Compare matrix1 and matrix2 by row (axis=1) or by column (axis=0), and plot cluster map.
@@ -692,7 +878,8 @@ def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_la
     """
 
     # Compute association or distance matrix, which is returned at the end
-    comparison_matrix = compute_similarity_matrix(matrix2, matrix1, function, axis=axis, is_distance=is_distance)
+    comparison_matrix = compute_similarity_matrix(
+        matrix2, matrix1, function, axis=axis, is_distance=is_distance)
 
     if filepath_prefix:  # Save
         comparison_matrix.to_csv(filepath_prefix + '.txt', sep='\t')
@@ -702,8 +889,13 @@ def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_la
         filepath = filepath_prefix + '.pdf'
     else:
         filepath = None
-    plot_clustermap(comparison_matrix, title=title, xlabel=matrix1_label, ylabel=matrix2_label, annotate=annotate,
-                    filepath=filepath)
+    plot_clustermap(
+        comparison_matrix,
+        title=title,
+        xlabel=matrix1_label,
+        ylabel=matrix2_label,
+        annotate=annotate,
+        filepath=filepath)
 
     return comparison_matrix
 
@@ -711,8 +903,13 @@ def make_comparison_panel(matrix1, matrix2, matrix1_label='Matrix 1', matrix2_la
 # ======================================================================================================================
 # Modalities
 # ======================================================================================================================
-def differential_gene_expression(phenotypes, gene_expression, output_filename, max_number_of_genes_to_show=20,
-                                 number_of_permutations=10, title=None, random_seed=RANDOM_SEED):
+def differential_gene_expression(phenotypes,
+                                 gene_expression,
+                                 output_filename,
+                                 max_number_of_genes_to_show=20,
+                                 number_of_permutations=10,
+                                 title=None,
+                                 random_seed=RANDOM_SEED):
     """
     Sort genes according to their association with a binary phenotype or class vector.
     :param phenotypes: Series; input binary phenotype/class distinction
@@ -724,13 +921,14 @@ def differential_gene_expression(phenotypes, gene_expression, output_filename, m
     :param random_seed: int; random number generator seed (can be set to a user supplied integer for reproducibility)
     :return: Dataframe; table of genes ranked by Information Coeff vs. phenotype
     """
-    gene_scores = make_association_panel(target=phenotypes,
-                                         features=gene_expression,
-                                         n_jobs=1,
-                                         max_n_features=max_number_of_genes_to_show,
-                                         n_permutations=number_of_permutations,
-                                         target_type='binary',
-                                         title=title,
-                                         filepath_prefix=output_filename,
-                                         random_seed=random_seed)
+    gene_scores = make_association_panel(
+        target=phenotypes,
+        features=gene_expression,
+        n_jobs=1,
+        max_n_features=max_number_of_genes_to_show,
+        n_permutations=number_of_permutations,
+        target_type='binary',
+        title=title,
+        filepath_prefix=output_filename,
+        random_seed=random_seed)
     return gene_scores

@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import nan, array, asarray, empty_like
+from numpy import array, asarray, empty_like, nan
 from pandas import DataFrame, Series
 
 from .log import print_log
@@ -30,7 +30,8 @@ def make_series(iterable, index=None, name=None):
     return Series(iterable, index=index, name=name)
 
 
-def type_series(s, drops=['unknown', 'n/a', '--', 'NA', 'na', 'nan', 'NAN', 'NaN']):
+def type_series(
+        s, drops=['unknown', 'n/a', '--', 'NA', 'na', 'nan', 'NAN', 'NaN']):
     """
 
     :param s: Series;
@@ -74,7 +75,8 @@ def drop_na_1d(df, axis=0, how='all'):
         nas = df.isnull().all(axis=axis)
     else:
         raise ValueError(
-            'Unknown \'how\' \'{}\'; pick from (\'any\', \'all\').'.format(how))
+            'Unknown \'how\' \'{}\'; pick from (\'any\', \'all\').'.format(
+                how))
 
     if nas.any():
         if axis == 0:
@@ -202,9 +204,13 @@ def explode_series(series):
     return label_x_sample
 
 
-def normalize_1d(series, method, n_ranks=10000,
-                 normalizing_mean=None, normalizing_std=None,
-                 normalizing_min=None, normalizing_max=None,
+def normalize_1d(series,
+                 method,
+                 n_ranks=10000,
+                 normalizing_mean=None,
+                 normalizing_std=None,
+                 normalizing_min=None,
+                 normalizing_max=None,
                  normalizing_size=None):
     """
     Normalize a pandas series.
@@ -249,7 +255,8 @@ def normalize_1d(series, method, n_ranks=10000,
         # Normalize
         if std == 0:
             print(
-                'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
+                'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...'
+            )
             return series / size
         else:
             return (series - mean) / std
@@ -275,7 +282,8 @@ def normalize_1d(series, method, n_ranks=10000,
         # Normalize
         if max_ - min_ == 0:
             print(
-                'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
+                'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...'
+            )
             return series / size
         else:
             return (series - min_) / (max_ - min_)

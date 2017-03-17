@@ -11,19 +11,19 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from os import mkdir, listdir, environ
-from os.path import abspath, split, isdir, isfile, islink, join
+from os import environ, listdir, mkdir
+from os.path import abspath, isdir, isfile, islink, join, split
 from sys import platform
 
 from Bio import bgzf
-from pandas import Series, DataFrame, read_csv, concat
+from pandas import DataFrame, Series, concat, read_csv
 
-from .str_ import split_ignoring_inside_quotes, remove_nested_quotes
+from .str_ import remove_nested_quotes, split_ignoring_inside_quotes
 
 
-# ======================================================================================================================
+# ==============================================================================
 # General functions
-# ======================================================================================================================
+# ==============================================================================
 def get_home_dir():
     """
 
@@ -68,7 +68,8 @@ def establish_filepath(filepath):
 
     # Get missing directories
     missing_directories = []
-    while not (isdir(prefix) or isfile(prefix) or islink(prefix)):  # prefix isn't compress, directory, or link
+    while not (isdir(prefix) or isfile(prefix) or
+               islink(prefix)):  # prefix isn't compress, directory, or link
         missing_directories.append(prefix)
 
         # Check prefix's prefix next
@@ -129,9 +130,9 @@ def write_dict(dict_, filepath, key_name, value_name):
     s.to_csv(filepath, sep='\t')
 
 
-# ======================================================================================================================
-# .gct functions
-# ======================================================================================================================
+# ==============================================================================
+# GCT functions
+# ==============================================================================
 def load_gct(matrix):
     """
     If matrix is a DataFrame, return as is; if a filepath (.gct), read matrix from it as DaraFrame; else, raise Error.
@@ -142,13 +143,19 @@ def load_gct(matrix):
     if isinstance(matrix, str):  # Read .gct from a filepath
         matrix = read_gct(matrix)
 
-    elif not isinstance(matrix, DataFrame):  # .gct is not a filepath or DataFrame
-        raise ValueError('Matrix must be either a DataFrame or a path to a .gct compress.')
+    elif not isinstance(matrix,
+                        DataFrame):  # .gct is not a filepath or DataFrame
+        raise ValueError(
+            'Matrix must be either a DataFrame or a path to a .gct compress.')
 
     return matrix
 
 
-def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, column_name=None):
+def read_gct(filepath,
+             fill_na=None,
+             drop_description=True,
+             row_name=None,
+             column_name=None):
     """
     Read a .gct (filepath) and convert it into a DataFrame.
 
@@ -175,7 +182,9 @@ def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, colum
         if c1.strip() != 'Name':
             raise ValueError('Column 1 != \'Name\'.')
         else:
-            raise ValueError('Column 1 has more than 1 extra space around \'Name\'. Please strip it.')
+            raise ValueError(
+                'Column 1 has more than 1 extra space around \'Name\'. Please strip it.'
+            )
     df.set_index('Name', inplace=True)
 
     # Check if the 2nd column is 'Description'; is so drop it as necessary
@@ -183,7 +192,9 @@ def read_gct(filepath, fill_na=None, drop_description=True, row_name=None, colum
         if c2.strip() != 'Description':
             raise ValueError('Column 2 != \'Description\'')
         else:
-            raise ValueError('Column 2 has more than 1 extra space around \'Description\'. Please strip it.')
+            raise ValueError(
+                'Column 2 has more than 1 extra space around \'Description\'. Please strip it.'
+            )
     if drop_description:
         df.drop('Description', axis=1, inplace=True)
 
@@ -230,9 +241,9 @@ def write_gct(matrix, filepath, descriptions=None):
         obj.to_csv(f, sep='\t')
 
 
-# ======================================================================================================================
+# ==============================================================================
 # .data_table.txt functions
-# ======================================================================================================================
+# ==============================================================================
 def load_data_table(data_table, indices=None):
     """
 
@@ -264,9 +275,11 @@ def load_data_table(data_table, indices=None):
         data_table = read_data_table(data_table)
 
     data_bundle = {}
-    for data_name, (data_type, emphasis, filepath) in data_table.iterrows():  # For each data
+    for data_name, (data_type, emphasis,
+                    filepath) in data_table.iterrows():  # For each data
         if isinstance(indices, dict) and data_name not in indices:
-            print('Skipped loading {} because indices were not specified.'.format(data_name))
+            print('Skipped loading {} because indices were not specified.'.
+                  format(data_name))
             continue
 
         print('Making data bundle for {} ...'.format(data_name))
@@ -281,7 +294,8 @@ def load_data_table(data_table, indices=None):
                 # Save the original index names
                 data_bundle[data_name]['original_index'] = index
 
-                if 'alias' in indices[data_name]:  # Rename these specific indices
+                if 'alias' in indices[
+                        data_name]:  # Rename these specific indices
                     df.index = indices[data_name]['alias']
 
                 print('\tSelected rows: {}.'.format(df.index.tolist()))
@@ -303,7 +317,9 @@ def read_data_table(filepath):
     return read_csv(filepath, sep='\t', index_col=0)
 
 
-def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasis', 'Filepath')):
+def write_data_table(
+        data, filepath,
+        columns=('Data Name', 'Data Type', 'Emphasis', 'Filepath')):
     """
     Write <data> to filepath.
     :param data: iterable of tuples;
@@ -324,10 +340,14 @@ def write_data_table(data, filepath, columns=('Data Name', 'Data Type', 'Emphasi
     df.to_csv(filepath, sep='\t')
 
 
-# ======================================================================================================================
+# ==============================================================================
 # GMT functions
-# ======================================================================================================================
-def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, collapse=False):
+# ==============================================================================
+def read_gmts(filepaths,
+              gene_sets=(),
+              drop_description=True,
+              save_clean=True,
+              collapse=False):
     """
     Read 1 or more GMTs.
     :param filepaths: str; filepath to a .gmt compress
@@ -342,14 +362,20 @@ def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, c
     if isinstance(filepaths, str):
         filepaths = [filepaths]
     for fp in filepaths:
-        gmt = read_gmt(fp, gene_sets=gene_sets, drop_description=drop_description, save_clean=save_clean)
+        gmt = read_gmt(
+            fp,
+            gene_sets=gene_sets,
+            drop_description=drop_description,
+            save_clean=save_clean)
         gmts.append(gmt)
     gmt = concat(gmts)
     gmt.dropna(axis=1, how='all', inplace=True)
     gmt.sort_index(inplace=True)
 
     if 'Description' in gmt.columns:
-        gmt.columns = ['Description'] + ['Gene {}'.format(i) for i in range(1, gmt.shape[1])]
+        gmt.columns = ['Description'] + [
+            'Gene {}'.format(i) for i in range(1, gmt.shape[1])
+        ]
     else:
         gmt.columns = ['Gene {}'.format(i) for i in range(1, gmt.shape[1] + 1)]
 
@@ -359,7 +385,11 @@ def read_gmts(filepaths, gene_sets=(), drop_description=True, save_clean=True, c
         return gmt
 
 
-def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=False, collapse=False):
+def read_gmt(filepath,
+             gene_sets=(),
+             drop_description=True,
+             save_clean=False,
+             collapse=False):
     """
     Read GMT.
     :param filepath: str; filepath to a .gmt compress
@@ -376,7 +406,8 @@ def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=False, co
         for line in f.readlines():
             line_split = line.strip().split('\t')
             # Sort genes and add as a GMT gene set (row)
-            rows.append(line_split[:2] + sorted([g for g in line_split[2:] if g]))
+            rows.append(line_split[:2] + sorted(
+                [g for g in line_split[2:] if g]))
 
     # Make a DataFrame
     gmt = DataFrame(rows)
@@ -385,7 +416,8 @@ def read_gmt(filepath, gene_sets=(), drop_description=True, save_clean=False, co
     gmt.set_index(0, inplace=True)
     gmt.index.name = 'Gene Set'
     gmt.sort_index(inplace=True)
-    gmt.columns = ['Description'] + ['Gene {}'.format(i) for i in range(1, gmt.shape[1])]
+    gmt.columns = ['Description'
+                   ] + ['Gene {}'.format(i) for i in range(1, gmt.shape[1])]
 
     if save_clean:  # Save the cleaned version
         gmt.to_csv(filepath, sep='\t', header=False)
@@ -417,7 +449,8 @@ def write_gmt(gmt, filepath):
 
     if 'Description' not in gmt.columns:
         gmt['Description'] = gmt.index
-        gmt = gmt.reindex(columns=gmt.columns[-1:].tolist() + gmt.columns[:-1].tolist())
+        gmt = gmt.reindex(
+            columns=gmt.columns[-1:].tolist() + gmt.columns[:-1].tolist())
 
     if not filepath.endswith('gmt'):
         filepath += '.gmt'
@@ -427,10 +460,14 @@ def write_gmt(gmt, filepath):
     return gmt
 
 
-# ======================================================================================================================
-# .rnk functions
-# ======================================================================================================================
-def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None, comment=None):
+# ==============================================================================
+# RNK functions
+# ==============================================================================
+def write_rnk(series_or_dataframe,
+              filepath,
+              gene_column=None,
+              score_column=None,
+              comment=None):
     """
     Write .rnk.
     :param series_or_dataframe: Series or DataFrame;
@@ -464,9 +501,9 @@ def write_rnk(series_or_dataframe, filepath, gene_column=None, score_column=None
         s.to_csv(f, sep='\t', header=False)
 
 
-# ======================================================================================================================
-# .fpkm_tracking functions
-# ======================================================================================================================
+# ==============================================================================
+# FPKM_TRACKING functions
+# ==============================================================================
 def read_fpkm_tracking(filepath, signature=None):
     """
 
@@ -485,16 +522,18 @@ def read_fpkm_tracking(filepath, signature=None):
         fpkm.columns = ['{} FPKM'.format(signature)]
     print('\t{}'.format(fpkm.shape))
 
-    print('Dropping rows where gene_short_name is \'-\' (transcripts without gene_short_name) ...')
+    print(
+        'Dropping rows where gene_short_name is \'-\' (transcripts without gene_short_name) ...'
+    )
     fpkm = fpkm.ix[fpkm.index != '-', :]
     print('\t{}'.format(fpkm.shape))
 
     return fpkm.groupby(level=0).mean()
 
 
-# ======================================================================================================================
+# ==============================================================================
 # VCF functions
-# ======================================================================================================================
+# ==============================================================================
 def read_vcf(filepath):
     """
     Read a VCF.
@@ -582,14 +621,15 @@ def read_vcf(filepath):
     f.close()
 
     # Read data
-    vcf['data'] = read_csv(filepath, sep='\t', comment='#', header=None, names=vcf['header'])
+    vcf['data'] = read_csv(
+        filepath, sep='\t', comment='#', header=None, names=vcf['header'])
 
     return vcf
 
 
-# ======================================================================================================================
+# ==============================================================================
 # G*F functions
-# ======================================================================================================================
+# ==============================================================================
 def read_gff3(feature_filename, sources, types):
     """
     Parse feature_filename and return:
@@ -609,7 +649,8 @@ def read_gff3(feature_filename, sources, types):
         # Parse non-headers
         if line[0] != '#':
             split_line = line.split('\t')
-            assert len(split_line) >= 7, 'Column error on line {}: {}'.format(line_num, split_line)
+            assert len(split_line) >= 7, 'Column error on line {}: {}'.format(
+                line_num, split_line)
 
             source, feature_type = split_line[1], split_line[2]
 
@@ -624,7 +665,9 @@ def read_gff3(feature_filename, sources, types):
                 else:
                     strand = 0
 
-                fields = dict(field_value_pair.split('=') for field_value_pair in split_line[8].split(';'))
+                fields = dict(
+                    field_value_pair.split('=')
+                    for field_value_pair in split_line[8].split(';'))
                 version = float(fields['version'])
                 gene_name = fields['Name']
                 ensembl_id = fields['gene_id']
@@ -632,18 +675,21 @@ def read_gff3(feature_filename, sources, types):
                 # Make sure not duplicated ensembl IDs
                 assert ensembl_id not in features
 
-                features[ensembl_id] = {'contig': contig,
-                                        'start': start - 1,  # Convert 1-based to 0-based
-                                        'end': end,
-                                        # Convert 1-based to 0-based and account for fully-closed interval
-                                        # of GFF (they cancel out)
-                                        'strand': strand,
-                                        'version': version,
-                                        'gene_name': gene_name,
-                                        'ensembl_id': ensembl_id}
+                features[ensembl_id] = {
+                    'contig': contig,
+                    'start': start - 1,  # Convert 1-based to 0-based
+                    'end': end,
+                    # Convert 1-based to 0-based and account for fully-closed interval
+                    # of GFF (they cancel out)
+                    'strand': strand,
+                    'version': version,
+                    'gene_name': gene_name,
+                    'ensembl_id': ensembl_id
+                }
 
                 # Save a new feature or an existing feature with an an updated version
-                if gene_name not in feature_to_id or version > features[ensembl_id]['version']:
+                if gene_name not in feature_to_id or version > features[
+                        ensembl_id]['version']:
                     feature_to_id[gene_name] = ensembl_id
 
     return features, feature_to_id
@@ -666,13 +712,17 @@ def read_gtf(feature_filename, sources, types):
     for line_num, line in enumerate(feature_filename):
         if line[0] != '#':
             split_line = line.strip().split('\t')
-            assert len(split_line) >= 7, 'Column error on line {}: {}'.format(line_num, split_line)
+            assert len(split_line) >= 7, 'Column error on line {}: {}'.format(
+                line_num, split_line)
 
             feature_type = split_line[2]
 
             if feature_type in types:
-                fields = dict([field_value_pair.strip().split(' ') for field_value_pair in split_line[8].split(';')
-                               if len(field_value_pair) > 0])
+                fields = dict([
+                    field_value_pair.strip().split(' ')
+                    for field_value_pair in split_line[8].split(';')
+                    if len(field_value_pair) > 0
+                ])
 
                 if fields['gene_source'].strip('"') in sources:
                     chrom = split_line[0]
@@ -691,12 +741,14 @@ def read_gtf(feature_filename, sources, types):
                     # Make sure not duplicated ensembl IDs
                     assert ensembl_id not in features
 
-                    features[ensembl_id] = {'contig': chrom,
-                                            'start': start,
-                                            'end': end,
-                                            'strand': strand,
-                                            'gene_name': gene_name,
-                                            'ensembl_id': ensembl_id}
+                    features[ensembl_id] = {
+                        'contig': chrom,
+                        'start': start,
+                        'end': end,
+                        'strand': strand,
+                        'gene_name': gene_name,
+                        'ensembl_id': ensembl_id
+                    }
 
                     if gene_name not in feature_to_id:
                         feature_to_id[gene_name] = ensembl_id

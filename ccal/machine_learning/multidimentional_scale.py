@@ -13,13 +13,21 @@ Authors:
 
 from sklearn.manifold import MDS
 
-from .score import compute_similarity_matrix
 from .. import RANDOM_SEED
+from .score import compute_similarity_matrix
 
 
 # TODO: set better default parameters: lower eps and n_init
-def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=1000, max_iter=1000, verbose=0,
-        eps=1e-3, n_jobs=1, random_state=RANDOM_SEED):
+def mds(matrix,
+        n_components=2,
+        dissimilarity='euclidean',
+        metric=True,
+        n_init=1000,
+        max_iter=1000,
+        verbose=0,
+        eps=1e-3,
+        n_jobs=1,
+        random_state=RANDOM_SEED):
     """
     Multidimensional-scale rows of matrix from <n_dimensions>D into <n_components>D.
     :param matrix: DataFrame; (n_points, n_dimensions)
@@ -37,14 +45,29 @@ def mds(matrix, n_components=2, dissimilarity='euclidean', metric=True, n_init=1
     """
 
     if isinstance(dissimilarity, str):
-        mds_obj = MDS(n_components=n_components, dissimilarity=dissimilarity, metric=metric, n_init=n_init,
-                      max_iter=max_iter, verbose=verbose, eps=eps, n_jobs=n_jobs, random_state=random_state)
+        mds_obj = MDS(n_components=n_components,
+                      dissimilarity=dissimilarity,
+                      metric=metric,
+                      n_init=n_init,
+                      max_iter=max_iter,
+                      verbose=verbose,
+                      eps=eps,
+                      n_jobs=n_jobs,
+                      random_state=random_state)
         coordinates = mds_obj.fit_transform(matrix)
 
     else:  # Compute distances using dissimilarity, a function
-        mds_obj = MDS(n_components=n_components, dissimilarity='precomputed', metric=metric, n_init=n_init,
-                      max_iter=max_iter, verbose=verbose, eps=eps, n_jobs=n_jobs, random_state=random_state)
+        mds_obj = MDS(n_components=n_components,
+                      dissimilarity='precomputed',
+                      metric=metric,
+                      n_init=n_init,
+                      max_iter=max_iter,
+                      verbose=verbose,
+                      eps=eps,
+                      n_jobs=n_jobs,
+                      random_state=random_state)
         coordinates = mds_obj.fit_transform(
-            compute_similarity_matrix(matrix, matrix, dissimilarity, is_distance=True, axis=1))
+            compute_similarity_matrix(
+                matrix, matrix, dissimilarity, is_distance=True, axis=1))
 
     return coordinates

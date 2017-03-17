@@ -11,10 +11,10 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import array, ones, isnan
+from numpy import array, isnan, ones
 from numpy.random import seed, shuffle
-from pandas import DataFrame, concat, Series
-from scipy.cluster.hierarchy import linkage, dendrogram
+from pandas import DataFrame, Series, concat
+from scipy.cluster.hierarchy import dendrogram, linkage
 
 from .. import RANDOM_SEED
 from ..support.d1 import drop_na_1d, normalize_1d
@@ -79,7 +79,8 @@ def get_top_and_bottom_indices(df, column_name, threshold, max_n=None):
 
     if 1 <= threshold:
         if 2 * threshold <= df.shape[0]:
-            top_and_bottom = df.index[:threshold].tolist() + df.index[-threshold:].tolist()
+            top_and_bottom = df.index[:threshold].tolist() + df.index[
+                -threshold:].tolist()
         else:
             top_and_bottom = df.index
 
@@ -139,13 +140,15 @@ def drop_uniform_slice_from_dataframe(df, value, axis=0):
     if axis == 0:
         dropped = (df == value).all(axis=0)
         if any(dropped):
-            print_log('Removed {} column index(ices) whose values are all {}.'.format(dropped.sum(), value))
+            print_log('Removed {} column index(ices) whose values are all {}.'.
+                      format(dropped.sum(), value))
         return df.ix[:, ~dropped]
 
     elif axis == 1:
         dropped = (df == value).all(axis=1)
         if any(dropped):
-            print_log('Removed {} row index(ices) whose values are all {}.'.format(dropped.sum(), value))
+            print_log('Removed {} row index(ices) whose values are all {}.'.
+                      format(dropped.sum(), value))
         return df.ix[~dropped, :]
 
 
@@ -192,7 +195,9 @@ def split_dataframe(df, n_split, axis=0):
     # TODO: implement axis logic
 
     if df.shape[0] < n_split:
-        raise ValueError('n_split ({}) can\'t be greater than the number of rows ({}).'.format(n_split, df.shape[0]))
+        raise ValueError(
+            'n_split ({}) can\'t be greater than the number of rows ({}).'.
+            format(n_split, df.shape[0]))
     elif n_split <= 0:
         raise ValueError('n_split ({}) can\'t be less than 0.'.format(n_split))
 
@@ -203,7 +208,7 @@ def split_dataframe(df, n_split, axis=0):
     for i in range(n_split):
         start_i = i * n
         end_i = (i + 1) * n
-        splits.append(df.iloc[start_i: end_i, :])
+        splits.append(df.iloc[start_i:end_i, :])
 
     i = n * n_split
     if i < df.shape[0]:
@@ -212,9 +217,14 @@ def split_dataframe(df, n_split, axis=0):
     return splits
 
 
-def normalize_2d_or_1d(dataframe, method, axis=None, n_ranks=10000,
-                       normalizing_mean=None, normalizing_std=None,
-                       normalizing_min=None, normalizing_max=None,
+def normalize_2d_or_1d(dataframe,
+                       method,
+                       axis=None,
+                       n_ranks=10000,
+                       normalizing_mean=None,
+                       normalizing_std=None,
+                       normalizing_min=None,
+                       normalizing_max=None,
                        normalizing_size=None):
     """
     Normalize a DataFrame or Series.
@@ -231,20 +241,31 @@ def normalize_2d_or_1d(dataframe, method, axis=None, n_ranks=10000,
     """
 
     if isinstance(dataframe, Series):  # Series
-        return normalize_1d(dataframe, method, n_ranks=n_ranks,
-                            normalizing_mean=normalizing_mean, normalizing_std=normalizing_std,
-                            normalizing_min=normalizing_min, normalizing_max=normalizing_max,
-                            normalizing_size=normalizing_size)
+        return normalize_1d(
+            dataframe,
+            method,
+            n_ranks=n_ranks,
+            normalizing_mean=normalizing_mean,
+            normalizing_std=normalizing_std,
+            normalizing_min=normalizing_min,
+            normalizing_max=normalizing_max,
+            normalizing_size=normalizing_size)
 
     elif isinstance(dataframe, DataFrame):
 
         if axis == 0 or axis == 1:  # Normalize Series by axis
-            return dataframe.apply(normalize_1d, **{'method': method, 'n_ranks': n_ranks,
-                                                    'normalizing_mean': normalizing_mean,
-                                                    'normalizing_std': normalizing_std,
-                                                    'normalizing_min': normalizing_min,
-                                                    'normalizing_max': normalizing_max,
-                                                    'normalizing_size': normalizing_size}, axis=axis)
+            return dataframe.apply(
+                normalize_1d,
+                **{
+                    'method': method,
+                    'n_ranks': n_ranks,
+                    'normalizing_mean': normalizing_mean,
+                    'normalizing_std': normalizing_std,
+                    'normalizing_min': normalizing_min,
+                    'normalizing_max': normalizing_max,
+                    'normalizing_size': normalizing_size
+                },
+                axis=axis)
 
         else:  # Normalize globally
 
@@ -270,7 +291,9 @@ def normalize_2d_or_1d(dataframe, method, axis=None, n_ranks=10000,
 
                 # Normalize
                 if std == 0:
-                    print('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
+                    print(
+                        'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...'
+                    )
                     return dataframe / size
                 else:
                     return (dataframe - mean) / std
@@ -291,10 +314,14 @@ def normalize_2d_or_1d(dataframe, method, axis=None, n_ranks=10000,
 
                 # Normalize
                 if max_ - min_ == 0:
-                    print('Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...')
+                    print(
+                        'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...'
+                    )
                     return dataframe / size
                 else:
                     return (dataframe - min_) / (max_ - min_)
 
             elif method == 'rank':
-                raise ValueError('Normalizing combination of \'rank\' & axis=\'all\' has not been implemented yet.')
+                raise ValueError(
+                    'Normalizing combination of \'rank\' & axis=\'all\' has not been implemented yet.'
+                )

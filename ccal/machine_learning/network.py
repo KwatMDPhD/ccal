@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from networkx import Graph, DiGraph
+from networkx import DiGraph, Graph
 from pandas import read_csv
 
 

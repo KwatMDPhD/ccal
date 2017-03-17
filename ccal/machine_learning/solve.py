@@ -38,6 +38,7 @@ def solve_matrix_linear_equation(a, b, method='nnls'):
         x = DataFrame(x, index=a.columns, columns=b.columns)
 
     else:
-        raise ValueError('Unknown method {}. Choose from [\'nnls\', \'pinv\']'.format(method))
+        raise ValueError('Unknown method {}. Choose from [\'nnls\', \'pinv\']'.
+                         format(method))
 
     return x

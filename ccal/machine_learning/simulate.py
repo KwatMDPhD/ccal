@@ -11,13 +11,16 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy.random import seed, random_sample, random_integers
+from numpy.random import random_integers, random_sample, seed
 from pandas import DataFrame
 
 from .. import RANDOM_SEED
 
 
-def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None, random_seed=RANDOM_SEED):
+def simulate_dataframe_or_series(n_rows,
+                                 n_cols,
+                                 n_categories=None,
+                                 random_seed=RANDOM_SEED):
     """
     Simulate DataFrame (2D) or Series (1D).
     :param n_rows: int;
@@ -34,9 +37,13 @@ def simulate_dataframe_or_series(n_rows, n_cols, n_categories=None, random_seed=
     # Set up data type: continuous, categorical, or binary
     seed(random_seed)
     if n_categories:
-        features = DataFrame(random_integers(0, n_categories - 1, (n_rows, n_cols)), index=indices, columns=columns)
+        features = DataFrame(
+            random_integers(0, n_categories - 1, (n_rows, n_cols)),
+            index=indices,
+            columns=columns)
     else:
-        features = DataFrame(random_sample((n_rows, n_cols)), index=indices, columns=columns)
+        features = DataFrame(
+            random_sample((n_rows, n_cols)), index=indices, columns=columns)
 
     if n_rows == 1:  # Return as series if there is only 1 row
         return features.iloc[0, :]

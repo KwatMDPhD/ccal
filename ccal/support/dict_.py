@@ -29,27 +29,6 @@ def merge_dicts(*dicts):
     return merged
 
 
-def merge_dicts_with_function(function, dict_1, dict_2):
-    """
-    Apply function to values keyed by the same key in dict_1 and dict_2.
-    :param function: function;
-    :param dict_1: dict;
-    :param dict_2: dict;
-    :return: dict; merged dict
-    """
-
-    new_dict = {}
-    all_keys = set(dict_1.keys()).union(dict_2.keys())
-    for k in all_keys:
-        if k in dict_1 and k in dict_2:
-            new_dict[k] = function(dict_1[k], dict_2[k])
-        elif k in dict_1:
-            new_dict[k] = dict_1[k]
-        else:
-            new_dict[k] = dict_2[k]
-    return new_dict
-
-
 def dict_add(dict_1, dict_2):
     """
     Add dict_1 and dict_2.
@@ -70,3 +49,24 @@ def dict_subtract(dict_1, dict_2):
     """
 
     return merge_dicts_with_function(sub, dict_1, dict_2)
+
+
+def merge_dicts_with_function(function, dict_1, dict_2):
+    """
+    Apply function to values keyed by the same key in dict_1 and dict_2.
+    :param function: function;
+    :param dict_1: dict;
+    :param dict_2: dict;
+    :return: dict; merged dict
+    """
+
+    new_dict = {}
+    all_keys = set(dict_1.keys()).union(dict_2.keys())
+    for k in all_keys:
+        if k in dict_1 and k in dict_2:
+            new_dict[k] = function(dict_1[k], dict_2[k])
+        elif k in dict_1:
+            new_dict[k] = dict_1[k]
+        else:
+            new_dict[k] = dict_2[k]
+    return new_dict

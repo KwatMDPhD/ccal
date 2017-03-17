@@ -13,10 +13,12 @@ Authors:
 
 from os.path import join
 
+import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
-from numpy import finfo, dot, multiply, divide, sum, log, matrix, ndarray
-from numpy.random import seed, rand
+from numpy import divide, dot, finfo, log, matrix, multiply, ndarray, sum
+from numpy.random import rand, seed
 from pandas import DataFrame
+from sklearn import KFold, mean_squared_error
 from sklearn.decomposition import NMF
 
 from .. import RANDOM_SEED
@@ -24,9 +26,22 @@ from ..support.file import establish_filepath, write_gct
 from ..support.plot import plot_nmf
 
 
-def nmf(matrix_, ks, algorithm='Lee & Seung',
-        init=None, solver='cd', tol=1e-7, max_iter=1000, random_seed=RANDOM_SEED, alpha=0.0,
-        l1_ratio=0.0, verbose=0, shuffle_=False, nls_max_iter=2000, sparseness=None, beta=1, eta=0.1):
+def nmf(matrix_,
+        ks,
+        algorithm='Lee & Seung',
+        init=None,
+        solver='cd',
+        tol=1e-7,
+        max_iter=1000,
+        random_seed=RANDOM_SEED,
+        alpha=0.0,
+        l1_ratio=0.0,
+        verbose=0,
+        shuffle_=False,
+        nls_max_iter=2000,
+        sparseness=None,
+        beta=1,
+        eta=0.1):
     """
     Non-negative matrix factorize matrix with k from ks.
 
@@ -63,16 +78,31 @@ def nmf(matrix_, ks, algorithm='Lee & Seung',
 
         # Compute W, H, and reconstruction error
         if algorithm == 'Alternating Least Squares':
-            model = NMF(n_components=k, init=init, solver=solver, tol=tol, max_iter=max_iter, random_state=random_seed,
-                        alpha=alpha, l1_ratio=l1_ratio, verbose=verbose, shuffle=shuffle_, nls_max_iter=nls_max_iter,
-                        sparseness=sparseness, beta=beta, eta=eta)
-            w, h, e = model.fit_transform(matrix_), model.components_, model.reconstruction_err_
+            model = NMF(n_components=k,
+                        init=init,
+                        solver=solver,
+                        tol=tol,
+                        max_iter=max_iter,
+                        random_state=random_seed,
+                        alpha=alpha,
+                        l1_ratio=l1_ratio,
+                        verbose=verbose,
+                        shuffle=shuffle_,
+                        nls_max_iter=nls_max_iter,
+                        sparseness=sparseness,
+                        beta=beta,
+                        eta=eta)
+            w, h, e = model.fit_transform(
+                matrix_), model.components_, model.reconstruction_err_
 
         elif algorithm == 'Lee & Seung':
-            w, h, e = nmf_div(matrix_, k, n_max_iterations=max_iter, random_seed=random_seed)
+            w, h, e = nmf_div(
+                matrix_, k, n_max_iterations=max_iter, random_seed=random_seed)
 
         else:
-            raise ValueError('NMF algorithm are: \'Alternating Least Squares\' or \'Lee & Seung\'.')
+            raise ValueError(
+                'NMF algorithm are: \'Alternating Least Squares\' or \'Lee & Seung\'.'
+            )
 
         # Return pandas DataFrame if the input matrix is also a DataFrame
         if isinstance(matrix_, DataFrame):
@@ -137,10 +167,13 @@ def save_and_plot_nmf_decompositions(nmf_decompositions, directory_path):
     establish_filepath(join(directory_path, 'nmf/'))
     with PdfPages(join(directory_path, 'nmf/nmf.pdf')) as pdf:
         for k, nmf_d in nmf_decompositions.items():
-            print('Saving and plotting NMF decompositions with K={} ...'.format(k))
+            print('Saving and plotting NMF decompositions with K={} ...'.
+                  format(k))
 
-            write_gct(nmf_d['w'], join(directory_path, 'nmf/nmf_k{}_w.gct'.format(k)))
-            write_gct(nmf_d['h'], join(directory_path, 'nmf/nmf_k{}_h.gct'.format(k)))
+            write_gct(nmf_d['w'],
+                      join(directory_path, 'nmf/nmf_k{}_w.gct'.format(k)))
+            write_gct(nmf_d['h'],
+                      join(directory_path, 'nmf/nmf_k{}_h.gct'.format(k)))
 
             plot_nmf(nmf_decompositions, k, pdf=pdf)
 

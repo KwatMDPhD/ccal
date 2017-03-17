@@ -50,11 +50,15 @@ def title_str(str_):
 
     # Upper all original uppercase letters
     for start, end in uppers:
-        str_ = str_[:start] + str_[start: end].upper() + str_[end:]
+        str_ = str_[:start] + str_[start:end].upper() + str_[end:]
 
     # Lower some words
-    for lowercase in ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'of', 'vs', 'vs']:
-        str_ = str_.replace(' ' + lowercase.title() + ' ', ' ' + lowercase + ' ')
+    for lowercase in [
+            'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at',
+            'to', 'from', 'of', 'vs', 'vs'
+    ]:
+        str_ = str_.replace(' ' + lowercase.title() + ' ',
+                            ' ' + lowercase + ' ')
 
     return str_
 
@@ -70,7 +74,9 @@ def untitle_str(str_):
     return str_.lower().replace(' ', '_').replace('-', '_')
 
 
-def clean_str(str_, illegal_chars=(' ', '\t', ',', ';', '|'), replacement_char='_'):
+def clean_str(str_,
+              illegal_chars=(' ', '\t', ',', ';', '|'),
+              replacement_char='_'):
     """
     Return a copy of string that has all non-allowed characters replaced by a new character (default: underscore).
     :param str_:
@@ -176,4 +182,7 @@ def sort_numerically(string_iterable, reverse=False):
         except ValueError:
             return s
 
-    return sorted(string_iterable, key=lambda x: [maybe_int(s) for s in re.findall(digit_parser, x)], reverse=reverse)
+    return sorted(
+        string_iterable,
+        key=lambda x: [maybe_int(s) for s in re.findall(digit_parser, x)],
+        reverse=reverse)

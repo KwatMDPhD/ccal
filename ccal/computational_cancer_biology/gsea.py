@@ -10,6 +10,10 @@ Authors:
         ptamayo@ucsd.edu
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
+import itertools
+
+import numpy as np
+import pandas as pd
 
 
 def ssgsea(exp_data, sets_to_genes, alpha=0.25):
@@ -23,14 +27,19 @@ def ssgsea(exp_data, sets_to_genes, alpha=0.25):
     if isinstance(exp_data, pd.Series):
         return ssgsea_per_sample(exp_data, sets_to_genes, alpha=alpha)
     elif isinstance(exp_data, pd.DataFrame):
-        return exp_data.apply(ssgsea_per_sample, axis=1, args=(sets_to_genes, alpha))
+        return exp_data.apply(
+            ssgsea_per_sample, axis=1, args=(sets_to_genes, alpha))
     else:
         raise ValueError("exp_data must be Pandas DataFrame or Series")
 
 
 def ssgsea_per_sample(exp_series, sets_to_genes, alpha=0.25):
     sorted_exp_series = exp_series.sort_values(ascending=False)
-    enrichment_scores = _base_gsea(sorted_exp_series.index, sets_to_genes, collect_func=np.sum, alpha=alpha)
+    enrichment_scores = _base_gsea(
+        sorted_exp_series.index,
+        sets_to_genes,
+        collect_func=np.sum,
+        alpha=alpha)
     return enrichment_scores
 
 
@@ -39,14 +48,15 @@ def max_abs(x):
 
 
 def gsea(ranked_genes, sets_to_genes, alpha=0.25):
-    enrichment_scores = _base_gsea(ranked_genes, sets_to_genes, collect_func=max_abs, alpha=alpha)
+    enrichment_scores = _base_gsea(
+        ranked_genes, sets_to_genes, collect_func=max_abs, alpha=alpha)
     return enrichment_scores
 
 
 # From the itertools recipes. Should it go in support.py?
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = tee(iterable)
+    a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
 
@@ -79,8 +89,10 @@ def _base_gsea(ranked_genes, sets_to_genes, collect_func, alpha=0.25):
             sorted_hit_ranks = sorted(hit_ranks)
             # add one so ranks to weight start from 1, not zero
             # however, it's convenient to start at zero otherwise so I can index using the ranks
-            weighted_ranks = (np.array(sorted_hit_ranks) + 1) ** alpha
-            hit_rank_pairs = list(pairwise(sorted_hit_ranks))  # given [a, b, c, d] yields (a, b), (b, c), (c, d)
+            weighted_ranks = (np.array(sorted_hit_ranks) + 1)**alpha
+            hit_rank_pairs = list(
+                pairwise(sorted_hit_ranks
+                         ))  # given [a, b, c, d] yields (a, b), (b, c), (c, d)
             for i, (idx1, idx2) in enumerate(hit_rank_pairs):
                 cum_hit_sum += weighted_ranks[i]
                 cum_hits[idx1:idx2] = cum_hit_sum

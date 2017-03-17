@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import sqrt, exp, cumsum, log, argmax, empty
+from numpy import argmax, cumsum, empty, exp, log, sqrt
 from scipy.special import stdtr
 from scipy.stats.distributions import t
 
@@ -40,8 +40,9 @@ def define_skew_t_pdf(x, df, shape, location, scale):
     :return array-like: skew-t PDF (defined by `df`, `shape`, `location`, and `scale`) evaluated at `x`.
     """
 
-    return (2 / scale) * t._pdf(((x - location) / scale), df) * stdtr(df + 1, shape * ((x - location) / scale) * sqrt(
-        (df + 1) / (df + x ** 2)))
+    return (2 / scale) * t._pdf((
+        (x - location) / scale), df) * stdtr(df + 1, shape * (
+            (x - location) / scale) * sqrt((df + 1) / (df + x**2)))
 
 
 def define_cumulative_area_ratio_function(f_1, f_2, x_grids, direction='+'):
@@ -68,7 +69,8 @@ def define_cumulative_area_ratio_function(f_1, f_2, x_grids, direction='+'):
         c_area_1 = cumsum(d_area_1[::-1])[::-1]
         c_area_2 = cumsum(d_area_2[::-1])[::-1]
     else:
-        raise ValueError('Unknown direction {}; choose from (\'+\', \'-\')'.format(direction))
+        raise ValueError('Unknown direction {}; choose from (\'+\', \'-\')'.
+                         format(direction))
 
     return log(c_area_1 / c_area_2)
 

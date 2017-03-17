@@ -1,3 +1,8 @@
+import numpy as np
+import pandas as pd
+from sklearn import BaseEstimator, ClassifierMixin, LogisticRegression
+
+
 class BayesianClassifier(BaseEstimator, ClassifierMixin):
     """
     Note: still differs from Pablo's R version, so it needs fixing, but hopefully it's a headstart.
@@ -41,7 +46,10 @@ class BayesianClassifier(BaseEstimator, ClassifierMixin):
     def predict_proba(self, x, normalize=True, return_all=False):
         prior_evidence = pd.Series(index=self.classes_)
         log_odds = pd.DataFrame(index=x.index, columns=self.classes_)
-        feature_evidence = {k: pd.DataFrame(index=x.index, columns=x.columns) for k in self.classes_}
+        feature_evidence = {
+            k: pd.DataFrame(index=x.index, columns=x.columns)
+            for k in self.classes_
+        }
         for k in self.classes_:
             prior = self.priors_.loc[k]
             prior_odds = prior / (1 - prior)
@@ -61,7 +69,8 @@ class BayesianClassifier(BaseEstimator, ClassifierMixin):
         if return_all:
             return posterior_probs, feature_evidence
         if normalize:
-            posterior_probs = posterior_probs.divide(posterior_probs.sum(axis=1), axis='index')
+            posterior_probs = posterior_probs.divide(
+                posterior_probs.sum(axis=1), axis='index')
         return posterior_probs
 
     def predict(self, x):

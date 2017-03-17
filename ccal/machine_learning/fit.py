@@ -11,8 +11,8 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import array, sort
-from scipy.optimize import curve_fit
+from numpy import array, sortfrom scipy.optimize import curve_fit
+
 
 
 def fit_matrix(matrix, function_to_fit, axis=0, sort_matrix=False, maxfev=1000):
