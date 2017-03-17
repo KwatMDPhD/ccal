@@ -639,12 +639,14 @@ def plot_columns(df, title='Columns'):
         cax, kw = make_axes(
             ax,
             location='bottom',
+            fraction=0.1,
+            shrink=0.7,
             norm=Normalize(c.min(), c.max()),
-            ticks=[c.min(), c.max()],
+            ticks=[c.min(), c.mean(), c.max()],
             cmap=CMAP_CONTINUOUS)
         ColorbarBase(cax, **kw)
         cax.set_xticklabels(
-            ['{0:.1e}'.format(v) for v in [c.min(), c.max()]],
+            [l.get_text() for l in cax.get_xticklabels()],
             rotation='vertical',
             **FONT)
 
