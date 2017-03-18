@@ -600,12 +600,14 @@ def plot_heatmap(dataframe,
                 cmap = ListedColormap(annotation_colors)
             else:
                 cmap = CMAP_CATEGORICAL
+        print(column_annotation)
         heatmap(
             DataFrame(column_annotation).T,
             ax=ax_top,
             cbar=False,
             xticklabels=False,
             yticklabels=False,
+            annot=True,
             cmap=cmap)
 
     if filepath:
@@ -616,7 +618,7 @@ def plot_columns(df, title='Columns'):
     """
     """
 
-    fig = figure(figsize=FIGURE_SIZE)
+    figure(figsize=FIGURE_SIZE)
 
     n_cols = df.shape[1]
 
@@ -865,7 +867,6 @@ def assign_colors_to_states(states, colors=None):
             CMAP_CATEGORICAL(int(s / max(unique_states) * CMAP_CATEGORICAL.N))
             for s in unique_states
         ]
-
 
     # Return state-to-color dict
     state_colors = {}

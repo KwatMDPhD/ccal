@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import array, asarray, empty_like, nan
+from numpy import array, asarray, empty_like, isnan, nan
 from pandas import DataFrame, Series
 
 from .log import print_log
@@ -204,9 +204,9 @@ def explode_series(series):
     return label_x_sample
 
 
-def normalize_1d(series,
+def normalize_1d(a,
                  method,
-                 n_ranks=10000,
+                 rank_scale=10000,
                  normalizing_mean=None,
                  normalizing_std=None,
                  normalizing_min=None,
@@ -214,80 +214,72 @@ def normalize_1d(series,
                  normalizing_size=None):
     """
     Normalize a pandas series.
-    :param series: pandas Series;
-    :param method: str; normalization type; {'-0-', '0-1', 'rank'}
-    :param n_ranks: number; normalization factor for rank normalization: rank / size * n_ranks
+    :param a: array or Series; (1, n)
+    :param method: str; normalization type; '-0-', '0-1', or 'rank'
+    :param rank_scale: number; scaling factor for rank normalization: (ranks / size) * n_ranks
     :param normalizing_mean:
     :param normalizing_std:
     :param normalizing_min:
     :param normalizing_max:
     :param normalizing_size:
-    :return: pandas Series; normalized Series
+    :return: array; (1, n)
     """
 
-    # Get name
-    name = series.name
-
-    # Get size
+    # Get normalizing size
     if normalizing_size is not None:
         size = normalizing_size
     else:
-        size = series.size
+        size = a.size
 
     if method == '-0-':
 
-        # Get mean
-        if isinstance(normalizing_mean, Series):
-            mean = normalizing_mean.ix[name]
-        elif normalizing_mean is not None:
+        # Get normalizing mean
+        if normalizing_mean is not None:
             mean = normalizing_mean
         else:
-            mean = series.mean()
+            mean = a.mean()
 
-        # Get STD
-        if isinstance(normalizing_std, Series):
-            std = normalizing_std.ix[name]
-        elif normalizing_std is not None:
+        # Get normalizing STD
+        if normalizing_std is not None:
             std = normalizing_std
         else:
-            std = series.std()
+            std = a.std()
 
         # Normalize
         if std == 0:
             print(
-                'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...'
+                'Not \'0-1\' normalizing (std = 0), but \'/ size\' normalizing ...'
             )
-            return series / size
+            return a / size
         else:
-            return (series - mean) / std
+            return (a - mean) / std
 
     elif method == '0-1':
 
-        # Get min
-        if isinstance(normalizing_min, Series):
-            min_ = normalizing_min.ix[name]
-        elif normalizing_min is not None:
+        # Get normalizing min
+        if normalizing_min is not None:
             min_ = normalizing_min
         else:
-            min_ = series.min()
+            min_ = a.min()
 
-        # Get max
-        if isinstance(normalizing_max, Series):
-            max_ = normalizing_max.ix[name]
-        elif normalizing_max is not None:
+        # Get normalizing max
+        if normalizing_max is not None:
             max_ = normalizing_max
         else:
-            max_ = series.max()
+            max_ = a.max()
 
         # Normalize
         if max_ - min_ == 0:
             print(
-                'Not \'0-1\' normalizing (data_range is 0), but \'/ size\' normalizing ...'
+                'Not \'0-1\' normalizing (max - min = 0), but \'/ size\' normalizing ...'
             )
-            return series / size
+            return a / size
         else:
-            return (series - min_) / (max_ - min_)
+            return (a - min_) / (max_ - min_)
 
     elif method == 'rank':
-        # NaNs are raked lowest in the ascending ranking
-        return series.rank(na_option='top') / size * n_ranks
+        i_nan = isnan(a)
+        # nans are raked lowest in the ascending ranking
+        a = a.copy()
+        a[i_nan] = a[~i_nan].min()
+        return a.argsort().argsort() * rank_scale
