@@ -543,19 +543,27 @@ def plot_heatmap(dataframe,
     elif data_type in ('categorical', 'binary'):  # Plot category legends
         if len(values) < 30:
             horizontal_span = ax_center.axis()[1]
-            vertival_span = ax_center.axis()[3]
+            vertical_span = ax_center.axis()[3]
 
             colors = assign_colors_to_states(values, colors=cmap)
+
+            columns = df.columns.tolist()
+            if isinstance(columns[0], str):
+                max_len_c = max([len(c) for c in columns])
+            else:
+                max_len_c = 10
+            vertical_offset = 0.016 * max_len_c
+
             for i, v in enumerate(values):
                 x = (horizontal_span / len(values) / 2) + \
                     i * horizontal_span / len(values)
-                y = 0 - vertival_span * 0.09
+                y = 0 - vertical_span * vertical_offset
                 c = colors[v]
                 ax_center.plot(
                     x, y, 'o', color=c, markersize=16, aa=True, clip_on=False)
                 ax_center.text(
                     x,
-                    y - vertival_span * 0.05,
+                    y - vertical_span * 0.05,
                     v,
                     horizontalalignment='center',
                     **FONT)
@@ -566,7 +574,6 @@ def plot_heatmap(dataframe,
         ylabel=ylabel,
         xlabel_rotation=xlabel_rotation,
         ylabel_rotation=ylabel_rotation,
-        max_xtick_size=10,
         ax=ax_center)
 
     if len(row_annotation):
@@ -841,12 +848,8 @@ def assign_colors_to_states(states, colors=None):
                 s_to_int[s] = i
                 int_to_s[i] = s
             unique_states = range(i + 1)
-            print(s_to_int)
-            print(int_to_s)
-
         else:
             unique_states = sorted(set(states))
-
     else:
         raise ValueError('Error with states.')
 
@@ -854,23 +857,22 @@ def assign_colors_to_states(states, colors=None):
     if isinstance(colors, ListedColormap) or isinstance(
             colors, LinearSegmentedColormap):  # Use given colormap
         colors = [colors(s) for s in unique_states]
-
     elif len(colors):  # Use given colors to make a colormap
         color_converter = ColorConverter()
         colors = [tuple(c) for c in color_converter.to_rgba_array(colors)]
-
-    else:  # Use colormap
+    else:  # Use categorical colormap
         colors = [
             CMAP_CATEGORICAL(int(s / max(unique_states) * CMAP_CATEGORICAL.N))
             for s in unique_states
         ]
 
+
+    # Return state-to-color dict
     state_colors = {}
     for i, s in enumerate(unique_states):
         if int_to_s:
             s = int_to_s[i]
         state_colors[s] = colors[i]
-
     return state_colors
 
 
