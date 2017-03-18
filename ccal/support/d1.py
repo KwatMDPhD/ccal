@@ -14,7 +14,6 @@ Authors:
 from numpy import array, asarray, empty_like, isnan, nan
 from pandas import DataFrame, Series
 
-from .log import print_log
 from .str_ import cast_str_to_int_float_bool_or_str
 
 
@@ -83,7 +82,7 @@ def drop_na_1d(df, axis=0, how='all'):
             df = df.ix[:, ~nas]
         else:
             df = df.ix[~nas, :]
-    print_log('Dropped {} {} with {} NaN: {}.'.format(
+    print('Dropped {} {} with {} NaN: {}.'.format(
         nas.sum(), axis_name, how, nas.index[nas].tolist()))
 
     return df

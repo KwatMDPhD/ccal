@@ -51,7 +51,7 @@ from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL, CMAP_CONTINUOUS,
 def define_components(a_matrix,
                       ks,
                       directory_path,
-                      mark='',
+                      file_mark='',
                       how_to_drop_na_in_a_matrix='all',
                       a_matrix_normalization_method='standardize',
                       std_max=3,
@@ -112,7 +112,7 @@ def define_components(a_matrix,
         nmf['h'].index = ['C{}'.format(c) for c in range(1, k + 1)]
 
     print_log('Saving & plotting ...')
-    directory_path = join(directory_path, 'nmf_cc{}/'.format(mark))
+    directory_path = join(directory_path, 'nmf_cc{}/'.format(file_mark))
     establish_filepath(directory_path)
     with PdfPages(join(directory_path, 'nmf.pdf')) as pdf:
         plot_points(
@@ -254,7 +254,7 @@ def normalize_a_matrix(a_matrix,
 def define_states(matrix,
                   ks,
                   directory_path,
-                  mark='',
+                  file_mark='',
                   d=None,
                   max_std=3,
                   n_clusterings=40,
@@ -296,7 +296,7 @@ def define_states(matrix,
 
     # Save and plot distance matrix, clusterings, and cophenetic correlation
     # coefficients
-    directory_path = join(directory_path, 'clusterings{}/'.format(mark))
+    directory_path = join(directory_path, 'clusterings{}/'.format(file_mark))
     establish_filepath(directory_path)
 
     d.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')

@@ -18,7 +18,6 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 
 from .. import RANDOM_SEED
 from ..support.d1 import drop_na_1d, normalize_1d
-from ..support.log import print_log
 
 
 def drop_na_2d(df, axis='both', how='all'):
@@ -140,15 +139,15 @@ def drop_uniform_slice_from_dataframe(df, value, axis=0):
     if axis == 0:
         dropped = (df == value).all(axis=0)
         if any(dropped):
-            print_log('Removed {} column index(ices) whose values are all {}.'.
-                      format(dropped.sum(), value))
+            print('Removed {} column index(ices) whose values are all {}.'.
+                  format(dropped.sum(), value))
         return df.ix[:, ~dropped]
 
     elif axis == 1:
         dropped = (df == value).all(axis=1)
         if any(dropped):
-            print_log('Removed {} row index(ices) whose values are all {}.'.
-                      format(dropped.sum(), value))
+            print('Removed {} row index(ices) whose values are all {}.'.format(
+                dropped.sum(), value))
         return df.ix[~dropped, :]
 
 

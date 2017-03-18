@@ -600,7 +600,6 @@ def plot_heatmap(dataframe,
                 cmap = ListedColormap(annotation_colors)
             else:
                 cmap = CMAP_CATEGORICAL
-        print(column_annotation)
         heatmap(
             DataFrame(column_annotation).T,
             ax=ax_top,

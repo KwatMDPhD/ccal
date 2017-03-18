@@ -93,7 +93,7 @@ def hierarchical_consensus_cluster(matrix,
 
         # Make consensus matrix using labels created by clusterings of randomized distance matrix
         print_log(
-            '\tMaking consensus matrix from {} hierarchical clusterings of randomized-sample-distance matrix ...'.
+            '\tMaking consensus matrix from {} randomized-sample-distance-matrix hierarchical clusterings...'.
             format(n_clusterings))
         consensus_matrix = _get_consensus(sample_x_clustering)
 
@@ -266,8 +266,8 @@ def _nmf_and_score(args):
         sample_x_clustering.iloc[:, i] = argmax(asarray(nmf_['h']), axis=0)
 
     # Make consensus matrix using NMF labels
-    print_log('\t(k={}) Making consensus matrix from {} NMF ...'.format(
-        k, n_clusterings))
+    print_log('\t(k={}) Making consensus matrix from {} NMF clusterings ...'.
+              format(k, n_clusterings))
     consensus_matrix = _get_consensus(sample_x_clustering)
 
     # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
