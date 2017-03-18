@@ -45,7 +45,7 @@ def define_skew_t_pdf(x, df, shape, location, scale):
             (x - location) / scale) * sqrt((df + 1) / (df + x**2)))
 
 
-def define_cumulative_area_ratio_function(f_1, f_2, x_grids, direction='+'):
+def define_cumulative_area_ratio_function(f_1, f_2, x_grids, direction='+', function='log-ratio'):
     """
     Make a function from f1 and f2.
     :param f_1: array-like;
@@ -72,7 +72,8 @@ def define_cumulative_area_ratio_function(f_1, f_2, x_grids, direction='+'):
         raise ValueError('Unknown direction {}; choose from (\'+\', \'-\')'.
                          format(direction))
 
-    return log(c_area_1 / c_area_2)
+    if function == 'log-ratio':
+        return log(c_area_1 / c_area_2)
 
 
 def define_x_coordinates_for_reflection(function, x_grids):
