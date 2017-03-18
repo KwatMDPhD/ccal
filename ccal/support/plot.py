@@ -837,7 +837,7 @@ def assign_colors_to_states(states, colors=None):
     """
 
     if isinstance(states, int):  # Number of states
-        unique_states = range(states)
+        unique_states = range(1, states + 1)
 
     elif len(states):  # Iterable of states
 
@@ -870,8 +870,10 @@ def assign_colors_to_states(states, colors=None):
     # Return state-to-color dict
     state_colors = {}
     for i, s in enumerate(unique_states):
-        if int_to_s:
+        try:
             s = int_to_s[i]
+        except:
+            pass
         state_colors[s] = colors[i]
     return state_colors
 
