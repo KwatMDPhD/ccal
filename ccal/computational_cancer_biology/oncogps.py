@@ -1331,8 +1331,7 @@ def _plot_onco_gps(
 
         grids = state_grids
 
-        # Plot soft contours for each state (masking points outside of
-        # Onco-GPS)
+        # Plot soft contours for each state (masking points outside of Onco-GPS)
         for s in range(1, n_training_states + 1):
             mask = zeros_like(grids, dtype=bool)
             for i in range(grids.shape[0]):
@@ -1470,8 +1469,7 @@ def _plot_onco_gps(
             # Set color map
             cmap = CMAP_CONTINUOUS
         else:  # Annotation is categorical or binary
-            if samples.ix[:,
-                          'annotation'].dtype == object:  # Convert str annotation to value
+            if samples.ix[:, 'annotation'].dtype == object:
                 a_to_value = {}
                 value_to_a = {}
                 # Map str to int

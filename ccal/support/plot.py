@@ -505,8 +505,7 @@ def plot_heatmap(dataframe,
             cmap = CMAP_BINARY
         else:
             raise ValueError(
-                'Target data type must be one of {continuous, categorical, binary}.'
-            )
+                'Target data type must be continuous, categorical, or binary.')
 
     heatmap(
         df,
@@ -535,7 +534,7 @@ def plot_heatmap(dataframe,
             ax_bottom,
             location='bottom',
             fraction=0.16,
-            cmap=CMAP_CONTINUOUS,
+            cmap=cmap,
             norm=Normalize(values.min(), values.max()),
             ticks=[values.min(), values.mean(), values.max()])
         ColorbarBase(cax, **kw)
@@ -545,12 +544,15 @@ def plot_heatmap(dataframe,
         if len(values) < 30:
             horizontal_span = ax_center.axis()[1]
             vertival_span = ax_center.axis()[3]
+
+            colors = assign_colors_to_states(values, colors=cmap)
             for i, v in enumerate(values):
                 x = (horizontal_span / len(values) / 2) + \
                     i * horizontal_span / len(values)
                 y = 0 - vertival_span * 0.09
+                c = colors[v]
                 ax_center.plot(
-                    x, y, 'o', markersize=16, aa=True, clip_on=False)
+                    x, y, 'o', color=c, markersize=16, aa=True, clip_on=False)
                 ax_center.text(
                     x,
                     y - vertival_span * 0.05,
@@ -819,22 +821,36 @@ def plot_nmf(nmf_results=None,
         pdf.close()
 
 
-def assign_colors_to_states(states, colors=()):
+def assign_colors_to_states(states, colors=None):
     """
-    Assign colors to states
+    Assign colors to states.
     :param states: int or iterable; number of states or iterable of int representing state
-    :param colors:
+    :param colors: iterable or matplotlib colormap;
     :return: dict; {state: color}
     """
-    # TODO: enable str states
 
     if isinstance(states, int):  # Number of states
-        unique_states = range(1, states + 1)
-    elif any(states):  # Iterable of int representing state
-        unique_states = sorted(set(states))
+        unique_states = range(states)
+
+    elif len(states):  # Iterable of states
+
+        if not (isinstance(states[0], int) or isinstance(states[0], float)):
+            s_to_int = {}
+            int_to_s = {}
+            for i, s in enumerate(sorted(set(states))):
+                s_to_int[s] = i
+                int_to_s[i] = s
+            unique_states = range(i + 1)
+            print(s_to_int)
+            print(int_to_s)
+
+        else:
+            unique_states = sorted(set(states))
+
     else:
         raise ValueError('Error with states.')
 
+    # Make colors
     if isinstance(colors, ListedColormap) or isinstance(
             colors, LinearSegmentedColormap):  # Use given colormap
         colors = [colors(s) for s in unique_states]
@@ -843,7 +859,7 @@ def assign_colors_to_states(states, colors=()):
         color_converter = ColorConverter()
         colors = [tuple(c) for c in color_converter.to_rgba_array(colors)]
 
-    else:  # Use categorical colormap
+    else:  # Use colormap
         colors = [
             CMAP_CATEGORICAL(int(s / max(unique_states) * CMAP_CATEGORICAL.N))
             for s in unique_states
@@ -851,6 +867,8 @@ def assign_colors_to_states(states, colors=()):
 
     state_colors = {}
     for i, s in enumerate(unique_states):
+        if int_to_s:
+            s = int_to_s[i]
         state_colors[s] = colors[i]
 
     return state_colors
