@@ -11,21 +11,16 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from os.path import join
 
 import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
 from numpy import divide, dot, finfo, log, matrix, multiply, ndarray, sum
 from numpy.random import rand, seed
 from pandas import DataFrame
 from sklearn.decomposition import NMF
+from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
 
-from sklearn.metrics import mean_squared_error
-
 from .. import RANDOM_SEED
-from ..support.file import establish_filepath, write_gct
-from ..support.plot import plot_nmf
 
 
 def nmf(matrix_,
@@ -155,29 +150,6 @@ def nmf_div(V, k, n_max_iterations=1000, random_seed=RANDOM_SEED):
     err = sum(multiply(V, log(divide(V + eps, VP + eps))) - V + VP) / (M * N)
 
     return W, H, err
-
-
-def save_and_plot_nmf_decompositions(nmf_decompositions, directory_path):
-    """
-    Save and plot NMF decompositions.
-    :param nmf_decompositions: dict; {k: {w: W matrix, h: H matrix, e: Reconstruction Error}} and
-                              {k: Cophenetic Correlation Coefficient}
-    :param directory_path: str; directory_path/nmf.pdf & directory_path/matrices/nmf_k{k}_{w, h}.gct will be saved
-    :return: None
-    """
-
-    establish_filepath(join(directory_path, 'nmf/'))
-    with PdfPages(join(directory_path, 'nmf/nmf.pdf')) as pdf:
-        for k, nmf_d in nmf_decompositions.items():
-            print('Saving and plotting NMF decompositions with K={} ...'.
-                  format(k))
-
-            write_gct(nmf_d['w'],
-                      join(directory_path, 'nmf/nmf_k{}_w.gct'.format(k)))
-            write_gct(nmf_d['h'],
-                      join(directory_path, 'nmf/nmf_k{}_h.gct'.format(k)))
-
-            plot_nmf(nmf_decompositions, k, pdf=pdf)
 
 
 def nmf_bcv(x, nmf, nfold=2, nrepeat=1):

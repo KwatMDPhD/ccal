@@ -14,15 +14,15 @@ Authors:
 from colorsys import hsv_to_rgb, rgb_to_hsv
 from os.path import join
 
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colorbar import ColorbarBase, make_axes
 from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.path import Path
+from matplotlib.pyplot import figure, savefig, subplot
 from numpy import (asarray, empty, linspace, ma, nansum, ndarray, ones, sqrt,
                    zeros, zeros_like)
-from pandas import DataFrame, Series, isnull, read_csv
+from pandas import DataFrame, Series, isnull
 from scipy.spatial import ConvexHull, Delaunay
 from sklearn.svm import SVR
 
@@ -31,8 +31,6 @@ from ..machine_learning.classify import classify
 from ..machine_learning.cluster import (hierarchical_consensus_cluster,
                                         nmf_consensus_cluster)
 from ..machine_learning.fit import fit_matrix
-from ..machine_learning.matrix_decompose import \
-    save_and_plot_nmf_decompositions
 from ..machine_learning.multidimentional_scale import mds
 from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
@@ -40,13 +38,11 @@ from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, bcv, information_coefficient, kde2d
 from ..support.d2 import (drop_na_2d, drop_uniform_slice_from_dataframe,
                           normalize_2d_or_1d)
-from ..support.file import (establish_filepath, load_gct, read_gct, write_dict,
-                            write_gct)
+from ..support.file import establish_filepath, load_gct, read_gct, write_gct
 from ..support.log import print_log
 from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL, CMAP_CONTINUOUS,
                             DPI, FIGURE_SIZE, assign_colors_to_states,
                             plot_heatmap, plot_nmf, plot_points, save_plot)
-from .association import make_association_panel
 
 
 # ==============================================================================
@@ -55,6 +51,7 @@ from .association import make_association_panel
 def define_components(a_matrix,
                       ks,
                       directory_path,
+                      mark='',
                       how_to_drop_na_in_a_matrix='all',
                       a_matrix_normalization_method='standardize',
                       std_max=3,
@@ -80,8 +77,13 @@ def define_components(a_matrix,
     :param n_clusterings: int; number of NMF for consensus clustering
     :param algorithm: str; 'Alternating Least Squares' or 'Lee & Seung'
     :param random_seed: int;
-    :return: dict and dict; {k: {w: W matrix (n_rows, k), h: H matrix (k, n_columns), e: Reconstruction Error}} and
-                            {k: Cophenetic Correlation Coefficient}
+    :return: dict; {k: {
+                        w: W matrix (n_rows, k),
+                        h: H matrix (k, n_columns),
+                        e: Reconstruction Error,
+                        ccc: Cophenetic Correlation Coefficient
+                        }
+                    }
     """
 
     # Load A matrix
@@ -97,7 +99,7 @@ def define_components(a_matrix,
         std_max=std_max)
 
     # NMF-consensus cluster (while saving 1 NMF result per k)
-    nmfs, ccc = nmf_consensus_cluster(
+    nmfs = nmf_consensus_cluster(
         a_matrix,
         ks,
         n_jobs=n_jobs,
@@ -109,30 +111,27 @@ def define_components(a_matrix,
         nmf['w'].columns = ['C{}'.format(c) for c in range(1, k + 1)]
         nmf['h'].index = ['C{}'.format(c) for c in range(1, k + 1)]
 
-    # Save results in nmf/
-    directory_path = join(directory_path, 'nmf_cc/')
+    print_log('Saving & plotting ...')
+    directory_path = join(directory_path, 'nmf_cc{}/'.format(mark))
     establish_filepath(directory_path)
+    with PdfPages(join(directory_path, 'nmf.pdf')) as pdf:
+        plot_points(
+            sorted(nmfs.keys()), [nmfs[k]['ccc'] for k in sorted(nmfs.keys())],
+            title='NMF-CC Cophenetic-Correlation Coefficient vs. K',
+            xlabel='K',
+            ylabel='NMF-CC Cophenetic-Correlation Coefficient')
+        savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
-    print_log(
-        'Saving and plotting NMF-CC cophenetic-correlation coefficients and W & H matrices ...'
-    )
-    # Save and plot cophenetic correlation coefficients
-    write_dict(
-        ccc,
-        join(directory_path, 'cophenetic_correlation_coefficients.txt'),
-        key_name='K',
-        value_name='NMF-CC Cophenetic-Correlation Coefficient')
-    plot_points(
-        sorted(ccc.keys()), [ccc[k] for k in sorted(ccc.keys())],
-        title='NMF-CC Cophenetic-Correlation Coefficient vs. K',
-        xlabel='K',
-        ylabel='NMF-CC Cophenetic-Correlation Coefficient',
-        filepath=join(directory_path,
-                      'cophenetic_correlation_coefficients.pdf'))
-    # Save and plot NMF W & H matrices
-    save_and_plot_nmf_decompositions(nmfs, directory_path)
+        for k, nmf_ in nmfs.items():
+            print_log('\tK={} ...'.format(k))
+            write_gct(nmf_['w'],
+                      join(directory_path, 'nmf_k{}_w.gct'.format(k)))
+            write_gct(nmf_['h'],
+                      join(directory_path, 'nmf_k{}_h.gct'.format(k)))
 
-    return nmfs, ccc
+            plot_nmf(nmfs, k, pdf=pdf)
+
+    return nmfs
 
 
 def get_w_or_h_matrix(nmf_results, k, w_or_h):
@@ -249,127 +248,14 @@ def normalize_a_matrix(a_matrix,
     return a_matrix
 
 
-def select_features_and_nmf(testing,
-                            training,
-                            target,
-                            target_type='categorical',
-                            feature_scores=None,
-                            testing_name='Testing',
-                            training_name='Training',
-                            row_name='Feature',
-                            column_name='Sample',
-                            n_jobs=1,
-                            n_samplings=30,
-                            n_permutations=30,
-                            n_top_features=0.05,
-                            n_bottom_features=0.05,
-                            ks=(),
-                            n_clusterings=100,
-                            random_seed=RANDOM_SEED,
-                            directory_path=None,
-                            feature_scores_filename_prefix='feature_scores'):
-    """
-    Select features from training based on their association with target. Keep only those features from testing, and
-    perform NMF on testing, which has only the selected features.
-    :param testing: DataFrame;
-    :param training: DataFrame;
-    :param target: Series;
-    :param target_type: str;
-    :param feature_scores: DataFrame or str;
-    :param testing_name:
-    :param training_name:
-    :param row_name:
-    :param column_name:
-    :param n_jobs:
-    :param n_samplings:
-    :param n_permutations:
-    :param n_top_features:
-    :param n_bottom_features:
-    :param ks:
-    :param n_clusterings:
-    :param random_seed: int;
-    :param directory_path:
-    :param feature_scores_filename_prefix:
-    :return:
-    """
-
-    # Plot training
-    plot_heatmap(
-        training,
-        normalization_method='-0-',
-        normalization_axis=1,
-        column_annotation=target,
-        title=training_name,
-        xlabel=column_name,
-        ylabel=row_name,
-        yticklabels=False)
-
-    if not feature_scores:  # Compute feature scores
-        feature_scores = make_association_panel(
-            target,
-            training,
-            target_type=target_type,
-            n_jobs=n_jobs,
-            n_samplings=n_samplings,
-            n_permutations=n_permutations,
-            random_seed=random_seed,
-            filepath_prefix=join(directory_path,
-                                 feature_scores_filename_prefix))
-    else:  # Read feature scores from a file
-        if not isinstance(feature_scores, DataFrame):
-            feature_scores = read_csv(feature_scores, sep='\t', index_col=0)
-
-    # Select features
-    if n_top_features < 1:  # Fraction
-        n_top_features = n_top_features * feature_scores.shape[0]
-    if n_bottom_features < 1:  # Fraction
-        n_bottom_features = n_bottom_features * feature_scores.shape[0]
-    features = feature_scores.index[:n_top_features] | feature_scores.index[
-        -n_bottom_features:]
-
-    # Plot training with selected features
-    plot_heatmap(
-        training.ix[features, :],
-        normalization_method='-0-',
-        normalization_axis=1,
-        column_annotation=target,
-        title='{} with Selected {}s'.format(training_name, row_name),
-        xlabel=column_name,
-        ylabel=row_name,
-        yticklabels=False)
-
-    # Plot testing with selected features
-    testing = testing.ix[testing.index & features, :]
-    print_log('Selected {} testing features.'.format(testing.shape[0]))
-    plot_heatmap(
-        testing,
-        normalization_method='-0-',
-        normalization_axis=1,
-        title='{} with Selected {}'.format(testing_name, row_name),
-        xlabel=column_name,
-        ylabel=row_name,
-        xticklabels=False,
-        yticklabels=False)
-
-    # NMF
-    nmf_results, cophenetic_correlation_coefficients = define_components(
-        testing,
-        ks,
-        n_jobs=n_jobs,
-        n_clusterings=n_clusterings,
-        random_seed=random_seed,
-        directory_path=directory_path)
-
-    return nmf_results, cophenetic_correlation_coefficients
-
-
 # ==============================================================================
 # Define states
 # ==============================================================================
 def define_states(matrix,
                   ks,
                   directory_path,
-                  distance_matrix=None,
+                  mark='',
+                  d=None,
                   max_std=3,
                   n_clusterings=40,
                   random_seed=RANDOM_SEED):
@@ -391,7 +277,7 @@ def define_states(matrix,
         distance_matrix (n_samples, n_samples),
         clusterings (n_ks, n_columns), and
         cophenetic correlation coefficients (n_ks)
-        d, c, ccc = define_states(...)
+        d, cs, cccs = define_states(...)
     """
 
     if isinstance(matrix, str):  # Read form a .gct file
@@ -405,26 +291,16 @@ def define_states(matrix,
         axis=1)
 
     # Hierarchical-consensus cluster
-    d, cs, ccc = hierarchical_consensus_cluster(
-        matrix,
-        ks,
-        distance_matrix=distance_matrix,
-        n_clusterings=n_clusterings,
-        random_seed=random_seed)
+    d, cs, cccs = hierarchical_consensus_cluster(
+        matrix, ks, d=d, n_clusterings=n_clusterings, random_seed=random_seed)
 
     # Save and plot distance matrix, clusterings, and cophenetic correlation
     # coefficients
-    directory_path = join(directory_path, 'clusterings/')
+    directory_path = join(directory_path, 'clusterings{}/'.format(mark))
     establish_filepath(directory_path)
 
     d.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
     write_gct(cs, join(directory_path, 'clusterings.gct'))
-    write_dict(
-        ccc,
-        join(directory_path, 'cophenetic_correlation_coefficients.txt'),
-        key_name='K',
-        value_name='Cophenetic Correlation Coefficient')
-
     with PdfPages(join(directory_path, 'clusterings.pdf')) as pdf:
         # Plot distance matrix
         plot_heatmap(
@@ -435,7 +311,7 @@ def define_states(matrix,
             ylabel='Sample',
             xticklabels=False,
             yticklabels=False)
-        plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
+        savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
         # Plot clusterings
         plot_heatmap(
@@ -444,15 +320,15 @@ def define_states(matrix,
             data_type='categorical',
             title='Clustering per K',
             xticklabels=False)
-        plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
+        savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
         # Plot cophenetic correlation coefficients
         plot_points(
-            sorted(ccc.keys()), [ccc[k] for k in sorted(ccc.keys())],
+            sorted(cccs.keys()), [cccs[k] for k in sorted(cccs.keys())],
             title='Clustering Cophenetic-Correlation Coefficients vs. K',
             xlabel='K',
             ylabel='Cophenetic-Correlation Coefficients')
-        plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
+        savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
         #
         for k in ks:
@@ -464,9 +340,9 @@ def define_states(matrix,
                 title='{} States'.format(k),
                 xlabel='Sample',
                 ylabel='Component')
-            plt.savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
+            savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
-    return d, cs, ccc
+    return d, cs, cccs
 
 
 def get_state_labels(clusterings, k):
@@ -1192,21 +1068,21 @@ def _plot_onco_gps(
     """
 
     # Set up figure
-    plt.figure(figsize=FIGURE_SIZE)
+    figure(figsize=FIGURE_SIZE)
     gridspec = GridSpec(10, 16)
 
     # Set up title ax
-    ax_title = plt.subplot(gridspec[0, :])
+    ax_title = subplot(gridspec[0, :])
     ax_title.axis([0, 1, 0, 1])
     ax_title.axis('off')
 
     # Set up map ax
-    ax_map = plt.subplot(gridspec[0:, :12])
+    ax_map = subplot(gridspec[0:, :12])
     ax_map.axis([0, 1, 0, 1])
     ax_map.axis('off')
 
     # Set up legend ax
-    ax_legend = plt.subplot(gridspec[1:, 14:])
+    ax_legend = subplot(gridspec[1:, 14:])
     ax_legend.axis([0, 1, 0, 1])
     ax_legend.axis('off')
 

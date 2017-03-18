@@ -74,6 +74,8 @@ def define_cumulative_area_ratio_function(f_1, f_2, x_grids, direction='+', func
 
     if function == 'log-ratio':
         return log(c_area_1 / c_area_2)
+    else:
+        raise ValueError('Unkown function: {}.'.format(function))
 
 
 def define_x_coordinates_for_reflection(function, x_grids):
