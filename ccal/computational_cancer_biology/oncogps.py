@@ -294,13 +294,16 @@ def define_states(matrix,
     d, cs, cccs = hierarchical_consensus_cluster(
         matrix, ks, d=d, n_clusterings=n_clusterings, random_seed=random_seed)
 
-    # Save and plot distance matrix, clusterings, and cophenetic correlation
-    # coefficients
+    # Save & plot distance matrix, clusterings, and cophenetic correlation coefficients
+    print_log('Saving & plotting ...')
+
     directory_path = join(directory_path, 'clusterings{}/'.format(file_mark))
     establish_filepath(directory_path)
 
     d.to_csv(join(directory_path, 'distance_matrix.txt'), sep='\t')
+
     write_gct(cs, join(directory_path, 'clusterings.gct'))
+
     with PdfPages(join(directory_path, 'clusterings.pdf')) as pdf:
         # Plot distance matrix
         plot_heatmap(
