@@ -78,7 +78,7 @@ def establish_filepath(filepath):
     # Make missing directories
     for d in reversed(missing_directories):
         mkdir(d)
-        print('Created directory {}.'.format(d))
+        print('Created directory {}/.'.format(d))
 
 
 def mark_filename(filepath, mark):
