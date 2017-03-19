@@ -75,7 +75,7 @@ CMAP_CATEGORICAL.set_bad(C_BAD)
 CMAP_BINARY = ListedColormap(['#cdcdcd', '#404040'])
 CMAP_BINARY.set_bad(C_BAD)
 
-DPI = 100
+DPI = 1000
 
 
 # ==============================================================================

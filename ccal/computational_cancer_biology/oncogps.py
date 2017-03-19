@@ -364,6 +364,7 @@ def make_oncogps(training_h,
                  std_max=3,
                  testing_h=None,
                  testing_h_normalization='using_training_h',
+                 filepath_prefix_testing_states='./',
                  components=None,
                  equilateral=False,
                  informational_mds=True,
@@ -421,6 +422,7 @@ def make_oncogps(training_h,
     """
     :param training_h: DataFrame; (n_nmf_component, n_samples); NMF H matrix
     :param training_states: iterable of int; (n_samples); sample states
+
     :param std_max: number; threshold to clip standardized values
 
     :param testing_h: pandas DataFrame; (n_nmf_component, n_samples); NMF H matrix
@@ -711,6 +713,10 @@ def make_oncogps(training_h,
         #     print(training_h.T.head())
         #     print(testing_h.T.head())
         #     testing_samples.ix[:, 'state'] = classify(training_h.T, training_states, testing_h.T)
+        testing_samples.ix[:, 'state'].T.to_csv(
+            '{}.testing_states.txt'.format(filepath_prefix_testing_states),
+            sep='\t',
+            index_col=0)
 
         # ======================================================================
         # Compute training component ratios

@@ -82,7 +82,7 @@ def drop_na_1d(df, axis=0, how='all'):
             df = df.ix[:, ~nas]
         else:
             df = df.ix[~nas, :]
-    print('Dropped {} {} with {} NaN: {}.'.format(
+    print('Dropped {} {}(s) with {} NaN: {}.'.format(
         nas.sum(), axis_name, how, nas.index[nas].tolist()))
 
     return df
