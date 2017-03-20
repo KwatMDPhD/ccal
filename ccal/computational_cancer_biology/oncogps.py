@@ -223,16 +223,16 @@ def normalize_a_matrix(a_matrix,
     """
     """
 
-    # Normaliza A matrix
-    if a_matrix_normalization_method == 'standardize':  # standardize A matrix by column
+    # Normaliza A matrix columns
+    if a_matrix_normalization_method == 'standardize':
         a_matrix = normalize_2d_or_1d(a_matrix, method='-0-', axis=0)
         a_matrix = a_matrix.clip(lower=-std_max, upper=std_max)
         a_matrix += std_max
-    elif a_matrix_normalization_method == 'rank':  # Rank normalize A matrix by column
+    elif a_matrix_normalization_method == 'rank':
         # TODO: try changing n_ranks or choose automatically
         a_matrix = normalize_2d_or_1d(a_matrix, 'rank', n_ranks=10000, axis=0)
     else:
-        print_log('Not normalizing A matrix ...')
+        print_log('Not normalizing A matrix columns ...')
 
     # Plot after normalization
     plot_heatmap(

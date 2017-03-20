@@ -91,7 +91,7 @@ def define_function_of_2_functions(f1,
     elif function == 'log-area-ratio':
         return log(c_area_1 / c_area_2)
 
-    elif function == 'fraction_difference':
+    elif function == 'fraction-difference':
         return (f1 - f2) / f1
 
     else:
