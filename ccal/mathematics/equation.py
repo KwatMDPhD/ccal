@@ -45,37 +45,57 @@ def define_skew_t_pdf(x, df, shape, location, scale):
             (x - location) / scale) * sqrt((df + 1) / (df + x**2)))
 
 
-def define_cumulative_area_ratio_function(f_1, f_2, x_grids, direction='+', function='log-ratio'):
+def define_function_of_2_functions(f1,
+                                   f2,
+                                   grids=None,
+                                   direction='+',
+                                   function='ratio'):
     """
     Make a function from f1 and f2.
     :param f_1: array-like;
     :param f_2: array-like;
     :param x_grids: array-like;
     :param direction: str; {'+', '-'}
+    :param function: str; {'area-ratio', 'log-area-ratio', 'ratio', 'log-ratio', 'fraction_difference'}
     :return: array; array
     """
 
-    d_x = x_grids[1] - x_grids[0]
+    if 'area' in function:
 
-    # Compute d area
-    d_area_1 = f_1 / f_1.sum() * d_x
-    d_area_2 = f_2 / f_2.sum() * d_x
+        # Compute d area
+        d_x = grids[1] - grids[0]
+        d_area_1 = f1 / f1.sum() * d_x
+        d_area_2 = f2 / f2.sum() * d_x
 
-    # Compute cumulative area
-    if direction == '+':  # Forward
-        c_area_1 = cumsum(d_area_1)
-        c_area_2 = cumsum(d_area_2)
-    elif direction == '-':  # Reverse
-        c_area_1 = cumsum(d_area_1[::-1])[::-1]
-        c_area_2 = cumsum(d_area_2[::-1])[::-1]
-    else:
-        raise ValueError('Unknown direction {}; choose from (\'+\', \'-\')'.
-                         format(direction))
+        # Compute cumulative area
+        if direction == '+':  # Forward
+            c_area_1 = cumsum(d_area_1)
+            c_area_2 = cumsum(d_area_2)
+        elif direction == '-':  # Reverse
+            c_area_1 = cumsum(d_area_1[::-1])[::-1]
+            c_area_2 = cumsum(d_area_2[::-1])[::-1]
+        else:
+            raise ValueError(
+                'Unknown direction {}; choose from (\'+\', \'-\')'.format(
+                    direction))
 
-    if function == 'log-ratio':
+    if function == 'ratio':
+        return f1 / f2
+
+    elif function == 'log-ratio':
+        return log(f1 / f2)
+
+    elif function == 'area-ratio':
+        return c_area_1 / c_area_2
+
+    elif function == 'log-area-ratio':
         return log(c_area_1 / c_area_2)
+
+    elif function == 'fraction_difference':
+        return (f1 - f2) / f1
+
     else:
-        raise ValueError('Unkown function: {}.'.format(function))
+        raise ValueError('Unknown function: {}.'.format(function))
 
 
 def define_x_coordinates_for_reflection(function, x_grids):
