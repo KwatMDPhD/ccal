@@ -81,8 +81,8 @@ def information_coefficient(x,
     py = pxy.sum(axis=0) * dx
 
     # Compute mutual information;
-    mi = (pxy * log(pxy / (asarray([px] * n_grids).T * asarray(
-        [py] * n_grids)))).sum() * dx * dy
+    mi = (pxy * log(pxy / (asarray([px] * n_grids).T *
+                           asarray([py] * n_grids)))).sum() * dx * dy
 
     # # Get H(x, y), H(x), and H(y)
     # hxy = - (pxy * log(pxy)).sum() * dx * dy
@@ -98,3 +98,14 @@ def information_coefficient(x,
         ic = 0
 
     return ic
+
+
+def compute_entropy(a):
+    """
+    :param a: array; (1, n_values)
+    :return float; 0 <
+    """
+
+    a = (a - a.min()) / (a.max() - a.min())
+    p = a / a.sum()
+    return -(p * log(p)).sum()
