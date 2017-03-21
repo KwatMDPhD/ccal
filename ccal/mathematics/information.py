@@ -100,13 +100,29 @@ def information_coefficient(x,
     return ic
 
 
-def compute_entropy(a):
+def compute_entropy(a, power=None):
     """
     Compute entropy of a.
     :param a: array; (1, n_values)
+    :param power: number; power to raise probabilities
     :return float; 0 <
     """
 
     a = (a - a.min()) / (a.max() - a.min())
     p = a / a.sum()
+    if power:
+        print(p)
+        p **= power
+        print(p)
+        raise ValueError()
     return -(p * log(p)).sum()
+
+
+def compute_brier_entropy(a, power=None):
+    """
+    Compute brier entropy of a.
+    :param a: array; (1, n_values)
+    :return float; 0 <
+    """
+
+    return 
