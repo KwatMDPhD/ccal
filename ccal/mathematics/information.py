@@ -125,4 +125,4 @@ def compute_brier_entropy(a, power=None):
     :return float; 0 <
     """
 
-    return 
+    return
