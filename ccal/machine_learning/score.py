@@ -94,7 +94,7 @@ def compute_similarity_matrix(matrix1,
     for i_1 in range(n_1):
         print_log(
             'Computing associations (axis={}) between matrices ({}/{}) ...'.
-            format(axis, i_1, n_1))
+            format(axis, i_1 + 1, n_1))
         for i_2 in range(n_2):
             compared_matrix[i_1, i_2] = function(m1[i_1, :], m2[i_2, :])
 
