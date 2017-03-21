@@ -102,6 +102,7 @@ def information_coefficient(x,
 
 def compute_entropy(a):
     """
+    Compute entropy of a.
     :param a: array; (1, n_values)
     :return float; 0 <
     """
