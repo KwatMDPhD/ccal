@@ -104,8 +104,7 @@ def plot_points(*args,
 
     if 'ax' not in kwargs:
         figure(figsize=FIGURE_SIZE)
-
-    plot(* [list(a) for a in args], marker='o', **kwargs)
+    plot(*args, **kwargs)
 
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
 

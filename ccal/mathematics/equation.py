@@ -94,6 +94,12 @@ def define_function_of_2_functions(f1,
     elif function == 'fraction-difference':
         return (f1 - f2) / f1
 
+    elif function == 'log-fraction-difference':
+        return log((f1 - f2) / f1)
+
+    elif function == 'log-1-minus-fraction-difference':
+        return log(1 - ((f1 - f2) / f1))
+
     else:
         raise ValueError('Unknown function: {}.'.format(function))
 
