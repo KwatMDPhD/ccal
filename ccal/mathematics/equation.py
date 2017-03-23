@@ -11,7 +11,7 @@ Authors:
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
 
-from numpy import argmax, cumsum, empty, exp, log, sqrt
+from numpy import argmax, empty, exp, sqrt
 from scipy.special import stdtr
 from scipy.stats.distributions import t
 
@@ -43,65 +43,6 @@ def define_skew_t_pdf(x, df, shape, location, scale):
     return (2 / scale) * t._pdf((
         (x - location) / scale), df) * stdtr(df + 1, shape * (
             (x - location) / scale) * sqrt((df + 1) / (df + x**2)))
-
-
-def define_function_of_2_functions(f1,
-                                   f2,
-                                   grids=None,
-                                   direction='+',
-                                   function='ratio'):
-    """
-    Make a function from f1 and f2.
-    :param f_1: array-like;
-    :param f_2: array-like;
-    :param x_grids: array-like;
-    :param direction: str; {'+', '-'}
-    :param function: str; {'area-ratio', 'log-area-ratio', 'ratio', 'log-ratio', 'fraction_difference'}
-    :return: array; array
-    """
-
-    if 'area' in function:
-
-        # Compute d area
-        d_x = grids[1] - grids[0]
-        d_area_1 = f1 / f1.sum() * d_x
-        d_area_2 = f2 / f2.sum() * d_x
-
-        # Compute cumulative area
-        if direction == '+':  # Forward
-            c_area_1 = cumsum(d_area_1)
-            c_area_2 = cumsum(d_area_2)
-        elif direction == '-':  # Reverse
-            c_area_1 = cumsum(d_area_1[::-1])[::-1]
-            c_area_2 = cumsum(d_area_2[::-1])[::-1]
-        else:
-            raise ValueError(
-                'Unknown direction {}; choose from (\'+\', \'-\')'.format(
-                    direction))
-
-    if function == 'ratio':
-        return f1 / f2
-
-    elif function == 'log-ratio':
-        return log(f1 / f2)
-
-    elif function == 'area-ratio':
-        return c_area_1 / c_area_2
-
-    elif function == 'log-area-ratio':
-        return log(c_area_1 / c_area_2)
-
-    elif function == 'fraction-difference':
-        return (f1 - f2) / f1
-
-    elif function == 'log-fraction-difference':
-        return log((f1 - f2) / f1)
-
-    elif function == 'log-1-minus-fraction-difference':
-        return log(1 - ((f1 - f2) / f1))
-
-    else:
-        raise ValueError('Unknown function: {}.'.format(function))
 
 
 def define_x_coordinates_for_reflection(function, x_grids):
