@@ -1134,7 +1134,7 @@ def _plot_onco_gps(
     convexhull_region = Path(convexhull.points[convexhull.vertices])
 
     # Plot component labels
-    if any(component_names):
+    if len(component_names):
         components.index = component_names
     for i in components.index:
         # Get components' x & y coordinates

@@ -591,7 +591,7 @@ def plot_heatmap(dataframe,
             if len(annotation_colors):
                 cmap = ListedColormap(annotation_colors)
             else:
-                cmap = CMAP_CATEGORICAL_PAIRED
+                cmap = CMAP_CATEGORICAL_VEGA20
         heatmap(
             DataFrame(row_annotation),
             ax=ax_right,
@@ -607,7 +607,7 @@ def plot_heatmap(dataframe,
             if len(annotation_colors):
                 cmap = ListedColormap(annotation_colors)
             else:
-                cmap = CMAP_CATEGORICAL_PAIRED
+                cmap = CMAP_CATEGORICAL_VEGA20
         heatmap(
             DataFrame(column_annotation).T,
             ax=ax_top,
@@ -841,8 +841,8 @@ def assign_colors_to_states(states, colors=None):
     :return: dict; {state: color}
     """
 
-    if isinstance(states, int):  # Number of states
-        unique_states = range(1, states + 1)
+    if isinstance(states, int):  # Number of states: count from 1
+        unique_states = range(states)
 
     elif len(states):  # Iterable of states
 
@@ -852,7 +852,7 @@ def assign_colors_to_states(states, colors=None):
             for i, s in enumerate(sorted(set(states))):
                 s_to_int[s] = i
                 int_to_s[i] = s
-            unique_states = range(i + 1)
+            unique_states = range(len(set(states)))
         else:
             unique_states = sorted(set(states))
     else:
@@ -862,24 +862,28 @@ def assign_colors_to_states(states, colors=None):
     if isinstance(colors, ListedColormap) or isinstance(
             colors, LinearSegmentedColormap):  # Use given colormap
         colors = [colors(s) for s in unique_states]
-    elif len(colors):  # Use given colors to make a colormap
+    elif colors:  # Use given colors to make a colormap
         color_converter = ColorConverter()
         colors = [tuple(c) for c in color_converter.to_rgba_array(colors)]
     else:  # Use categorical colormap
         colors = [
-            CMAP_CATEGORICAL_PAIRED(
-                int(s / max(unique_states) * CMAP_CATEGORICAL_PAIRED.N))
+            CMAP_CATEGORICAL_VEGA20(
+                int(s / max(unique_states) * CMAP_CATEGORICAL_VEGA20.N))
             for s in unique_states
             ]
 
     # Return state-to-color dict
     state_colors = {}
     for i, s in enumerate(unique_states):
+        if isinstance(states, int):
+            s += 1
         try:
             s = int_to_s[i]
-        except:
+        except UnboundLocalError:
             pass
+
         state_colors[s] = colors[i]
+
     return state_colors
 
 
