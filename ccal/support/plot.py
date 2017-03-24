@@ -56,10 +56,10 @@ colordict = {
         tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
     'green':
         tuple([
-                  (0.1 * i, r, r)
-                  for i, r in
-                  enumerate(greens_half + [1] + list(reversed(greens_half)))
-                  ]),
+            (0.1 * i, r, r)
+            for i, r in
+            enumerate(greens_half + [1] + list(reversed(greens_half)))
+        ]),
     'blue':
         tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])
 }
@@ -546,7 +546,7 @@ def plot_heatmap(dataframe,
             norm=Normalize(min_, max_),
             ticks=[min_, mean_, max_])
         ColorbarBase(cax, **kw)
-        decorate(ax=cax)
+        decorate(ax=cax, xtick_rotation=90)
 
     elif data_type in ('categorical', 'binary'):  # Plot category legends
         if len(values) < 30:
@@ -659,7 +659,7 @@ def plot_columns(df):
             ticks=[c.min(), c.mean(), c.max()],
             cmap=CMAP_CONTINUOUS)
         ColorbarBase(cax, **kw)
-        decorate(ax=cax)
+        decorate(ax=cax, xtick_rotation=90)
 
 
 def plot_clustermap(dataframe,
@@ -870,7 +870,7 @@ def assign_colors_to_states(states, colors=None):
             CMAP_CATEGORICAL_VEGA20(
                 int(s / max(unique_states) * CMAP_CATEGORICAL_VEGA20.N))
             for s in unique_states
-            ]
+        ]
 
     # Return state-to-color dict
     state_colors = {}
@@ -903,6 +903,8 @@ def decorate(
         max_n_yticks=50,
         max_xtick_size=None,
         max_ytick_size=None,
+        xtick_rotation=0,
+        ytick_rotation=90,
         tick_kwargs=FONT_SMALLER):
     """
     Decorate an ax (default ax is the current ax).
@@ -963,7 +965,7 @@ def decorate(
 
         if max_xtick_size:
             xticks = [t[:max_xtick_size] for t in xticks]
-        ax.set_xticklabels(xticks, **tick_kwargs)
+        ax.set_xticklabels(xticks, rotation=xtick_rotation, **tick_kwargs)
 
     # Label y ticks
     if not yticks:
@@ -977,7 +979,7 @@ def decorate(
 
         if max_ytick_size:
             yticks = [t[:max_ytick_size] for t in yticks]
-        ax.set_yticklabels(yticks, **tick_kwargs)
+        ax.set_yticklabels(yticks, rotation=ytick_rotation, **tick_kwargs)
 
 
 def save_plot(filepath, overwrite=True, file_extension='pdf', dpi=DPI):

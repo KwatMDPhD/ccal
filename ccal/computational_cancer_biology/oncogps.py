@@ -43,7 +43,8 @@ from ..support.log import print_log
 from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL_PAIRED,
                             CMAP_CONTINUOUS,
                             DPI, FIGURE_SIZE, assign_colors_to_states,
-                            plot_heatmap, plot_nmf, plot_points, save_plot)
+                            plot_heatmap, plot_nmf, plot_points, decorate,
+                            save_plot)
 
 
 # ==============================================================================
@@ -231,7 +232,8 @@ def normalize_a_matrix(a_matrix,
         a_matrix += std_max
     elif a_matrix_normalization_method == 'rank':
         # TODO: try changing n_ranks or choose automatically
-        a_matrix = normalize_2d_or_1d(a_matrix, 'rank', n_ranks=10000, axis=0)
+        a_matrix = normalize_2d_or_1d(a_matrix, 'rank', rank_scale=10000,
+                                      axis=0)
     else:
         print_log('Not normalizing A matrix columns ...')
 
@@ -1349,9 +1351,9 @@ def _plot_onco_gps(
                     samples.ix[:, 'annotation'], '-0-').clip(lower=-std_max,
                                                              upper=std_max)
             # Get annotation statistics
-            annotation_min = -std_max
+            annotation_min = samples.ix[:, 'annotation_for_plot'].min()
             annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
-            annotation_max = std_max
+            annotation_max = samples.ix[:, 'annotation_for_plot'].max()
             # Set color map
             cmap = CMAP_CONTINUOUS
         else:  # Annotation is categorical or binary
@@ -1487,9 +1489,7 @@ def _plot_onco_gps(
                 norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                 ticks=[annotation_min, annotation_mean, annotation_max])
             ColorbarBase(cax, **kw)
-            cax.set_title('Normalized Values',
-                          **{'fontsize': 16,
-                             'weight': 'bold'})
+            decorate(ax=cax, title='Normalized Values', xtick_rotation=90)
 
     else:  # Plot samples using state colors
         normalized_component_ratio = normalize_2d_or_1d(
