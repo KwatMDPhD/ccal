@@ -716,8 +716,7 @@ def make_oncogps(training_h,
         #     testing_samples.ix[:, 'state'] = classify(training_h.T, training_states, testing_h.T)
         testing_samples.ix[:, 'state'].T.to_csv(
             '{}.testing_states.txt'.format(filepath_prefix_testing_states),
-            sep='\t',
-            index_col=0)
+            sep='\t')
 
         # ======================================================================
         # Compute training component ratios
@@ -1528,7 +1527,7 @@ def _plot_onco_gps(
                 zorder=7)
 
     if filepath:
-        save_plot(filepath, figure_extension=format, dpi=dpi)
+        save_plot(filepath, file_extension=format, dpi=dpi)
 
 
 def make_oncogps_in_3d(
