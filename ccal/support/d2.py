@@ -79,7 +79,7 @@ def get_top_and_bottom_indices(df, column_name, threshold, max_n=None):
     if 1 <= threshold:
         if 2 * threshold <= df.shape[0]:
             top_and_bottom = df.index[:threshold].tolist() + df.index[
-                -threshold:].tolist()
+                                                             -threshold:].tolist()
         else:
             top_and_bottom = df.index
 
@@ -196,7 +196,7 @@ def split_dataframe(df, n_split, axis=0):
     if df.shape[0] < n_split:
         raise ValueError(
             'n_split ({}) can\'t be greater than the number of rows ({}).'.
-            format(n_split, df.shape[0]))
+                format(n_split, df.shape[0]))
     elif n_split <= 0:
         raise ValueError('n_split ({}) can\'t be less than 0.'.format(n_split))
 
