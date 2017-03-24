@@ -12,7 +12,7 @@ Authors:
 """
 
 import rpy2.robjects as ro
-from numpy import asarray, exp, finfo, isnan, log, sign, sqrt
+from numpy import asarray, exp, finfo, isnan, log, sign, sqrt, sum, sort
 from numpy.random import random_sample, seed
 from rpy2.robjects.numpy2ri import numpy2ri
 from rpy2.robjects.packages import importr
@@ -30,20 +30,17 @@ bcv = mass.bcv
 kde2d = mass.kde2d
 
 
-def information_coefficient(x,
-                            y,
-                            n_grids=25,
-                            jitter=1E-10,
-                            random_seed=RANDOM_SEED):
+def information_coefficient(x, y, n_grids=25,
+                            jitter=1E-10, random_seed=RANDOM_SEED):
     """
-    Compute the information coefficient between x and y, which can be composed of either continuous,
-    categorical, or binary values.
+    Compute the information coefficient between x and y, which are
+        continuous, categorical, or binary vectors.
     :param x: numpy array;
     :param y: numpy array;
-    :param n_grids: int; number of grid lines in a dimention when estimating bandwidths
+    :param n_grids: int; number of grids for computing bandwidths
     :param jitter: number;
     :param random_seed: int or array-like;
-    :return: float;
+    :return: float; Information coefficient
     """
 
     # Can't work with missing any value
@@ -98,3 +95,56 @@ def information_coefficient(x,
         ic = 0
 
     return ic
+
+
+def compute_entropy(a):
+    """
+    Compute entropy of a.
+    :param a: array; (1, n_values)
+    :return float; 0 <= float
+    """
+
+    p = a / a.sum()
+    return -(p * log(p)).sum()
+
+
+def compute_brier_entropy(a, n=1):
+    """
+    Compute brier entropy of a.
+    :param a: array; (1, n_values)
+    :param n: int;
+    :return float; 0 <= float
+    """
+
+    p = a / a.sum()
+    p = sort(p)
+    p = p[::-1]
+
+    brier_error = 0
+    for i in range(n):
+        brier_error += (1 - p[i]) ** 2 + sum(
+            [p[not_i] ** 2 for not_i in range(len(p)) if not_i != i])
+    return brier_error
+
+
+def normalize_information_coefficients(a, method, clip_min=None, clip_max=None):
+    """
+
+    :param a: array; (n_rows, n_columns)
+    :param method:
+    :param clip_min:
+    :param clip_max:
+    :return array; (n_rows, n_columns); 0 <= array <= 1
+    """
+
+    if method == '0-1':
+        return (a - a.min()) / (a.max() - a.min())
+
+    elif method == 'p1d2':
+        return (a + 1) / 2
+
+    elif method == 'clip':
+        return a.clip(clip_min, clip_max)
+
+    else:
+        raise ValueError('Unknown method {}.'.format(method))
