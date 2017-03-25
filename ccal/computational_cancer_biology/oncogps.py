@@ -386,6 +386,7 @@ def make_oncogps(training_h,
                  testing_annotation=(),
                  annotation_name='',
                  annotation_type='continuous',
+                 annotation_scale='std',
                  annotation_ascending=True,
                  highlight_high_magnitude=True,
                  annotate_background=False,
@@ -453,6 +454,7 @@ def make_oncogps(training_h,
     :param annotation: pandas Series; (n_samples); sample annotation; will color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+    :param annotation_scale: str; {'std', 'relative'}
     :param annotation_ascending: bool;
     :param highlight_high_magnitude: bool;
 
@@ -608,7 +610,7 @@ def make_oncogps(training_h,
     print_log(
         'Computing training sample coordinates using {} components and {:.3f} power ...'.
             format(n_pulls, power))
-    training_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(
+    training_samples[['x', 'y']] = _compute_sample_coordinates(
         components, training_h, n_pulls, power)
 
     training_samples.ix[:, 'state'] = Series(
@@ -619,7 +621,7 @@ def make_oncogps(training_h,
     # ==========================================================================
     if component_ratio and 0 < component_ratio:
         print_log('Computing training component ratios ...')
-        training_samples.ix[:, 'component_ratio'] = _compute_component_ratios(
+        training_samples['component_ratio'] = _compute_component_ratios(
             training_h, component_ratio)
 
     # ==========================================================================
@@ -638,10 +640,10 @@ def make_oncogps(training_h,
         # Keep only samples in H matrix
         # ======================================================================
         if isinstance(training_annotation, Series):
-            training_samples.ix[:, 'annotation'] = training_annotation.ix[
+            training_samples['annotation'] = training_annotation.ix[
                 training_samples.index]
         elif len(training_annotation):
-            training_samples.ix[:, 'annotation'] = training_annotation
+            training_samples['annotation'] = training_annotation
 
         # ======================================================================
         # Compute grid probabilities and annotation states
@@ -779,6 +781,7 @@ def make_oncogps(training_h,
         n_training_states=training_states.unique().size,
         annotation_name=annotation_name,
         annotation_type=annotation_type,
+        annotation_scale=annotation_scale,
         annotation_ascending=annotation_ascending,
         highlight_high_magnitude=highlight_high_magnitude,
         plot_samples_with_missing_annotation=plot_samples_with_missing_annotation,
@@ -1002,7 +1005,7 @@ def _compute_annotation_grids_and_probabilities(samples,
 def _plot_onco_gps(
         components, samples, state_grids, state_grids_probabilities,
         n_training_states, annotation_name, annotation_type,
-        annotation_ascending, highlight_high_magnitude,
+        annotation_scale, annotation_ascending, highlight_high_magnitude,
         plot_samples_with_missing_annotation, annotation_grids,
         annotation_grids_probabilities, std_max, title, title_fontsize,
         title_fontcolor, subtitle_fontsize, subtitle_fontcolor,
@@ -1025,6 +1028,7 @@ def _plot_onco_gps(
 
     :param annotation_name: str;
     :param annotation_type: str; {'continuous', 'categorical', 'binary'}
+    :param annotation_scale: str; {'std', 'relative'}
     :param annotation_ascending: logical True or False
     :param highlight_high_magnitude: bool;
 
@@ -1351,9 +1355,15 @@ def _plot_onco_gps(
                     samples.ix[:, 'annotation'], '-0-').clip(lower=-std_max,
                                                              upper=std_max)
             # Get annotation statistics
-            annotation_min = samples.ix[:, 'annotation_for_plot'].min()
-            annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
-            annotation_max = samples.ix[:, 'annotation_for_plot'].max()
+            if annotation_scale == 'relative':
+                annotation_min = samples.ix[:, 'annotation_for_plot'].min()
+                annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
+                annotation_max = samples.ix[:, 'annotation_for_plot'].max()
+            elif annotation_scale == 'std':
+                annotation_min = -std_max
+                annotation_mean = samples.ix[:, 'annotation_for_plot'].mean()
+                annotation_max = std_max
+
             # Set color map
             cmap = CMAP_CONTINUOUS
         else:  # Annotation is categorical or binary
@@ -1489,7 +1499,7 @@ def _plot_onco_gps(
                 norm=Normalize(vmin=annotation_min, vmax=annotation_max),
                 ticks=[annotation_min, annotation_mean, annotation_max])
             ColorbarBase(cax, **kw)
-            decorate(ax=cax, title='Normalized Values', xtick_rotation=90)
+            decorate(ax=cax, xtick_rotation=90)
 
     else:  # Plot samples using state colors
         normalized_component_ratio = normalize_2d_or_1d(
