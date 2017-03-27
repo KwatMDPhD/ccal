@@ -393,6 +393,7 @@ def make_oncogps(training_h,
                  training_annotation=(),
                  testing_annotation=(),
                  annotation_name='',
+                 annotation_type=None,
                  annotation_scale='std',
                  highlight_high_magnitude=True,
                  annotation_ascending=True,
@@ -472,6 +473,7 @@ def make_oncogps(training_h,
     will
     color samples based on annotation
     :param annotation_name: str;
+    :param annotation_type: str;
     :param annotation_scale: str; {'std', 'relative'}
     :param highlight_high_magnitude: bool;
     :param annotation_ascending: bool;
@@ -803,6 +805,7 @@ def make_oncogps(training_h,
         state_grids_probabilities=state_grids_probabilities,
         n_training_states=training_states.unique().size,
         annotation_name=annotation_name,
+        annotation_type=annotation_type,
         annotation_scale=annotation_scale,
         annotation_ascending=annotation_ascending,
         highlight_high_magnitude=highlight_high_magnitude,
@@ -1031,7 +1034,7 @@ def _compute_annotation_grids_and_probabilities(samples,
 # ==============================================================================
 def _plot_onco_gps(
         components, samples, state_grids, state_grids_probabilities,
-        n_training_states, annotation_name, annotation_scale,
+        n_training_states, annotation_name, annotation_type, annotation_scale,
         annotation_ascending, highlight_high_magnitude,
         plot_samples_with_missing_annotation, annotation_grids,
         annotation_grids_probabilities, std_max, title, title_fontsize,
@@ -1054,6 +1057,7 @@ def _plot_onco_gps(
     :param n_training_states: int; number of training-sample states
 
     :param annotation_name: str;
+    :param annotation_type: str;
     :param annotation_scale: str; {'std', 'relative'}
     :param annotation_ascending: logical True or False
     :param highlight_high_magnitude: bool;
@@ -1417,16 +1421,21 @@ def _plot_onco_gps(
             weight='bold',
             horizontalalignment='center')
 
+        if not annotation_type:  # Set annotation type
+            if samples.ix[:, 'annotation'].dropna().unique().size <= 2:
+                annotation_type = 'binary'
+            elif samples.ix[:, 'annotation'].dropna().unique().size <= int(
+                            0.5 * samples.ix[:, 'annotation'].dropna().size):
+                annotation_type = 'categorical'
+            else:
+                annotation_type = 'continuous'
+
         # Set colormap
-        if samples.ix[:, 'annotation'].dropna().unique().size <= 2:
-            annotation_type = 'binary'
+        if annotation_type == 'binary':
             cmap = CMAP_BINARY
-        elif samples.ix[:, 'annotation'].dropna().unique().size <= int(
-                        0.5 * samples.ix[:, 'annotation'].dropna().size):
-            annotation_type = 'categorical'
+        elif annotation_type == 'categorical':
             cmap = CMAP_CATEGORICAL_PAIRED
         else:
-            annotation_type = 'continuous'
             cmap = CMAP_CONTINUOUS
 
         # Set plotting order and plot
