@@ -379,6 +379,7 @@ def plot_heatmap(dataframe,
                  xticklabels=True,
                  yticklabels=True,
                  mask=None,
+                 figure_size=FIGURE_SIZE,
                  data_type='continuous',
                  normalization_method=None,
                  normalization_axis=0,
@@ -393,6 +394,8 @@ def plot_heatmap(dataframe,
                  ylabel=None,
                  xlabel_rotation=0,
                  ylabel_rotation=90,
+                 xtick_rotation=90,
+                 ytick_rotation=0,
                  filepath=None,
                  file_extension='pdf',
                  dpi=DPI,
@@ -417,6 +420,7 @@ def plot_heatmap(dataframe,
     :param xticklabels:
     :param yticklabels:
     :param mask:
+    :param figure_size:
     :param data_type:
     :param normalization_method:
     :param normalization_axis:
@@ -431,6 +435,8 @@ def plot_heatmap(dataframe,
     :param ylabel:
     :param xlabel_rotation:
     :param ylabel_rotation:
+    :param xtick_rotation:
+    :param ytick_rotation:
     :param filepath:
     :param file_extension:
     :param dpi:
@@ -484,7 +490,7 @@ def plot_heatmap(dataframe,
         if isinstance(column_annotation, Series):
             column_annotation = column_annotation.iloc[column_indices]
 
-    figure(figsize=FIGURE_SIZE)
+    figure(figsize=figure_size)
 
     gridspec = GridSpec(10, 10)
 
@@ -503,7 +509,7 @@ def plot_heatmap(dataframe,
         if data_type == 'continuous':
             cmap = CMAP_CONTINUOUS
         elif data_type == 'categorical':
-            cmap = CMAP_CATEGORICAL_PAIRED
+            cmap = CMAP_CATEGORICAL_VEGA20
         elif data_type == 'binary':
             cmap = CMAP_BINARY
         else:
@@ -584,6 +590,8 @@ def plot_heatmap(dataframe,
         ylabel=ylabel,
         xlabel_rotation=xlabel_rotation,
         ylabel_rotation=ylabel_rotation,
+        xtick_rotation=xtick_rotation,
+        ytick_rotation=ytick_rotation,
         ax=ax_center)
 
     if len(row_annotation):
