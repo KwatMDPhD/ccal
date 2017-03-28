@@ -261,6 +261,7 @@ def define_states(matrix,
                   ks,
                   directory_path,
                   file_mark='',
+                  n_jobs=1,
                   distance_matrix=None,
                   max_std=3,
                   n_clusterings=40,
@@ -275,6 +276,7 @@ def define_states(matrix,
     clusterings/cophenetic_correlation_coefficients.txt,
     clusterings/clusterings.pdf will be saved
     :param file_mark: str;
+    :param n_jobs: int;
     :param distance_matrix: str or DataFrame; (n_columns, n_columns);
     distance matrix to hierarchical cluster
     :param max_std: number; threshold to clip standardized values
@@ -301,6 +303,7 @@ def define_states(matrix,
     d, cs, cccs = hierarchical_consensus_cluster(
         matrix,
         ks,
+        n_jobs=n_jobs,
         d=distance_matrix,
         n_clusterings=n_clusterings,
         random_seed=random_seed)

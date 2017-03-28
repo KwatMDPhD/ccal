@@ -33,6 +33,7 @@ from .score import compute_similarity_matrix
 def hierarchical_consensus_cluster(matrix,
                                    ks,
                                    d=None,
+                                   n_jobs=1,
                                    function=information_coefficient,
                                    n_clusterings=100,
                                    random_seed=RANDOM_SEED):
@@ -41,10 +42,13 @@ def hierarchical_consensus_cluster(matrix,
     :param matrix: DataFrame; (n_features, m_samples)
     :param ks: iterable; list of ks used for clustering
     :param d: str or DataFrame; sample-distance matrix
+    :param n_jobs; int;
     :param function: function; distance function
-    :param n_clusterings: int; number of clusterings for the consensus clustering
+    :param n_clusterings: int; number of clusterings for the consensus 
+    clustering
     :param random_seed: int;
-    :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and cophenetic correlation coefficients (n_ks)
+    :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and 
+    cophenetic correlation coefficients (n_ks)
     """
 
     if isinstance(ks, int):
@@ -57,8 +61,8 @@ def hierarchical_consensus_cluster(matrix,
     else:
         # Compute sample-distance matrix
         print_log('Computing sample-distance matrix ...')
-        d = compute_similarity_matrix(
-            matrix, matrix, function, is_distance=True)
+        d = compute_similarity_matrix(matrix, matrix, function,
+                                      is_distance=True)
 
     # Consensus cluster distance matrix
     print_log('{} consensus clusterings ...'.format(n_clusterings))
@@ -71,7 +75,8 @@ def hierarchical_consensus_cluster(matrix,
     for k in ks:
         print_log('K={} ...'.format(k))
 
-        # For n_clusterings times, permute distance matrix with repeat, and cluster
+        # For n_clusterings times, permute distance matrix with repeat,
+        # and cluster
 
         # Make sample x clustering matrix
         sample_x_clustering = DataFrame(
@@ -80,8 +85,9 @@ def hierarchical_consensus_cluster(matrix,
         for i in range(n_clusterings):
             if i % 10 == 0:
                 print_log(
-                    '\tPermuting sample-distance matrix with repeat and clustering ({}/{}) ...'.
-                    format(i, n_clusterings))
+                    '\tPermuting sample-distance matrix with repeat and '
+                    'clustering ({}/{}) ...'.
+                        format(i, n_clusterings))
 
             # Randomize samples with repeat and cluster
             hc = AgglomerativeClustering(n_clusters=k)
@@ -91,13 +97,16 @@ def hierarchical_consensus_cluster(matrix,
             # Assign cluster labels to the random samples
             sample_x_clustering.iloc[is_, i] = hc.labels_
 
-        # Make consensus matrix using labels created by clusterings of randomized distance matrix
+        # Make consensus matrix using labels created by clusterings of
+        # randomized distance matrix
         print_log(
-            '\tMaking consensus matrix from {} randomized-sample-distance-matrix hierarchical clusterings...'.
-            format(n_clusterings))
+            '\tMaking consensus matrix from {} '
+            'randomized-sample-distance-matrix hierarchical clusterings...'.
+                format(n_clusterings))
         consensus_matrix = _get_consensus(sample_x_clustering)
 
-        # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
+        # Hierarchical cluster consensus_matrix's distance matrix and compute
+        #  cophenetic correlation coefficient
         hc, ccc = _hierarchical_cluster_consensus_matrix(consensus_matrix)
         # Get labels from hierarchical clustering
         cs.ix[k, :] = fcluster(hc, k, criterion='maxclust')
@@ -111,13 +120,16 @@ def _hierarchical_cluster_consensus_matrix(consensus_matrix,
                                            force_diagonal=True,
                                            method='ward'):
     """
-    Hierarchical cluster consensus_matrix and compute cophenetic correlation coefficient.
-    Convert consensus_matrix into distance matrix. Hierarchical cluster the distance matrix. And compute the
+    Hierarchical cluster consensus_matrix and compute cophenetic correlation 
+    coefficient.
+    Convert consensus_matrix into distance matrix. Hierarchical cluster the 
+    distance matrix. And compute the
     cophenetic correlation coefficient.
     :param consensus_matrix: DataFrame;
     :param force_diagonal: bool;
     :param method: str; method parameter for scipy.cluster.hierarchy.linkage
-    :return: ndarray and float; linkage (Z) and cophenetic correlation coefficient
+    :return: ndarray and float; linkage (Z) and cophenetic correlation 
+    coefficient
     """
 
     # Convert consensus matrix into distance matrix
@@ -160,7 +172,8 @@ def nmf_consensus_cluster(matrix,
     """
     Perform NMF with k from ks and score each NMF decomposition.
 
-    :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); the matrix to be factorized by NMF
+    :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); 
+    the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param n_jobs: int;
     :param n_clusterings: int;
@@ -196,8 +209,9 @@ def nmf_consensus_cluster(matrix,
     nmfs = {}
 
     print_log(
-        'Computing cophenetic correlation coefficient of {} NMF consensus clusterings (n_jobs={}) ...'.
-        format(n_clusterings, n_jobs))
+        'Computing cophenetic correlation coefficient of {} NMF consensus '
+        'clusterings (n_jobs={}) ...'.
+            format(n_clusterings, n_jobs))
 
     args = [[
         matrix, k, n_clusterings, algorithm, init, solver, tol, max_iter,
@@ -224,7 +238,9 @@ def _nmf_and_score(args):
                     }
     """
 
-    matrix, k, n_clusterings, algorithm, init, solver, tol, max_iter, random_seed, alpha, l1_ratio, verbose, shuffle_, nls_max_iter, sparseness, beta, eta = args
+    matrix, k, n_clusterings, algorithm, init, solver, tol, max_iter, \
+    random_seed, alpha, l1_ratio, verbose, shuffle_, nls_max_iter, \
+    sparseness, beta, eta = args
 
     print_log('NMF and scoring k={} ...'.format(k))
 
@@ -270,9 +286,11 @@ def _nmf_and_score(args):
               format(k, n_clusterings))
     consensus_matrix = _get_consensus(sample_x_clustering)
 
-    # Hierarchical cluster consensus_matrix's distance matrix and compute cophenetic correlation coefficient
-    hierarchical_clustering, cophenetic_correlation_coefficient = _hierarchical_cluster_consensus_matrix(
-        consensus_matrix)
+    # Hierarchical cluster consensus_matrix's distance matrix and compute
+    # cophenetic correlation coefficient
+    hierarchical_clustering, cophenetic_correlation_coefficient = \
+        _hierarchical_cluster_consensus_matrix(
+            consensus_matrix)
     nmfs[k]['ccc'] = cophenetic_correlation_coefficient
 
     return nmfs
