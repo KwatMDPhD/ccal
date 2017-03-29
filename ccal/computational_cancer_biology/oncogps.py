@@ -706,6 +706,7 @@ def make_oncogps(training_h,
         #   Drop samples with all-0 values after normalization
         # ======================================================================
         if testing_h_normalization:
+            # TODO: fix passing of normalizing_
             testing_h = drop_uniform_slice_from_dataframe(testing_h, 0)
 
             testing_h = normalize_2d_or_1d(
