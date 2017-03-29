@@ -357,7 +357,8 @@ def define_states(matrix,
                 normalization_axis=1,
                 title='{} States'.format(k),
                 xlabel='Sample',
-                ylabel='Component')
+                ylabel='Component',
+                xticklabels=False)
             savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
     return d, cs, cccs
