@@ -63,7 +63,7 @@ def convert_genes_to_gene_sets(g_x_s, gss, power=1,
                 # Compute permutation-normalized enrichment score
                 gs_x_s.ix[gs_n, s_n] = es / mean(p_ess)
 
-            else:  # Use enrihcment score instead of permutation-normalized
+            else:  # Use enrichment score instead of permutation-normalized
                 # enrichment score
                 gs_x_s.ix[gs_n, s_n] = es
 

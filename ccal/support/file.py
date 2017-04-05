@@ -341,7 +341,7 @@ def write_data_table(
 def read_gmts(filepaths,
               gene_sets=(),
               drop_description=True,
-              save_clean=True,
+              save_clean=False,
               collapse=False):
     """
     Read 1 or more GMTs.

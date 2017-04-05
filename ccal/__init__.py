@@ -17,7 +17,7 @@ import sys
 
 from .computational_cancer_biology import (association, gsea, inference,
                                            mutual_vulnerability, oncogps)
-from .support.file import (load_data_table, read_gct, read_gmt,
+from .support.file import (load_data_table, read_gct, read_gmt, read_gmts,
                            write_data_table, write_gct, write_rnk)
 from .support.plot import (plot_clustermap, plot_distribution, plot_heatmap,
                            plot_nmf, plot_points, plot_violin_box_or_bar)
