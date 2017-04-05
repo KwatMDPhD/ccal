@@ -10,98 +10,99 @@ Authors:
         ptamayo@ucsd.edu
         Computational Cancer Analysis Laboratory, UCSD Cancer Center
 """
-import itertools
 
-import numpy as np
-import pandas as pd
+from numpy import asarray, cumsum, empty, in1d, max, mean, min, where
+from numpy.random import shuffle
+from pandas import DataFrame
+
+from ..support.d2 import normalize_2d_or_1d
 
 
-def ssgsea(exp_data, sets_to_genes, alpha=0.25):
+def convert_genes_to_gene_sets(g_x_s, gss, power=1,
+                               statistic='Kolmogorov-Smirnov',
+                               n_permutations=0):
     """
-    Single-sample GSEA as described in Barbie et al. (2009)
-    :param exp_df: Pandas DataFrame or Series of expression values, (n_samples, n_genes) or (n_genes,)
-    :param sets_to_genes: dictionary with set names as keys and sets of genes as values, e.g. {'set1': {'g1', 'g2'}}
-    :param alpha: weighting factor
-    :return: Pandas DataFrame or Series of expression projected onto gene sets
+    Convert Gene-x-Sample ==> Gene-Set-x-Sample.
+    :param g_x_s: DataFrame;
+    :param gss: DataFrame;
+    :param power: number;
+    :param statistic: str;
+    :param n_permutations: int;
+    :return: DataFrame;
     """
-    if isinstance(exp_data, pd.Series):
-        return ssgsea_per_sample(exp_data, sets_to_genes, alpha=alpha)
-    elif isinstance(exp_data, pd.DataFrame):
-        return exp_data.apply(
-            ssgsea_per_sample, axis=1, args=(sets_to_genes, alpha))
+
+    # Rank normalize columns
+    g_x_s = normalize_2d_or_1d(g_x_s, 'rank', axis=0) / \
+            g_x_s.shape[0]
+
+    # Make Gene-Set-x-Sample place holder
+    gs_x_s = DataFrame(index=gss.index, columns=g_x_s.columns)
+
+    # Loop over gene sets
+    for gs_n, gs in gss.iterrows():
+        print('Computing {} enrichment ...'.format(gs_n))
+
+        gs = asarray(gs.dropna())
+
+        # Loop over samples
+        for s_n, s_v in g_x_s.items():
+
+            # Sort sample values from high to low and compute enrichment score
+            s_s_v = s_v.sort_values(ascending=False) ** power
+            es = _get_es(s_s_v, gs, statistic=statistic)
+
+            if 0 < n_permutations:  # Compute permutation-normalized
+                # enrichment score
+                p_ess = empty(n_permutations)
+                p_s_v = s_s_v.copy()
+                for i in range(n_permutations):
+                    # Permute sample values and compute enrichment score
+                    shuffle(p_s_v)
+                    p_ess[i] = _get_es(p_s_v, gs, statistic=statistic)
+
+                # Compute permutation-normalized enrichment score
+                gs_x_s.ix[gs_n, s_n] = es / mean(p_ess)
+
+            else:  # Use enrihcment score instead of permutation-normalized
+                # enrichment score
+                gs_x_s.ix[gs_n, s_n] = es
+
+    return gs_x_s
+
+
+def _get_es(sv, gs, statistic='Kolmogorov-Smirnov'):
+    """
+    Compute enrichment score: "Is sorted values enriched in gene set?".
+    :param sv: Series; sorted values
+    :param gs: array; gene set
+    :param statistic: str;
+    :return: float; enrichment score
+    """
+
+    # Check if each gene (in the sorted order) is in the gene set (hit) or
+    # not (miss)
+    in_ = in1d(asarray(sv.index), gs, assume_unique=True)
+
+    # Score: values-at-hits / sum(values-at-hits) - is-miss's / number-of-misses
+    s = in_.astype(int) * sv / sum(sv.ix[in_]) - (1 - in_.astype(int)) / (
+        in_.size - sum(in_))
+
+    # Sum over scores
+    cs = cumsum(s)
+
+    # Compute enrichment score
+    max_es = max(cs)
+    min_es = min(cs)
+    if statistic == 'Kolmogorov-Smirnov':
+        es = where(abs(min_es) < abs(max_es), max_es, min_es)
     else:
-        raise ValueError("exp_data must be Pandas DataFrame or Series")
+        raise ValueError('Not implemented!')
 
+    # mpl.pyplot.figure(figsize=(8, 5))
+    #     ax = mpl.pyplot.gca()
+    #     ax.plot(range(in_.size), in_, color='black', alpha=0.16)
+    #     ax.plot(range(in_.size), s)
+    #     ax.plot(range(in_.size), cs)
+    #     mpl.pyplot.show()
 
-def ssgsea_per_sample(exp_series, sets_to_genes, alpha=0.25):
-    sorted_exp_series = exp_series.sort_values(ascending=False)
-    enrichment_scores = _base_gsea(
-        sorted_exp_series.index,
-        sets_to_genes,
-        collect_func=np.sum,
-        alpha=alpha)
-    return enrichment_scores
-
-
-def max_abs(x):
-    return x[np.argmax(np.abs(x))]
-
-
-def gsea(ranked_genes, sets_to_genes, alpha=0.25):
-    enrichment_scores = _base_gsea(
-        ranked_genes, sets_to_genes, collect_func=max_abs, alpha=alpha)
-    return enrichment_scores
-
-
-# From the itertools recipes. Should it go in support.py?
-def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return zip(a, b)
-
-
-def _base_gsea(ranked_genes, sets_to_genes, collect_func, alpha=0.25):
-    """
-    Basic idea:
-    -make weighted ecdf for hits
-    -make ecdf for misses
-    -take elementwise difference
-    -collect_func() to get result (max_abs() for gsea, np.sum() for ssgsea)
-
-    Might still be able to speed up using array funcs rather than iterating?
-    """
-    n_genes = len(ranked_genes)
-    ranks = list(range(n_genes))
-    gene_to_rank = dict(zip(ranked_genes, ranks))
-    enrichment_scores = {}
-    for set_name, set_genes in sets_to_genes.items():
-        ranked_set_genes = [gene for gene in set_genes if gene in gene_to_rank]
-        n_non_set_genes = float(n_genes - len(ranked_set_genes))
-        hit_ranks = [gene_to_rank[gene] for gene in ranked_set_genes]
-        misses = np.ones_like(ranks)
-        misses[hit_ranks] = 0
-        cum_misses = np.cumsum(misses)
-        miss_ecdf = cum_misses / n_non_set_genes
-        cum_hits = np.zeros_like(ranks)
-        if len(hit_ranks) > 0:
-            cum_hit_sum = 0
-            sorted_hit_ranks = sorted(hit_ranks)
-            # add one so ranks to weight start from 1, not zero
-            # however, it's convenient to start at zero otherwise so I can index using the ranks
-            weighted_ranks = (np.array(sorted_hit_ranks) + 1)**alpha
-            hit_rank_pairs = list(
-                pairwise(sorted_hit_ranks
-                         ))  # given [a, b, c, d] yields (a, b), (b, c), (c, d)
-            for i, (idx1, idx2) in enumerate(hit_rank_pairs):
-                cum_hit_sum += weighted_ranks[i]
-                cum_hits[idx1:idx2] = cum_hit_sum
-            cum_hit_sum += weighted_ranks[-1]
-            cum_hits[sorted_hit_ranks[-1]:] = cum_hit_sum
-            weighted_hit_ecdf = cum_hits / cum_hit_sum
-        else:
-            weighted_hit_ecdf = cum_hits  # still np.zeros_like(ranks)
-        ecdf_dif = np.subtract(weighted_hit_ecdf, miss_ecdf)
-        enrichment_score = collect_func(ecdf_dif)
-        enrichment_scores[set_name] = enrichment_score
-    return pd.Series(enrichment_scores)
+    return es
