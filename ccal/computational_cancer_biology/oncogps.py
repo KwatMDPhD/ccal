@@ -61,13 +61,13 @@ def define_components(a_matrix,
                       algorithm='Lee & Seung',
                       random_seed=RANDOM_SEED):
     """
-    NMF-consensus cluster samples, compute cophenetic-correlation 
+    NMF-consensus cluster samples, compute cophenetic-correlation
     coefficients, and save 1 NMF decomposition for each k.
 
-    :param a_matrix: DataFrame or str; (n_rows, n_columns), A matrix, 
+    :param a_matrix: DataFrame or str; (n_rows, n_columns), A matrix,
     or filepath to a GCT file
     :param ks: iterable or int; iterable of int k used for NMF
-    :param directory_path: str; directory path where nmf_cc/nmf.pdf, 
+    :param directory_path: str; directory path where nmf_cc/nmf.pdf,
     nmf_cc/nmf_k{k}_{w, h}.gct will be saved
     :param file_mark: str;
     :param how_to_drop_na_in_a_matrix: str; {'all', 'any'}
@@ -398,6 +398,7 @@ def make_oncogps(training_h,
                  testing_annotation=(),
                  annotation_name='',
                  annotation_type=None,
+                 normalize_annotation=True,
                  annotation_scale='std',
                  highlight_high_magnitude=True,
                  annotation_ascending=True,
@@ -478,6 +479,7 @@ def make_oncogps(training_h,
     color samples based on annotation
     :param annotation_name: str;
     :param annotation_type: str;
+    :param normalize_annotation: bool;
     :param annotation_scale: str; {'std', 'relative'}
     :param highlight_high_magnitude: bool;
     :param annotation_ascending: bool;
@@ -768,8 +770,8 @@ def make_oncogps(training_h,
         if component_ratio and 0 < component_ratio:
             print_log('Computing testing component ratios ...')
             testing_samples.ix[:,
-            'component_ratio'] = _compute_component_ratios(
-                testing_h, component_ratio)
+                               'component_ratio'] = _compute_component_ratios(
+                                   testing_h, component_ratio)
 
         # ======================================================================
         # Process testing annotation
@@ -811,11 +813,11 @@ def make_oncogps(training_h,
         n_training_states=training_states.unique().size,
         annotation_name=annotation_name,
         annotation_type=annotation_type,
+        normalize_annotation=normalize_annotation,
         annotation_scale=annotation_scale,
         annotation_ascending=annotation_ascending,
         highlight_high_magnitude=highlight_high_magnitude,
-        plot_samples_with_missing_annotation
-        =plot_samples_with_missing_annotation,
+        plot_samples_with_missing_annotation=plot_samples_with_missing_annotation,
         annotation_grids=annotation_grids,
         annotation_grids_probabilities=annotation_grids_probabilities,
         std_max=std_max,
@@ -908,7 +910,7 @@ def _compute_sample_coordinates(component_x_coordinates, component_x_samples,
         # Compute coordinate in each dimension
         for d in range(component_x_coordinates.shape[1]):
             sample_coordinates[i, d] = nansum(
-                c ** power * component_x_coordinates[:, d]) / nansum(c ** power)
+                c**power * component_x_coordinates[:, d]) / nansum(c**power)
 
     return sample_coordinates
 
@@ -1039,11 +1041,11 @@ def _compute_annotation_grids_and_probabilities(samples,
 # ==============================================================================
 def _plot_onco_gps(
         components, samples, state_grids, state_grids_probabilities,
-        n_training_states, annotation_name, annotation_type, annotation_scale,
-        annotation_ascending, highlight_high_magnitude,
-        plot_samples_with_missing_annotation, annotation_grids,
-        annotation_grids_probabilities, std_max, title, title_fontsize,
-        title_fontcolor, subtitle_fontsize, subtitle_fontcolor,
+        n_training_states, annotation_name, annotation_type,
+        normalize_annotation, annotation_scale, annotation_ascending,
+        highlight_high_magnitude, plot_samples_with_missing_annotation,
+        annotation_grids, annotation_grids_probabilities, std_max, title,
+        title_fontsize, title_fontcolor, subtitle_fontsize, subtitle_fontcolor,
         component_marker, component_markersize, component_markerfacecolor,
         component_markeredgewidth, component_markeredgecolor, component_names,
         component_fontsize, delaunay_linewidth, delaunay_linecolor, colors,
@@ -1063,6 +1065,7 @@ def _plot_onco_gps(
 
     :param annotation_name: str;
     :param annotation_type: str;
+    :param normalize_annotation: bool;
     :param annotation_scale: str; {'std', 'relative'}
     :param annotation_ascending: logical True or False
     :param highlight_high_magnitude: bool;
@@ -1247,7 +1250,7 @@ def _plot_onco_gps(
             for j in range(grids.shape[1]):
 
                 if convexhull_region.contains_point(
-                        (fraction_grids[i], fraction_grids[j])):
+                    (fraction_grids[i], fraction_grids[j])):
                     if 0 < grids[i, j]:
                         c = (1, 0, 0)
                     else:
@@ -1268,8 +1271,8 @@ def _plot_onco_gps(
                 for j in range(grids.shape[1]):
 
                     if not convexhull_region.contains_point(
-                            (fraction_grids[i],
-                             fraction_grids[j])) or grids[i, j] != s:
+                        (fraction_grids[i],
+                         fraction_grids[j])) or grids[i, j] != s:
                         mask[i, j] = True
 
             z = ma.array(state_grids_probabilities, mask=mask)
@@ -1294,9 +1297,9 @@ def _plot_onco_gps(
                 for j in range(0, grids.shape[1] - 1):
 
                     if convexhull_region.contains_point(
-                            (fraction_grids[i], fraction_grids[j])) and (
-                                    grids[i, j] != grids[i + 1, j] or
-                                    grids[i, j] != grids[i, j + 1]):
+                        (fraction_grids[i], fraction_grids[j])) and (
+                            grids[i, j] != grids[i + 1, j] or
+                            grids[i, j] != grids[i, j + 1]):
                         image[j, i] = state_boundary_color
 
         ax_map.imshow(
@@ -1320,7 +1323,7 @@ def _plot_onco_gps(
             for j in range(grids.shape[1]):
 
                 if convexhull_region.contains_point(
-                        (fraction_grids[i], fraction_grids[j])):
+                    (fraction_grids[i], fraction_grids[j])):
                     hsv = rgb_to_hsv(*state_colors[grids[i, j]][:3])
                     o = (grids_probabilities[i, j] - grid_probabilities_min
                          ) / grid_probabilities_range
@@ -1342,7 +1345,7 @@ def _plot_onco_gps(
             for j in range(grids.shape[1]):
 
                 if not convexhull_region.contains_point(
-                        (fraction_grids[i], fraction_grids[j])):
+                    (fraction_grids[i], fraction_grids[j])):
                     mask[i, j] = True
 
         z = ma.array(state_grids_probabilities, mask=mask)
@@ -1385,9 +1388,12 @@ def _plot_onco_gps(
             o_to_i = None
 
             # Make vector
-            samples.ix[:, 'a'] = normalize_2d_or_1d(
-                samples.ix[:, 'annotation'].astype(float), '-0-').clip(
-                lower=-std_max, upper=std_max)
+            if normalize_annotation:
+                samples.ix[:, 'a'] = normalize_2d_or_1d(
+                    samples.ix[:, 'annotation'].astype(float), '-0-').clip(
+                        lower=-std_max, upper=std_max)
+            else:
+                annotation_scale == 'relative'
 
             # Get annotation statistics
             a_mean = samples.ix[:, 'a'].mean()
@@ -1404,7 +1410,7 @@ def _plot_onco_gps(
             o_to_i = {}
             i_to_o = {}
             for i, o in enumerate(samples.ix[:, 'annotation'].dropna()
-                                          .sort_values().unique()):
+                                  .sort_values().unique()):
                 o_to_i[o] = i
                 i_to_o[i] = o
             samples.ix[:, 'a'] = samples.ix[:, 'annotation'].apply(o_to_i.get)
@@ -1430,7 +1436,7 @@ def _plot_onco_gps(
             if samples.ix[:, 'annotation'].dropna().unique().size <= 2:
                 annotation_type = 'binary'
             elif samples.ix[:, 'annotation'].dropna().unique().size <= int(
-                            0.5 * samples.ix[:, 'annotation'].dropna().size):
+                    0.5 * samples.ix[:, 'annotation'].dropna().size):
                 annotation_type = 'categorical'
             else:
                 annotation_type = 'continuous'
@@ -1528,7 +1534,7 @@ def _plot_onco_gps(
             samples.ix[:, 'component_ratio'], '0-1')
         if not normalized_component_ratio.isnull().all():
             samples.ix[:,
-            'component_ratio_for_plot'] = normalized_component_ratio
+                       'component_ratio_for_plot'] = normalized_component_ratio
         else:
             samples.ix[:, 'component_ratio_for_plot'] = 1
 
@@ -1593,37 +1599,37 @@ def make_oncogps_in_3d(
         sample_marker_line_width=0.19,
         sample_marker_line_color='9017E6', ):
     """
-    
-    :param training_h: 
-    :param training_states: 
-    :param filepath: 
-    :param std_max: 
-    :param mds_seed: 
-    :param power: 
-    :param fit_min: 
-    :param fit_max: 
-    :param power_min: 
-    :param power_max: 
-    :param samples_to_plot: 
-    :param training_annotation: 
-    :param title: 
-    :param titlefont_size: 
-    :param titlefont_color: 
-    :param paper_bgcolor: 
-    :param plot_bgcolor: 
-    :param component_marker_size: 
-    :param component_marker_opacity: 
-    :param component_marker_line_width: 
-    :param component_marker_line_color: 
-    :param component_marker_color: 
-    :param component_textfont_size: 
-    :param component_textfont_color: 
-    :param state_colors: 
-    :param sample_marker_size: 
-    :param sample_marker_opacity: 
-    :param sample_marker_line_width: 
-    :param sample_marker_line_color: 
-    :return: 
+
+    :param training_h:
+    :param training_states:
+    :param filepath:
+    :param std_max:
+    :param mds_seed:
+    :param power:
+    :param fit_min:
+    :param fit_max:
+    :param power_min:
+    :param power_max:
+    :param samples_to_plot:
+    :param training_annotation:
+    :param title:
+    :param titlefont_size:
+    :param titlefont_color:
+    :param paper_bgcolor:
+    :param plot_bgcolor:
+    :param component_marker_size:
+    :param component_marker_opacity:
+    :param component_marker_line_width:
+    :param component_marker_line_color:
+    :param component_marker_color:
+    :param component_textfont_size:
+    :param component_textfont_color:
+    :param state_colors:
+    :param sample_marker_size:
+    :param sample_marker_opacity:
+    :param sample_marker_line_width:
+    :param sample_marker_line_color:
+    :return:
     """
 
     # ==========================================================================
@@ -1678,7 +1684,7 @@ def make_oncogps_in_3d(
                 power = 1
                 print_log(
                     '\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.
-                        format(e))
+                    format(e))
 
     # ==========================================================================
     # Compute training sample coordinates
