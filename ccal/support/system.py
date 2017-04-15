@@ -17,8 +17,6 @@ from subprocess import PIPE, Popen, run
 from numpy.random import get_state, seed
 from pip import get_installed_distributions, main
 
-from .log import print_log
-
 
 def run_command(command):
     """
@@ -27,7 +25,7 @@ def run_command(command):
     :return: str;
     """
 
-    print_log(command)
+    print(command)
     output = run(command,
                  shell=True,
                  check=True,
@@ -43,7 +41,7 @@ def install_libraries(libraries_needed):
     :return: None
     """
 
-    print_log('Trying to install ({}) ...'.format(', '.join(libraries_needed)))
+    print('Trying to install ({}) ...'.format(', '.join(libraries_needed)))
 
     # Get currently installed libraries
     libraries_installed = [lib.key for lib in get_installed_distributions()]
@@ -63,7 +61,7 @@ def source_environment(filepath):
     :return: None
     """
 
-    print_log('Sourcing {} ...'.format(filepath))
+    print('Sourcing {} ...'.format(filepath))
 
     for line in Popen(
             './{}; env'.format(filepath),
@@ -73,7 +71,7 @@ def source_environment(filepath):
         key, _, value = line.partition('=')
         key, value = key.strip(), value.strip()
         environ[key] = value
-        print_log('\t{} = {}'.format(key, value))
+        print('\t{} = {}'.format(key, value))
 
 
 def get_name(obj, namesapce):
@@ -105,11 +103,11 @@ def print_random_state(mark='', print_process=False):
 
     _, keys, pos, _, _ = random_state
     try:
-        print_log(
+        print(
             '[{}] Seed0={}\ti={}\t@={}'.format(mark, keys[0], pos, keys[pos]),
             print_process=print_process)
     except IndexError:
-        print_log(
+        print(
             '[{}] Seed0={}\ti={}'.format(mark, keys[0], pos),
             print_process=print_process)
 
