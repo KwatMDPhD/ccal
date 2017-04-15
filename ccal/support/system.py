@@ -50,7 +50,7 @@ def install_libraries(libraries_needed):
     # then install it using pip
     for lib in libraries_needed:
         if lib not in libraries_installed:
-            print_log('{} not found; installing it using pip ...'.format(lib))
+            print('{} not found; installing it using pip ...'.format(lib))
             main(['install', lib])
 
 
