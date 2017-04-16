@@ -44,10 +44,10 @@ def hierarchical_consensus_cluster(matrix,
     :param d: str or DataFrame; sample-distance matrix
     :param n_jobs; int;
     :param function: function; distance function
-    :param n_clusterings: int; number of clusterings for the consensus 
+    :param n_clusterings: int; number of clusterings for the consensus
     clustering
     :param random_seed: int;
-    :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and 
+    :return: DataFrame and Series; assignment matrix (n_ks, n_samples) and
     cophenetic correlation coefficients (n_ks)
     """
 
@@ -120,15 +120,15 @@ def _hierarchical_cluster_consensus_matrix(consensus_matrix,
                                            force_diagonal=True,
                                            method='ward'):
     """
-    Hierarchical cluster consensus_matrix and compute cophenetic correlation 
+    Hierarchical cluster consensus_matrix and compute cophenetic correlation
     coefficient.
-    Convert consensus_matrix into distance matrix. Hierarchical cluster the 
+    Convert consensus_matrix into distance matrix. Hierarchical cluster the
     distance matrix. And compute the
     cophenetic correlation coefficient.
     :param consensus_matrix: DataFrame;
     :param force_diagonal: bool;
     :param method: str; method parameter for scipy.cluster.hierarchy.linkage
-    :return: ndarray and float; linkage (Z) and cophenetic correlation 
+    :return: ndarray and float; linkage (Z) and cophenetic correlation
     coefficient
     """
 
@@ -155,7 +155,7 @@ def nmf_consensus_cluster(matrix,
                           ks,
                           n_jobs=1,
                           n_clusterings=100,
-                          algorithm='Lee & Seung',
+                          algorithm='Alternating Least Squares',
                           init=None,
                           solver='cd',
                           tol=1e-7,
@@ -172,7 +172,7 @@ def nmf_consensus_cluster(matrix,
     """
     Perform NMF with k from ks and score each NMF decomposition.
 
-    :param matrix: numpy array or pandas DataFrame; (n_samples, n_features); 
+    :param matrix: numpy array or pandas DataFrame; (n_samples, n_features);
     the matrix to be factorized by NMF
     :param ks: iterable; list of ks to be used in the NMF
     :param n_jobs: int;

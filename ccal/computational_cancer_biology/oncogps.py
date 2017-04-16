@@ -58,7 +58,7 @@ def define_components(a_matrix,
                       std_max=3,
                       n_jobs=1,
                       n_clusterings=40,
-                      algorithm='Lee & Seung',
+                      algorithm='Alternating Least Squares',
                       random_seed=RANDOM_SEED):
     """
     NMF-consensus cluster samples, compute cophenetic-correlation
