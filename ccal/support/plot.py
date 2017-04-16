@@ -19,8 +19,8 @@ from matplotlib.colorbar import ColorbarBase, make_axes
 from matplotlib.colors import (ColorConverter, LinearSegmentedColormap,
                                ListedColormap, Normalize)
 from matplotlib.gridspec import GridSpec
-from matplotlib.pyplot import (figure, gca, plot, savefig, sca, subplot,
-                               suptitle, tight_layout)
+from matplotlib.pyplot import (figure, gca, savefig, sca, subplot, suptitle,
+                               tight_layout)
 from numpy import array, unique
 from pandas import DataFrame, Series, isnull
 from seaborn import (barplot, boxplot, clustermap, despine, distplot, heatmap,
@@ -53,15 +53,14 @@ reds = [0.26, 0.26, 0.26, 0.39, 0.69, 1, 1, 1, 1, 1, 1]
 greens_half = [0.26, 0.16, 0.09, 0.26, 0.69]
 colordict = {
     'red':
-        tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
+    tuple([(0.1 * i, r, r) for i, r in enumerate(reds)]),
     'green':
-        tuple([
-            (0.1 * i, r, r)
-            for i, r in
-            enumerate(greens_half + [1] + list(reversed(greens_half)))
-        ]),
+    tuple([
+        (0.1 * i, r, r)
+        for i, r in enumerate(greens_half + [1] + list(reversed(greens_half)))
+    ]),
     'blue':
-        tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])
+    tuple([(0.1 * i, r, r) for i, r in enumerate(reversed(reds))])
 }
 CMAP_CONTINUOUS_ASSOCIATION = LinearSegmentedColormap('association', colordict)
 CMAP_CONTINUOUS_ASSOCIATION.set_bad(C_BAD)
@@ -457,8 +456,7 @@ def plot_heatmap(dataframe,
         if len(row_annotation):
             if isinstance(row_annotation, Series):
                 row_annotation = row_annotation.copy()
-                if not len(
-                                row_annotation.index & df.index):  # Series
+                if not len(row_annotation.index & df.index):  # Series
                     # but without proper index
                     row_annotation.index = df.index
             else:
@@ -795,8 +793,7 @@ def plot_nmf(nmf_results=None,
                                                              DataFrame)):
         raise ValueError(
             'Need either: 1) NMFCC result ({k: {w:w, h:h, e:error}) and k; or '
-            '2) W & H matrices.'
-        )
+            '2) W & H matrices.')
 
     # Initialize a PDF
     if pdf:  # Specified pdf will be closed by the caller
@@ -902,25 +899,24 @@ def assign_colors_to_states(states, colors=None):
     return state_colors
 
 
-def decorate(
-        ax=None,
-        style=None,
-        title=None,
-        title_kwargs=FONT_LARGEST,
-        xlabel=None,
-        ylabel=None,
-        label_kwargs=FONT_LARGER,
-        xlabel_rotation=0,
-        ylabel_rotation=90,
-        xticks=None,
-        yticks=None,
-        max_n_xticks=80,
-        max_n_yticks=50,
-        max_xtick_size=None,
-        max_ytick_size=None,
-        xtick_rotation=0,
-        ytick_rotation=90,
-        tick_kwargs=FONT_SMALLER):
+def decorate(ax=None,
+             style=None,
+             title=None,
+             title_kwargs=FONT_LARGEST,
+             xlabel=None,
+             ylabel=None,
+             label_kwargs=FONT_LARGER,
+             xlabel_rotation=0,
+             ylabel_rotation=90,
+             xticks=None,
+             yticks=None,
+             max_n_xticks=80,
+             max_n_yticks=50,
+             max_xtick_size=None,
+             max_ytick_size=None,
+             xtick_rotation=0,
+             ytick_rotation=90,
+             tick_kwargs=FONT_SMALLER):
     """
     Decorate an ax (default ax is the current ax).
     :param ax:
