@@ -54,10 +54,11 @@ def define_components(a_matrix,
                       directory_path,
                       file_mark='',
                       how_to_drop_na_in_a_matrix='all',
-                      a_matrix_normalization_method='standardize',
+                      a_matrix_normalization_method='-0-_clip_shift',
+                      a_matrix_normalization_axis=0,
                       std_max=3,
                       n_jobs=1,
-                      n_clusterings=40,
+                      n_clusterings=100,
                       algorithm='Alternating Least Squares',
                       random_seed=RANDOM_SEED):
     """
@@ -71,7 +72,7 @@ def define_components(a_matrix,
     nmf_cc/nmf_k{k}_{w, h}.gct will be saved
     :param file_mark: str;
     :param how_to_drop_na_in_a_matrix: str; {'all', 'any'}
-    :param a_matrix_normalization_method: str; {'standardize', 'rank'}
+    :param a_matrix_normalization_method: str; {'-0-_clip_shift', 'rank'}
     :param std_max: number;
     :param n_jobs: int;
     :param n_clusterings: int; number of NMF for consensus clustering
@@ -93,10 +94,8 @@ def define_components(a_matrix,
     a_matrix = drop_na_2d(a_matrix, how=how_to_drop_na_in_a_matrix)
 
     # Normaliza A matrix
-    a_matrix = normalize_a_matrix(
-        a_matrix,
-        a_matrix_normalization_method=a_matrix_normalization_method,
-        std_max=std_max)
+    a_matrix = normalize_a_matrix(a_matrix, a_matrix_normalization_method,
+                                  a_matrix_normalization_axis, std_max)
 
     # NMF-consensus cluster (while saving 1 NMF result per k)
     nmfs = nmf_consensus_cluster(
@@ -154,7 +153,8 @@ def solve_for_components(w_matrix,
                          a_matrix,
                          w_matrix_normalization_method='sum',
                          how_to_drop_na_in_a_matrix='all',
-                         a_matrix_normalization_method='standardize',
+                         a_matrix_normalization_method='-0-_clip_shift',
+                         a_matrix_normalization_axis=0,
                          std_max=3,
                          method='nnls',
                          filepath_prefix=None):
@@ -165,7 +165,7 @@ def solve_for_components(w_matrix,
     :param a_matrix: str or DataFrame; (n_rows, n_columns)
     :param w_matrix_normalization_method: str; {'sum'}
     :param how_to_drop_na_in_a_matrix: str; {'all', 'any'}
-    :param a_matrix_normalization_method: str; {'standardize', 'rank'}
+    :param a_matrix_normalization_method: str; {'-0-_clip_shift', 'rank'}
     :param std_max: number;
     :param method: str; {'nnls', 'pinv'}
     :param filepath_prefix: str; filepath_prefix_solved_nmf_h_k{}.{gct,
@@ -196,10 +196,8 @@ def solve_for_components(w_matrix,
         print_log('Not normalizing W matrix ...')
 
     # Normaliza A matrix
-    a_matrix = normalize_a_matrix(
-        a_matrix,
-        a_matrix_normalization_method=a_matrix_normalization_method,
-        std_max=std_max)
+    a_matrix = normalize_a_matrix(a_matrix, a_matrix_normalization_method,
+                                  a_matrix_normalization_axis, std_max)
 
     # Solve W * H = A
     print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(
@@ -219,9 +217,8 @@ def solve_for_components(w_matrix,
     return h_matrix
 
 
-def normalize_a_matrix(a_matrix,
-                       a_matrix_normalization_method='standardize',
-                       std_max=3):
+def normalize_a_matrix(a_matrix, a_matrix_normalization_method,
+                       a_matrix_normalization_axis, std_max):
     """
 
     :param a_matrix:
@@ -231,20 +228,22 @@ def normalize_a_matrix(a_matrix,
     """
 
     # Normaliza A matrix columns
-    if a_matrix_normalization_method == 'standardize':
-        a_matrix = normalize_2d_or_1d(a_matrix, method='-0-', axis=0)
+    if a_matrix_normalization_method == '-0-_clip_shift':
+        a_matrix = normalize_2d_or_1d(
+            a_matrix, method='-0-', axis=a_matrix_normalization_axis)
         a_matrix = a_matrix.clip(lower=-std_max, upper=std_max)
         a_matrix += std_max
     elif a_matrix_normalization_method == 'rank':
-        a_matrix = normalize_2d_or_1d(a_matrix, 'rank', axis=0)
+        a_matrix = normalize_2d_or_1d(
+            a_matrix, 'rank', axis=a_matrix_normalization_axis)
     else:
         print_log('Not normalizing A matrix columns ...')
 
     # Plot after normalization
     plot_heatmap(
         a_matrix,
-        title='Matrix to be Decomposed ({}-normalized columns)'.format(
-            a_matrix_normalization_method),
+        title='Matrix to be Decomposed ({} normalized by axis {})'.format(
+            a_matrix_normalization_method, a_matrix_normalization_axis),
         xlabel='Sample',
         ylabel='Feature',
         xticklabels=False,
