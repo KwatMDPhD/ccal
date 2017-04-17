@@ -14,7 +14,7 @@ Authors:
 from os.path import isfile
 
 from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.cm import Dark2, Paired, Vega20, bwr
+from matplotlib.cm import bwr, gist_rainbow
 from matplotlib.colorbar import ColorbarBase, make_axes
 from matplotlib.colors import (ColorConverter, LinearSegmentedColormap,
                                ListedColormap, Normalize)
@@ -66,12 +66,8 @@ CMAP_CONTINUOUS_ASSOCIATION = LinearSegmentedColormap('association', colordict)
 CMAP_CONTINUOUS_ASSOCIATION.set_bad(C_BAD)
 
 # Categorical
-CMAP_CATEGORICAL_PAIRED = Paired
-CMAP_CATEGORICAL_PAIRED.set_bad(C_BAD)
-CMAP_CATEGORICAL_DARK2 = Dark2
-CMAP_CATEGORICAL_DARK2.set_bad(C_BAD)
-CMAP_CATEGORICAL_VEGA20 = Vega20
-CMAP_CATEGORICAL_VEGA20.set_bad(C_BAD)
+CMAP_CATEGORICAL = gist_rainbow
+CMAP_CATEGORICAL.set_bad(C_BAD)
 
 # Binary
 CMAP_BINARY = ListedColormap(['#cdcdcd', '#404040'])
@@ -509,7 +505,7 @@ def plot_heatmap(dataframe,
         if data_type == 'continuous':
             cmap = CMAP_CONTINUOUS
         elif data_type == 'categorical':
-            cmap = CMAP_CATEGORICAL_VEGA20
+            cmap = CMAP_CATEGORICAL
         elif data_type == 'binary':
             cmap = CMAP_BINARY
         else:
@@ -601,7 +597,7 @@ def plot_heatmap(dataframe,
             if len(annotation_colors):
                 cmap = ListedColormap(annotation_colors)
             else:
-                cmap = CMAP_CATEGORICAL_VEGA20
+                cmap = CMAP_CATEGORICAL
         heatmap(
             DataFrame(row_annotation),
             ax=ax_right,
@@ -617,7 +613,7 @@ def plot_heatmap(dataframe,
             if len(annotation_colors):
                 cmap = ListedColormap(annotation_colors)
             else:
-                cmap = CMAP_CATEGORICAL_VEGA20
+                cmap = CMAP_CATEGORICAL
         heatmap(
             DataFrame(column_annotation).T,
             ax=ax_top,
@@ -879,8 +875,7 @@ def assign_colors_to_states(states, colors=None):
         colors = [tuple(c) for c in color_converter.to_rgba_array(colors)]
     else:  # Use categorical colormap
         colors = [
-            CMAP_CATEGORICAL_VEGA20(
-                int(s / max(unique_states) * CMAP_CATEGORICAL_VEGA20.N))
+            CMAP_CATEGORICAL(int(s / max(unique_states) * CMAP_CATEGORICAL.N))
             for s in unique_states
         ]
 

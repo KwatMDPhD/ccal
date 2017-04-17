@@ -33,11 +33,10 @@ from ..support.d2 import (get_top_and_bottom_indices, normalize_2d_or_1d,
 from ..support.file import establish_filepath
 from ..support.log import print_log
 from ..support.parallel_computing import parallelize
-from ..support.plot import (CMAP_CONTINUOUS_ASSOCIATION, CMAP_BINARY,
-                            CMAP_CATEGORICAL_PAIRED,
-                            FIGURE_SIZE, FONT_STANDARD, FONT_LARGER,
-                            FONT_LARGEST,
-                            SPACING, plot_clustermap, save_plot)
+from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL,
+                            CMAP_CONTINUOUS_ASSOCIATION, FIGURE_SIZE,
+                            FONT_LARGER, FONT_LARGEST, FONT_STANDARD, SPACING,
+                            plot_clustermap, save_plot)
 from ..support.str_ import title_str, untitle_str
 
 
@@ -112,12 +111,12 @@ def make_association_summary_panel(target,
             features = features.ix[:, a_target.index]
             print_log(
                 'Target {} ({} cols) and features ({} cols) have {} shared columns.'.
-                    format(target.name, target.size, features.shape[1], len(
+                format(target.name, target.size, features.shape[1], len(
                     shared)))
         else:
             raise ValueError(
                 'Target {} ({} cols) and features ({} cols) have 0 shared column.'.
-                    format(target.name, target.size, features.shape[1]))
+                format(target.name, target.size, features.shape[1]))
 
         # Read corresponding annotations file
         annotations = read_csv(
@@ -500,7 +499,7 @@ def compute_association(target,
     else:
         print_log(
             'Computing {} CI for using distributions built by {} bootstraps ...'.
-                format(confidence, n_samplings))
+            format(confidence, n_samplings))
         indices_to_bootstrap = get_top_and_bottom_indices(results, 'score',
                                                           n_features)
 
@@ -531,7 +530,7 @@ def compute_association(target,
         # Load confidence interval
         results.ix[sampled_scores.index, '{} moe'.format(
             confidence)] = sampled_scores.apply(
-            lambda f: z_critical * (f.std() / sqrt(n_samplings)), axis=1)
+                lambda f: z_critical * (f.std() / sqrt(n_samplings)), axis=1)
 
     #
     # Compute P-values and FDRs by sores against permuted target
@@ -541,7 +540,7 @@ def compute_association(target,
     else:
         print_log(
             'Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.
-                format(n_permutations, n_jobs))
+            format(n_permutations, n_jobs))
 
         # Permute and score
         permutation_scores = concat(
@@ -633,13 +632,13 @@ def _preprocess_target_and_features(target,
     if any(shared):
         print_log(
             'Target ({} cols) and features ({} cols) have {} shared columns.'.
-                format(target.size, features.shape[1], len(shared)))
+            format(target.size, features.shape[1], len(shared)))
         target = target.ix[shared].sort_values(ascending=target_ascending)
         features = features.ix[:, target.index]
     else:
         raise ValueError(
             'Target {} ({} cols) and features ({} cols) have 0 shared columns.'.
-                format(target.name, target.size, features.shape[1]))
+            format(target.name, target.size, features.shape[1]))
 
     # Drop features having less than 2 unique values
     print_log('Dropping features with less than {} unique values ...'.format(
@@ -843,8 +842,7 @@ def _prepare_data_for_plotting(dataframe, data_type, max_std=3):
             dataframe, method='-0-',
             axis=1), -max_std, max_std, CMAP_CONTINUOUS_ASSOCIATION
     elif data_type == 'categorical':
-        return dataframe.copy(), 0, len(
-            unique(dataframe)), CMAP_CATEGORICAL_PAIRED
+        return dataframe.copy(), 0, len(unique(dataframe)), CMAP_CATEGORICAL
     elif data_type == 'binary':
         return dataframe.copy(), 0, 1, CMAP_BINARY
     else:

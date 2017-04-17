@@ -40,10 +40,10 @@ from ..support.d2 import (drop_na_2d, drop_uniform_slice_from_dataframe,
                           normalize_2d_or_1d)
 from ..support.file import establish_filepath, load_gct, read_gct, write_gct
 from ..support.log import print_log
-from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL_PAIRED,
-                            CMAP_CONTINUOUS, DPI, FIGURE_SIZE,
-                            assign_colors_to_states, decorate, plot_heatmap,
-                            plot_nmf, plot_points, save_plot)
+from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL, CMAP_CONTINUOUS,
+                            DPI, FIGURE_SIZE, assign_colors_to_states,
+                            decorate, plot_heatmap, plot_nmf, plot_points,
+                            save_plot)
 
 
 # ==============================================================================
@@ -1444,7 +1444,7 @@ def _plot_onco_gps(
         if annotation_type == 'binary':
             cmap = CMAP_BINARY
         elif annotation_type == 'categorical':
-            cmap = CMAP_CATEGORICAL_PAIRED
+            cmap = CMAP_CATEGORICAL
         else:
             cmap = CMAP_CONTINUOUS
 
