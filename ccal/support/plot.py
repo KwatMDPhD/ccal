@@ -105,6 +105,11 @@ def plot_points(*args,
         figure(figsize=FIGURE_SIZE)
         ax = gca()
 
+    if 'linestyle' not in kwargs:
+        kwargs['linestyle'] = ''
+    if 'marker' not in kwargs:
+        kwargs['marker'] = '.'
+
     ax.plot(*args, **kwargs)
 
     decorate(style='ticks', title=title, xlabel=xlabel, ylabel=ylabel)
