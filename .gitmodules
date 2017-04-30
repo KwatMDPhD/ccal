@@ -1,0 +1,3 @@
+[submodule "ccal/helpers"]
+	path = ccal/helpers
+	url = https://github.com/KwatME/helpers.git
