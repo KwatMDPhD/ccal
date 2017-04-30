@@ -1,3 +1,6 @@
 [submodule "ccal/helpers"]
 	path = ccal/helpers
 	url = https://github.com/KwatME/helpers.git
+[submodule "ccal/helper"]
+	path = ccal/helper
+	url = https://github.com/KwatME/helper.git
