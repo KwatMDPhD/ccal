@@ -12,7 +12,7 @@ Authors:
 """
 
 import copy
-import pprint
+from pprint import pprint
 import re
 
 import pyfaidx
