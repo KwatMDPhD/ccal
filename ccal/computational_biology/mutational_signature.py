@@ -12,8 +12,8 @@ Authors:
 """
 
 import copy
-from pprint import pprint
 import re
+from pprint import pprint
 
 import pyfaidx
 from pandas import DataFrame, read_csv
@@ -38,11 +38,21 @@ def get_apobec_mutational_signature_enrichment(mutation_filepath,
         fasta_filepath,
         filt_function=lambda c: '_' not in c,  # Load only 1-22, X, Y, and M
         sequence_always_upper=True)
+    print('Loaded reference genome: {}.'.format(list(fasta.keys())))
 
     span = 20
 
     # Set up mutational signature
-    ss = ['tCa ==> tGa', 'tCa ==> tTa', 'tCt ==> tGt', 'tCt ==> tTt']
+    ss = [
+    'tCa ==> tGa',
+    'tCa ==> tTa',
+    'tCt ==> tGt',
+    'tCt ==> tTt',
+    'tGa ==> tCa',
+    'tGa ==> tAa',
+    'aGa ==> aCa',
+    'aGa ==> aAa',
+    ]
 
     # Identigy what to count
     signature_mutations,\
@@ -162,8 +172,10 @@ def count(filepath, filetype, fasta, span, signature_mutations,
     c_b_motifs = copy.deepcopy(control_b_motifs)
 
     # Evaluate each row
-    b = 0
+    n_spanning_bases = 0
+    n_mutations = 0
     for i, (chr_, pos, ref, alt) in df.iterrows():
+        chr_ = 'chr{}'.format(chr_)
 
         pos = int(pos) - 1
 
@@ -172,11 +184,13 @@ def count(filepath, filetype, fasta, span, signature_mutations,
             continue
 
         # Skip if variant is not a SNP
-        if not (1 == len(ref) == len(alt)) or ref == '-':  # or alt == '-':
+        if not (1 == len(ref) == len(alt)) or ref == '-' or alt == '-':
             continue
 
         assert ref == fasta[chr_][pos].seq, '{} in {}'.format(
             ref, fasta[chr_][pos - 1:pos + 2].seq)
+
+        n_mutations += 1
 
         # Check if this mutation matches any signature mutation
         for m, d in s_mutations.items():
@@ -221,8 +235,10 @@ def count(filepath, filetype, fasta, span, signature_mutations,
 
         # Get mutation-spanning sequences
         span_seq = fasta[chr_][pos - span:pos + span + 1].seq
+        if re.findall('[^ACGT]', span_seq):
+            print(span_seq)
 
-        b += len(span_seq)
+        n_spanning_bases += len(span_seq)
 
         # Count signature's changing-before motifs in the spanning sequences
         for m in s_b_motifs:
@@ -231,7 +247,11 @@ def count(filepath, filetype, fasta, span, signature_mutations,
         for m in c_b_motifs:
             c_b_motifs[m] += span_seq.count(m.upper())
 
-    counts = {'N Mutations': int(i), 'N Spanning Bases': int(b)}
+    counts = {
+        'N Mutations': i + 1,
+        'N Mutations Analyzed': n_mutations,
+        'N Spanning Bases': n_spanning_bases,
+    }
     counts.update({m: d['n'] for m, d in s_mutations.items()})
     counts.update({m: d['n'] for m, d in c_mutations.items()})
     counts.update(s_b_motifs)
