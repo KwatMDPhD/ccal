@@ -27,17 +27,17 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 from .. import RANDOM_SEED
 from ..machine_learning.score import compute_similarity_matrix
 from ..mathematics.information import information_coefficient
-from ..support.d1 import get_unique_in_order
-from ..support.d2 import (get_top_and_bottom_indices, normalize_2d_or_1d,
+from ..helper.d1 import get_unique_in_order
+from ..helper.d2 import (get_top_and_bottom_indices, normalize_2d_or_1d,
                           split_dataframe)
-from ..support.file import establish_filepath
-from ..support.log import print_log
-from ..support.parallel_computing import parallelize
-from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL,
+from ..helper.file import establish_filepath
+from ..helper.log import print_log
+from ..helper.parallel_computing import parallelize
+from ..helper.plot import (CMAP_BINARY, CMAP_CATEGORICAL,
                             CMAP_CONTINUOUS_ASSOCIATION, FIGURE_SIZE,
                             FONT_LARGER, FONT_LARGEST, FONT_STANDARD, SPACING,
                             plot_clustermap, save_plot)
-from ..support.str_ import title_str, untitle_str
+from ..helper.str_ import title_str, untitle_str
 
 
 # ==============================================================================

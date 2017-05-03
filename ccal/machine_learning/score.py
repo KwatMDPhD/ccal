@@ -17,7 +17,7 @@ from pandas import DataFrame
 
 from .. import RANDOM_SEED
 from ..mathematics.information import information_coefficient
-from ..support.log import print_log
+from ..helper.log import print_log
 
 
 def compute_association_and_pvalue(x,

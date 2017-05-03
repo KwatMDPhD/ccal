@@ -36,11 +36,11 @@ from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
 from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, bcv, information_coefficient, kde2d
-from ..support.d2 import (drop_na_2d, drop_uniform_slice_from_dataframe,
+from ..helper.d2 import (drop_na_2d, drop_uniform_slice_from_dataframe,
                           normalize_2d_or_1d)
-from ..support.file import establish_filepath, load_gct, read_gct, write_gct
-from ..support.log import print_log
-from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL, CMAP_CONTINUOUS,
+from ..helper.file import establish_filepath, load_gct, read_gct, write_gct
+from ..helper.log import print_log
+from ..helper.plot import (CMAP_BINARY, CMAP_CATEGORICAL, CMAP_CONTINUOUS,
                             DPI, FIGURE_SIZE, assign_colors_to_states,
                             decorate, plot_heatmap, plot_nmf, plot_points,
                             save_plot)

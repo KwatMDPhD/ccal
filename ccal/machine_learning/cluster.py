@@ -22,8 +22,8 @@ from sklearn.cluster import AgglomerativeClustering
 from .. import RANDOM_SEED
 from ..machine_learning.matrix_decompose import nmf
 from ..mathematics.information import information_coefficient
-from ..support.log import print_log
-from ..support.parallel_computing import parallelize
+from ..helper.log import print_log
+from ..helper.parallel_computing import parallelize
 from .score import compute_similarity_matrix
 
 
