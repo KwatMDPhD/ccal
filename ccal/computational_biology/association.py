@@ -27,11 +27,10 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 from .. import RANDOM_SEED
 from ..machine_learning.score import compute_similarity_matrix
 from ..mathematics.information import information_coefficient
-from ..helper.d1 import get_unique_in_order
+from ..helper.d1 import get_uniques_in_order
 from ..helper.d2 import (get_top_and_bottom_indices, normalize_2d_or_1d,
                           split_dataframe)
 from ..helper.file import establish_filepath
-from ..helper.log import print_log
 from ..helper.parallel_computing import parallelize
 from ..helper.plot import (CMAP_BINARY, CMAP_CATEGORICAL,
                             CMAP_CONTINUOUS_ASSOCIATION, FIGURE_SIZE,
@@ -109,7 +108,7 @@ def make_association_summary_panel(target,
             a_target = target.ix[shared].sort_values(
                 ascending=target_ascending)
             features = features.ix[:, a_target.index]
-            print_log(
+            print(
                 'Target {} ({} cols) and features ({} cols) have {} shared columns.'.
                 format(target.name, target.size, features.shape[1], len(
                     shared)))
@@ -344,7 +343,7 @@ def make_association_panel(target,
 
     # Score
     if filepath_scores:  # Read already computed scores; might have been calculated with a different number of samples
-        print_log('Using already computed scores ...')
+        print('Using already computed scores ...')
 
         # Make sure target is a Series and features a DataFrame
         # Keep samples found in both target and features
@@ -380,7 +379,7 @@ def make_association_panel(target,
     scores_to_plot = scores.ix[indices_to_plot, :]
     features_to_plot = features.ix[indices_to_plot, :]
 
-    print_log('Making annotations ...')
+    print('Making annotations ...')
     annotations = DataFrame(
         index=scores_to_plot.index, columns=['IC(\u0394)', 'P-val', 'FDR'])
 
@@ -394,7 +393,7 @@ def make_association_panel(target,
     annotations.ix[:, 'FDR'] = scores_to_plot.ix[:, 'fdr'].apply(
         '{:.2e}'.format)
 
-    print_log('Plotting ...')
+    print('Plotting ...')
     if filepath_prefix:
         filepath = filepath_prefix + '.pdf'
     else:
@@ -470,7 +469,7 @@ def compute_association(target,
     #
     # Compute: score_i = function(target, feature_i)
     #
-    print_log('Scoring (n_jobs={}) ...'.format(n_jobs))
+    print('Scoring (n_jobs={}) ...'.format(n_jobs))
 
     # Split features for parallel computing
     if features.shape[0] < n_jobs * min_n_per_job:
@@ -491,13 +490,13 @@ def compute_association(target,
     #  Compute CI using bootstrapped distribution
     #
     if n_samplings < 2:
-        print_log('Not computing CI because n_samplings < 2.')
+        print('Not computing CI because n_samplings < 2.')
 
     elif ceil(0.632 * features.shape[1]) < 3:
-        print_log('Not computing CI because 0.632 * n_samples < 3.')
+        print('Not computing CI because 0.632 * n_samples < 3.')
 
     else:
-        print_log(
+        print(
             'Computing {} CI for using distributions built by {} bootstraps ...'.
             format(confidence, n_samplings))
         indices_to_bootstrap = get_top_and_bottom_indices(results, 'score',
@@ -536,9 +535,9 @@ def compute_association(target,
     # Compute P-values and FDRs by sores against permuted target
     #
     if n_permutations < 1:
-        print_log('Not computing P-value and FDR because n_perm < 1.')
+        print('Not computing P-value and FDR because n_perm < 1.')
     else:
-        print_log(
+        print(
             'Computing P-value & FDR by scoring against {} permuted targets (n_jobs={}) ...'.
             format(n_permutations, n_jobs))
 
@@ -549,7 +548,7 @@ def compute_association(target,
                          for f in split_features], n_jobs),
             verify_integrity=True)
 
-        print_log('\tComputing P-value and FDR ...')
+        print('\tComputing P-value and FDR ...')
         # All scores
         all_permutation_scores = permutation_scores.values.flatten()
         for i, (r_i, r) in enumerate(results.iterrows()):
@@ -630,7 +629,7 @@ def _preprocess_target_and_features(target,
     # Keep only columns shared by target and features
     shared = target.index & features.columns
     if any(shared):
-        print_log(
+        print(
             'Target ({} cols) and features ({} cols) have {} shared columns.'.
             format(target.size, features.shape[1], len(shared)))
         target = target.ix[shared].sort_values(ascending=target_ascending)
@@ -641,7 +640,7 @@ def _preprocess_target_and_features(target,
             format(target.name, target.size, features.shape[1]))
 
     # Drop features having less than 2 unique values
-    print_log('Dropping features with less than {} unique values ...'.format(
+    print('Dropping features with less than {} unique values ...'.format(
         min_n_unique_values))
     features = features.ix[features.apply(lambda f: len(set(f)), axis=1) >=
                            min_n_unique_values]
@@ -649,7 +648,7 @@ def _preprocess_target_and_features(target,
         raise ValueError('No feature has at least {} unique values.'.format(
             min_n_unique_values))
     else:
-        print_log('\tKept {} features.'.format(features.shape[0]))
+        print('\tKept {} features.'.format(features.shape[0]))
 
     return target, features
 
@@ -691,7 +690,7 @@ def _permute_and_score(args):
 
     seed(random_seed)
     for p in range(n_perms):
-        print_log(
+        print(
             '\tScoring against permuted target ({}/{}) ...'.format(p, n_perms),
             print_process=True)
 
