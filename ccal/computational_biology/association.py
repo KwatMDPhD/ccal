@@ -31,7 +31,7 @@ from ..helper.d1 import get_uniques_in_order
 from ..helper.d2 import (get_top_and_bottom_indices, normalize_2d_or_1d,
                           split_dataframe)
 from ..helper.file import establish_filepath
-from ..helper.parallel_computing import parallelize
+from ..helper.system import parallelize
 from ..helper.plot import (CMAP_BINARY, CMAP_CATEGORICAL,
                             CMAP_CONTINUOUS_ASSOCIATION, FIGURE_SIZE,
                             FONT_LARGER, FONT_LARGEST, FONT_STANDARD, SPACING,
