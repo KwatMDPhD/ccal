@@ -22,7 +22,7 @@ from sklearn.cluster import AgglomerativeClustering
 from .. import RANDOM_SEED
 from ..machine_learning.matrix_decompose import nmf
 from ..mathematics.information import information_coefficient
-from ..helper.parallel_computing import parallelize
+from ..helper.system import parallelize
 from .score import compute_similarity_matrix
 
 
