@@ -44,14 +44,16 @@ def get_apobec_mutational_signature_enrichment(mutation_filepath,
 
     # Set up mutational signature
     ss = [
-    'tCa ==> tGa',
-    'tCa ==> tTa',
-    'tCt ==> tGt',
-    'tCt ==> tTt',
-    'tGa ==> tCa',
-    'tGa ==> tAa',
-    'aGa ==> aCa',
-    'aGa ==> aAa',
+        # Forward
+        'tCa ==> tGa',
+        'tCa ==> tTa',
+        'tCt ==> tGt',
+        'tCt ==> tTt',
+        # Reverse complement
+        'tGa ==> tCa',
+        'tGa ==> tAa',
+        'aGa ==> aCa',
+        'aGa ==> aAa',
     ]
 
     # Identigy what to count
