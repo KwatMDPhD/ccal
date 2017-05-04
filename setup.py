@@ -12,7 +12,7 @@ class InstallCommand(install):
 setup(name='ccal',
       description='Computational Cancer Analysis Library',
       packages=['ccal'],
-      version='0.0.1',
+      version='0.1.0',
       author='Huwate (Kwat) Yeerna (Medetgul-Ernar)',
       author_email='kwat.medetgul.ernar@gmail.com',
       license='MIT',
