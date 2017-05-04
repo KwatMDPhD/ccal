@@ -20,8 +20,14 @@ from pandas import DataFrame, read_csv
 
 
 def get_apobec_mutational_signature_enrichment(mutation_filepath,
-                                               fasta_filepath):
+                                               reference_filepath,
+                                               use_chr_prefix=False):
     """
+    Compute APOBEC mutational signature enrichment.
+    :param mutation_filepath: str or iterable; filepath(s) to mutation file(s)
+    :param referece_filepath: str; filepath to referece genome (.fasta, .fa)
+    :param use_chr_prefix: bool; use 'chr' prefix from mutation file or not
+    :return: DataFrame; (n_mutations + n_motifs counted, n_mutation_files)
     """
 
     # If only 1 filepath is passed, put it in a list
@@ -32,10 +38,11 @@ def get_apobec_mutational_signature_enrichment(mutation_filepath,
     for e in ['vcf', 'vcf.gz', 'maf']:
         if mutation_filepath[0].endswith(e):
             filetype = e
+    print('Mutation file type: {}.'.format(filetype))
 
     # Load reference genome
     fasta = pyfaidx.Fasta(
-        fasta_filepath,
+        reference_filepath,
         filt_function=lambda c: '_' not in c,  # Load only 1-22, X, Y, and M
         sequence_always_upper=True)
     print('Loaded reference genome: {}.'.format(list(fasta.keys())))
@@ -44,7 +51,6 @@ def get_apobec_mutational_signature_enrichment(mutation_filepath,
 
     # Set up mutational signature
     ss = [
-        # Forward
         'tCa ==> tGa',
         'tCa ==> tTa',
         'tCt ==> tGt',
@@ -73,9 +79,16 @@ def get_apobec_mutational_signature_enrichment(mutation_filepath,
         print('({}) {} ...'.format(i, id_))
 
         # Count
-        samples[id_] = count(fp, filetype, fasta, span, signature_mutations,
-                             control_mutations, signature_b_motifs,
-                             control_b_motifs)
+        samples[id_] = count(
+            fp,
+            filetype,
+            fasta,
+            span,
+            signature_mutations,
+            control_mutations,
+            signature_b_motifs,
+            control_b_motifs,
+            use_chr_prefix=use_chr_prefix)
 
     # Tabulate results
     df = DataFrame(samples)
@@ -90,6 +103,9 @@ def get_apobec_mutational_signature_enrichment(mutation_filepath,
 
 def _identify_what_to_count(signature_mutations):
     """
+    Identigy what mutations and/or motifs to count.
+    :param signature_mutations: iterable; iterable of str
+    :return: dict, dict, dict, and dict;
     """
 
     # Signature mutations
@@ -152,8 +168,15 @@ def _identify_what_to_count(signature_mutations):
     return s_mutations, c_mutations, s_b_motifs, c_b_motifs
 
 
-def count(filepath, filetype, fasta, span, signature_mutations,
-          control_mutations, signature_b_motifs, control_b_motifs):
+def count(filepath,
+          filetype,
+          fasta,
+          span,
+          signature_mutations,
+          control_mutations,
+          signature_b_motifs,
+          control_b_motifs,
+          use_chr_prefix=False):
     """
     """
 
@@ -167,7 +190,7 @@ def count(filepath, filetype, fasta, span, signature_mutations,
             filepath, sep='\t', comment='#',
             encoding='ISO-8859-1').iloc[:, [4, 5, 10, 12]]
 
-    # Identify what to count
+    # Get ready to count mutations and/or motifs
     s_mutations = copy.deepcopy(signature_mutations)
     c_mutations = copy.deepcopy(control_mutations)
     s_b_motifs = copy.deepcopy(signature_b_motifs)
@@ -177,20 +200,31 @@ def count(filepath, filetype, fasta, span, signature_mutations,
     n_spanning_bases = 0
     n_mutations = 0
     for i, (chr_, pos, ref, alt) in df.iterrows():
-        chr_ = 'chr{}'.format(chr_)
+
+        # Use 'chr' prefix
+        if use_chr_prefix:
+            if not chr_.startswith('chr'):
+                chr_ = 'chr{}'.format(chr_)
+        else:
+            if chr_.startswith('chr'):
+                chr_ = chr_.replace('chr', '')
 
         pos = int(pos) - 1
 
         # Skip if there is no reference information
         if chr_ not in fasta.keys():
+            print('\tchr {} not in fasta.'.format(chr_))
             continue
 
         # Skip if variant is not a SNP
         if not (1 == len(ref) == len(alt)) or ref == '-' or alt == '-':
+            print('Skipping non-SNP {} ==> {}.'.format(ref, alt))
             continue
 
-        assert ref == fasta[chr_][pos].seq, '{} in {}'.format(
-            ref, fasta[chr_][pos - 1:pos + 2].seq)
+        if ref != fasta[chr_][pos].seq:
+            print('\tRefereces mismatch: {}:{} {} != ({}){}({})'.format(
+                chr_, pos, ref, *fasta[chr_][pos - 1:pos + 2].seq))
+            continue
 
         n_mutations += 1
 
