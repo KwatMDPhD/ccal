@@ -36,11 +36,10 @@ from ..machine_learning.score import compute_association_and_pvalue
 from ..machine_learning.solve import solve_matrix_linear_equation
 from ..mathematics.equation import define_exponential_function
 from ..mathematics.information import EPS, bcv, information_coefficient, kde2d
-from ..support.d2 import (drop_na_2d, drop_uniform_slice_from_dataframe,
+from ..helper.d2 import (drop_na, drop_uniform_slice_from_dataframe,
                           normalize_2d_or_1d)
-from ..support.file import establish_filepath, load_gct, read_gct, write_gct
-from ..support.log import print_log
-from ..support.plot import (CMAP_BINARY, CMAP_CATEGORICAL, CMAP_CONTINUOUS,
+from ..helper.file import establish_filepath, load_gct, read_gct, write_gct
+from ..helper.plot import (CMAP_BINARY, CMAP_CATEGORICAL, CMAP_CONTINUOUS,
                             DPI, FIGURE_SIZE, assign_colors_to_states,
                             decorate, plot_heatmap, plot_nmf, plot_points,
                             save_plot)
@@ -110,7 +109,7 @@ def define_components(a_matrix,
         nmf['w'].columns = ['C{}'.format(c) for c in range(1, k + 1)]
         nmf['h'].index = ['C{}'.format(c) for c in range(1, k + 1)]
 
-    print_log('Saving & plotting ...')
+    print('Saving & plotting ...')
     directory_path = join(directory_path, 'nmf_cc{}/'.format(file_mark))
     establish_filepath(directory_path)
     with PdfPages(join(directory_path, 'nmf.pdf')) as pdf:
@@ -122,7 +121,7 @@ def define_components(a_matrix,
         savefig(pdf, format='pdf', dpi=DPI, bbox_inches='tight')
 
         for k, nmf_ in nmfs.items():
-            print_log('\tK={} ...'.format(k))
+            print('\tK={} ...'.format(k))
             write_gct(nmf_['w'],
                       join(directory_path, 'nmf_k{}_w.gct'.format(k)))
             write_gct(nmf_['h'],
@@ -184,23 +183,23 @@ def solve_for_components(w_matrix,
     common_indices = set(w_matrix.index) & set(a_matrix.index)
     w_matrix = w_matrix.ix[common_indices, :]
     a_matrix = a_matrix.ix[common_indices, :]
-    print_log('{} W-matrix indices.'.format(w_matrix.shape[0]))
-    print_log('{} A-matrix indices.'.format(a_matrix.shape[0]))
-    print_log('{} common indices.'.format(len(common_indices)))
+    print('{} W-matrix indices.'.format(w_matrix.shape[0]))
+    print('{} A-matrix indices.'.format(a_matrix.shape[0]))
+    print('{} common indices.'.format(len(common_indices)))
 
     # Normalize W matrix
     if w_matrix_normalization_method == 'sum':
         # Sum normalize W matrix by column
         w_matrix = w_matrix.apply(lambda c: c / c.sum())
     else:
-        print_log('Not normalizing W matrix ...')
+        print('Not normalizing W matrix ...')
 
     # Normaliza A matrix
     a_matrix = normalize_a_matrix(a_matrix, a_matrix_normalization_method,
                                   a_matrix_normalization_axis, std_max)
 
     # Solve W * H = A
-    print_log('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(
+    print('Solving for components: W({}x{}) * H = A({}x{}) ...'.format(
         *w_matrix.shape, *a_matrix.shape))
     h_matrix = solve_matrix_linear_equation(w_matrix, a_matrix, method=method)
 
@@ -237,7 +236,7 @@ def normalize_a_matrix(a_matrix, a_matrix_normalization_method,
         a_matrix = normalize_2d_or_1d(
             a_matrix, 'rank', axis=a_matrix_normalization_axis)
     else:
-        print_log('Not normalizing A matrix columns ...')
+        print('Not normalizing A matrix columns ...')
 
     # Plot after normalization
     plot_heatmap(
@@ -309,7 +308,7 @@ def define_states(matrix,
 
     # Save & plot distance matrix, clusterings, and
     # cophenetic correlation coefficients
-    print_log('Saving & plotting ...')
+    print('Saving & plotting ...')
 
     directory_path = join(directory_path, 'clusterings{}/'.format(file_mark))
     establish_filepath(directory_path)
@@ -579,7 +578,7 @@ def make_oncogps(training_h,
     #   else, compute component coordinates using Newton's Laws
     # ==========================================================================
     if equilateral and training_h.shape[0] == 3:
-        print_log('Using equilateral-triangle component coordinates ...'.
+        print('Using equilateral-triangle component coordinates ...'.
                   format(components))
         components = DataFrame(
             index=['Vertex 1', 'Vertex 2', 'Vertex 3'], columns=['x', 'y'])
@@ -588,17 +587,17 @@ def make_oncogps(training_h,
         components.iloc[2, :] = [0, 0]
 
     elif isinstance(components, DataFrame):
-        print_log('Using given component coordinates ...'.format(components))
+        print('Using given component coordinates ...'.format(components))
         components.index = training_h.index
 
     else:
         if informational_mds:
-            print_log(
+            print(
                 'Computing component coordinates using informational distance '
                 '...')
             dissimilarity = information_coefficient
         else:
-            print_log(
+            print(
                 'Computing component coordinates using Euclidean distance ...')
             dissimilarity = 'euclidean'
         components = mds(training_h,
@@ -618,9 +617,9 @@ def make_oncogps(training_h,
         n_pulls = training_h.shape[0]
 
     if not power:
-        print_log('Computing component power ...')
+        print('Computing component power ...')
         if training_h.shape[0] < 4:
-            print_log(
+            print(
                 '\tCould\'t model with Ae^(kx) + C; too few data points.')
             power = 1
         else:
@@ -629,7 +628,7 @@ def make_oncogps(training_h,
                                                  power_min, power_max)
             except RuntimeError as e:
                 power = 1
-                print_log(
+                print(
                     '\tCould\'t model with Ae^(kx) + C; {}; set power to be '
                     '1.'.format(e))
 
@@ -643,7 +642,7 @@ def make_oncogps(training_h,
         index=training_h.columns,
         columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
 
-    print_log(
+    print(
         'Computing training sample coordinates using {} components and {:.3f} '
         'power ...'.format(n_pulls, power))
     training_samples[['x', 'y']] = _compute_sample_coordinates(
@@ -656,14 +655,14 @@ def make_oncogps(training_h,
     # Compute training component ratios
     # ==========================================================================
     if component_ratio and 0 < component_ratio:
-        print_log('Computing training component ratios ...')
+        print('Computing training component ratios ...')
         training_samples['component_ratio'] = _compute_component_ratios(
             training_h, component_ratio)
 
     # ==========================================================================
     # Compute grid probabilities and states
     # ==========================================================================
-    print_log('Computing state grids and probabilities ...')
+    print('Computing state grids and probabilities ...')
     state_grids, state_grids_probabilities = \
         _compute_state_grids_and_probabilities(
             training_samples, n_grids, kde_bandwidth_factor)
@@ -686,7 +685,7 @@ def make_oncogps(training_h,
         # Compute grid probabilities and annotation states
         # ======================================================================
         if annotate_background:
-            print_log('Computing annotation grids and probabilities ...')
+            print('Computing annotation grids and probabilities ...')
             annotation_grids, annotation_grids_probabilities = \
                 _compute_annotation_grids_and_probabilities(
                     training_samples, training_annotation, n_grids)
@@ -738,7 +737,7 @@ def make_oncogps(training_h,
             index=testing_h.columns,
             columns=['x', 'y', 'state', 'component_ratio', 'annotation'])
 
-        print_log(
+        print(
             'Computing testing sample coordinates with {} components & {:.3f} '
             'power ...'.format(n_pulls, power))
         testing_samples.ix[:, ['x', 'y']] = _compute_sample_coordinates(
@@ -767,7 +766,7 @@ def make_oncogps(training_h,
         # Compute training component ratios
         # ======================================================================
         if component_ratio and 0 < component_ratio:
-            print_log('Computing testing component ratios ...')
+            print('Computing testing component ratios ...')
             testing_samples.ix[:,
                                'component_ratio'] = _compute_component_ratios(
                                    testing_h, component_ratio)
@@ -803,7 +802,7 @@ def make_oncogps(training_h,
     if samples_to_plot:
         samples = samples.ix[samples_to_plot, :]
 
-    print_log('Plotting ...')
+    print('Plotting ...')
     _plot_onco_gps(
         components=components,
         samples=samples,
@@ -1651,7 +1650,7 @@ def make_oncogps_in_3d(
     # ==========================================================================
     # Get training component coordinates
     # ==========================================================================
-    print_log(
+    print(
         'Computing component coordinates using informational distance ...')
     dissimilarity = information_coefficient
     components = mds(training_h,
@@ -1670,9 +1669,9 @@ def make_oncogps_in_3d(
     # ==========================================================================
     n_pulls = training_h.shape[0]
     if not power:
-        print_log('Computing component power ...')
+        print('Computing component power ...')
         if training_h.shape[0] < 4:
-            print_log(
+            print(
                 '\tCould\'t model with Ae^(kx) + C; too few data points.')
             power = 1
         else:
@@ -1681,7 +1680,7 @@ def make_oncogps_in_3d(
                                                  power_min, power_max)
             except RuntimeError as e:
                 power = 1
-                print_log(
+                print(
                     '\tCould\'t model with Ae^(kx) + C; {}; set power to be 1.'.
                     format(e))
 
@@ -1695,7 +1694,7 @@ def make_oncogps_in_3d(
         index=training_h.columns,
         columns=['x', 'y', 'z', 'state', 'annotation'])
 
-    print_log(
+    print(
         'Computing training sample coordinates using {} components and {:.3f} '
         'power ...'.format(n_pulls, power))
     training_samples.ix[:, ['x', 'y', 'z']] = _compute_sample_coordinates(
@@ -1725,7 +1724,7 @@ def make_oncogps_in_3d(
     if len(samples_to_plot):
         training_samples = training_samples.ix[samples_to_plot, :]
 
-    print_log('Plotting ...')
+    print('Plotting ...')
     import plotly
 
     layout = plotly.graph_objs.Layout(

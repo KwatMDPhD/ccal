@@ -17,7 +17,6 @@ from pandas import DataFrame
 
 from .. import RANDOM_SEED
 from ..mathematics.information import information_coefficient
-from ..support.log import print_log
 
 
 def compute_association_and_pvalue(x,
@@ -92,14 +91,14 @@ def compute_similarity_matrix(matrix1,
     # Compare
     compared_matrix = empty((n_1, n_2))
     for i_1 in range(n_1):
-        print_log(
+        print(
             'Computing associations (axis={}) between matrices ({}/{}) ...'.
             format(axis, i_1 + 1, n_1))
         for i_2 in range(n_2):
             compared_matrix[i_1, i_2] = function(m1[i_1, :], m2[i_2, :])
 
     if is_distance:  # Convert association to distance
-        print_log('Converting association to distance (1 - association) ...')
+        print('Converting association to distance (1 - association) ...')
         compared_matrix = 1 - compared_matrix
 
     return DataFrame(

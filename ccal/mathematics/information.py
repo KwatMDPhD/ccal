@@ -19,7 +19,7 @@ from rpy2.robjects.packages import importr
 from scipy.stats import pearsonr
 
 from .. import RANDOM_SEED
-from ..support.d2 import drop_nan_columns
+from ..helper.d2 import drop_nan_columns
 
 EPS = finfo(float).eps
 
