@@ -1,6 +1,6 @@
-![](media/ccal_logo.png?raw=true)
+<img src='media/ccal_logo.png' width=100 height=100 />
 
-<center>Library for hunting cancers :crab::gun:</center>
+Library for hunting cancers :crab::gun:
 
 # See big picture
 
