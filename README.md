@@ -1,6 +1,10 @@
-<img src='media/ccal_logo.png' width=100 height=100 />
+<p align='center'>
+  <img src='media/ccal_logo.png' height=180 />
+</p>
 
-Library for hunting cancers :crab::gun:
+<p align='center'>
+  Library for hunting cancers
+</p>
 
 # See big picture
 
