@@ -8,11 +8,11 @@
 
 # See big picture
 
-CCAL itself doesn't havce much code. Instead, CCAL submodules many other cool libraries in `ccal/`, and import awesome functions from them in `ccal/__init__.py`'.
+CCAL itself doesn't have much code. Instead, CCAL uses other cool libraries as submodules in `ccal/`, and import their awesome functions inside `ccal/__init__.py`'.
 
 # Get started
 
-Look at `notebooks/ccal.ipynb`, a boiler plate to use this CCAL library.
+Look at `notebooks/ccal.ipynb`, the boilerplate to use the CCAL library.
 
 # Note
 
