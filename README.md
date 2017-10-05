@@ -3,7 +3,7 @@
 </p>
 
 <p align='center'>
-  Library for hunting cancers
+  Library for hunting cancers :crab::gun:
 </p>
 
 # See big picture
