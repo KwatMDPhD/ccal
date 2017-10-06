@@ -1,5 +1,5 @@
-from os import listdir
-from os.path import abspath, dirname, isdir, join
+from os import walk
+from os.path import abspath, dirname, isdir
 
 from setuptools import setup
 
@@ -7,14 +7,23 @@ NAME = 'ccal'
 here = abspath(dirname(__file__))
 
 packages = [NAME]
-for fn in listdir(NAME):
+for location in walk(NAME):
 
-    if fn not in ['__pycache__'] and isdir(join(here, NAME, fn)):
-        packages += ['{0}/{1}/{1}'.format(NAME, fn)]
+    p = location[0]
+
+    if any([bad_fn in p for bad_fn in ['.git', '__pycache__']]):
+        continue
+
+    if isdir(p):
+        packages.append(p)
+
+print('\n# ======== #')
+print('Install rpy2 manually.')
+print('# ======== #\n')
 
 setup(
     name='ccal',
-    version='0.8.8',
+    version='0.9.5',
     description='Library for hunting cancers',
     long_description='',
     url='https://github.com/ucsd-ccal/ccal',
@@ -39,5 +48,7 @@ setup(
         'pycrypto>=2.6.1',
         'pyfaidx>=0.5.0',
         'pytabix>=0.0.2',
+        'scipy>=0.19.1',
+        'seaborn>=0.8.1',
     ],
     include_package_data=True)
