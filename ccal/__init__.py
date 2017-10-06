@@ -89,10 +89,13 @@ from .support.support.multiprocess import multiprocess
 from .support.support.network import download, get_open_port
 from .support.support.path import (copy_path, establish_path,
                                    get_home_directory_path)
-from .support.support.s import (cast_builtins, get_top_and_bottom_indices,
-                                make_membership_df, simulate_s)
-from .support.support.str import (cast_builtins, split_ignoring_inside_quotes,
-                                  title, untitle)
+from .support.support.series import (cast_series_to_builtins,
+                                     get_top_and_bottom_series_indices,
+                                     make_membership_df_from_categorical_series,
+                                     simulate_series)
+from .support.support.str_ import (cast_str_to_builtins,
+                                   split_str_ignoring_inside_quotes, title_str,
+                                   untitle_str)
 from .support.support.subprocess_ import run_command
 from .support.support.system import reboot, shutdown
 from .support.support.volume import (get_volume_name, make_volume_dict, mount,
