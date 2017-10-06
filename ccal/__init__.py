@@ -30,8 +30,7 @@ from .nd_array.nd_array.apply_function_on_2_1d_arrays_and_compute_empirical_p_va
     apply_function_on_2_1d_arrays_and_compute_empirical_p_value
 from .nd_array.nd_array.apply_function_on_2_2d_arrays_slices import \
     apply_function_on_2_2d_arrays_slices
-from .nd_array.nd_array.cluster_2d_array_rows_and_columns import \
-    cluster_2d_array_rows_and_columns
+from .nd_array.nd_array.cluster_2d_array_rows import cluster_2d_array_rows
 from .nd_array.nd_array.cluster_2d_array_slices_by_group import \
     cluster_2d_array_slices_by_group
 from .nd_array.nd_array.compute_empirical_p_value import \
