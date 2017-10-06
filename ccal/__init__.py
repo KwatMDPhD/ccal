@@ -1,3 +1,4 @@
+# TODO: incoorporate refactored sequencing_process
 from .classification.classification.classify import classify
 from .cluster.cluster.consensus_cluster import consensus_cluster
 from .cluster.cluster.count_coclusterings import count_coclusterings
@@ -15,9 +16,9 @@ from .cryptograph.cryptograph.crypt_with_aes import (decrypt_directory_files,
 from .cryptograph.cryptograph.crypt_with_rsa import (decrypt_with_public_key,
                                                      encrypt_with_public_key,
                                                      make_private_and_public_keys)
-from .cryptograph.cryptograph.hash import (hash_directory_files, hash_file,
-                                           hash_list_of_str,
-                                           hash_str_to_32_bytes)
+from .cryptograph.cryptograph.hash_ import (hash_directory_files, hash_file,
+                                            hash_list_of_str,
+                                            hash_str_to_32_bytes)
 from .dimension_reduction.dimension_reduction.mds import mds
 from .feature.feature.access_gff import index_by_name, read_gff3
 from .feature.feature.featurehdf5 import FeatureHDF5
@@ -41,7 +42,7 @@ from .kernel_density.kernel_density.compute_bandwidths import \
 from .kernel_density.kernel_density.kde import kde
 from .linear_algebra.linear_algebra.solve_ax_equal_b import solve_ax_equal_b
 from .linear_model.linear_model.correlate import correlate
-from .match.match.make_comparision_panel import make_comparision_panel
+from .match.match.make_comparison_panel import make_comparison_panel
 from .match.match.make_match_panel import make_match_panel
 from .match.match.make_summary_match_panel import make_summary_match_panel
 from .match.match.match import (match,
@@ -50,8 +51,8 @@ from .match.match.match import (match,
                                 permute_target_and_match_target_and_features)
 from .match.match.plot_match_panel import plot_match_panel
 from .matrix_decomposition.matrix_decomposition.nmf import nmf
-from .mutational_signature.mutational_signature import (compute_apobec_mutational_signature_enrichment,
-                                                        count)
+from .mutational_signature.mutational_signature.mutational_signature import \
+    compute_apobec_mutational_signature_enrichment
 from .nd_array.nd_array.apply_function_on_2_1d_arrays_and_compute_empirical_p_value import \
     apply_function_on_2_1d_arrays_and_compute_empirical_p_value
 from .nd_array.nd_array.apply_function_on_2_2d_arrays_slices import \
@@ -128,20 +129,6 @@ from .sequence.sequence.process_sequence import (dna_to_reverse_complement,
                                                  dna_to_rna, rna_to_dna,
                                                  split_codons,
                                                  translate_nucleotides)
-from .sequencing_process.sequencing_process.process_fastq import (align_dna_fastq_with_hisat2,
-                                                                  align_rna_fastq_with_hisat2)
-from .sequencing_process.sequencing_process.process_gz import bgzip, tabix
-from .sequencing_process.sequencing_process.process_sam import (freebayes,
-                                                                samtools_sam_to_bam)
-from .sequencing_process.sequencing_process.process_vcf import (bcftools_annotate,
-                                                                bcftools_concat,
-                                                                bcftools_extract_chromosomes,
-                                                                bcftools_filter,
-                                                                bcftools_isec,
-                                                                bcftools_rename_chr,
-                                                                picard_liftovervcf,
-                                                                snpeff,
-                                                                snpsift)
 from .skew.skew.skew import (define_x_coordinates_for_reflection,
                              fit_essentiality, make_essentiality_matrix,
                              plot_essentiality)
