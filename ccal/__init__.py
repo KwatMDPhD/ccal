@@ -36,7 +36,7 @@ from .nd_array.nd_array.compute_empirical_p_value import \
     compute_empirical_p_value
 from .nd_array.nd_array.compute_empirical_p_values_and_fdrs import \
     compute_empirical_p_values_and_fdrs
-from .nd_array.nd_array.compute_log2_fold_ratios import compute_log2_ratios
+from .nd_array.nd_array.compute_log2_ratios import compute_log2_ratios
 from .nd_array.nd_array.compute_margin_of_error import compute_margin_of_error
 from .nd_array.nd_array.define_exponential_function import \
     define_exponential_function
@@ -78,13 +78,14 @@ from .support.support.compression import (extract_tar, gzip_compress,
                                           gzip_decompress_and_bgzip_compress,
                                           unzip)
 from .support.support.df import drop_df_slices, simulate_df, split_df
-from .support.support.dict import merge_dicts_with_function, write_dict
+from .support.support.dict_ import merge_dicts_with_function, write_dict
 from .support.support.environment import (get_reference, install_libraries,
                                           source_environment)
 from .support.support.iterable import (flatten_nested,
                                        get_unique_objects_in_order, group,
                                        group_and_apply_function_on_each_group,
                                        integize, replace_bad_objects)
+from .support.support.log import get_now
 from .support.support.multiprocess import multiprocess
 from .support.support.network import download, get_open_port
 from .support.support.path import (copy_path, establish_path,
@@ -100,7 +101,6 @@ from .support.support.subprocess_ import run_command
 from .support.support.system import reboot, shutdown
 from .support.support.volume import (get_volume_name, make_volume_dict, mount,
                                      unmount)
-from .support.suppport.log import get_now
 from .tcga.tcga.access_tcga import (make_case_annotations,
                                     read_CopyNumber_Gistic2,
                                     read_CopyNumberLowPass_Gistic2,
