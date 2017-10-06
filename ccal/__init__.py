@@ -6,7 +6,11 @@ from .cluster.cluster.hierarchical_cluster_distances_and_compute_ccc import \
     hierarchical_cluster_distances_and_compute_ccc
 from .cluster.cluster.hierarchical_consensus_cluster import \
     hierarchical_consensus_cluster
+from .cluster.cluster.hierarchical_consensus_cluster_with_multiple_ks import \
+    hierarchical_consensus_cluster_with_multiple_ks
 from .cluster.cluster.nmf_consensus_cluster import nmf_consensus_cluster
+from .cluster.cluster.nmf_consensus_cluster_with_multiple_ks import \
+    nmf_consensus_cluster_with_multiple_ks
 from .cryptograph.cryptograph.access_passcode import (hash_passcode,
                                                       match_passcode_with_passcode_hash)
 from .cryptograph.cryptograph.crypt_with_aes import (decrypt_directory_files,
@@ -99,8 +103,10 @@ from .plot.plot.get_ax_positions_relative_to_ax import \
     get_ax_positions_relative_to_ax
 from .plot.plot.get_ax_positions_relative_to_figure import \
     get_ax_positions_relative_to_figure
+from .plot.plot.make_categorical_colormap import make_categorical_colormap
+from .plot.plot.make_random_categorical_colormap import \
+    make_random_categorical_colormap
 from .plot.plot.make_random_color import make_random_color
-from .plot.plot.make_random_colormap import make_random_colormap
 from .plot.plot.plot_clustermap import plot_clustermap
 from .plot.plot.plot_columns import plot_columns
 from .plot.plot.plot_distribution import plot_distribution

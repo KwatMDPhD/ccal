@@ -1,22 +1,26 @@
-from codecs import open
-from os import path
+from os import listdir
+from os.path import abspath, dirname, isdir, join
 
-from setuptools import find_packages, setup
+from setuptools import setup
 
-here = path.abspath(path.dirname(__file__))
+NAME = 'ccal'
+here = abspath(dirname(__file__))
 
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+packages = [NAME]
+for fn in listdir(NAME):
+
+    if fn not in ['__pycache__'] and isdir(join(here, NAME, fn)):
+        packages += ['{0}/{1}/{1}'.format(NAME, fn)]
 
 setup(
     name='ccal',
-    version='0.9.1',
+    version='0.8.8',
     description='Library for hunting cancers',
-    long_description=long_description,
+    long_description='',
     url='https://github.com/ucsd-ccal/ccal',
     author='Huwate (Kwat) Yeerna',
     author_email='kwatme8@gmail.com',
-    license='MIT',
+    license='LICENSE',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -26,11 +30,7 @@ setup(
         'Topic :: Scientific/Engineering :: Bio-Informatics',
     ],
     keywords='Computational Cancer Analysis',
-    packages=find_packages(exclude=[
-        'contrib',
-        'docs',
-        'tests',
-    ]),
+    packages=packages,
     python_requires='>=3',
     install_requires=[
         'bcrypt>=3.1.3',
@@ -39,5 +39,5 @@ setup(
         'pycrypto>=2.6.1',
         'pyfaidx>=0.5.0',
         'pytabix>=0.0.2',
-        'rpy2>=2.7.8',
-    ])
+    ],
+    include_package_data=True)
