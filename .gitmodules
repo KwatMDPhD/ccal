@@ -4,15 +4,27 @@
 [submodule "ccal/cluster"]
 	path = ccal/cluster
 	url = https://github.com/kwatme/cluster
+[submodule "ccal/cryptograph"]
+	path = ccal/cryptograph
+	url = https://github.com/kwatme/cryptograph
 [submodule "ccal/dimension_reduction"]
 	path = ccal/dimension_reduction
 	url = https://github.com/kwatme/dimension_reduction
+[submodule "ccal/feature"]
+	path = ccal/feature
+	url = https://github.com/kwatme/feature
 [submodule "ccal/file"]
 	path = ccal/file
 	url = https://github.com/kwatme/file
+[submodule "ccal/grch"]
+	path = ccal/grch
+	url = https://github.com/kwatme/grch
 [submodule "ccal/gsea"]
 	path = ccal/gsea
 	url = https://github.com/kwatme/gsea
+[submodule "ccal/hdf5"]
+	path = ccal/hdf5
+	url = https://github.com/kwatme/hdf5
 [submodule "ccal/information"]
 	path = ccal/information
 	url = https://github.com/kwatme/information
@@ -31,9 +43,15 @@
 [submodule "ccal/matrix_decomposition"]
 	path = ccal/matrix_decomposition
 	url = https://github.com/kwatme/matrix_decomposition
+[submodule "ccal/mutational_signature"]
+	path = ccal/mutational_signature
+	url = https://github.com/kwatme/mutational_signature
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/kwatme/nd_array
+[submodule "ccal/network"]
+	path = ccal/network
+	url = https://github.com/kwatme/network
 [submodule "ccal/onco_gps"]
 	path = ccal/onco_gps
 	url = https://github.com/kwatme/onco_gps
@@ -46,6 +64,12 @@
 [submodule "ccal/regression"]
 	path = ccal/regression
 	url = https://github.com/kwatme/regression
+[submodule "ccal/sequence"]
+	path = ccal/sequence
+	url = https://github.com/kwatme/sequence
+[submodule "ccal/sequencing_process"]
+	path = ccal/sequencing_process
+	url = https://github.com/kwatme/sequencing_process
 [submodule "ccal/skew"]
 	path = ccal/skew
 	url = https://github.com/kwatme/skew
@@ -55,3 +79,6 @@
 [submodule "ccal/tcga"]
 	path = ccal/tcga
 	url = https://github.com/kwatme/tcga
+[submodule "ccal/variant"]
+	path = ccal/variant
+	url = https://github.com/kwatme/variant
