@@ -7,6 +7,8 @@ from .cluster.cluster.hierarchical_consensus_cluster import \
     hierarchical_consensus_cluster
 from .cluster.cluster.nmf_consensus_cluster import nmf_consensus_cluster
 from .dimension_reduction.dimension_reduction.mds import mds
+from .file.file.access_gct import read_gct, write_gct
+from .file.file.access_gmt import read_gmts, write_gmt
 from .gsea.gsea.compute_enrichment_score import compute_enrichment_score
 from .gsea.gsea.permute_and_compute_enrichment_score import \
     permute_and_compute_enrichment_score
