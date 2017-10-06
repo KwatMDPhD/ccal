@@ -1,6 +1,6 @@
 from .classification.classification.classify import classify
 from .cluster.cluster.consensus_cluster import consensus_cluster
-from .cluster.cluster.count_clusterings import count_clusterings
+from .cluster.cluster.count_coclusterings import count_coclusterings
 from .cluster.cluster.hierarchical_cluster_distances_and_compute_ccc import \
     hierarchical_cluster_distances_and_compute_ccc
 from .cluster.cluster.hierarchical_consensus_cluster import \
