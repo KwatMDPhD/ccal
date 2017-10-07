@@ -94,7 +94,6 @@ from .onco_gps.onco_gps.make_grid_values_and_continuous_phenotypes import \
     make_grid_values_and_continuous_phenotypes
 from .onco_gps.onco_gps.make_node_x_dimension import make_node_x_dimension
 from .onco_gps.onco_gps.make_sample_x_dimension import make_sample_x_dimension
-from .onco_gps.onco_gps.normalize_a_matrix import normalize_a_matrix
 from .onco_gps.onco_gps.solve_for_nmf_h import solve_for_nmf_h
 from .plot.plot.assign_colors import assign_colors
 from .plot.plot.decorate import decorate
