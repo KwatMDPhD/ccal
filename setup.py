@@ -17,10 +17,6 @@ for location in walk(NAME):
     if isdir(p):
         packages.append(p)
 
-print('\n# ======== #')
-print('Install rpy2 manually.')
-print('# ======== #\n')
-
 setup(
     name='ccal',
     version='0.9.5',
@@ -48,6 +44,7 @@ setup(
         'pycrypto>=2.6.1',
         'pyfaidx>=0.5.0',
         'pytabix>=0.0.2',
+        # 'rpy2>=2.7.8',
         'scipy>=0.19.1',
         'seaborn>=0.8.1',
     ],
