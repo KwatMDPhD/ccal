@@ -21,7 +21,7 @@ setup(
     name=NAME,
     version='0.9.6',
     description='Library for hunting cancers',
-    long_description='',
+    long_description='See https://github.com/ucsd-ccal/ccal for documentation.',
     url='https://github.com/ucsd-ccal/ccal',
     author='Huwate (Kwat) Yeerna',
     author_email='kwatme8@gmail.com',
