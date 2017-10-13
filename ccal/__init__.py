@@ -28,7 +28,6 @@ from .feature.feature.access_gff import index_by_name, read_gff3
 from .file.file.access_gct import read_gct, write_gct
 from .file.file.access_gmt import read_gmts, write_gmt
 from .file.file.read_fpkm_tracking import read_fpkm_tracking
-from .grch.grch.get_grch import get_grch
 from .gsea.gsea.compute_enrichment_score import compute_enrichment_score
 from .gsea.gsea.permute_and_compute_enrichment_score import \
     permute_and_compute_enrichment_score
