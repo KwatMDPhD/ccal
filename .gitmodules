@@ -16,9 +16,6 @@
 [submodule "ccal/file"]
 	path = ccal/file
 	url = https://github.com/kwatme/file
-[submodule "ccal/grch"]
-	path = ccal/grch
-	url = https://github.com/kwatme/grch
 [submodule "ccal/gsea"]
 	path = ccal/gsea
 	url = https://github.com/kwatme/gsea
