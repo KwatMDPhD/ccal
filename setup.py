@@ -4,6 +4,7 @@ from os.path import abspath, dirname, isdir
 from setuptools import setup
 
 NAME = 'ccal'
+URL = 'https://github.com/ucsd-ccal/ccal'
 here = abspath(dirname(__file__))
 
 packages = [NAME]
@@ -21,8 +22,8 @@ setup(
     name=NAME,
     version='0.0.3',
     description='Library for hunting cancers',
-    long_description='See https://github.com/ucsd-ccal/ccal for documentation.',
-    url='https://github.com/ucsd-ccal/ccal',
+    long_description='See {} for the documentation.'.format(URL),
+    url=URL,
     author='Huwate (Kwat) Yeerna',
     author_email='kwatme8@gmail.com',
     license='LICENSE',
