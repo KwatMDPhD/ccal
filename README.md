@@ -16,7 +16,7 @@ Two options:
 
 1. Create conda environment for CCAL (recommended)
 
-```
+```sh
 git clone https://github.com/UCSD-CCAL/ccal.git
 cd ccal
 conda env create -f environment.yaml
