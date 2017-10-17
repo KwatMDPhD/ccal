@@ -14,16 +14,17 @@ CCAL itself doesn't have much code. Instead, CCAL uses other cool libraries as s
 
 Two options:
 
-Create conda environment for ccal (recommended)
+1. Create conda environment for ccal (recommended)
 
-1. Get CCAl
 ```
-git clone 
-```
-2. In Terminal enter:
+git clone https://github.com/UCSD-CCAL/ccal.git
+cd ccal
 conda env create -f environment.yaml
+```
 
-Pip install CCAL and get r dependencies with conda
+2. Pip install CCAL and get r dependencies with conda
 
-
-
+```
+pip install ccal
+conda install -c r ryp2 r-mass
+```
