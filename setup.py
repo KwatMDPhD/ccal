@@ -19,7 +19,7 @@ for location in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.0.2',
+    version='0.0.3',
     description='Library for hunting cancers',
     long_description='See https://github.com/ucsd-ccal/ccal for documentation.',
     url='https://github.com/ucsd-ccal/ccal',
