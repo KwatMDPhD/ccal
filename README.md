@@ -13,7 +13,3 @@ CCAL itself doesn't have much code. Instead, CCAL uses other cool libraries as s
 # Get started
 
 Look at `notebooks/ccal.ipynb`, the boilerplate to use the CCAL library.
-
-# Note
-
-CCAL needs matplotlib>=2.0.2
