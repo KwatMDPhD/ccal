@@ -12,4 +12,18 @@ CCAL itself doesn't have much code. Instead, CCAL uses other cool libraries as s
 
 # Get started
 
-Look at `notebooks/ccal.ipynb`, the boilerplate to use the CCAL library.
+Two options:
+
+Create conda environment for ccal (recommended)
+
+1. Get CCAl
+```
+git clone 
+```
+2. In Terminal enter:
+conda env create -f environment.yaml
+
+Pip install CCAL and get r dependencies with conda
+
+
+
