@@ -20,11 +20,11 @@ for location in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.0.3',
-    description='Library for hunting cancers',
+    version='0.0.4',
+    description='Bioinformatics library for hunting cancers',
     long_description='See {} for the documentation.'.format(URL),
     url=URL,
-    author='Huwate (Kwat) Yeerna',
+    author='Huwate \'Kwat\' Yeerna',
     author_email='kwatme8@gmail.com',
     license='LICENSE',
     classifiers=[
@@ -37,19 +37,19 @@ setup(
     ],
     keywords='Computational Cancer Analysis',
     packages=packages,
-    python_requires='>=3.6.0',
+    python_requires='==3.6',
     install_requires=[
-        'bcrypt>=3.1.0, <3.2.0',
-        'biopython>=1.70.0, <1.71.0',
-        'matplotlib>=2.0.0, <2.1.0',
-        'pandas>=0.20.3, <0.21.0',
-        'pycrypto>=2.6.0, <2.7.0',
-        'pyfaidx>=0.5.0, <0.6.0',
-        'pytabix>=0.0.2, <0.1.0',
-        'scikit-learn>=0.19.0, <0.19.2',
-        'scipy>=0.19.0, <0.20.0',
-        'seaborn>=0.8.0, <0.9.0',
-        'statsmodels>=0.8.0, <0.9.0',
+        'bcrypt==3.1',
+        'biopython==1.70',
+        'matplotlib==2.1',
+        'pandas==0.20',
+        'pycrypto==2.6',
+        'pyfaidx==0.5',
+        'pytabix==0.1',
+        'scikit-learn==0.19',
+        'scipy==0.19',
+        'seaborn==0.8',
+        'statsmodels==0.8',
     ],
-    # conda install -c r rpy2 r-mass
+    # And must install manually: $ conda install -c conda-forge rpy2 r-mass
     include_package_data=True)
