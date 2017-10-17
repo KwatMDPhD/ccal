@@ -12,9 +12,7 @@ CCAL itself doesn't have much code. Instead, CCAL uses other cool libraries as s
 
 # Install
 
-In Terminal:
-```sh
+```bash
 pip install ccal
-conda install --channel r rpy2 r-mass
-conda install --channel r r-base=3.3.1
+conda install --channel conda-forge rpy2 r-mass
 ```
