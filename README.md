@@ -16,7 +16,7 @@ Two options:
 
 1. Create conda environment for CCAL (recommended)
 
-```bash
+```
 git clone https://github.com/UCSD-CCAL/ccal.git
 cd ccal
 conda env create -f environment.yaml
@@ -24,7 +24,7 @@ conda env create -f environment.yaml
 
 2. Pip install CCAL
 
-```shell-script
+```
 pip install ccal
 conda install -c r rpy2 r-mass
 ```
