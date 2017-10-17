@@ -10,7 +10,7 @@
 
 CCAL itself doesn't have much code. Instead, CCAL uses other cool libraries as submodules in `ccal/`, and import their awesome functions inside `ccal/__init__.py`'.
 
-# Get started
+# Install
 
 Two options:
 
