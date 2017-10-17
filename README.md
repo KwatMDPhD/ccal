@@ -24,7 +24,7 @@ conda env create -f environment.yaml
 
 2. Pip install CCAL
 
-```bash
+```shell-script
 pip install ccal
 conda install -c r rpy2 r-mass
 ```
