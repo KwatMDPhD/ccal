@@ -20,7 +20,7 @@ for location in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.0.4',
+    version='0.0.5',
     description='Bioinformatics library for hunting cancers',
     long_description='See {} for the documentation.'.format(URL),
     url=URL,
@@ -37,7 +37,7 @@ setup(
     ],
     keywords='Computational Cancer Analysis',
     packages=packages,
-    python_requires='==3.6',
+    python_requires='>=3.6,<=3.6.1',
     install_requires=[
         'bcrypt==3.1',
         'biopython==1.70',
