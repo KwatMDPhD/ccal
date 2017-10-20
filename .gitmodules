@@ -1,54 +1,21 @@
-[submodule "ccal/classification"]
-	path = ccal/classification
-	url = https://github.com/kwatme/classification
-[submodule "ccal/cluster"]
-	path = ccal/cluster
-	url = https://github.com/kwatme/cluster
-[submodule "ccal/cryptograph"]
-	path = ccal/cryptograph
-	url = https://github.com/kwatme/cryptograph
-[submodule "ccal/dimension_reduction"]
-	path = ccal/dimension_reduction
-	url = https://github.com/kwatme/dimension_reduction
-[submodule "ccal/feature"]
-	path = ccal/feature
-	url = https://github.com/kwatme/feature
 [submodule "ccal/file"]
 	path = ccal/file
 	url = https://github.com/kwatme/file
-[submodule "ccal/gsea"]
-	path = ccal/gsea
-	url = https://github.com/kwatme/gsea
-[submodule "ccal/hdf5"]
-	path = ccal/hdf5
-	url = https://github.com/kwatme/hdf5
 [submodule "ccal/information"]
 	path = ccal/information
 	url = https://github.com/kwatme/information
-[submodule "ccal/kernel_density"]
-	path = ccal/kernel_density
-	url = https://github.com/kwatme/kernel_density
-[submodule "ccal/linear_algebra"]
-	path = ccal/linear_algebra
-	url = https://github.com/kwatme/linear_algebra
 [submodule "ccal/linear_model"]
 	path = ccal/linear_model
 	url = https://github.com/kwatme/linear_model
 [submodule "ccal/match"]
 	path = ccal/match
 	url = https://github.com/kwatme/match
-[submodule "ccal/matrix_decomposition"]
-	path = ccal/matrix_decomposition
-	url = https://github.com/kwatme/matrix_decomposition
 [submodule "ccal/mutational_signature"]
 	path = ccal/mutational_signature
 	url = https://github.com/kwatme/mutational_signature
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/kwatme/nd_array
-[submodule "ccal/network"]
-	path = ccal/network
-	url = https://github.com/kwatme/network
 [submodule "ccal/onco_gps"]
 	path = ccal/onco_gps
 	url = https://github.com/kwatme/onco_gps
@@ -58,24 +25,6 @@
 [submodule "ccal/probability"]
 	path = ccal/probability
 	url = https://github.com/kwatme/probability
-[submodule "ccal/regression"]
-	path = ccal/regression
-	url = https://github.com/kwatme/regression
-[submodule "ccal/sequence"]
-	path = ccal/sequence
-	url = https://github.com/kwatme/sequence
-[submodule "ccal/sequencing_process"]
-	path = ccal/sequencing_process
-	url = https://github.com/kwatme/sequencing_process
-[submodule "ccal/skew"]
-	path = ccal/skew
-	url = https://github.com/kwatme/skew
 [submodule "ccal/support"]
 	path = ccal/support
 	url = https://github.com/kwatme/support
-[submodule "ccal/tcga"]
-	path = ccal/tcga
-	url = https://github.com/kwatme/tcga
-[submodule "ccal/variant"]
-	path = ccal/variant
-	url = https://github.com/kwatme/variant
