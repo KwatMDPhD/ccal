@@ -1,5 +1,5 @@
 from os import walk
-from os.path import abspath, dirname, isdir
+from os.path import abspath, dirname
 
 from setuptools import setup
 
@@ -7,14 +7,10 @@ NAME = 'ccal'
 URL = 'https://github.com/ucsd-ccal/ccal'
 here = abspath(dirname(__file__))
 
-packages = [NAME]
-for p, dns, fns, in walk(NAME):
-
-    if any([bad_fn in p for bad_fn in ['.git', '__pycache__']]):
-        continue
-
-    if isdir(p):
-        packages.append(p)
+packages = []
+for dp, dns, fns in walk('../ccal'):
+    if dp.split('/')[-1] not in ['.git', '__pycache__']:
+        packages.append(dp)
 
 setup(
     name=NAME,
