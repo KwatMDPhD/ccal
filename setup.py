@@ -8,9 +8,7 @@ URL = 'https://github.com/ucsd-ccal/ccal'
 here = abspath(dirname(__file__))
 
 packages = [NAME]
-for location in walk(NAME):
-
-    p = location[0]
+for p, dns, fns, in walk(NAME):
 
     if any([bad_fn in p for bad_fn in ['.git', '__pycache__']]):
         continue
