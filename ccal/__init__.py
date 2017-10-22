@@ -46,6 +46,7 @@ from .nd_array.nd_array.normalize_1d_array import normalize_1d_array
 from .nd_array.nd_array.normalize_2d_array import normalize_2d_array
 from .nd_array.nd_array.shuffle_each_2d_array_slice import \
     shuffle_each_2d_array_slice
+from .onco_gps.onco_gps.GPSMap import GPSMap
 from .onco_gps.onco_gps.define_components import define_components
 from .onco_gps.onco_gps.define_states import define_states
 from .onco_gps.onco_gps.make_grid_values_and_categorical_phenotypes import \
