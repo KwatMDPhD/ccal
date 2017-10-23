@@ -12,7 +12,7 @@ for dp, dns, fns in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.0.6',
+    version='0.0.7',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} for the documentation.'.format(URL),
@@ -33,6 +33,7 @@ setup(
     python_requires='>=3.3',
     install_requires=[
         'biopython==1.70',
+        'click==6.7',
         'matplotlib==2.1',
         'pandas==0.20',
         'scikit-learn==0.19',
