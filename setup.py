@@ -1,14 +1,12 @@
 from os import walk
-from os.path import abspath, dirname
 
 from setuptools import setup
 
 NAME = 'ccal'
 URL = 'https://github.com/ucsd-ccal/ccal'
-here = abspath(dirname(__file__))
 
 packages = []
-for dp, dns, fns in walk('../ccal'):
+for dp, dns, fns in walk(NAME):
     if dp.split('/')[-1] not in ['.git', '__pycache__']:
         packages.append(dp)
 
@@ -32,7 +30,7 @@ setup(
     ],
     keywords='Computational Cancer Analysis',
     packages=packages,
-    python_requires='==3.6',
+    python_requires='>=3.3',
     install_requires=[
         'biopython==1.70',
         'matplotlib==2.1',
