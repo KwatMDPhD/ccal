@@ -12,12 +12,12 @@ for dp, dns, fns in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.0.7',
+    version='0.0.8',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} for the documentation.'.format(URL),
     url=URL,
-    author='Huwate \'Kwat\' Yeerna',
+    author='(Kwat) Huwate Yeerna',
     author_email='kwatme8@gmail.com',
     license='LICENSE',
     classifiers=[
