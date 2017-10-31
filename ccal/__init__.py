@@ -17,6 +17,8 @@ from .support.support.volume import unmount
 from .support.support.environment import get_shell_environment
 from .support.support.environment import install_libraries
 from .support.support.environment import get_reference
+from .support.support.environment import have_programs
+from .support.support.environment import get_machine
 from .support.support.series import cast_series_to_builtins
 from .support.support.series import make_membership_df_from_categorical_series
 from .support.support.series import get_top_and_bottom_series_indices
@@ -36,6 +38,7 @@ from .support.support.df import split_df
 from .support.support.df import simulate_df
 from .support.support.path import establish_path
 from .support.support.path import copy_path
+from .support.support.path import remove_path
 from .support.support.log import get_now
 from .support.support.log import initialize_logger
 from .support.support.log import secho_with_random_color
@@ -45,8 +48,10 @@ from .support.support.str_ import title_str
 from .support.support.str_ import untitle_str
 from .support.support.str_ import cast_str_to_builtins
 from .support.support.str_ import split_str_ignoring_inside_quotes
+from .support.support.str_ import is_version
 from .support.support.multiprocess import multiprocess
 from .support.support.git import create_gitkeep
+from .support.support.git import get_git_versions
 from .support.support.compression import unzip
 from .support.support.compression import extract_tar
 from .support.support.compression import gzip_compress
