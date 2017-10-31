@@ -5,8 +5,6 @@ from .probability.probability.plot_bayesian_nomogram import plot_bayesian_nomogr
 from .probability.probability.infer import infer
 from .probability.probability.compute_posterior_probability import compute_posterior_probability
 from .probability.probability.get_target_grid_indices import get_target_grid_indices
-from .support.support.json_ import get_json_value
-from .support.support.json_ import set_json_value
 from .support.support.json_ import read_json
 from .support.support.json_ import write_json
 from .support.support.exit_ import exit_
