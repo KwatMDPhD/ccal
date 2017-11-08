@@ -39,9 +39,10 @@ from .support.support.df import simulate_df
 from .support.support.path import establish_path
 from .support.support.path import copy_path
 from .support.support.path import remove_path
+from .support.support.path import is_good_name
 from .support.support.log import get_now
 from .support.support.log import initialize_logger
-from .support.support.log import secho_with_random_color
+from .support.support.log import echo_or_print
 from .support.support.system import shutdown
 from .support.support.system import reboot
 from .support.support.str_ import title_str
@@ -52,6 +53,7 @@ from .support.support.str_ import is_version
 from .support.support.multiprocess import multiprocess
 from .support.support.git import create_gitkeep
 from .support.support.git import get_git_versions
+from .support.support.git import standardize_git_url
 from .support.support.compression import unzip
 from .support.support.compression import extract_tar
 from .support.support.compression import gzip_compress
@@ -74,6 +76,7 @@ from .file.file.access_gct import write_gct
 from .information.information.compute_entropy import compute_entropy
 from .information.information.compute_information_coefficient import compute_information_distance
 from .information.information.compute_information_coefficient import compute_information_coefficient
+from .information.information.normalize_information_coefficient import normalize_information_coefficients
 from .information.information.compute_brier_entropy import compute_brier_entropy
 from .plot.plot.plot_nmf import plot_nmf
 from .plot.plot.save_plot import save_plot
