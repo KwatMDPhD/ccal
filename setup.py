@@ -3,7 +3,7 @@ from os import walk
 from setuptools import setup
 
 NAME = 'ccal'
-URL = 'https://github.com/ucsd-ccal/ccal'
+URL = 'https://github.com/UCSD-CCAL/ccal'
 
 packages = []
 for dp, dns, fns in walk(NAME):
@@ -12,7 +12,7 @@ for dp, dns, fns in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.0.8',
+    version='0.1.0',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} for the documentation.'.format(URL),
@@ -30,16 +30,19 @@ setup(
     ],
     keywords='Computational Cancer Analysis',
     packages=packages,
-    python_requires='>=3.3',
+    python_requires='>=3.5',
     install_requires=[
-        'biopython==1.70',
-        'click==6.7',
-        'matplotlib==2.1',
-        'pandas==0.20',
-        'scikit-learn==0.19',
-        'scipy==0.19',
-        'seaborn==0.8',
-        'statsmodels==0.8',
+        'biopython>=1.70.0',
+        'click>=6.7.0',
+        'matplotlib>=2.1.0',
+        'pandas>=0.20.0',
+        'pycrypto>=2.6.0',
+        'pyfaidx>=0.5.0',
+        'pytabix>=0.1.0',
+        'scikit-learn>=0.19.0',
+        'scipy>=0.19.0',
+        'seaborn>=0.8.0',
+        'statsmodels>=0.8.0',
     ],
     # And must install manually: $ conda install -c conda-forge rpy2 r-mass
     include_package_data=True)
