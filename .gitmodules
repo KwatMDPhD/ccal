@@ -22,3 +22,6 @@
 [submodule "ccal/plot"]
 	path = ccal/plot
 	url = https://github.com/kwatme/plot
+[submodule "ccal/cluster"]
+	path = ccal/cluster
+	url = https://github.com/kwatme/cluster
