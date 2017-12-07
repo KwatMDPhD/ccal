@@ -31,3 +31,6 @@
 [submodule "ccal/matrix_decomposition"]
 	path = ccal/matrix_decomposition
 	url = https://github.com/kwatme/matrix_decomposition
+[submodule "ccal/geo"]
+	path = ccal/geo
+	url = https://github.com/kwatme/geo
