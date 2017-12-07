@@ -8,7 +8,6 @@ from .information.information.compute_information_coefficient import (compute_in
                                                                       compute_information_distance)
 from .information.information.normalize_information_coefficient import \
     normalize_information_coefficients
-from .linear_model.linear_model.correlate import correlate
 from .match.match.make_comparison_panel import make_comparison_panel
 from .match.match.make_match_panel import make_match_panel
 from .match.match.make_summary_match_panel import make_summary_match_panel
@@ -78,47 +77,3 @@ from .plot.plot.plot_points import plot_points
 from .plot.plot.plot_samples import plot_samples
 from .plot.plot.plot_violin_box_or_bar import plot_violin_box_or_bar
 from .plot.plot.save_plot import save_plot
-from .probability.probability.compute_joint_probability import \
-    compute_joint_probability
-from .probability.probability.compute_posterior_probability import \
-    compute_posterior_probability
-from .probability.probability.get_target_grid_indices import \
-    get_target_grid_indices
-from .probability.probability.infer import infer
-from .probability.probability.infer_assuming_independence import \
-    infer_assuming_independence
-from .probability.probability.plot_bayesian_nomogram import \
-    plot_bayesian_nomogram
-from .support.support.compression import (extract_tar, gzip_compress,
-                                          gzip_decompress,
-                                          gzip_decompress_and_bgzip_compress,
-                                          unzip)
-from .support.support.df import drop_df_slices, simulate_df, split_df
-from .support.support.dict_ import merge_dicts_with_function, write_dict
-from .support.support.environment import (get_machine, get_reference,
-                                          get_shell_environment, have_programs,
-                                          install_libraries)
-from .support.support.exit_ import exit_
-from .support.support.git import (create_gitkeep, get_git_versions,
-                                  standardize_git_url)
-from .support.support.iterable import (flatten_nested,
-                                       get_unique_objects_in_order, group,
-                                       group_and_apply_function_on_each_group,
-                                       integize, replace_bad_objects)
-from .support.support.json_ import read_json, write_json
-from .support.support.log import echo_or_print, get_now, initialize_logger
-from .support.support.multiprocess import multiprocess
-from .support.support.network import download, get_open_port
-from .support.support.path import (clean_path, copy_path, establish_path,
-                                   is_good_name, remove_path)
-from .support.support.series import (cast_series_to_builtins,
-                                     get_top_and_bottom_series_indices,
-                                     make_membership_df_from_categorical_series,
-                                     simulate_series)
-from .support.support.str_ import (cast_str_to_builtins, is_version,
-                                   split_str_ignoring_inside_quotes, title_str,
-                                   untitle_str)
-from .support.support.subprocess_ import run_command, run_command_and_monitor
-from .support.support.system import reboot, shutdown
-from .support.support.volume import (get_volume_name, make_volume_dict, mount,
-                                     unmount)
