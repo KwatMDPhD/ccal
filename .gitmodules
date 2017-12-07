@@ -1,9 +1,3 @@
-[submodule "ccal/file"]
-	path = ccal/file
-	url = https://github.com/kwatme/file
-[submodule "ccal/geo"]
-	path = ccal/geo
-	url = https://github.com/kwatme/geo
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/kwatme/nd_array
@@ -16,12 +10,18 @@
 [submodule "ccal/matrix_decomposition"]
 	path = ccal/matrix_decomposition
 	url = https://github.com/kwatme/matrix_decomposition
-[submodule "ccal/onco_gps"]
-	path = ccal/onco_gps
-	url = https://github.com/kwatme/onco_gps
-[submodule "ccal/plot"]
-	path = ccal/plot
-	url = https://github.com/kwatme/plot
 [submodule "ccal/cluster"]
 	path = ccal/cluster
 	url = https://github.com/kwatme/cluster
+[submodule "ccal/onco_gps"]
+	path = ccal/onco_gps
+	url = https://github.com/kwatme/onco_gps
+[submodule "ccal/file"]
+	path = ccal/file
+	url = https://github.com/kwatme/file
+[submodule "ccal/geo"]
+	path = ccal/geo
+	url = https://github.com/kwatme/geo
+[submodule "ccal/plot"]
+	path = ccal/plot
+	url = https://github.com/kwatme/plot

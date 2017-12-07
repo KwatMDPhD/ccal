@@ -1,3 +1,14 @@
+from .cluster.cluster.count_coclustering_and_normalize import \
+    count_coclustering_and_normalize
+from .cluster.cluster.hierarchical_cluster_distance_and_compute_ccc import \
+    hierarchical_cluster_distance_and_compute_ccc
+from .cluster.cluster.hierarchical_consensus_cluster import \
+    hierarchical_consensus_cluster
+from .cluster.cluster.hierarchical_consensus_cluster_with_multiple_k import \
+    hierarchical_consensus_cluster_with_multiple_k
+from .cluster.cluster.nmf_consensus_cluster import nmf_consensus_cluster
+from .cluster.cluster.nmf_consensus_cluster_with_multiple_k import \
+    nmf_consensus_cluster_with_multiple_k
 from .file.file.access_gct import read_gct, write_gct
 from .file.file.access_gmt import read_gmts, write_gmt
 from .geo.geo.get_and_parse_geo_data import get_and_parse_geo_data
