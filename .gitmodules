@@ -28,3 +28,6 @@
 [submodule "ccal/support"]
 	path = ccal/support
 	url = https://github.com/kwatme/support
+[submodule "ccal/matrix_decomposition"]
+	path = ccal/matrix_decomposition
+	url = https://github.com/kwatme/matrix_decomposition
