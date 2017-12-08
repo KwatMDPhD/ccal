@@ -67,3 +67,6 @@ from .onco_gps.onco_gps.make_grid_values_and_continuous_phenotypes import make_g
 from .onco_gps.onco_gps.make_sample_x_dimension import make_sample_x_dimension
 from .onco_gps.onco_gps.make_grid_values_and_categorical_phenotypes import make_grid_values_and_categorical_phenotypes
 from .onco_gps.onco_gps.GPSMap import GPSMap
+
+explore_components = nmf_consensus_cluster_with_multiple_k
+explore_states = hierarchical_consensus_cluster_with_multiple_k
