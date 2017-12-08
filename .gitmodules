@@ -7,6 +7,9 @@
 [submodule "ccal/match"]
 	path = ccal/match
 	url = https://github.com/kwatme/match
+[submodule "ccal/gsea"]
+	path = ccal/gsea
+	url = https://github.com/KwatME/gsea
 [submodule "ccal/matrix_decomposition"]
 	path = ccal/matrix_decomposition
 	url = https://github.com/kwatme/matrix_decomposition
@@ -25,6 +28,3 @@
 [submodule "ccal/plot"]
 	path = ccal/plot
 	url = https://github.com/kwatme/plot
-[submodule "ccal/gsea"]
-	path = ccal/gsea
-	url = https://github.com/KwatME/gsea
