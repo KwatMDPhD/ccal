@@ -25,3 +25,6 @@
 [submodule "ccal/plot"]
 	path = ccal/plot
 	url = https://github.com/kwatme/plot
+[submodule "ccal/gsea"]
+	path = ccal/gsea
+	url = https://github.com/KwatME/gsea

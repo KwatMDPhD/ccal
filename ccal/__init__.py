@@ -15,6 +15,9 @@ from .match.match.make_match_panel import make_match_panel
 from .matrix_decomposition.matrix_decomposition.nmf import nmf
 from .matrix_decomposition.matrix_decomposition.solve_for_nmf_h import solve_for_nmf_h
 from .geo.geo.get_and_parse_geo_data import get_and_parse_geo_data
+from .gsea.gsea.compute_enrichment_score import compute_enrichment_score
+from .gsea.gsea.permute_and_compute_enrichment_score import permute_and_compute_enrichment_score
+from .gsea.gsea.run_single_sample_gsea import run_single_sample_gsea
 from .file.file.access_gmt import read_gmts
 from .file.file.access_gmt import write_gmt
 from .file.file.access_gct import read_gct
