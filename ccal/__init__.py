@@ -1,6 +1,5 @@
 from .cluster.cluster.nmf_consensus_cluster import nmf_consensus_cluster
 from .cluster.cluster.count_coclustering_and_normalize import count_coclustering_and_normalize
-from .cluster.cluster.hierarchical_cluster_distance_and_compute_ccc import hierarchical_cluster_distance_and_compute_ccc
 from .cluster.cluster.hierarchical_consensus_cluster_with_multiple_k import hierarchical_consensus_cluster_with_multiple_k
 from .cluster.cluster.nmf_consensus_cluster_with_multiple_k import nmf_consensus_cluster_with_multiple_k
 from .cluster.cluster.hierarchical_consensus_cluster import hierarchical_consensus_cluster
@@ -32,7 +31,6 @@ from .plot.plot.save_plot import save_plot
 from .plot.plot.plot_points import plot_points
 from .plot.plot.make_random_color import make_random_color
 from .plot.plot.assign_colors import assign_colors
-from .plot.plot.make_random_categorical_colormap import make_random_categorical_colormap
 from .plot.plot.plot_heatmap import plot_heatmap
 from .plot.plot.get_ax_positions_relative_to_figure import get_ax_positions_relative_to_figure
 from .plot.plot.plot_clustermap import plot_clustermap
@@ -54,6 +52,8 @@ from .nd_array.nd_array.compute_empirical_p_values_and_fdrs import compute_empir
 from .nd_array.nd_array.compute_margin_of_error import compute_margin_of_error
 from .nd_array.nd_array.apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
 from .nd_array.nd_array.normalize_1d_array import normalize_1d_array
+from .nd_array.nd_array.compute_1d_array_cumulative_sum import compute_1d_array_cumulative_sum
+from .nd_array.nd_array.get_coordinates_for_reflection import get_coordinates_for_reflection
 from .nd_array.nd_array.normalize_1d_array_mean_to_be_0_and_clip import normalize_1d_array_mean_to_be_0_and_clip
 from .nd_array.nd_array.fit_function_on_each_2d_array_slice import fit_function_on_each_2d_array_slice
 from .nd_array.nd_array.get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
@@ -62,10 +62,10 @@ from .nd_array.nd_array.compute_log2_ratios import compute_log2_ratios
 from .nd_array.nd_array.cluster_2d_array_slices_by_group import cluster_2d_array_slices_by_group
 from .nd_array.nd_array.compute_empirical_p_value import compute_empirical_p_value
 from .nd_array.nd_array.cluster_2d_array_rows import cluster_2d_array_rows
-from .onco_gps.onco_gps.make_node_x_dimension import make_node_x_dimension
 from .onco_gps.onco_gps.make_grid_values_and_continuous_phenotypes import make_grid_values_and_continuous_phenotypes
 from .onco_gps.onco_gps.make_sample_x_dimension import make_sample_x_dimension
 from .onco_gps.onco_gps.make_grid_values_and_categorical_phenotypes import make_grid_values_and_categorical_phenotypes
+from .onco_gps.onco_gps.make_node_x_normalized_dimension import make_node_x_normalized_dimension
 from .onco_gps.onco_gps.GPSMap import GPSMap
 
 explore_components = nmf_consensus_cluster_with_multiple_k
