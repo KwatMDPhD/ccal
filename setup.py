@@ -12,7 +12,7 @@ for dp, dns, fns in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.2.4',
+    version='0.2.5',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} to learn more.'.format(URL),
@@ -35,6 +35,7 @@ setup(
         'biopython>=1.70.0',
         'click>=6.7.0',
         'matplotlib>=2.1.0',
+        'numpy>=1.12.1',
         'pandas>=0.20.0',
         'pycrypto>=2.6.0',
         'pyfaidx>=0.5.0',
