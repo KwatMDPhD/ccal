@@ -31,7 +31,7 @@ setup(
         'Topic :: Scientific/Engineering :: Bio-Informatics', ),
     keywords='Computational Cancer Analysis',
     packages=packages,
-    python_requires='>=3.5',
+    python_requires='>=3.3',
     install_requires=(
         'biopython>=1.70.0',
         'click>=6.7.0',
