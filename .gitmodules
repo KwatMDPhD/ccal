@@ -16,9 +16,6 @@
 [submodule "ccal/cluster"]
 	path = ccal/cluster
 	url = https://github.com/kwatme/cluster
-[submodule "ccal/onco_gps"]
-	path = ccal/onco_gps
-	url = https://github.com/kwatme/onco_gps
 [submodule "ccal/file"]
 	path = ccal/file
 	url = https://github.com/kwatme/file
