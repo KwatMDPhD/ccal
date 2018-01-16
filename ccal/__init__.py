@@ -16,10 +16,10 @@ from .plot.plot.plot_points import plot_points
 from .plot.plot.get_ax_positions import get_ax_positions
 from .plot.plot.plot_columns import plot_columns
 from .plot.plot.plot_clustermap import plot_clustermap
+from .plot.plot.plot_lines_on_ax import plot_lines_on_ax
 from .plot.plot.assign_colors import assign_colors
 from .plot.plot.plot_nmf import plot_nmf
 from .plot.plot.decorate_ax import decorate_ax
-from .plot.plot.plot_lines import plot_lines_on_ax
 from .plot.plot.save_plot import save_plot
 from .plot.plot.make_categorical_colormap import make_categorical_colormap
 from .plot.plot.plot_heatmap import plot_heatmap
@@ -45,6 +45,8 @@ from .onco_gps.onco_gps.make_grid_values_and_categorical_phenotypes import make_
 from .onco_gps.onco_gps.make_sample_x_dimension import make_sample_x_dimension
 from .onco_gps.onco_gps.make_node_x_normalized_dimension import make_node_x_normalized_dimension
 from .onco_gps.onco_gps.GPSMap import GPSMap
+from .onco_gps.onco_gps.GPSMap import load_gpsmap
+from .onco_gps.onco_gps.GPSMap import dump_gpsmap
 from .onco_gps.onco_gps.make_grid_values_and_continuous_phenotypes import make_grid_values_and_continuous_phenotypes
 from .geo.geo.get_and_parse_geo_data import get_and_parse_geo_data
 from .nd_array.nd_array.get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
@@ -54,7 +56,6 @@ from .nd_array.nd_array.compute_empirical_p_value import compute_empirical_p_val
 from .nd_array.nd_array.make_index_and_fraction_grid_coordinates_pair import make_index_and_fraction_grid_coordinates_pair
 from .nd_array.nd_array.apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
 from .nd_array.nd_array.compute_margin_of_error import compute_margin_of_error
-from .nd_array.nd_array.normalize_1d_array_mean_to_be_0_and_clip import normalize_1d_array_mean_to_be_0_and_clip
 from .nd_array.nd_array.shuffle_each_2d_array_slice import shuffle_each_2d_array_slice
 from .nd_array.nd_array.cluster_2d_array_rows import cluster_2d_array_rows
 from .nd_array.nd_array.define_exponential_function import define_exponential_function
