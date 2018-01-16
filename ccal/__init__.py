@@ -45,8 +45,8 @@ from .onco_gps.onco_gps.make_grid_values_and_categorical_phenotypes import make_
 from .onco_gps.onco_gps.make_sample_x_dimension import make_sample_x_dimension
 from .onco_gps.onco_gps.make_node_x_normalized_dimension import make_node_x_normalized_dimension
 from .onco_gps.onco_gps.GPSMap import GPSMap
-from .onco_gps.onco_gps.GPSMap import load_gpsmap
 from .onco_gps.onco_gps.GPSMap import dump_gpsmap
+from .onco_gps.onco_gps.GPSMap import load_gpsmap
 from .onco_gps.onco_gps.make_grid_values_and_continuous_phenotypes import make_grid_values_and_continuous_phenotypes
 from .geo.geo.get_and_parse_geo_data import get_and_parse_geo_data
 from .nd_array.nd_array.get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
