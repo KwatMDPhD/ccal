@@ -35,7 +35,6 @@ from .file.file.access_gmt import write_gmt
 from .file.file.access_gct import read_gct
 from .file.file.access_gct import write_gct
 from .gsea.gsea.compute_gene_scores import compute_gene_scores
-from .gsea.gsea.permute_and_single_sample_gsea import permute_and_single_sample_gsea
 from .gsea.gsea.single_sample_gseas import single_sample_gseas
 from .gsea.gsea.plot_mountain_plot import plot_mountain_plot
 from .gsea.gsea.single_sample_gsea import single_sample_gsea
