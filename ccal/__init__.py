@@ -26,7 +26,6 @@ from .plot.plot.plot_columns import plot_columns
 from .plot.plot.plot_clustermap import plot_clustermap
 from .plot.plot.plot_lines_on_ax import plot_lines_on_ax
 from .plot.plot.assign_colors import assign_colors
-from .plot.plot.plot_nmf import plot_nmf
 from .plot.plot.decorate_ax import decorate_ax
 from .plot.plot.save_plot import save_plot
 from .plot.plot.make_categorical_colormap import make_categorical_colormap
