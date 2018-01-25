@@ -19,6 +19,7 @@ from .plot.plot.plot_samples import plot_samples
 from .plot.plot.plot_violin_box_or_bar import plot_violin_box_or_bar
 from .plot.plot.make_random_color import make_random_color
 from .plot.plot.plot_distribution import plot_distribution
+from .plot.plot.normalize_and_plot_heatmap import normalize_and_plot_heatmap
 from .plot.plot.plot_points import plot_points
 from .plot.plot.get_ax_positions import get_ax_positions
 from .plot.plot.plot_columns import plot_columns
