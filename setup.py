@@ -14,7 +14,7 @@ for dp, dns, fns in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.3.1',
+    version='0.3.2',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} to learn more.'.format(URL),
@@ -38,11 +38,11 @@ setup(
         'matplotlib>=2.1.1',
         'numpy>=1.12.1',
         'pandas>=0.22.0',
-        'pycrypto>=2.6.0',
-        'pyfaidx>=0.5.0',
-        'scikit-learn>=0.19.0',
+        'pycrypto>=2.6.1',
+        'pyfaidx>=0.5.1',
+        'scikit-learn>=0.19.1',
         'scipy>=1.0.0',
-        'seaborn>=0.8.0',
+        'seaborn>=0.8.1',
         'statsmodels>=0.8.0', ),
     # And must install manually: $ conda install -c conda-forge rpy2 r-mass
     include_package_data=True)
