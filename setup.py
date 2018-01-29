@@ -35,13 +35,13 @@ setup(
     install_requires=(
         'biopython>=1.70.0',
         'click>=6.7.0',
-        'matplotlib>=2.1.0',
+        'matplotlib>=2.1.1',
         'numpy>=1.12.1',
-        'pandas>=0.20.0',
+        'pandas>=0.22.0',
         'pycrypto>=2.6.0',
         'pyfaidx>=0.5.0',
         'scikit-learn>=0.19.0',
-        'scipy>=0.19.0',
+        'scipy>=1.0.0',
         'seaborn>=0.8.0',
         'statsmodels>=0.8.0', ),
     # And must install manually: $ conda install -c conda-forge rpy2 r-mass
