@@ -29,10 +29,6 @@ from .plot.plot.decorate_ax import decorate_ax
 from .plot.plot.save_plot import save_plot
 from .plot.plot.make_categorical_colormap import make_categorical_colormap
 from .plot.plot.plot_heatmap import plot_heatmap
-from .file.file.access_gmt import read_gmts
-from .file.file.access_gmt import write_gmt
-from .file.file.access_gct import read_gct
-from .file.file.access_gct import write_gct
 from .gsea.gsea.compute_gene_scores import compute_gene_scores
 from .gsea.gsea.single_sample_gseas import single_sample_gseas
 from .gsea.gsea.plot_mountain_plot import plot_mountain_plot
@@ -47,6 +43,10 @@ from .match.match.match import match_randomly_sampled_target_and_features_to_com
 from .match.match.match import permute_target_and_match_target_and_features
 from .match.match.match import match_target_and_features
 from .geo.geo.get_and_parse_geo_data import get_and_parse_geo_data
+from .gct_gmt.gct_gmt.access_gmt import read_gmts
+from .gct_gmt.gct_gmt.access_gmt import write_gmt
+from .gct_gmt.gct_gmt.access_gct import read_gct
+from .gct_gmt.gct_gmt.access_gct import write_gct
 from .support.support.df import drop_df_slices
 from .support.support.df import split_df
 from .support.support.git import create_gitkeep
