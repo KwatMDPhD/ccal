@@ -28,3 +28,6 @@
 [submodule "ccal/support"]
 	path = ccal/support
 	url = https://github.com/KwatME/support
+[submodule "ccal/gct_gmt"]
+	path = ccal/gct_gmt
+	url = https://github.com/KwatME/gct_gmt
