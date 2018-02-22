@@ -70,8 +70,6 @@ from .support.support.conda import get_conda_environments
 from .support.support.exit_ import exit_
 from .support.support.dict_ import merge_dicts_with_callable
 from .support.support.dict_ import write_dict
-from .support.support.compression import unzip
-from .support.support.compression import extract_tar
 from .support.support.compression import gzip_compress
 from .support.support.compression import gzip_decompress
 from .support.support.compression import gzip_decompress_and_bgzip_compress
