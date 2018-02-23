@@ -14,7 +14,7 @@ for dp, dns, fns in walk(NAME):
 
 setup(
     name=NAME,
-    version='0.4.0',
+    version='0.4.1',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} to learn more.'.format(URL),
@@ -35,6 +35,7 @@ setup(
     install_requires=(
         'biopython>=1.70.0',
         'click>=6.7.0',
+        'geoparse>=1.0.5',
         'matplotlib>=2.1.1',
         'numpy>=1.12.1',
         'pandas>=0.22.0',
