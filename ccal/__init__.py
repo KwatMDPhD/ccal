@@ -4,6 +4,7 @@ from .gps_map.gps_map.make_node_x_normalized_dimension import make_node_x_normal
 from .gps_map.gps_map.GPSMap import GPSMap
 from .gps_map.gps_map.get_samples_near_phenotype_centroids import get_samples_near_phenotype_centroids
 from .gps_map.gps_map.make_grid_values_and_continuous_phenotypes import make_grid_values_and_continuous_phenotypes
+from .nmf_map.nmf_map.NMFMap import NMFMap
 from .cluster.cluster.nmf_consensus_cluster_with_multiple_k import nmf_consensus_cluster_with_multiple_k
 from .cluster.cluster.nmf_consensus_cluster import nmf_consensus_cluster
 from .cluster.cluster.hierarchical_consensus_cluster_with_multiple_k import hierarchical_consensus_cluster_with_multiple_k
@@ -14,6 +15,12 @@ from .information.information.compute_information_coefficient import compute_inf
 from .information.information.compute_information_coefficient import compute_information_coefficient
 from .information.information.compute_entropy import compute_entropy
 from .information.information.compute_brier_entropy import compute_brier_entropy
+from .context.context.make_context_matrix_and_summarize_context import make_context_matrix_and_summarize_context
+from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
+from .context.context.plot_context import plot_context
+from .context.context.fit_skew_t_pdf_globally import fit_skew_t_pdf_globally
+from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
+from .context.context.compute_context import compute_context
 from .plot.plot.plot_samples import plot_samples
 from .plot.plot.plot_violin_box_or_bar import plot_violin_box_or_bar
 from .plot.plot.make_random_color import make_random_color
@@ -30,6 +37,9 @@ from .plot.plot.save_plot import save_plot
 from .plot.plot.make_categorical_colormap import make_categorical_colormap
 from .plot.plot.plot_heatmap import plot_heatmap
 from .gsea.gsea.compute_gene_scores import compute_gene_scores
+from .gsea.gsea.compute_gene_scores import compute_euclidean_distance
+from .gsea.gsea.compute_gene_scores import compute_pearsons_correlation
+from .gsea.gsea.compute_gene_scores import compute_cosine_similarity
 from .gsea.gsea.single_sample_gseas import single_sample_gseas
 from .gsea.gsea.plot_mountain_plot import plot_mountain_plot
 from .gsea.gsea.single_sample_gsea import single_sample_gsea
@@ -47,6 +57,7 @@ from .gct_gmt.gct_gmt.access_gmt import read_gmts
 from .gct_gmt.gct_gmt.access_gmt import write_gmt
 from .gct_gmt.gct_gmt.access_gct import read_gct
 from .gct_gmt.gct_gmt.access_gct import write_gct
+from .linear_model.linear_model.correlate import correlate
 from .support.support.df import drop_df_slices
 from .support.support.df import split_df
 from .support.support.git import create_gitkeep

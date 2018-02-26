@@ -31,3 +31,12 @@
 [submodule "ccal/gct_gmt"]
 	path = ccal/gct_gmt
 	url = https://github.com/KwatME/gct_gmt
+[submodule "ccal/nmf_map"]
+	path = ccal/nmf_map
+	url = https://github.com/KwatME/nmf_map
+[submodule "ccal/linear_model"]
+	path = ccal/linear_model
+	url = https://github.com/KwatME/linear_model
+[submodule "ccal/context"]
+	path = ccal/context
+	url = https://github.com/KwatME/context
