@@ -1,24 +1,33 @@
 from os import walk
+from os.path import join
 
 from setuptools import setup
 
-NAME = 'ccal'
-URL = 'https://github.com/UCSD-CCAL/ccal'
+name = 'ccal'
+url = 'https://github.com/UCSD-CCAL/ccal'
+
+directory_names_to_skip = (
+    '.git',
+    '__pycache__', )
 
 packages = []
-for dp, dns, fns in walk(NAME):
-    if dp.split('/')[-1] not in (
-            '.git',
-            '__pycache__', ):
+for dp, dns, fns in walk(name):
+    if dp.split('/')[-1] not in directory_names_to_skip:
         packages.append(dp)
 
+package_data = []
+for dp, dns, fns in walk(join(name, 'sequencing_process', 'resources')):
+    if dp.split(sep='/')[-1] not in directory_names_to_skip:
+        for fn in fns:
+            package_data.append(join(dp.split(sep='/', maxsplit=1)[1], fn))
+
 setup(
-    name=NAME,
+    name=name,
     version='0.4.2',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
-    long_description='See {} to learn more.'.format(URL),
-    url=URL,
+    long_description='See {} to learn more.'.format(url),
+    url=url,
     author='(Kwat) Huwate Yeerna',
     author_email='kwatme8@gmail.com',
     license='LICENSE',
@@ -45,4 +54,7 @@ setup(
         'seaborn>=0.8.1',
         'statsmodels>=0.8.0', ),
     # And must install manually: $ conda install -c conda-forge rpy2 r-mass
+    package_data={
+        'ccal': package_data,
+    },
     include_package_data=True)
