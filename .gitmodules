@@ -40,3 +40,6 @@
 [submodule "ccal/context"]
 	path = ccal/context
 	url = https://github.com/KwatME/context
+[submodule "ccal/sequencing_process"]
+	path = ccal/sequencing_process
+	url = https://github.com/KwatME/sequencing_process
