@@ -6,24 +6,33 @@ from setuptools import setup
 name = 'ccal'
 url = 'https://github.com/UCSD-CCAL/ccal'
 
-directory_names_to_skip = (
+strs_to_skip = (
     '.git',
     '__pycache__', )
 
 packages = []
-for dp, dns, fns in walk(name):
-    if dp.split('/')[-1] not in directory_names_to_skip:
-        packages.append(dp)
+for directory_path, directory_names, file_names in walk(name):
+
+    if not any(str_ in directory_path for str_ in strs_to_skip):
+
+        if 'sequencing_process/resource' not in directory_path:
+
+            packages.append(directory_path)
 
 package_data = []
-for dp, dns, fns in walk(join(name, 'sequencing_process', 'resources')):
-    if dp.split(sep='/')[-1] not in directory_names_to_skip:
-        for fn in fns:
-            package_data.append(join(dp.split(sep='/', maxsplit=1)[1], fn))
+for directory_path, directory_names, file_names in walk(
+        join(name, 'sequencing_process/resource')):
+
+    if not any(str_ in directory_path for str_ in strs_to_skip):
+
+        for file_name in file_names:
+
+            package_data.append(
+                join(directory_path.split(sep='/', maxsplit=1)[1], file_name))
 
 setup(
     name=name,
-    version='0.4.2',
+    version='0.4.3',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} to learn more.'.format(url),
