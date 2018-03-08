@@ -59,6 +59,7 @@ from .gct_gmt.gct_gmt.access_gct import write_gct
 from .linear_model.linear_model.correlate import correlate
 from .support.support.df import drop_df_slices
 from .support.support.df import split_df
+from .support.support.df import drop_na_greedily_from_df
 from .support.support.git import create_gitkeep
 from .support.support.git import get_git_versions
 from .support.support.git import clean_git_url
