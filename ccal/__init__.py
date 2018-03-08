@@ -18,7 +18,6 @@ from .information.information.compute_brier_entropy import compute_brier_entropy
 from .context.context.make_context_matrix_and_summarize_context import make_context_matrix_and_summarize_context
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
 from .context.context.plot_context import plot_context
-from .context.context.fit_skew_t_pdf_globally import fit_skew_t_pdf_globally
 from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
 from .context.context.compute_context import compute_context
 from .plot.plot.plot_samples import plot_samples
