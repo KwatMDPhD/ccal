@@ -32,7 +32,7 @@ for directory_path, directory_names, file_names in walk(
 
 setup(
     name=name,
-    version='0.4.12',
+    version='0.4.13',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} to learn more.'.format(url),
