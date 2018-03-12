@@ -4,7 +4,10 @@ from .gps_map.gps_map.make_node_x_normalized_dimension import make_node_x_normal
 from .gps_map.gps_map.GPSMap import GPSMap
 from .gps_map.gps_map.get_samples_near_phenotype_centroids import get_samples_near_phenotype_centroids
 from .gps_map.gps_map.make_grid_values_and_continuous_phenotypes import make_grid_values_and_continuous_phenotypes
+from .nmf_map.nmf_map.anneal_node_and_element_positions import anneal_node_and_element_positions
+from .nmf_map.nmf_map.get_triangulation_edges import get_triangulation_edges
 from .nmf_map.nmf_map.NMFMap import NMFMap
+from .nmf_map.nmf_map.plot_nmf_map import plot_nmf_map
 from .cluster.cluster.nmf_consensus_cluster_with_multiple_k import nmf_consensus_cluster_with_multiple_k
 from .cluster.cluster.nmf_consensus_cluster import nmf_consensus_cluster
 from .cluster.cluster.hierarchical_consensus_cluster_with_multiple_k import hierarchical_consensus_cluster_with_multiple_k
