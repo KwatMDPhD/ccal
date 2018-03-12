@@ -8,7 +8,8 @@ url = 'https://github.com/UCSD-CCAL/ccal'
 
 strs_to_skip = (
     '.git',
-    '__pycache__', )
+    '__pycache__',
+)
 
 packages = []
 for directory_path, directory_names, file_names in walk(name):
@@ -32,7 +33,7 @@ for directory_path, directory_names, file_names in walk(
 
 setup(
     name=name,
-    version='0.4.15',
+    version='0.4.17',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} to learn more.'.format(url),
@@ -46,7 +47,8 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.6',
         'Natural Language :: English',
-        'Topic :: Scientific/Engineering :: Bio-Informatics', ),
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
+    ),
     keywords='Computational Cancer Analysis',
     packages=packages,
     python_requires='>=3.3',
@@ -61,7 +63,8 @@ setup(
         'scikit-learn>=0.19.1',
         'scipy>=1.0.0',
         'seaborn>=0.8.1',
-        'statsmodels>=0.8.0', ),
+        'statsmodels>=0.8.0',
+    ),
     # And must install manually: $ conda install -c conda-forge rpy2 r-mass
     package_data={
         'ccal': package_data,
