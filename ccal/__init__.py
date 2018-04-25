@@ -95,6 +95,7 @@ from .support.support.subprocess_ import run_command
 from .support.support.subprocess_ import run_command_and_monitor
 from .support.support.network import download
 from .support.support.network import get_open_port
+from .support.support.python import get_installed_pip_libraries
 from .support.support.python import install_python_libraries
 from .support.support.python import get_object_reference
 from .support.support.multiprocess import multiprocess
