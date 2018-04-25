@@ -22,9 +22,6 @@
 [submodule "ccal/plot"]
 	path = ccal/plot
 	url = https://github.com/kwatme/plot
-[submodule "ccal/gps_map"]
-	path = ccal/gps_map
-	url = https://github.com/KwatME/gps_map
 [submodule "ccal/support"]
 	path = ccal/support
 	url = https://github.com/KwatME/support
