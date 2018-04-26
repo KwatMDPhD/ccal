@@ -43,9 +43,6 @@
 [submodule "ccal/kernel_density"]
 	path = ccal/kernel_density
 	url = https://github.com/KwatME/kernel_density
-[submodule "ccal/kwatme.com"]
-	path = ccal/kwatme.com
-	url = https://github.com/KwatME/kwatme.com
 [submodule "ccal/linear_algebra"]
 	path = ccal/linear_algebra
 	url = https://github.com/KwatME/linear_algebra
@@ -70,9 +67,6 @@
 [submodule "ccal/plot"]
 	path = ccal/plot
 	url = https://github.com/KwatME/plot
-[submodule "ccal/probability"]
-	path = ccal/probability
-	url = https://github.com/KwatME/probability
 [submodule "ccal/regress"]
 	path = ccal/regress
 	url = https://github.com/KwatME/regress
