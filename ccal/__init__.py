@@ -59,6 +59,7 @@ from .support.support.df import drop_na_greedily_from_df
 from .support.support.git import create_gitkeep
 from .support.support.git import get_git_versions
 from .support.support.git import clean_git_url
+from .support.support.git import in_git_repository
 from .support.support.iterable import group_iterable
 from .support.support.iterable import flatten_nested_iterable
 from .support.support.iterable import replace_bad_objects_in_iterable
@@ -73,6 +74,7 @@ from .support.support.conda import install_and_activate_conda
 from .support.support.conda import add_conda_to_path
 from .support.support.conda import conda_is_installed
 from .support.support.conda import get_conda_environments
+from .support.support.conda import get_conda_prefix
 from .support.support.exit_ import exit_
 from .support.support.dict_ import merge_dicts_with_callable
 from .support.support.dict_ import write_dict
