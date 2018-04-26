@@ -1,42 +1,96 @@
-[submodule "ccal/nd_array"]
-	path = ccal/nd_array
-	url = https://github.com/kwatme/nd_array
-[submodule "ccal/information"]
-	path = ccal/information
-	url = https://github.com/kwatme/information
-[submodule "ccal/match"]
-	path = ccal/match
-	url = https://github.com/kwatme/match
-[submodule "ccal/gsea"]
-	path = ccal/gsea
-	url = https://github.com/KwatME/gsea
-[submodule "ccal/matrix_decomposition"]
-	path = ccal/matrix_decomposition
-	url = https://github.com/kwatme/matrix_decomposition
+[submodule "ccal/classify"]
+    	path = ccal/classify
+    	url = https://github.com/KwatME/classify
 [submodule "ccal/cluster"]
-	path = ccal/cluster
-	url = https://github.com/kwatme/cluster
-[submodule "ccal/geo"]
-	path = ccal/geo
-	url = https://github.com/kwatme/geo
-[submodule "ccal/plot"]
-	path = ccal/plot
-	url = https://github.com/kwatme/plot
-[submodule "ccal/support"]
-	path = ccal/support
-	url = https://github.com/KwatME/support
-[submodule "ccal/gct_gmt"]
-	path = ccal/gct_gmt
-	url = https://github.com/KwatME/gct_gmt
-[submodule "ccal/nmf_map"]
-	path = ccal/nmf_map
-	url = https://github.com/KwatME/nmf_map
-[submodule "ccal/linear_model"]
-	path = ccal/linear_model
-	url = https://github.com/KwatME/linear_model
+    	path = ccal/cluster
+    	url = https://github.com/KwatME/cluster
 [submodule "ccal/context"]
-	path = ccal/context
-	url = https://github.com/KwatME/context
+    	path = ccal/context
+    	url = https://github.com/KwatME/context
+[submodule "ccal/cross_validate"]
+    	path = ccal/cross_validate
+    	url = https://github.com/KwatME/cross_validate
+[submodule "ccal/cryptograph"]
+    	path = ccal/cryptograph
+    	url = https://github.com/KwatME/cryptograph
+[submodule "ccal/dimension_scale"]
+    	path = ccal/dimension_scale
+    	url = https://github.com/KwatME/dimension_scale
+[submodule "ccal/environment"]
+    	path = ccal/environment
+    	url = https://github.com/KwatME/environment
+[submodule "ccal/feature"]
+    	path = ccal/feature
+    	url = https://github.com/KwatME/feature
+[submodule "ccal/gct_gmt"]
+    	path = ccal/gct_gmt
+    	url = https://github.com/KwatME/gct_gmt
+[submodule "ccal/genome"]
+    	path = ccal/genome
+    	url = https://github.com/KwatME/genome
+[submodule "ccal/geo"]
+    	path = ccal/geo
+    	url = https://github.com/KwatME/geo
+[submodule "ccal/gsea"]
+    	path = ccal/gsea
+    	url = https://github.com/KwatME/gsea
+[submodule "ccal/hdf5"]
+    	path = ccal/hdf5
+    	url = https://github.com/KwatME/hdf5
+[submodule "ccal/information"]
+    	path = ccal/information
+    	url = https://github.com/KwatME/information
+[submodule "ccal/kernel_density"]
+    	path = ccal/kernel_density
+    	url = https://github.com/KwatME/kernel_density
+[submodule "ccal/kwatme.com"]
+    	path = ccal/kwatme.com
+    	url = https://github.com/KwatME/kwatme.com
+[submodule "ccal/linear_algebra"]
+    	path = ccal/linear_algebra
+    	url = https://github.com/KwatME/linear_algebra
+[submodule "ccal/linear_model"]
+    	path = ccal/linear_model
+    	url = https://github.com/KwatME/linear_model
+[submodule "ccal/match"]
+    	path = ccal/match
+    	url = https://github.com/KwatME/match
+[submodule "ccal/matrix_factorization"]
+    	path = ccal/matrix_factorization
+    	url = https://github.com/KwatME/matrix_factorization
+[submodule "ccal/mutational_signature"]
+    	path = ccal/mutational_signature
+    	url = https://github.com/KwatME/mutational_signature
+[submodule "ccal/nd_array"]
+    	path = ccal/nd_array
+    	url = https://github.com/KwatME/nd_array
+[submodule "ccal/nmf_map"]
+    	path = ccal/nmf_map
+    	url = https://github.com/KwatME/nmf_map
+[submodule "ccal/plot"]
+    	path = ccal/plot
+    	url = https://github.com/KwatME/plot
+[submodule "ccal/probability"]
+    	path = ccal/probability
+    	url = https://github.com/KwatME/probability
+[submodule "ccal/regress"]
+    	path = ccal/regress
+    	url = https://github.com/KwatME/regress
+[submodule "ccal/sequence"]
+    	path = ccal/sequence
+    	url = https://github.com/KwatME/sequence
 [submodule "ccal/sequencing_process"]
-	path = ccal/sequencing_process
-	url = https://github.com/KwatME/sequencing_process
+    	path = ccal/sequencing_process
+    	url = https://github.com/KwatME/sequencing_process
+[submodule "ccal/spro"]
+    	path = ccal/spro
+    	url = https://github.com/KwatME/spro
+[submodule "ccal/support"]
+    	path = ccal/support
+    	url = https://github.com/KwatME/support
+[submodule "ccal/tcga"]
+    	path = ccal/tcga
+    	url = https://github.com/KwatME/tcga
+[submodule "ccal/variant"]
+    	path = ccal/variant
+    	url = https://github.com/KwatME/variant
