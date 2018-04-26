@@ -76,9 +76,6 @@
 [submodule "ccal/sequencing_process"]
 	path = ccal/sequencing_process
 	url = https://github.com/KwatME/sequencing_process
-[submodule "ccal/spro"]
-	path = ccal/spro
-	url = https://github.com/KwatME/spro
 [submodule "ccal/support"]
 	path = ccal/support
 	url = https://github.com/KwatME/support
