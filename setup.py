@@ -33,7 +33,7 @@ for directory_path, directory_names, file_names in walk(
 
 setup(
     name=name,
-    version='0.5.0',
+    version='0.5.1',
     description=
     'Computational Cancer Analysis Library: bioinformatics library for hunting cancers',
     long_description='See {} to learn more.'.format(url),
@@ -59,6 +59,7 @@ setup(
         'matplotlib>=2.1.1',
         'numpy>=1.12.1',
         'pandas>=0.22.0',
+        'pefile>=2017.8.1',
         'pycrypto>=2.6.1',
         'scikit-learn>=0.19.1',
         'scipy>=1.0.0',
