@@ -16,9 +16,6 @@
 [submodule "ccal/dimension_scale"]
 	path = ccal/dimension_scale
 	url = https://github.com/KwatME/dimension_scale
-[submodule "ccal/environment"]
-	path = ccal/environment
-	url = https://github.com/KwatME/environment
 [submodule "ccal/feature"]
 	path = ccal/feature
 	url = https://github.com/KwatME/feature
