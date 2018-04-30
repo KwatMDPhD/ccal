@@ -4,14 +4,13 @@ from os.path import join
 from setuptools import setup
 
 name = 'ccal'
+
 url = 'https://github.com/UCSD-CCAL/ccal'
 
-strs_to_skip = (
-    '.git',
-    '__pycache__',
-)
+strs_to_skip = ('.git', '__pycache__')
 
 packages = []
+
 for directory_path, directory_names, file_names in walk(name):
 
     if not any(str_ in directory_path for str_ in strs_to_skip):
@@ -21,6 +20,7 @@ for directory_path, directory_names, file_names in walk(name):
             packages.append(directory_path)
 
 package_data = []
+
 for directory_path, directory_names, file_names in walk(
         join(name, 'sequencing_process/resource')):
 
@@ -41,33 +41,21 @@ setup(
     author='(Kwat) Huwate Yeerna',
     author_email='kwatme8@gmail.com',
     license='LICENSE',
-    classifiers=(
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.6',
-        'Natural Language :: English',
-        'Topic :: Scientific/Engineering :: Bio-Informatics',
-    ),
+    classifiers=('Development Status :: 3 - Alpha',
+                 'Intended Audience :: Developers',
+                 'License :: OSI Approved :: MIT License',
+                 'Programming Language :: Python :: 3.6',
+                 'Natural Language :: English',
+                 'Topic :: Scientific/Engineering :: Bio-Informatics'),
     keywords='Computational Cancer Analysis',
     packages=packages,
     python_requires='>=3.3',
-    install_requires=(
-        'biopython>=1.70.0',
-        'click>=6.7.0',
-        'geoparse>=1.0.5',
-        'matplotlib>=2.1.1',
-        'numpy>=1.12.1',
-        'pandas>=0.22.0',
-        'pefile>=2017.8.1',
-        'pycrypto>=2.6.1',
-        'scikit-learn>=0.19.1',
-        'scipy>=1.0.0',
-        'seaborn>=0.8.1',
-        'statsmodels>=0.8.0',
-    ),
+    install_requires=('biopython>=1.70.0', 'click>=6.7.0', 'geoparse>=1.0.5',
+                      'matplotlib>=2.1.1', 'numpy>=1.12.1', 'pandas>=0.22.0',
+                      'pefile>=2017.8.1', 'pycrypto>=2.6.1',
+                      'scikit-learn>=0.19.1', 'scipy>=1.0.0',
+                      'statsmodels>=0.8.0'),
+
     # And must install manually: $ conda install -c conda-forge rpy2 r-mass
-    package_data={
-        'ccal': package_data,
-    },
+    package_data={'ccal': package_data},
     include_package_data=True)
