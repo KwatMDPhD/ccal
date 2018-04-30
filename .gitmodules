@@ -64,6 +64,9 @@
 [submodule "ccal/plot"]
 	path = ccal/plot
 	url = https://github.com/KwatME/plot
+[submodule "ccal/probability"]
+	path = ccal/probability
+	url = https://github.com/KwatME/probability
 [submodule "ccal/regress"]
 	path = ccal/regress
 	url = https://github.com/KwatME/regress

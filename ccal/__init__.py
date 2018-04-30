@@ -1,3 +1,9 @@
+from os.path import abspath
+
+VERSION = '0.6.0'
+
+print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
+
 from .tcga.tcga.make_case_annotations import make_case_annotations
 from .tcga.tcga.read_copynumber_gistic2 import read_copynumber_gistic2
 from .tcga.tcga.read_correlate_copynumber_vs_mrnaseq import read_correlate_copynumber_vs_mrnaseq
@@ -24,6 +30,13 @@ from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
 from .context.context.compute_context import compute_context
 from .context.context.process_array_1d_bad_values import process_array_1d_bad_values
 from .classify.classify.train_and_classify import train_and_classify
+from .probability.probability.plot_bayesian_nomogram import plot_bayesian_nomogram
+from .probability.probability.plot_2d import plot_2d
+from .probability.probability.infer_assuming_independence import infer_assuming_independence
+from .probability.probability.infer import infer
+from .probability.probability.compute_posterior_probability import compute_posterior_probability
+from .probability.probability.get_target_grid_indices import get_target_grid_indices
+from .probability.probability.compute_joint_probability import compute_joint_probability
 from .plot.plot.plot_pie import plot_pie
 from .plot.plot.plot_box_or_violin import plot_box_or_violin
 from .plot.plot.make_random_color import make_random_color
@@ -159,7 +172,7 @@ from .variant.variant.access_vcf_dict import read_vcf_gz_and_make_vcf_dict
 from .variant.variant.VariantHDF5 import VariantHDF5
 from .variant.variant.access_maf import split_maf_by_tumor_sample_barcode
 from .variant.variant.access_maf import make_maf_from_vcf
-from .kernel_density.kernel_density.kde import kde
+from .kernel_density.kernel_density.estimate_kernel_density import estimate_kernel_density
 from .kernel_density.kernel_density.compute_bandwidths import compute_bandwidths
 from .cross_validate.cross_validate.cross_validate import cross_validate
 from .feature.feature.get_gff3_attribute import get_gff3_attribute
@@ -223,5 +236,8 @@ from .nd_array.nd_array.compute_empirical_p_values_and_fdrs import compute_empir
 from .nd_array.nd_array.get_coordinates_for_reflection import get_coordinates_for_reflection
 from .nd_array.nd_array.shift_and_log_nd_array import shift_and_log_nd_array
 
+
 explore_components = nmf_consensus_cluster_with_multiple_k
+
 explore_states = hierarchical_consensus_cluster_with_multiple_k
+
