@@ -9,6 +9,7 @@
 Or you can manually install CCAL
 
 ```sh
-pip install ccal
+pip install ccal --no-cache-dir
+
 conda install --channel conda-forge rpy2 r-mass
 ```
