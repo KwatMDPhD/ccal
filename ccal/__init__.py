@@ -26,9 +26,9 @@ from .context.context.make_context_matrix import select_context_and_normalize_co
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
 from .context.context.make_context_matrix_and_summarize_context_by_row import make_context_matrix_and_summarize_context_by_row
 from .context.context.plot_context import plot_context
+from .context.context.process_1d_array_bad_values import process_1d_array_bad_values
 from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
 from .context.context.compute_context import compute_context
-from .context.context.process_array_1d_bad_values import process_array_1d_bad_values
 from .classify.classify.train_and_classify import train_and_classify
 from .probability.probability.plot_bayesian_nomogram import plot_bayesian_nomogram
 from .probability.probability.plot_2d import plot_2d
