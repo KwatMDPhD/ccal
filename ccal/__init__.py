@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.3'
+VERSION = '0.6.4'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -185,7 +185,6 @@ from .sequencing_process.sequencing_process.process_fastq_gz import trim_fastq_g
 from .sequencing_process.sequencing_process.process_fastq_gz import align_fastq_gzs_using_bwa_mem
 from .sequencing_process.sequencing_process.process_fastq_gz import align_fastq_gzs_using_hisat2
 from .sequencing_process.sequencing_process.process_fastq_gz import count_transcripts_using_kallisto_quant
-from .sequencing_process.sequencing_process.simulate import simulate_sequences_using_dwgsim
 from .sequencing_process.sequencing_process.bgzip_and_tabix import bgzip_and_tabix
 from .sequencing_process.sequencing_process.download_clinvar_vcf_gz import download_clinvar_vcf_gz
 from .sequencing_process.sequencing_process.make_reference_genome import make_reference_genome
@@ -194,6 +193,7 @@ from .sequencing_process.sequencing_process.process_vcf_gz import rename_chromos
 from .sequencing_process.sequencing_process.process_vcf_gz import annotate_vcf_gz_using_snpeff
 from .sequencing_process.sequencing_process.process_vcf_gz import annotate_vcf_gz_using_bcftools_annotate
 from .sequencing_process.sequencing_process.process_vcf_gz import filter_vcf_gz_using_bcftools_view
+from .sequencing_process.sequencing_process.simulate_sequences_using_dwgsim import simulate_sequences_using_dwgsim
 from .sequencing_process.sequencing_process.print_and_run_command import print_and_run_command
 from .sequencing_process.sequencing_process.process_bam import sort_and_index_bam_using_samtools_sort_and_index
 from .sequencing_process.sequencing_process.process_bam import index_bam_using_samtools_index
