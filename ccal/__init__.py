@@ -21,11 +21,10 @@ from .cluster.cluster.hierarchical_consensus_cluster import hierarchical_consens
 from .information.information.compute_information_coefficient import compute_information_coefficient
 from .information.information.compute_entropy import compute_entropy
 from .information.information.compute_information_distance import compute_information_distance
-from .context.context.make_context_matrix import make_context_matrix
-from .context.context.make_context_matrix import select_context_and_normalize_context_matrix_by_row
+from .context.context.make_1d_context_matrix import make_1d_context_matrix
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
-from .context.context.make_context_matrix_and_summarize_context_by_row import make_context_matrix_and_summarize_context_by_row
 from .context.context.plot_context import plot_context
+from .context.context.make_2d_context_matrix import make_2d_context_matrix
 from .context.context.process_1d_array_bad_values import process_1d_array_bad_values
 from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
 from .context.context.compute_context import compute_context
