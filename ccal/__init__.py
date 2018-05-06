@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.6'
+VERSION = '0.6.7'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -89,8 +89,9 @@ from .cryptograph.cryptograph.hash_ import hash_directory_files
 from .cryptograph.cryptograph.hash_ import hash_file
 from .cryptograph.cryptograph.hash_ import hash_list_of_str
 from .support.support.df import split_df
-from .support.support.df import drop_df_slices
-from .support.support.df import drop_na_greedily_from_df
+from .support.support.df import drop_df_slice
+from .support.support.df import drop_df_slice_greedily
+from .support.support.df import drop_df_na_greedily
 from .support.support.git import create_gitkeep
 from .support.support.git import get_git_versions
 from .support.support.git import clean_git_url
