@@ -24,7 +24,6 @@ from .information.information.compute_information_distance import compute_inform
 from .context.context.make_1d_context_matrix import make_1d_context_matrix
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
 from .context.context.plot_context import plot_context
-from .context.context.make_2d_context_matrix import make_2d_context_matrix
 from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
 from .context.context.compute_context import compute_context
 from .classify.classify.train_and_classify import train_and_classify
