@@ -72,11 +72,6 @@ from .gct_gmt.gct_gmt.access_gmt import write_gmt
 from .gct_gmt.gct_gmt.access_gct import read_gct
 from .gct_gmt.gct_gmt.access_gct import write_gct
 from .linear_model.linear_model.correlate import correlate
-from .mutational_signature.mutational_signature.mutational_signature import compute_mutational_signature_enrichment
-from .mutational_signature.mutational_signature.loadmutsigs import reversecomplement
-from .mutational_signature.mutational_signature.loadmutsigs import makedictkey
-from .mutational_signature.mutational_signature.loadmutsigs import makereversecomplementdictkey
-from .mutational_signature.mutational_signature.loadmutsigs import makesigdict
 from .cryptograph.cryptograph.access_passcode import hash_passcode
 from .cryptograph.cryptograph.access_passcode import match_passcode_with_passcode_hash
 from .cryptograph.cryptograph.crypt_with_aes import encrypt_directory_files
