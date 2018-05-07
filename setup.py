@@ -1,8 +1,9 @@
 from os import walk
 from os.path import join
 
-from ccal import VERSION
 from setuptools import setup
+
+from ccal import VERSION
 
 name = 'ccal'
 
@@ -47,7 +48,7 @@ setup(
                  'Programming Language :: Python :: 3.6',
                  'Natural Language :: English',
                  'Topic :: Scientific/Engineering :: Bio-Informatics'),
-    keywords='Computational Cancer Analysis',
+    keywords='Data Craft',
     packages=packages,
     python_requires='>=3.3',
     install_requires=('biopython>=1.70.0', 'click>=6.7.0', 'geoparse>=1.0.5',
