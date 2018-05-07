@@ -52,9 +52,6 @@
 [submodule "ccal/matrix_factorization"]
 	path = ccal/matrix_factorization
 	url = https://github.com/KwatME/matrix_factorization
-[submodule "ccal/mutational_signature"]
-	path = ccal/mutational_signature
-	url = https://github.com/KwatME/mutational_signature
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/KwatME/nd_array
