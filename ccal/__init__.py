@@ -11,7 +11,6 @@ from .tcga.tcga.read_mutsignozzlereport2cv import read_mutsignozzlereport2cv
 from .nmf_map.nmf_map.anneal_node_and_element_positions import anneal_node_and_element_positions
 from .nmf_map.nmf_map.get_triangulation_edges import get_triangulation_edges
 from .nmf_map.nmf_map.NMFMap import NMFMap
-from .nmf_map.nmf_map.plot_nmf_map import plot_nmf_map
 from .nmf_map.nmf_map.get_elements_near_state_centroids import get_elements_near_state_centroids
 from .cluster.cluster.nmf_consensus_cluster_with_multiple_k import nmf_consensus_cluster_with_multiple_k
 from .cluster.cluster.nmf_consensus_cluster import nmf_consensus_cluster
@@ -34,6 +33,7 @@ from .probability.probability.infer import infer
 from .probability.probability.compute_posterior_probability import compute_posterior_probability
 from .probability.probability.get_target_grid_indices import get_target_grid_indices
 from .probability.probability.compute_joint_probability import compute_joint_probability
+from .plot.plot.make_html_and_plotly_file_paths import make_html_and_plotly_file_paths
 from .plot.plot.plot_pie import plot_pie
 from .plot.plot.plot_box_or_violin import plot_box_or_violin
 from .plot.plot.make_random_color import make_random_color
