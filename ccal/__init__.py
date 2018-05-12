@@ -59,6 +59,7 @@ from .match.match.make_summary_match_panel import make_summary_match_panel
 from .match.match.process_target_or_features_for_plotting import process_target_or_features_for_plotting
 from .match.match.make_annotations import make_annotations
 from .match.match.make_match_panel import make_match_panel
+from .match.match.make_match_panels import make_match_panels
 from .match.match.make_comparison_panel import make_comparison_panel
 from .match.match.match import match
 from .match.match.match import match_randomly_sampled_target_and_features_to_compute_margin_of_errors
