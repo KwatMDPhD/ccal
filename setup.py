@@ -1,9 +1,8 @@
 from os import walk
 from os.path import join
 
-from setuptools import setup
-
 from ccal import VERSION
+from setuptools import setup
 
 name = 'ccal'
 
@@ -53,8 +52,8 @@ setup(
     python_requires='>=3.3',
     install_requires=('biopython>=1.70.0', 'click>=6.7.0', 'geoparse>=1.0.5',
                       'matplotlib>=2.1.1', 'numpy>=1.12.1', 'pandas>=0.22.0',
-                      'pefile>=2017.8.1', 'pycrypto>=2.6.1',
-                      'scikit-learn>=0.19.1', 'scipy>=1.0.0',
+                      'pefile>=2017.8.1', 'plotly>=2.5.1', 'pycrypto>=2.6.1',
+                      'pytabix>=0.0.2', 'scikit-learn>=0.19.1', 'scipy>=1.0.0',
                       'statsmodels>=0.8.0'),
 
     # And must install manually: $ conda install -c conda-forge rpy2 r-mass
