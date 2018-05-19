@@ -61,6 +61,7 @@ from .matrix_factorization.matrix_factorization.solve_for_nmf_h import solve_for
 from .matrix_factorization.matrix_factorization.nmf import nmf
 from .geo.geo.get_and_parse_geo_data import get_and_parse_geo_data
 from .gct_gmt.gct_gmt.access_gmt import read_gmts
+from .gct_gmt.gct_gmt.access_gmt import read_gmt
 from .gct_gmt.gct_gmt.access_gmt import write_gmt
 from .gct_gmt.gct_gmt.access_gct import read_gct
 from .gct_gmt.gct_gmt.access_gct import write_gct
