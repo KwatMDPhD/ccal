@@ -21,6 +21,7 @@ from .context.context.summarize_1d_context_matrix import summarize_1d_context_ma
 from .context.context.make_1d_context_matrix import make_1d_context_matrix
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
 from .context.context.plot_context import plot_context
+from .context.context.make_signal_matrix_from_1d_context_matrices import make_signal_matrix_from_1d_context_matrices
 from .context.context.make_signal_matrix_from_context_matrix import make_signal_matrix_from_context_matrix
 from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
 from .context.context.compute_context import compute_context
