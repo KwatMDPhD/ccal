@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.9'
+VERSION = '0.6.10'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -17,12 +17,12 @@ from .cluster.cluster.hierarchical_consensus_cluster import hierarchical_consens
 from .information.information.compute_information_coefficient import compute_information_coefficient
 from .information.information.compute_entropy import compute_entropy
 from .information.information.compute_information_distance import compute_information_distance
+from .context.context.make_1d_signal_matrix import make_1d_signal_matrix
 from .context.context.summarize_1d_context_matrix import summarize_1d_context_matrix
 from .context.context.make_1d_context_matrix import make_1d_context_matrix
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
 from .context.context.plot_context import plot_context
-from .context.context.make_signal_matrix_from_1d_context_matrices import make_signal_matrix_from_1d_context_matrices
-from .context.context.make_signal_matrix_from_context_matrix import make_signal_matrix_from_context_matrix
+from .context.context.make_2d_signal_matrix import make_2d_signal_matrix
 from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
 from .context.context.compute_context import compute_context
 from .classify.classify.train_and_classify import train_and_classify
