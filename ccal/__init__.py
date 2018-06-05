@@ -60,7 +60,7 @@ from .match.match.make_match_panels import make_match_panels
 from .match.match.make_comparison_panel import make_comparison_panel
 from .matrix_factorization.matrix_factorization.solve_for_nmf_h import solve_for_nmf_h
 from .matrix_factorization.matrix_factorization.nmf import nmf
-from .geo.geo.get_and_parse_geo_data import get_and_parse_geo_data
+from .geo.geo.download_and_parse_geo_data import download_and_parse_geo_data
 from .gct_gmt.gct_gmt.access_gmt import read_gmts
 from .gct_gmt.gct_gmt.access_gmt import read_gmt
 from .gct_gmt.gct_gmt.access_gmt import write_gmt
