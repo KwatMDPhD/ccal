@@ -23,7 +23,7 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
     print('\tfeature_x_sample.shape: {}'.format(feature_x_sample.shape))
 
-    _print_n_na(feature_x_sample, n_tab=1)
+    _print_n_na(feature_x_sample, prefix='\t')
 
     if feature_x_sample.index.has_duplicates:
 
@@ -57,7 +57,7 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
         feature_x_sample[is_0] = nan
 
-        _print_n_na(feature_x_sample, n_tab=1)
+        _print_n_na(feature_x_sample, prefix='\t')
 
     if min_n_not_na_unique_value is not None:
 
@@ -94,6 +94,8 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
     print('\nShape: {}'.format(feature_x_sample.shape))
 
+    _print_n_na(feature_x_sample, prefix='\n')
+
     if feature_x_sample.size < 1e6:
 
         plot_heat_map(
@@ -105,16 +107,14 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
         title='NA Distribution',
         xaxis_title='Number of NA')
 
-    _print_n_na(feature_x_sample, n_tab=1)
-
     return feature_x_sample
 
 
-def _print_n_na(feature_x_sample, n_tab=0):
+def _print_n_na(feature_x_sample, prefix=''):
 
     n_0 = feature_x_sample.isna().values.sum()
 
     percent_0 = n_0 / feature_x_sample.size * 100
 
-    print('\t' * n_tab +
-          'feature_x_sample N NA: {} ({:.2f}%)'.format(n_0, percent_0))
+    print('{}feature_x_sample N NA: {} ({:.2f}%)'.format(
+        prefix, n_0, percent_0))
