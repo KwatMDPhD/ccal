@@ -43,17 +43,11 @@ from .plot.plot.plot_and_save import plot_and_save
 from .plot.plot.plot_bar import plot_bar
 from .plot.plot.plot_table import plot_table
 from .hdf5.hdf5.read_where_and_map_column_names import read_where_and_map_column_names
-from .gsea.gsea._compute_gene_scores import compute_euclidean_distance
-from .gsea.gsea._compute_gene_scores import compute_pearsons_correlation
-from .gsea.gsea._compute_gene_scores import compute_cosine_similarity
 from .gsea.gsea.single_sample_gseas import single_sample_gseas
 from .gsea.gsea.single_sample_gsea import single_sample_gsea
 from .gsea.gsea.gsea import gsea
 from .regress.regress.train_and_regress import train_and_regress
 from .match.match.make_summary_match_panel import make_summary_match_panel
-from .match.match._match import match_randomly_sampled_target_and_features_to_compute_margin_of_errors
-from .match.match._match import permute_target_and_match_target_and_features
-from .match.match._match import match_target_and_features
 from .match.match.make_match_panel import make_match_panel
 from .match.match.make_match_panels import make_match_panels
 from .match.match.make_comparison_panel import make_comparison_panel
@@ -218,9 +212,4 @@ from .nd_array.nd_array.nd_array_is_sorted import nd_array_is_sorted
 from .nd_array.nd_array.compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
 from .nd_array.nd_array.get_coordinates_for_reflection import get_coordinates_for_reflection
 from .nd_array.nd_array.shift_and_log_nd_array import shift_and_log_nd_array
-
-
-explore_components = nmf_consensus_cluster_with_multiple_k
-
-explore_states = hierarchical_consensus_cluster_with_multiple_k
-
+from .read_and_process_feature_x_sample import read_and_process_feature_x_sample
