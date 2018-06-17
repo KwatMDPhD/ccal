@@ -61,6 +61,10 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
     if min_n_not_na_unique_value is not None:
 
+        if min_n_not_na_unique_value == 'max':
+
+            min_n_not_na_unique_value = min(feature_x_sample.shape)
+
         print('\nDropping slice (min_n_not_na_unique_value={}) greedily ...'.
               format(min_n_not_na_unique_value))
 
