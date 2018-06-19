@@ -21,9 +21,9 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
     feature_x_sample = read_table(feature_x_sample_file_path, index_col=0)
 
-    print('\tfeature_x_sample.shape: {}'.format(feature_x_sample.shape))
+    print('\nfeature_x_sample.shape: {}'.format(feature_x_sample.shape))
 
-    _print_n_na(feature_x_sample, prefix='\t')
+    _print_n_na(feature_x_sample, prefix='\n')
 
     if feature_x_sample.index.has_duplicates:
 
