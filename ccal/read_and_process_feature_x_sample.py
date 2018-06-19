@@ -35,17 +35,17 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
     if features_to_drop is not None:
 
-        print('\nDropping features: {} ...'.format(features_to_drop))
-
         features_to_drop = feature_x_sample.index & set(features_to_drop)
+
+        print('\nDropping features: {} ...'.format(features_to_drop))
 
         feature_x_sample.drop(features_to_drop, inplace=True)
 
     if samples_to_drop is not None:
 
-        print('\nDropping samples: {} ...'.format(samples_to_drop))
-
         samples_to_drop = feature_x_sample.columns & set(samples_to_drop)
+
+        print('\nDropping samples: {} ...'.format(samples_to_drop))
 
         feature_x_sample.drop(samples_to_drop, axis=1, inplace=True)
 
