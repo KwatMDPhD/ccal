@@ -61,7 +61,7 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
         _print_n_na(feature_x_sample, prefix='\t')
 
-    if max_na is not None and min_n_not_na_unique_value is not None:
+    if max_na is not None or min_n_not_na_unique_value is not None:
 
         if min_n_not_na_unique_value == 'max':
 
