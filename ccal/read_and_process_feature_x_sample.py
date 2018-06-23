@@ -5,13 +5,14 @@ from .nd_array.nd_array.normalize_nd_array import normalize_nd_array
 from .nd_array.nd_array.shift_and_log_nd_array import shift_and_log_nd_array
 from .plot.plot.plot_distributions import plot_distributions
 from .plot.plot.plot_heat_map import plot_heat_map
-from .support.support.df import drop_df_slice_greedily
+from .support.support.df import drop_df_slice, drop_df_slice_greedily
 
 
 def read_and_process_feature_x_sample(feature_x_sample_file_path,
                                       features_to_drop=None,
                                       samples_to_drop=None,
                                       nanize_0=False,
+                                      drop_na_axis=None,
                                       max_na=None,
                                       min_n_not_na_unique_value=None,
                                       log=False,
@@ -60,25 +61,30 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
         _print_n_na(feature_x_sample, prefix='\t')
 
-    if max_na is not None:
-
-        print('\nDropping slice (max_na={}) greedily ...'.format(max_na))
-
-        feature_x_sample = drop_df_slice_greedily(
-            feature_x_sample, max_na=max_na)
-
-    if min_n_not_na_unique_value is not None:
+    if max_na is not None and min_n_not_na_unique_value is not None:
 
         if min_n_not_na_unique_value == 'max':
 
             min_n_not_na_unique_value = min(feature_x_sample.shape)
 
-        print('\nDropping slice (min_n_not_na_unique_value={}) greedily ...'.
-              format(min_n_not_na_unique_value))
+        print(
+            '\nDropping slice (max_na={} & min_n_not_na_unique_value={}) ...'.
+            format(max_na, min_n_not_na_unique_value))
 
-        feature_x_sample = drop_df_slice_greedily(
-            feature_x_sample,
-            min_n_not_na_unique_value=min_n_not_na_unique_value)
+        if drop_na_axis is None:
+
+            feature_x_sample = drop_df_slice_greedily(
+                feature_x_sample,
+                max_na=max_na,
+                min_n_not_na_unique_value=min_n_not_na_unique_value)
+
+        else:
+
+            feature_x_sample = drop_df_slice(
+                feature_x_sample,
+                drop_na_axis,
+                max_na=max_na,
+                min_n_not_na_unique_value=min_n_not_na_unique_value)
 
     if log:
 
