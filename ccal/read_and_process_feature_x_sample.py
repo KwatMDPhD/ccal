@@ -12,6 +12,7 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
                                       features_to_drop=None,
                                       samples_to_drop=None,
                                       nanize_0=False,
+                                      max_na=None,
                                       min_n_not_na_unique_value=None,
                                       log=False,
                                       normalization_method=None,
@@ -58,6 +59,13 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
         feature_x_sample[is_0] = nan
 
         _print_n_na(feature_x_sample, prefix='\t')
+
+    if max_na is not None:
+
+        print('\nDropping slice (max_na={}) greedily ...'.format(max_na))
+
+        feature_x_sample = drop_df_slice_greedily(
+            feature_x_sample, max_na=max_na)
 
     if min_n_not_na_unique_value is not None:
 
