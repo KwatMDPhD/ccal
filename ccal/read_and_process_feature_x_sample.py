@@ -119,11 +119,15 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
         plot_heat_map(
             feature_x_sample, xaxis_title='Sample', yaxis_title='Feature')
 
-    plot_distributions(
-        ('Feature', 'Sample'),
-        (feature_x_sample.isna().sum(axis=1), feature_x_sample.isna().sum()),
-        title='NA Distribution',
-        xaxis_title='Number of NA')
+    isna__feature_x_sample = feature_x_sample.isna()
+
+    if isna__feature_x_sample.values.any():
+
+        plot_distributions(
+            ('Feature', 'Sample'),
+            (isna__feature_x_sample.sum(axis=1), isna__feature_x_sample.sum()),
+            title='NA Distribution',
+            xaxis_title='Number of NA')
 
     return feature_x_sample
 
