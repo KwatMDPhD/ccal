@@ -12,20 +12,18 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
                                       features_to_drop=None,
                                       samples_to_drop=None,
                                       nanize_0=False,
-                                      drop_na_axis=None,
                                       max_na=None,
                                       min_n_not_na_unique_value=None,
+                                      drop_na_axis=None,
                                       log=False,
                                       normalization_method=None,
                                       normalization_axis=None):
 
-    print('\nReading and processing {} ...'.format(feature_x_sample_file_path))
+    print('Reading and processing {} ...'.format(feature_x_sample_file_path))
 
     feature_x_sample = read_table(feature_x_sample_file_path, index_col=0)
 
-    print('\nfeature_x_sample.shape: {}'.format(feature_x_sample.shape))
-
-    _print_n_na(feature_x_sample, prefix='\n')
+    print('Shape: {}'.format(feature_x_sample.shape))
 
     if feature_x_sample.index.has_duplicates:
 
@@ -39,27 +37,31 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
         features_to_drop = feature_x_sample.index & set(features_to_drop)
 
-        print('\nDropping features: {} ...'.format(features_to_drop))
+        print('Dropping features: {} ...'.format(features_to_drop))
 
         feature_x_sample.drop(features_to_drop, inplace=True)
+
+        print('Shape: {}'.format(feature_x_sample.shape))
 
     if samples_to_drop is not None:
 
         samples_to_drop = feature_x_sample.columns & set(samples_to_drop)
 
-        print('\nDropping samples: {} ...'.format(samples_to_drop))
+        print('Dropping samples: {} ...'.format(samples_to_drop))
 
         feature_x_sample.drop(samples_to_drop, axis=1, inplace=True)
 
+        print('Shape: {}'.format(feature_x_sample.shape))
+
+    _summarize_na(feature_x_sample)
+
     if nanize_0:
 
-        print('\nNANizing 0 ...')
+        print('NANizing 0 ...')
 
-        is_0 = feature_x_sample == 0
+        feature_x_sample[feature_x_sample == 0] = nan
 
-        feature_x_sample[is_0] = nan
-
-        _print_n_na(feature_x_sample, prefix='\t')
+        _summarize_na(feature_x_sample, prefix='(After NANizing) ')
 
     if max_na is not None or min_n_not_na_unique_value is not None:
 
@@ -68,8 +70,8 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
             min_n_not_na_unique_value = min(feature_x_sample.shape)
 
         print(
-            '\nDropping slice (max_na={} & min_n_not_na_unique_value={}) ...'.
-            format(max_na, min_n_not_na_unique_value))
+            'Dropping slice (max_na={} & min_n_not_na_unique_value={} & drop_na_axis={}) ...'.
+            format(max_na, min_n_not_na_unique_value, drop_na_axis))
 
         if drop_na_axis is None:
 
@@ -86,9 +88,13 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
                 max_na=max_na,
                 min_n_not_na_unique_value=min_n_not_na_unique_value)
 
+        print('Shape: {}'.format(feature_x_sample.shape))
+
+        _summarize_na(feature_x_sample, prefix='(After Dropping Slice) ')
+
     if log:
 
-        print('\nShifting (as needed) and logging ...')
+        print('Shifting (as needed) and logging ...')
 
         feature_x_sample = DataFrame(
             shift_and_log_nd_array(
@@ -98,8 +104,8 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
     if normalization_method is not None:
 
-        print('\n{} normalizing (axis={}) ...'.format(normalization_method,
-                                                      normalization_axis))
+        print('{} normalizing (axis={}) ...'.format(normalization_method,
+                                                    normalization_axis))
 
         feature_x_sample = DataFrame(
             normalize_nd_array(
@@ -110,14 +116,21 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
             index=feature_x_sample.index,
             columns=feature_x_sample.columns)
 
-    print('\nShape: {}'.format(feature_x_sample.shape))
-
-    _print_n_na(feature_x_sample, prefix='\n')
-
     if feature_x_sample.size < 1e6:
 
         plot_heat_map(
             feature_x_sample, xaxis_title='Sample', yaxis_title='Feature')
+
+    return feature_x_sample
+
+
+def _summarize_na(feature_x_sample, prefix=''):
+
+    n_0 = feature_x_sample.isna().values.sum()
+
+    percent_0 = n_0 / feature_x_sample.size * 100
+
+    print('{}N NA: {} ({:.2f}%)'.format(prefix, n_0, percent_0))
 
     isna__feature_x_sample = feature_x_sample.isna()
 
@@ -126,17 +139,5 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
         plot_distributions(
             ('Feature', 'Sample'),
             (isna__feature_x_sample.sum(axis=1), isna__feature_x_sample.sum()),
-            title='NA Distribution',
+            title='{}NA Distribution'.format(prefix),
             xaxis_title='Number of NA')
-
-    return feature_x_sample
-
-
-def _print_n_na(feature_x_sample, prefix=''):
-
-    n_0 = feature_x_sample.isna().values.sum()
-
-    percent_0 = n_0 / feature_x_sample.size * 100
-
-    print('{}feature_x_sample N NA: {} ({:.2f}%)'.format(
-        prefix, n_0, percent_0))
