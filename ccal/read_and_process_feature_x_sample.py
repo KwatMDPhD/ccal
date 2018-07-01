@@ -67,7 +67,14 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
         if min_n_not_na_unique_value == 'max':
 
-            min_n_not_na_unique_value = min(feature_x_sample.shape)
+            if drop_na_axis is None:
+
+                min_n_not_na_unique_value = min(feature_x_sample.shape)
+
+            else:
+
+                min_n_not_na_unique_value = feature_x_sample.shape[
+                    drop_na_axis]
 
         print(
             'Dropping slice (max_na={} & min_n_not_na_unique_value={} & drop_na_axis={}) ...'.
