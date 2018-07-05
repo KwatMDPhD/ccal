@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.21'
+VERSION = '0.6.22'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -8,6 +8,8 @@ from .tcga.tcga.make_case_annotations import make_case_annotations
 from .tcga.tcga.read_copynumber_gistic2 import read_copynumber_gistic2
 from .tcga.tcga.read_correlate_copynumber_vs_mrnaseq import read_correlate_copynumber_vs_mrnaseq
 from .tcga.tcga.read_mutsignozzlereport2cv import read_mutsignozzlereport2cv
+from .nmf_map.nmf_map.access_nmf_map import dump_nmf_map
+from .nmf_map.nmf_map.access_nmf_map import load_nmf_map
 from .nmf_map.nmf_map.NMFMap import NMFMap
 from .cluster.cluster.nmf_consensus_cluster_with_multiple_k import nmf_consensus_cluster_with_multiple_k
 from .cluster.cluster.nmf_consensus_cluster import nmf_consensus_cluster
