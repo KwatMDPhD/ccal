@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.22'
+VERSION = '0.6.23'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -158,7 +158,7 @@ from .kernel_density.kernel_density.compute_bandwidths import compute_bandwidths
 from .cross_validate.cross_validate.cross_validate import cross_validate
 from .feature.feature.get_gff3_attribute import get_gff3_attribute
 from .feature.feature.index_gff3_df_by_name import index_gff3_df_by_name
-from .feature.feature.read_gff3_gz import read_gff3
+from .feature.feature.read_gff3_gz import read_gff3_gz
 from .feature.feature.FeatureHDF5 import FeatureHDF5
 from .sequencing_process.sequencing_process.process_fastq_gz import check_fastq_gzs
 from .sequencing_process.sequencing_process.process_fastq_gz import check_fastq_gzs_using_fastqc
