@@ -12,12 +12,12 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
                                       features_to_drop=None,
                                       samples_to_drop=None,
                                       nanize_0=False,
+                                      drop_na_axis=None,
                                       max_na=None,
                                       min_n_not_na_unique_value=None,
-                                      drop_na_axis=None,
                                       log=False,
-                                      normalization_method=None,
-                                      normalization_axis=None):
+                                      normalization_axis=None,
+                                      normalization_method=None):
 
     print('Reading and processing {} ...'.format(feature_x_sample_file_path))
 
@@ -77,8 +77,8 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
                     drop_na_axis]
 
         print(
-            'Dropping slice (max_na={} & min_n_not_na_unique_value={} & drop_na_axis={}) ...'.
-            format(max_na, min_n_not_na_unique_value, drop_na_axis))
+            'Dropping slice (drop_na_axis={} & max_na={} & min_n_not_na_unique_value={}) ...'.
+            format(drop_na_axis, max_na, min_n_not_na_unique_value))
 
         if drop_na_axis is None:
 
@@ -111,14 +111,14 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
     if normalization_method is not None:
 
-        print('{} normalizing (axis={}) ...'.format(normalization_method,
-                                                    normalization_axis))
+        print('Axis-{} {} normalizing ...'.format(normalization_axis,
+                                                  normalization_method))
 
         feature_x_sample = DataFrame(
             normalize_nd_array(
                 feature_x_sample.values,
-                normalization_method,
                 normalization_axis,
+                normalization_method,
                 raise_for_bad_value=False),
             index=feature_x_sample.index,
             columns=feature_x_sample.columns)
