@@ -121,8 +121,6 @@ from .support.support.conda import conda_is_installed
 from .support.support.conda import get_conda_environments
 from .support.support.conda import get_conda_prefix
 from .linear_algebra.linear_algebra.solve_ax_equal_b import solve_ax_equal_b
-from .matrix_factorization.matrix_factorization.nmf import nmf
-from .matrix_factorization.matrix_factorization.solve_for_nmf_h import solve_for_nmf_h
 from .plot.plot.plot_bar import plot_bar
 from .plot.plot.plot_heat_map import plot_heat_map
 from .plot.plot.plot_box_or_violin import plot_box_or_violin
