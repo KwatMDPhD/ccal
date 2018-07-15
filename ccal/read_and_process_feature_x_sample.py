@@ -15,6 +15,7 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
                                       drop_na_axis=None,
                                       max_na=None,
                                       min_n_not_na_unique_value=None,
+                                      shift_before_log=False,
                                       log=False,
                                       normalization_axis=None,
                                       normalization_method=None):
@@ -105,7 +106,9 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
         feature_x_sample = DataFrame(
             shift_and_log_nd_array(
-                feature_x_sample.values, raise_for_bad_value=False),
+                feature_x_sample.values,
+                raise_for_bad_value=False,
+                shift=shift_before_log),
             index=feature_x_sample.index,
             columns=feature_x_sample.columns)
 
