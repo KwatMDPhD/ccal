@@ -1,24 +1,26 @@
 from numpy import nan
 from pandas import DataFrame, read_table
 
+from .nd_array.nd_array.log_nd_array import log_nd_array
 from .nd_array.nd_array.normalize_nd_array import normalize_nd_array
-from .nd_array.nd_array.shift_and_log_nd_array import shift_and_log_nd_array
 from .plot.plot.plot_distributions import plot_distributions
 from .plot.plot.plot_heat_map import plot_heat_map
 from .support.support.df import drop_df_slice, drop_df_slice_greedily
 
 
-def read_and_process_feature_x_sample(feature_x_sample_file_path,
-                                      features_to_drop=None,
-                                      samples_to_drop=None,
-                                      nanize_0=False,
-                                      drop_na_axis=None,
-                                      max_na=None,
-                                      min_n_not_na_unique_value=None,
-                                      shift_over_1_before_logging=False,
-                                      log=False,
-                                      normalization_axis=None,
-                                      normalization_method=None):
+def read_and_process_feature_x_sample(
+        feature_x_sample_file_path,
+        features_to_drop=None,
+        samples_to_drop=None,
+        nanize_0=False,
+        drop_na_axis=None,
+        max_na=None,
+        min_n_not_na_unique_value=None,
+        log=False,
+        shift_as_necessary_to_achieve_min_before_logging=None,
+        log_base='e',
+        normalization_axis=None,
+        normalization_method=None):
 
     print('Reading and processing {} ...'.format(feature_x_sample_file_path))
 
@@ -102,13 +104,17 @@ def read_and_process_feature_x_sample(feature_x_sample_file_path,
 
     if log:
 
-        print('Shifting (as needed) and logging ...')
+        print(
+            'Logging (shift_as_necessary_to_achieve_min_before_logging={} & log_base={}) ...'.
+            format(shift_as_necessary_to_achieve_min_before_logging, log_base))
 
         feature_x_sample = DataFrame(
-            shift_and_log_nd_array(
+            log_nd_array(
                 feature_x_sample.values,
                 raise_for_bad_value=False,
-                shift_over_1_before_logging=shift_over_1_before_logging),
+                shift_as_necessary_to_achieve_min_before_logging=
+                shift_as_necessary_to_achieve_min_before_logging,
+                log_base=log_base),
             index=feature_x_sample.index,
             columns=feature_x_sample.columns)
 
