@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.23'
+VERSION = '0.6.24'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -35,13 +35,12 @@ from .sequencing_process.sequencing_process.process_bam import sort_and_index_ba
 from .sequencing_process.sequencing_process.process_bam import index_bam_using_samtools_index
 from .sequencing_process.sequencing_process.process_bam import mark_duplicates_in_bam_using_picard_markduplicates
 from .sequencing_process.sequencing_process.process_bam import check_bam_using_samtools_flagstat
-from .sequencing_process.sequencing_process.process_bam import check_fastq_gz_or_bam_using_fastqp
 from .sequencing_process.sequencing_process.process_bam import get_variants_from_bam_using_freebayes_and_multiprocess
 from .sequencing_process.sequencing_process.process_bam import get_variants_from_bam_using_freebayes
 from .sequencing_process.sequencing_process.process_bam import get_variants_from_bam_using_strelka
+from .sequencing_process.sequencing_process.process_fasta import faidx_fasta
 from .sequencing_process.sequencing_process.bgzip_and_tabix import bgzip_and_tabix
 from .sequencing_process.sequencing_process.download_clinvar_vcf_gz import download_clinvar_vcf_gz
-from .sequencing_process.sequencing_process.process_fastq_gz import check_fastq_gzs
 from .sequencing_process.sequencing_process.process_fastq_gz import check_fastq_gzs_using_fastqc
 from .sequencing_process.sequencing_process.process_fastq_gz import trim_fastq_gzs_using_skewer
 from .sequencing_process.sequencing_process.process_fastq_gz import align_fastq_gzs_using_bwa_mem
@@ -111,6 +110,7 @@ from .support.support.df import split_df
 from .support.support.compression import gzip_compress_file
 from .support.support.compression import gzip_decompress_file
 from .support.support.compression import gzip_decompress_and_bgzip_compress_file
+from .support.support.get_function_name import get_function_name
 from .support.support.log import get_now
 from .support.support.log import initialize_logger
 from .support.support.log import echo_or_print
