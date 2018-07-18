@@ -30,6 +30,8 @@ from .genome.genome.Genome import is_valid_vcf_gz
 from .genome.genome.Genome import Genome
 from .kernel_density.kernel_density.compute_bandwidths import compute_bandwidths
 from .kernel_density.kernel_density.estimate_kernel_density import estimate_kernel_density
+from .matrix_factorize.matrix_factorize.nmf import nmf
+from .matrix_factorize.matrix_factorize.solve_for_nmf_h import solve_for_nmf_h
 from .linear_model.linear_model.correlate import correlate
 from .sequencing_process.sequencing_process.process_bam import sort_and_index_bam_using_samtools_sort_and_index
 from .sequencing_process.sequencing_process.process_bam import index_bam_using_samtools_index
