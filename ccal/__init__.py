@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.24'
+VERSION = '0.6.25'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -157,13 +157,12 @@ from .feature.feature.index_gff3_df_by_name import index_gff3_df_by_name
 from .feature.feature.FeatureHDF5 import FeatureHDF5
 from .feature.feature.get_gff3_attribute import get_gff3_attribute
 from .feature.feature.read_gff3_gz import read_gff3_gz
+from .context.context.select_elements_by_context import select_elements_by_context
 from .context.context.plot_context import plot_context
-from .context.context.summarize_1d_context_matrix import summarize_1d_context_matrix
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
+from .context.context.make_context_matrix import make_context_matrix
 from .context.context.fit_skew_t_pdfs import fit_skew_t_pdfs
 from .context.context.compute_context import compute_context
-from .context.context.make_1d_context_matrix import make_1d_context_matrix
-from .context.context.make_2d_signal_matrix import make_2d_signal_matrix
 from .match.match.make_summary_match_panel import make_summary_match_panel
 from .match.match.make_match_panel import make_match_panel
 from .match.match.make_match_panels import make_match_panels
