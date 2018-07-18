@@ -49,9 +49,9 @@
 [submodule "ccal/match"]
 	path = ccal/match
 	url = https://github.com/KwatME/match
-[submodule "ccal/matrix_factorization"]
-	path = ccal/matrix_factorization
-	url = https://github.com/KwatME/matrix_factorization
+[submodule "ccal/matrix_factorize"]
+	path = ccal/matrix_factorize
+	url = https://github.com/KwatME/matrix_factorize
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/KwatME/nd_array
