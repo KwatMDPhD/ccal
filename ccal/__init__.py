@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.26'
+VERSION = '0.6.27'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -117,6 +117,7 @@ from .plot.plot.plot_bar import plot_bar
 from .plot.plot.plot_points import plot_points
 from .plot.plot.plot_box_or_violin import plot_box_or_violin
 from .plot.plot.plot_distributions import plot_distributions
+from .plot.plot.plot_color_text import plot_color_text
 from .plot.plot.plot_bubble_map import plot_bubble_map
 from .plot.plot.make_colorscale import make_colorscale
 from .plot.plot.plot_and_save import plot_and_save
