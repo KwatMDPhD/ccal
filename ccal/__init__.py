@@ -152,7 +152,6 @@ from .match.match.make_summary_match_panel import make_summary_match_panel
 from .match.match.make_match_panels import make_match_panels
 from .match.match.make_match_panel import make_match_panel
 from .match.match.make_comparison_panel import make_comparison_panel
-from .context.context.select_elements_by_context import select_elements_by_context
 from .context.context.make_context_matrix import make_context_matrix
 from .context.context.plot_context import plot_context
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
