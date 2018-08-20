@@ -12,13 +12,12 @@ def read_and_process_feature_x_sample(
         feature_x_sample_file_path,
         features_to_drop=None,
         samples_to_drop=None,
-        nanize_0=False,
+        nanize=False,
         drop_na_axis=None,
         max_na=None,
         min_n_not_na_unique_value=None,
-        log=False,
+        log_base=None,
         shift_as_necessary_to_achieve_min_before_logging=None,
-        log_base='e',
         normalization_axis=None,
         normalization_method=None,
 ):
@@ -69,15 +68,15 @@ def read_and_process_feature_x_sample(
 
     _summarize_na(feature_x_sample)
 
-    if nanize_0:
+    if nanize is not None:
 
-        print('NANizing 0 ...')
+        print('NANizing <= {} ...'.format(nanize))
 
-        feature_x_sample[feature_x_sample == 0] = nan
+        feature_x_sample[feature_x_sample <= nanize] = nan
 
         _summarize_na(
             feature_x_sample,
-            prefix='(After NANizing) ',
+            prefix='(After NANizing <= {}) '.format(nanize),
         )
 
     if max_na is not None or min_n_not_na_unique_value is not None:
@@ -125,7 +124,7 @@ def read_and_process_feature_x_sample(
             prefix='(After Dropping Slice) ',
         )
 
-    if log:
+    if log_base is not None:
 
         print(
             'Logging (shift_as_necessary_to_achieve_min_before_logging={} & log_base={}) ...'.
