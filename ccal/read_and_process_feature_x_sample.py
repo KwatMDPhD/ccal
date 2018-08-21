@@ -12,7 +12,7 @@ def read_and_process_feature_x_sample(
         feature_x_sample_file_path,
         features_to_drop=None,
         samples_to_drop=None,
-        nanize=False,
+        nanize=None,
         drop_na_axis=None,
         max_na=None,
         min_n_not_na_unique_value=None,
@@ -20,6 +20,7 @@ def read_and_process_feature_x_sample(
         shift_as_necessary_to_achieve_min_before_logging=None,
         normalization_axis=None,
         normalization_method=None,
+        plot=False,
 ):
 
     print('Reading and processing {} ...'.format(feature_x_sample_file_path))
@@ -66,7 +67,10 @@ def read_and_process_feature_x_sample(
 
         print('Shape: {}'.format(feature_x_sample.shape))
 
-    _summarize_na(feature_x_sample)
+    _summarize_na(
+        feature_x_sample,
+        plot=plot,
+    )
 
     if nanize is not None:
 
@@ -77,6 +81,7 @@ def read_and_process_feature_x_sample(
         _summarize_na(
             feature_x_sample,
             prefix='(After NANizing <= {}) '.format(nanize),
+            plot=plot,
         )
 
     if max_na is not None or min_n_not_na_unique_value is not None:
@@ -122,6 +127,7 @@ def read_and_process_feature_x_sample(
         _summarize_na(
             feature_x_sample,
             prefix='(After Dropping Slice) ',
+            plot=plot,
         )
 
     if log_base is not None:
@@ -165,11 +171,13 @@ def read_and_process_feature_x_sample(
 
     if feature_x_sample.size < 1e6:
 
-        plot_heat_map(
-            feature_x_sample,
-            xaxis_title='Sample',
-            yaxis_title='Feature',
-        )
+        if plot:
+
+            plot_heat_map(
+                feature_x_sample,
+                xaxis_title='Sample',
+                yaxis_title='Feature',
+            )
 
     return feature_x_sample
 
@@ -177,6 +185,7 @@ def read_and_process_feature_x_sample(
 def _summarize_na(
         feature_x_sample,
         prefix='',
+        plot=False,
 ):
 
     n_0 = feature_x_sample.isna().values.sum()
@@ -193,15 +202,17 @@ def _summarize_na(
 
     if isna__feature_x_sample.values.any():
 
-        plot_distributions(
-            (
-                'Feature',
-                'Sample',
-            ),
-            (
-                isna__feature_x_sample.sum(axis=1),
-                isna__feature_x_sample.sum(),
-            ),
-            title='{}NA Distribution'.format(prefix),
-            xaxis_title='Number of NA',
-        )
+        if plot:
+
+            plot_distributions(
+                (
+                    'Feature',
+                    'Sample',
+                ),
+                (
+                    isna__feature_x_sample.sum(axis=1),
+                    isna__feature_x_sample.sum(),
+                ),
+                title='{}NA Distribution'.format(prefix),
+                xaxis_title='Number of NA',
+            )
