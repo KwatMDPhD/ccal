@@ -234,6 +234,7 @@ def _summarize_feature_x_sample(
     percent_0 = n_0 / feature_x_sample.size * 100
 
     if n_0:
+
         print('N NA: {} ({:.2f}%)'.format(
             n_0,
             percent_0,
