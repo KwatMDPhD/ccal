@@ -169,15 +169,14 @@ def read_and_process_feature_x_sample(
             columns=feature_x_sample.columns,
         )
 
-    if feature_x_sample.size < 1e6:
+    if plot:
 
-        if plot:
-
-            plot_heat_map(
-                feature_x_sample,
-                xaxis_title='Sample',
-                yaxis_title='Feature',
-            )
+        plot_heat_map(
+            feature_x_sample,
+            title='Feature-x-Sample',
+            xaxis_title='Sample',
+            yaxis_title='Feature',
+        )
 
     return feature_x_sample
 
@@ -214,5 +213,5 @@ def _summarize_na(
                     isna__feature_x_sample.sum(),
                 ),
                 title='{}NA Distribution'.format(prefix),
-                xaxis_title='Number of NA',
+                xaxis_title='N NA',
             )
