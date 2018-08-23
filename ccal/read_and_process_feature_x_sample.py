@@ -185,7 +185,7 @@ def read_and_process_feature_x_sample(
         _summarize_feature_x_sample(
             feature_x_sample,
             plot=plot,
-            max_plot_n=max - max_plot_n,
+            max_plot_n=max_plot_n,
         )
 
     return feature_x_sample
