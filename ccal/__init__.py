@@ -212,4 +212,5 @@ from .dimension_scale.dimension_scale.mds import mds
 from .information.information.compute_information_coefficient import compute_information_coefficient
 from .information.information.compute_entropy import compute_entropy
 from .information.information.compute_information_distance import compute_information_distance
+from .summarize_feature_x_sample import summarize_feature_x_sample
 from .read_and_process_feature_x_sample import read_and_process_feature_x_sample

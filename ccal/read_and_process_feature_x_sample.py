@@ -1,10 +1,9 @@
 from numpy import nan
 from pandas import DataFrame, read_table
 
-from summarize_feature_x_sample import summarize_feature_x_sample
-
 from .nd_array.nd_array.log_nd_array import log_nd_array
 from .nd_array.nd_array.normalize_nd_array import normalize_nd_array
+from .summarize_feature_x_sample import summarize_feature_x_sample
 from .support.support.df import drop_df_slice, drop_df_slice_greedily
 
 
