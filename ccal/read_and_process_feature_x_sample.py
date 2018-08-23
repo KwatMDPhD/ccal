@@ -1,4 +1,5 @@
 from numpy import nan
+from numpy.random import choice
 from pandas import DataFrame, read_table
 
 from .nd_array.nd_array.log_nd_array import log_nd_array
@@ -21,6 +22,7 @@ def read_and_process_feature_x_sample(
         normalization_axis=None,
         normalization_method=None,
         plot=False,
+        max_plot_n=int(1e6),
 ):
 
     print('Reading and processing {} ...'.format(feature_x_sample_file_path))
@@ -30,7 +32,11 @@ def read_and_process_feature_x_sample(
         index_col=0,
     )
 
-    print('Shape: {}'.format(feature_x_sample.shape))
+    _summarize_feature_x_sample(
+        feature_x_sample,
+        plot=plot,
+        max_plot_n=max_plot_n,
+    )
 
     if feature_x_sample.index.has_duplicates:
 
@@ -67,10 +73,13 @@ def read_and_process_feature_x_sample(
 
         print('Shape: {}'.format(feature_x_sample.shape))
 
-    _summarize_na(
-        feature_x_sample,
-        plot=plot,
-    )
+    if features_to_drop is not None or samples_to_drop is not None:
+
+        _summarize_feature_x_sample(
+            feature_x_sample,
+            plot=plot,
+            max_plot_n=max_plot_n,
+        )
 
     if nanize is not None:
 
@@ -78,10 +87,10 @@ def read_and_process_feature_x_sample(
 
         feature_x_sample[feature_x_sample <= nanize] = nan
 
-        _summarize_na(
+        _summarize_feature_x_sample(
             feature_x_sample,
-            prefix='(After NANizing <= {}) '.format(nanize),
             plot=plot,
+            max_plot_n=max_plot_n,
         )
 
     if max_na is not None or min_n_not_na_unique_value is not None:
@@ -122,12 +131,10 @@ def read_and_process_feature_x_sample(
                 min_n_not_na_unique_value=min_n_not_na_unique_value,
             )
 
-        print('Shape: {}'.format(feature_x_sample.shape))
-
-        _summarize_na(
+        _summarize_feature_x_sample(
             feature_x_sample,
-            prefix='(After Dropping Slice) ',
             plot=plot,
+            max_plot_n=max_plot_n,
         )
 
     if log_base is not None:
@@ -151,6 +158,12 @@ def read_and_process_feature_x_sample(
             columns=feature_x_sample.columns,
         )
 
+        _summarize_feature_x_sample(
+            feature_x_sample,
+            plot=plot,
+            max_plot_n=max_plot_n,
+        )
+
     if normalization_method is not None:
 
         print('Axis-{} {} normalizing ...'.format(
@@ -169,49 +182,76 @@ def read_and_process_feature_x_sample(
             columns=feature_x_sample.columns,
         )
 
-    if plot:
-
-        plot_heat_map(
+        _summarize_feature_x_sample(
             feature_x_sample,
-            title='Feature-x-Sample',
-            xaxis_title='Sample',
-            yaxis_title='Feature',
+            plot=plot,
+            max_plot_n=max - max_plot_n,
         )
 
     return feature_x_sample
 
 
-def _summarize_na(
+def _summarize_feature_x_sample(
         feature_x_sample,
-        prefix='',
         plot=False,
+        max_plot_n=int(1e6),
 ):
 
-    n_0 = feature_x_sample.isna().values.sum()
+    print(feature_x_sample.shape)
 
-    percent_0 = n_0 / feature_x_sample.size * 100
+    if plot:
 
-    print('{}N NA: {} ({:.2f}%)'.format(
-        prefix,
-        n_0,
-        percent_0,
-    ))
+        feature_x_sample_values = feature_x_sample.unstack().dropna()
+
+        if feature_x_sample_values.size < max_plot_n:
+
+            plot_heat_map(
+                feature_x_sample,
+                title='Feature-x-Sample',
+                xaxis_title='Sample',
+                yaxis_title='Feature',
+            )
+
+        else:
+
+            feature_x_sample_values = choice(
+                feature_x_sample_values,
+                size=max_plot_n,
+                replace=False,
+            )
+
+        plot_distributions(
+            ('Feature-x-Sample Value', ),
+            (feature_x_sample_values, ),
+            plot_rug=False,
+            title='Feature-x-Sample Value Distribution',
+        )
 
     isna__feature_x_sample = feature_x_sample.isna()
 
-    if isna__feature_x_sample.values.any():
+    n_0 = isna__feature_x_sample.values.sum()
+
+    percent_0 = n_0 / feature_x_sample.size * 100
+
+    if n_0:
+        print('N NA: {} ({:.2f}%)'.format(
+            n_0,
+            percent_0,
+        ))
 
         if plot:
 
-            plot_distributions(
-                (
-                    'Feature',
-                    'Sample',
-                ),
-                (
-                    isna__feature_x_sample.sum(axis=1),
-                    isna__feature_x_sample.sum(),
-                ),
-                title='{}NA Distribution'.format(prefix),
-                xaxis_title='N NA',
-            )
+            if max(isna__feature_x_sample.shape) < max_plot_n:
+
+                plot_distributions(
+                    (
+                        'Feature',
+                        'Sample',
+                    ),
+                    (
+                        isna__feature_x_sample.sum(axis=1),
+                        isna__feature_x_sample.sum(),
+                    ),
+                    title='NA Distribution',
+                    xaxis_title='N NA',
+                )
