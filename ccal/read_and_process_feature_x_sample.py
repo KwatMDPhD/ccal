@@ -197,7 +197,7 @@ def _summarize_feature_x_sample(
         max_plot_n=int(1e6),
 ):
 
-    print(feature_x_sample.shape)
+    print('Feature-x-Sample Shape: {}'.format(feature_x_sample.shape))
 
     if plot:
 
