@@ -35,13 +35,16 @@ def summarize_feature_x_sample(
                 replace=False,
             )
 
-            str_ += ' (random {})'.format(max_plot_n)
+            str_ += ' (random {:,})'.format(max_plot_n)
+
+        str_ = '{} Value'.format(str_)
 
         plot_distributions(
-            ('{} Value'.format(str_), ),
+            (str_, ),
             (feature_x_sample_values, ),
             plot_rug=False,
-            title='{} Value Distribution'.format(str_),
+            title='{} Distribution'.format(str_),
+            xaxis_title='Value',
         )
 
     isna__feature_x_sample = feature_x_sample.isna()
