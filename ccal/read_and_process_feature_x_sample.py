@@ -1,11 +1,10 @@
 from numpy import nan
-from numpy.random import choice
 from pandas import DataFrame, read_table
+
+from summarize_feature_x_sample import summarize_feature_x_sample
 
 from .nd_array.nd_array.log_nd_array import log_nd_array
 from .nd_array.nd_array.normalize_nd_array import normalize_nd_array
-from .plot.plot.plot_distributions import plot_distributions
-from .plot.plot.plot_heat_map import plot_heat_map
 from .support.support.df import drop_df_slice, drop_df_slice_greedily
 
 
@@ -21,7 +20,7 @@ def read_and_process_feature_x_sample(
         shift_as_necessary_to_achieve_min_before_logging=None,
         normalization_axis=None,
         normalization_method=None,
-        plot=False,
+        plot=True,
         max_plot_n=int(1e6),
 ):
 
@@ -32,7 +31,7 @@ def read_and_process_feature_x_sample(
         index_col=0,
     )
 
-    _summarize_feature_x_sample(
+    summarize_feature_x_sample(
         feature_x_sample,
         plot=plot,
         max_plot_n=max_plot_n,
@@ -75,7 +74,7 @@ def read_and_process_feature_x_sample(
 
     if features_to_drop is not None or samples_to_drop is not None:
 
-        _summarize_feature_x_sample(
+        summarize_feature_x_sample(
             feature_x_sample,
             plot=plot,
             max_plot_n=max_plot_n,
@@ -87,7 +86,7 @@ def read_and_process_feature_x_sample(
 
         feature_x_sample[feature_x_sample <= nanize] = nan
 
-        _summarize_feature_x_sample(
+        summarize_feature_x_sample(
             feature_x_sample,
             plot=plot,
             max_plot_n=max_plot_n,
@@ -131,7 +130,7 @@ def read_and_process_feature_x_sample(
                 min_n_not_na_unique_value=min_n_not_na_unique_value,
             )
 
-        _summarize_feature_x_sample(
+        summarize_feature_x_sample(
             feature_x_sample,
             plot=plot,
             max_plot_n=max_plot_n,
@@ -158,7 +157,7 @@ def read_and_process_feature_x_sample(
             columns=feature_x_sample.columns,
         )
 
-        _summarize_feature_x_sample(
+        summarize_feature_x_sample(
             feature_x_sample,
             plot=plot,
             max_plot_n=max_plot_n,
@@ -182,77 +181,10 @@ def read_and_process_feature_x_sample(
             columns=feature_x_sample.columns,
         )
 
-        _summarize_feature_x_sample(
+        summarize_feature_x_sample(
             feature_x_sample,
             plot=plot,
             max_plot_n=max_plot_n,
         )
 
     return feature_x_sample
-
-
-def _summarize_feature_x_sample(
-        feature_x_sample,
-        plot=False,
-        max_plot_n=int(1e6),
-):
-
-    print('Feature-x-Sample Shape: {}'.format(feature_x_sample.shape))
-
-    if plot:
-
-        feature_x_sample_values = feature_x_sample.unstack().dropna()
-
-        if feature_x_sample_values.size < max_plot_n:
-
-            plot_heat_map(
-                feature_x_sample,
-                title='Feature-x-Sample',
-                xaxis_title='Sample',
-                yaxis_title='Feature',
-            )
-
-        else:
-
-            feature_x_sample_values = choice(
-                feature_x_sample_values,
-                size=max_plot_n,
-                replace=False,
-            )
-
-        plot_distributions(
-            ('Feature-x-Sample Value', ),
-            (feature_x_sample_values, ),
-            plot_rug=False,
-            title='Feature-x-Sample Value Distribution',
-        )
-
-    isna__feature_x_sample = feature_x_sample.isna()
-
-    n_0 = isna__feature_x_sample.values.sum()
-
-    percent_0 = n_0 / feature_x_sample.size * 100
-
-    if n_0:
-
-        print('N NA: {} ({:.2f}%)'.format(
-            n_0,
-            percent_0,
-        ))
-
-        if plot:
-
-            if max(isna__feature_x_sample.shape) < max_plot_n:
-
-                plot_distributions(
-                    (
-                        'Feature',
-                        'Sample',
-                    ),
-                    (
-                        isna__feature_x_sample.sum(axis=1),
-                        isna__feature_x_sample.sum(),
-                    ),
-                    title='NA Distribution',
-                    xaxis_title='N NA',
-                )
