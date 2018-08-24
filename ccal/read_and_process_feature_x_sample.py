@@ -8,7 +8,7 @@ from .support.support.df import drop_df_slice, drop_df_slice_greedily
 
 
 def read_and_process_feature_x_sample(
-        feature_x_sample_file_path,
+        feature_x_sample,
         features_to_drop=None,
         samples_to_drop=None,
         nanize=None,
@@ -23,12 +23,19 @@ def read_and_process_feature_x_sample(
         max_plot_n=int(1e6),
 ):
 
-    print('Reading and processing {} ...'.format(feature_x_sample_file_path))
+    if isinstance(
+            feature_x_sample,
+            str,
+    ):
 
-    feature_x_sample = read_table(
-        feature_x_sample_file_path,
-        index_col=0,
-    )
+        print('Reading {} ...'.format(feature_x_sample))
+
+        feature_x_sample = read_table(
+            feature_x_sample,
+            index_col=0,
+        )
+
+    print('Processing ...')
 
     summarize_feature_x_sample(
         feature_x_sample,
