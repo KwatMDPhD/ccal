@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.6.29'
+VERSION = '0.6.30'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -152,6 +152,7 @@ from .match.match.make_summary_match_panel import make_summary_match_panel
 from .match.match.make_match_panels import make_match_panels
 from .match.match.make_match_panel import make_match_panel
 from .match.match.make_comparison_panel import make_comparison_panel
+from .match.match.make_summary_match_panels import make_summary_match_panels
 from .context.context.make_context_matrix import make_context_matrix
 from .context.context.plot_context import plot_context
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
