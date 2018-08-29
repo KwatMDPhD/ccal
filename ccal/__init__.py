@@ -86,6 +86,7 @@ from .variant.variant.access_vcf import get_population_allelic_frequencies
 from .variant.variant.access_vcf import count_vcf_gz_rows
 from .variant.variant.access_vcf_dict import read_vcf_gz_and_make_vcf_dict
 from .support.support.str_ import cast_str_to_builtins
+from .support.support.str_ import make_float_str
 from .support.support.str_ import title_str
 from .support.support.str_ import untitle_str
 from .support.support.str_ import split_str_ignoring_inside_quotes
@@ -152,7 +153,6 @@ from .match.match.make_summary_match_panel import make_summary_match_panel
 from .match.match.make_match_panels import make_match_panels
 from .match.match.make_match_panel import make_match_panel
 from .match.match.make_comparison_panel import make_comparison_panel
-from .match.match.make_summary_match_panels import make_summary_match_panels
 from .context.context.make_context_matrix import make_context_matrix
 from .context.context.plot_context import plot_context
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
