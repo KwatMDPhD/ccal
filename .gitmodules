@@ -55,9 +55,6 @@
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/KwatME/nd_array
-[submodule "ccal/nmf_map"]
-	path = ccal/nmf_map
-	url = https://github.com/KwatME/nmf_map
 [submodule "ccal/plot"]
 	path = ccal/plot
 	url = https://github.com/KwatME/plot
