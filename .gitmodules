@@ -79,3 +79,6 @@
 [submodule "ccal/variant"]
 	path = ccal/variant
 	url = https://github.com/KwatME/variant
+[submodule "ccal/gps_map"]
+	path = ccal/gps_map
+	url = https://github.com/KwatME/gps_map
