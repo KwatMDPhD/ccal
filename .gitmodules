@@ -1,21 +1,24 @@
-# [submodule "ccal/classify"]
-# 	path = ccal/classify
-# 	url = https://github.com/KwatME/classify
-# [submodule "ccal/cluster"]
-# 	path = ccal/cluster
-# 	url = https://github.com/KwatME/cluster
+[submodule "classification"]
+	path = classification
+	url = https://github.com/KwatME/classification
+[submodule "clustering"]
+	path = clustering
+	url = https://github.com/KwatME/clustering
 [submodule "ccal/context"]
 	path = ccal/context
 	url = https://github.com/KwatME/context
-# [submodule "ccal/cross_validate"]
-# 	path = ccal/cross_validate
-# 	url = https://github.com/KwatME/cross_validate
-# [submodule "ccal/dimension_scale"]
-# 	path = ccal/dimension_scale
-# 	url = https://github.com/KwatME/dimension_scale
+[submodule "cross_validation"]
+	path = cross_validation
+	url = https://github.com/KwatME/cross_validation
+[submodule "dimension_scaling"]
+	path = dimension_scaling
+	url = https://github.com/KwatME/dimension_scaling
 [submodule "ccal/feature"]
 	path = ccal/feature
 	url = https://github.com/KwatME/feature
+[submodule "feature_x_sample"]
+	path = feature_x_sample
+	url = https://github.com/KwatME/feature_x_sample
 [submodule "ccal/gct_gmt"]
 	path = ccal/gct_gmt
 	url = https://github.com/KwatME/gct_gmt
@@ -49,9 +52,9 @@
 [submodule "ccal/match"]
 	path = ccal/match
 	url = https://github.com/KwatME/match
-# [submodule "ccal/matrix_factorize"]
-# 	path = ccal/matrix_factorize
-# 	url = https://github.com/KwatME/matrix_factorize
+[submodule "matrix_factorization"]
+	path = matrix_factorization
+	url = https://github.com/KwatME/matrix_factorization
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/KwatME/nd_array
@@ -61,9 +64,9 @@
 [submodule "ccal/probability"]
 	path = ccal/probability
 	url = https://github.com/KwatME/probability
-# [submodule "ccal/regress"]
-# 	path = ccal/regress
-# 	url = https://github.com/KwatME/regress
+[submodule "regression"]
+	path = regression
+	url = https://github.com/KwatME/regression
 [submodule "ccal/sequence"]
 	path = ccal/sequence
 	url = https://github.com/KwatME/sequence
