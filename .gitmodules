@@ -58,6 +58,9 @@
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/KwatME/nd_array
+[submodule "neural_network"]
+	path = neural_network
+	url = https://github.com/KwatME/neural_network
 [submodule "ccal/plot"]
 	path = ccal/plot
 	url = https://github.com/KwatME/plot
