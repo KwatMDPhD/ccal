@@ -1,21 +1,18 @@
-[submodule "ccal/classify"]
-	path = ccal/classify
-	url = https://github.com/KwatME/classify
-[submodule "ccal/cluster"]
-	path = ccal/cluster
-	url = https://github.com/KwatME/cluster
+# [submodule "ccal/classify"]
+# 	path = ccal/classify
+# 	url = https://github.com/KwatME/classify
+# [submodule "ccal/cluster"]
+# 	path = ccal/cluster
+# 	url = https://github.com/KwatME/cluster
 [submodule "ccal/context"]
 	path = ccal/context
 	url = https://github.com/KwatME/context
-[submodule "ccal/cross_validate"]
-	path = ccal/cross_validate
-	url = https://github.com/KwatME/cross_validate
-[submodule "ccal/cryptograph"]
-	path = ccal/cryptograph
-	url = https://github.com/KwatME/cryptograph
-[submodule "ccal/dimension_scale"]
-	path = ccal/dimension_scale
-	url = https://github.com/KwatME/dimension_scale
+# [submodule "ccal/cross_validate"]
+# 	path = ccal/cross_validate
+# 	url = https://github.com/KwatME/cross_validate
+# [submodule "ccal/dimension_scale"]
+# 	path = ccal/dimension_scale
+# 	url = https://github.com/KwatME/dimension_scale
 [submodule "ccal/feature"]
 	path = ccal/feature
 	url = https://github.com/KwatME/feature
@@ -28,6 +25,9 @@
 [submodule "ccal/geo"]
 	path = ccal/geo
 	url = https://github.com/KwatME/geo
+[submodule "ccal/gps_map"]
+	path = ccal/gps_map
+	url = https://github.com/KwatME/gps_map
 [submodule "ccal/gsea"]
 	path = ccal/gsea
 	url = https://github.com/KwatME/gsea
@@ -49,9 +49,9 @@
 [submodule "ccal/match"]
 	path = ccal/match
 	url = https://github.com/KwatME/match
-[submodule "ccal/matrix_factorize"]
-	path = ccal/matrix_factorize
-	url = https://github.com/KwatME/matrix_factorize
+# [submodule "ccal/matrix_factorize"]
+# 	path = ccal/matrix_factorize
+# 	url = https://github.com/KwatME/matrix_factorize
 [submodule "ccal/nd_array"]
 	path = ccal/nd_array
 	url = https://github.com/KwatME/nd_array
@@ -61,9 +61,9 @@
 [submodule "ccal/probability"]
 	path = ccal/probability
 	url = https://github.com/KwatME/probability
-[submodule "ccal/regress"]
-	path = ccal/regress
-	url = https://github.com/KwatME/regress
+# [submodule "ccal/regress"]
+# 	path = ccal/regress
+# 	url = https://github.com/KwatME/regress
 [submodule "ccal/sequence"]
 	path = ccal/sequence
 	url = https://github.com/KwatME/sequence
@@ -79,6 +79,3 @@
 [submodule "ccal/variant"]
 	path = ccal/variant
 	url = https://github.com/KwatME/variant
-[submodule "ccal/gps_map"]
-	path = ccal/gps_map
-	url = https://github.com/KwatME/gps_map
