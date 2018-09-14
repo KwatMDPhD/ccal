@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.7.1'
+VERSION = '0.7.2'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -18,6 +18,8 @@ from .tcga.tcga.read_copynumber_gistic2 import read_copynumber_gistic2
 from .tcga.tcga.read_mutsignozzlereport2cv import read_mutsignozzlereport2cv
 from .tcga.tcga.read_correlate_copynumber_vs_mrnaseq import read_correlate_copynumber_vs_mrnaseq
 from .tcga.tcga.make_case_annotations import make_case_annotations
+from .mutational_signature.mutational_signature.compute_mutational_signature_enrichment import compute_mutational_signature_enrichment
+from .mutational_signature.mutational_signature.normalize_contig import normalize_contig
 from .hdf5.hdf5.read_where_and_map_column_names import read_where_and_map_column_names
 from .nd_array.nd_array.compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
 from .nd_array.nd_array.nd_array_is_sorted import nd_array_is_sorted
