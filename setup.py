@@ -66,6 +66,7 @@ setup(
         'pefile>=2017.8.1',
         'plotly>=2.5.1',
         'pycrypto>=2.6.1',
+        'pyfaidx>=0.5.4.1',
         'pytabix>=0.0.2',
         'scikit-learn>=0.19.1',
         'scipy>=1.1.0',
