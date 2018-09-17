@@ -32,7 +32,10 @@ for directory_path, directory_names, file_names in walk(
         for file_name in file_names:
 
             package_data.append('{}/{}'.format(
-                directory_path.split(sep='/', maxsplit=1)[1],
+                directory_path.split(
+                    sep='/',
+                    maxsplit=1,
+                )[1],
                 file_name,
             ))
 
@@ -53,7 +56,6 @@ setup(
         'Natural Language :: English',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
     ),
-    keywords='Data Craft',
     packages=packages,
     python_requires='>=3.5',
     install_requires=(
