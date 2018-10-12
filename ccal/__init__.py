@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.7.3'
+VERSION = '0.7.4'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -125,8 +125,10 @@ from .context.context.compute_context import compute_context
 from .context.context.plot_context import plot_context
 from .hdf5.hdf5.read_where_and_map_column_names import read_where_and_map_column_names
 from .cross_validation.cross_validation.cross_validate import cross_validate
-from .matrix_factorization.matrix_factorization.solve_for_nmf_h import solve_for_nmf_h
-from .matrix_factorization.matrix_factorization.nmf import nmf
+from .matrix_factorization.matrix_factorization.nmf_by_multiplicative_update import nmf_by_multiplicative_update
+from .matrix_factorization.matrix_factorization.nmf_by_sklearn import nmf_by_sklearn
+from .matrix_factorization.matrix_factorization.nmf_by_multiple_V_and_H import nmf_by_multiple_V_and_H
+from .matrix_factorization.matrix_factorization.solve_for_H import solve_for_H
 from .dimension_scaling.dimension_scaling.mds import mds
 from .classification.classification.train_and_classify import train_and_classify
 from .geo.geo.download_and_parse_geo_data import download_and_parse_geo_data
