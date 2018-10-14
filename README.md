@@ -2,4 +2,4 @@
   <img src='media/ccal_logo.png' height=180 />
 </p>
 
-Feel free [submit an issue](https://github.com/UCSD-CCAL/ccal/issues/new) and I'll try to take care of it.
+When you encounter a problem, please let me know the problem by [submitting an issue](https://github.com/UCSD-CCAL/ccal/issues/new) - thank you :)
