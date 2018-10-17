@@ -108,7 +108,6 @@ from .linear_model.linear_model.correlate import correlate
 from .plot.plot.plot_distributions import plot_distributions
 from .plot.plot.plot_box_or_violin import plot_box_or_violin
 from .plot.plot.make_random_color import make_random_color
-from .plot.plot.make_html_and_plotly_file_paths import make_html_and_plotly_file_paths
 from .plot.plot.plot_table import plot_table
 from .plot.plot.plot_bar import plot_bar
 from .plot.plot.plot_points import plot_points
@@ -191,6 +190,7 @@ from .support.support.path import remove_paths
 from .support.support.path import remove_path
 from .support.support.path import clean_path
 from .support.support.path import clean_name
+from .support.support.path import combine_path_prefix_and_suffix
 from .support.support.python import get_installed_pip_libraries
 from .support.support.python import install_python_libraries
 from .support.support.python import get_object_reference
