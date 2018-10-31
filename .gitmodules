@@ -22,6 +22,9 @@
 [submodule "ccal/gct_gmt"]
 	path = ccal/gct_gmt
 	url = https://github.com/KwatME/gct_gmt
+[submodule "ccal/gene"]
+	path = ccal/gene
+	url = https://github.com/KwatME/gene
 [submodule "ccal/genome"]
 	path = ccal/genome
 	url = https://github.com/KwatME/genome
