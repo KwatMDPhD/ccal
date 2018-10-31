@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.7.8'
+VERSION = '0.7.9'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -105,6 +105,7 @@ from .information.information.compute_entropy import compute_entropy
 from .information.information.compute_information_coefficient import compute_information_coefficient
 from .information.information.compute_information_distance import compute_information_distance
 from .linear_model.linear_model.correlate import correlate
+from .gene.gene.select_gene_symbol import select_gene_symbol
 from .plot.plot.plot_distributions import plot_distributions
 from .plot.plot.plot_box_or_violin import plot_box_or_violin
 from .plot.plot.make_random_color import make_random_color
