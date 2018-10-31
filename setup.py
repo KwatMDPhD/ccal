@@ -18,14 +18,29 @@ for directory_path, directory_names, file_names in walk(name):
 
     if not any(str_ in directory_path for str_ in strs_to_skip):
 
-        if 'sequencing_process/resource' not in directory_path:
+        if '/data/' not in directory_path:
 
             packages.append(directory_path)
 
 package_data = []
 
 for directory_path, directory_names, file_names in walk(
-        '{}/sequencing_process/resource'.format(name)):
+        '{}/sequencing_process/data'.format(name)):
+
+    if not any(str_ in directory_path for str_ in strs_to_skip):
+
+        for file_name in file_names:
+
+            package_data.append('{}/{}'.format(
+                directory_path.split(
+                    sep='/',
+                    maxsplit=1,
+                )[1],
+                file_name,
+            ))
+
+for directory_path, directory_names, file_names in walk(
+        '{}/gene/data'.format(name)):
 
     if not any(str_ in directory_path for str_ in strs_to_skip):
 
