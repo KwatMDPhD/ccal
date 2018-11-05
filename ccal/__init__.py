@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.7.9'
+VERSION = '0.7.10'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -107,7 +107,6 @@ from .information.information.compute_information_distance import compute_inform
 from .linear_model.linear_model.correlate import correlate
 from .gene.gene.select_gene_symbol import select_gene_symbol
 from .plot.plot.plot_distributions import plot_distributions
-from .plot.plot.plot_box_or_violin import plot_box_or_violin
 from .plot.plot.make_random_color import make_random_color
 from .plot.plot.plot_table import plot_table
 from .plot.plot.plot_bar import plot_bar
@@ -117,6 +116,7 @@ from .plot.plot.make_colorscale import make_colorscale
 from .plot.plot.plot_pie import plot_pie
 from .plot.plot.plot_color_text import plot_color_text
 from .plot.plot.plot_and_save import plot_and_save
+from .plot.plot.plot_violin_or_box import plot_violin_or_box
 from .plot.plot.plot_bubble_map import plot_bubble_map
 from .context.context.make_context_matrix import make_context_matrix
 from .context.context.fit_skew_t_pdf import fit_skew_t_pdf
