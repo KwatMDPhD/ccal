@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.7.16'
+VERSION = '0.8.0'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -47,24 +47,21 @@ from .match.match.make_match_panel import make_match_panel
 from .feature_x_sample.feature_x_sample.summarize_feature_x_sample import summarize_feature_x_sample
 from .feature_x_sample.feature_x_sample.read_and_process_feature_x_sample import read_and_process_feature_x_sample
 from .nd_array.nd_array.compute_nd_array_margin_of_error import compute_nd_array_margin_of_error
+from .nd_array.nd_array.check_nd_array_for_bad import check_nd_array_for_bad
 from .nd_array.nd_array.compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
 from .nd_array.nd_array.shuffle_each_2d_array_slice import shuffle_each_2d_array_slice
 from .nd_array.nd_array.log_nd_array import log_nd_array
-from .nd_array.nd_array.apply_function_on_2_1d_arrays_and_compute_empirical_p_value import apply_function_on_2_1d_arrays_and_compute_empirical_p_value
-from .nd_array.nd_array.cluster_1d_arrays import cluster_1d_arrays
-from .nd_array.nd_array.make_nd_grid_coordinates import make_nd_grid_coordinates
 from .nd_array.nd_array.get_intersections_between_2_1d_arrays import get_intersections_between_2_1d_arrays
-from .nd_array.nd_array.drop_bad_value_and_apply_function_on_2_1d_arrays import drop_bad_value_and_apply_function_on_2_1d_arrays
-from .nd_array.nd_array.compute_log_ratio_between_2_1d_arrays import compute_log_ratio_between_2_1d_arrays
+from .nd_array.nd_array.make_mesh_grid_coordinates_per_axis import make_mesh_grid_coordinates_per_axis
+from .nd_array.nd_array.apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .nd_array.nd_array.apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
-from .nd_array.nd_array.check_nd_array_for_bad_value import check_nd_array_for_bad_value
 from .nd_array.nd_array.get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
 from .nd_array.nd_array.compute_empirical_p_value import compute_empirical_p_value
 from .nd_array.nd_array.normalize_nd_array import normalize_nd_array
 from .nd_array.nd_array.nd_array_is_sorted import nd_array_is_sorted
+from .nd_array.nd_array.make_coordinates_for_reflection import make_coordinates_for_reflection
+from .nd_array.nd_array.cluster_2d_array_slices import cluster_2d_array_slices
 from .nd_array.nd_array.clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
-from .nd_array.nd_array.cluster_2d_array_slices_by_group import cluster_2d_array_slices_by_group
-from .nd_array.nd_array.get_coordinates_for_reflection import get_coordinates_for_reflection
 from .gct_gmt.gct_gmt.access_gmt import read_gmts
 from .gct_gmt.gct_gmt.access_gmt import read_gmt
 from .gct_gmt.gct_gmt.access_gmt import write_gmt
@@ -156,7 +153,6 @@ from .support.support.conda import get_conda_prefix
 from .support.support.get_function_name import get_function_name
 from .support.support.math import rescale_x_y_coordiantes_in_polar_coordiante
 from .support.support.str_ import cast_str_to_builtins
-from .support.support.str_ import make_float_str
 from .support.support.str_ import title_str
 from .support.support.str_ import untitle_str
 from .support.support.str_ import split_str_ignoring_inside_quotes
