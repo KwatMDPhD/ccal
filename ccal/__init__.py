@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.8.1'
+VERSION = '0.8.2'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -206,3 +206,4 @@ from .support.support.iterable import get_unique_iterable_objects_in_order
 from .support.support.iterable import make_object_int_mapping
 from .mutational_signature.mutational_signature.normalize_contig import normalize_contig
 from .mutational_signature.mutational_signature.compute_mutational_signature_enrichment import compute_mutational_signature_enrichment
+from .select_series_low_and_high_index import select_series_low_and_high_index
