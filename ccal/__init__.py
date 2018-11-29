@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.8.4'
+VERSION = '0.8.5'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -157,6 +157,7 @@ from .support.support.str_ import title_str
 from .support.support.str_ import untitle_str
 from .support.support.str_ import split_str_ignoring_inside_quotes
 from .support.support.str_ import str_is_version
+from .support.support.str_ import make_file_name_from_str
 from .support.support.multiprocess import multiprocess
 from .support.support.exit_ import exit_
 from .support.support.json_ import read_json
