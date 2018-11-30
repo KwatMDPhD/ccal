@@ -7,6 +7,7 @@ def select_series_low_and_high_index(
         low_margin_factor=1,
         high_margin_factor=1,
         title=None,
+        value_name=None,
         file_path_prefix=None,
 ):
 
@@ -49,6 +50,10 @@ def select_series_low_and_high_index(
 
         html_file_path = None
 
+    if value_name is None:
+
+        value_name = 'Value'
+
     plot_points(
         (
             rank,
@@ -73,7 +78,7 @@ def select_series_low_and_high_index(
         ),
         title=title,
         xaxis_title='Rank',
-        yaxis_title='Value',
+        yaxis_title=value_name,
         html_file_path=html_file_path,
     )
 
