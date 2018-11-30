@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.8.5'
+VERSION = '0.8.6'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -45,7 +45,7 @@ from .match.match.make_match_panels import make_match_panels
 from .match.match.make_comparison_panel import make_comparison_panel
 from .match.match.make_match_panel import make_match_panel
 from .feature_x_sample.feature_x_sample.summarize_feature_x_sample import summarize_feature_x_sample
-from .feature_x_sample.feature_x_sample.read_and_process_feature_x_sample import read_and_process_feature_x_sample
+from .feature_x_sample.feature_x_sample.process_feature_x_sample import process_feature_x_sample
 from .nd_array.nd_array.compute_nd_array_margin_of_error import compute_nd_array_margin_of_error
 from .nd_array.nd_array.check_nd_array_for_bad import check_nd_array_for_bad
 from .nd_array.nd_array.compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
