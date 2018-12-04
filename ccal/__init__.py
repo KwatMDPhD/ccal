@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = '0.8.8'
+VERSION = '0.8.9'
 
 print('CCAL version {} @ {}'.format(VERSION, abspath(__file__)))
 
@@ -208,3 +208,5 @@ from .linear_algebra.linear_algebra.solve_ax_equal_b import solve_ax_equal_b
 from .kernel_density.kernel_density.estimate_kernel_density import estimate_kernel_density
 from .kernel_density.kernel_density.compute_bandwidths import compute_bandwidths
 from .select_series_low_and_high_index import select_series_low_and_high_index
+from .compute_correlation_distance import compute_correlation_distance
+from .normalize_df import normalize_df
