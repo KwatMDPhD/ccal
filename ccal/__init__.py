@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = "0.8.10"
+VERSION = "0.8.11"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
 from .sequence.sequence.get_chromosome_size_from_fasta_gz import (
     get_chromosome_size_from_fasta_gz,
