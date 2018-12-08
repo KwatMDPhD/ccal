@@ -21,6 +21,14 @@ def select_series_low_and_high_index(
 
     rank = Series(range(values.size), index=values.index)
 
+    if values.size < 1e3:
+
+        mode = "markers"
+
+    else:
+
+        mode = "lines"
+
     if file_path_prefix is not None:
 
         Series(low_index, name="Low Index").to_csv(
@@ -45,7 +53,7 @@ def select_series_low_and_high_index(
         (rank, rank[high_index], rank[low_index]),
         (values, values[high_index], values[low_index]),
         names=("All", "High", "Low"),
-        modes=("lines",) * 3,
+        modes=(mode,) * 3,
         texts=(values.index, high_index, low_index),
         title=title,
         xaxis_title="Rank",
