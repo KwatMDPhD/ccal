@@ -298,4 +298,5 @@ from .kernel_density.kernel_density.estimate_kernel_density import (
 from .kernel_density.kernel_density.compute_bandwidths import compute_bandwidths
 from .select_series_low_and_high_index import select_series_low_and_high_index
 from .compute_correlation_distance import compute_correlation_distance
+from .read_matrix_market import read_matrix_market
 from .normalize_df import normalize_df
