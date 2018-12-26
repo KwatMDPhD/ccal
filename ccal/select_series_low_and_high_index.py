@@ -7,8 +7,8 @@ def select_series_low_and_high_index(
     low_margin_factor=1,
     high_margin_factor=1,
     title=None,
-    value_name=None,
-    file_path_prefix=None,
+    value_name="Value",
+    html_file_path=None,
 ):
 
     values = values.sort_values()
@@ -28,26 +28,6 @@ def select_series_low_and_high_index(
     else:
 
         mode = "lines"
-
-    if file_path_prefix is not None:
-
-        Series(low_index, name="Low Index").to_csv(
-            "{}.low.tsv".format(file_path_prefix), sep="\t"
-        )
-
-        Series(high_index, name="High Index").to_csv(
-            "{}.high.tsv".format(file_path_prefix), sep="\t"
-        )
-
-        html_file_path = "{}.low_and_high.html".format(file_path_prefix)
-
-    else:
-
-        html_file_path = None
-
-    if value_name is None:
-
-        value_name = "Value"
 
     plot_points(
         (rank, rank[high_index], rank[low_index]),
