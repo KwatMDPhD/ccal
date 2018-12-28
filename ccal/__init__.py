@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = "0.8.12"
+VERSION = "0.8.13"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
 from .sequence.sequence.get_chromosome_size_from_fasta_gz import (
     get_chromosome_size_from_fasta_gz,
@@ -176,7 +176,6 @@ from .support.support.path import remove_paths
 from .support.support.path import remove_path
 from .support.support.path import clean_path
 from .support.support.path import clean_name
-from .support.support.path import combine_path_prefix_and_suffix
 from .support.support.volume import mount_volume
 from .support.support.volume import unmount_volume
 from .support.support.volume import get_volume_name
@@ -277,15 +276,15 @@ from .feature_x_sample.feature_x_sample.summarize_feature_x_sample import (
 from .feature_x_sample.feature_x_sample.process_feature_x_sample import (
     process_feature_x_sample,
 )
-from .clustering.clustering.hierarchical_consensus_cluster_with_multiple_k import (
-    hierarchical_consensus_cluster_with_multiple_k,
+from .clustering.clustering.hierarchical_consensus_cluster_with_ks import (
+    hierarchical_consensus_cluster_with_ks,
 )
 from .clustering.clustering.nmf_consensus_cluster import nmf_consensus_cluster
 from .clustering.clustering.hierarchical_consensus_cluster import (
     hierarchical_consensus_cluster,
 )
-from .clustering.clustering.nmf_consensus_cluster_with_multiple_k import (
-    nmf_consensus_cluster_with_multiple_k,
+from .clustering.clustering.nmf_consensus_cluster_with_ks import (
+    nmf_consensus_cluster_with_ks,
 )
 from .geo.geo.download_and_parse_geo_data import download_and_parse_geo_data
 from .gps_map.gps_map.GPSMap import GPSMap
