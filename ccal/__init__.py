@@ -276,15 +276,15 @@ from .feature_x_sample.feature_x_sample.summarize_feature_x_sample import (
 from .feature_x_sample.feature_x_sample.process_feature_x_sample import (
     process_feature_x_sample,
 )
+from .clustering.clustering.nmf_consensus_cluster_with_ks import (
+    nmf_consensus_cluster_with_ks,
+)
+from .clustering.clustering.nmf_consensus_cluster import nmf_consensus_cluster
 from .clustering.clustering.hierarchical_consensus_cluster_with_ks import (
     hierarchical_consensus_cluster_with_ks,
 )
-from .clustering.clustering.nmf_consensus_cluster import nmf_consensus_cluster
 from .clustering.clustering.hierarchical_consensus_cluster import (
     hierarchical_consensus_cluster,
-)
-from .clustering.clustering.nmf_consensus_cluster_with_ks import (
-    nmf_consensus_cluster_with_ks,
 )
 from .geo.geo.download_and_parse_geo_data import download_and_parse_geo_data
 from .gps_map.gps_map.GPSMap import GPSMap
