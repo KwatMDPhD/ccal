@@ -1,7 +1,9 @@
 from numpy import concatenate, where
 from scipy.cluster.hierarchy import dendrogram, linkage
 
-from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
+from ._ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import (
+    _ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays,
+)
 from .check_nd_array_for_bad import check_nd_array_for_bad
 from .get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
 
