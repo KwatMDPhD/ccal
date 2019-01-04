@@ -2,6 +2,7 @@ from os.path import abspath
 
 VERSION = "0.9.0"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
+from .normalize_df import normalize_df
 from .ANNOTATION_FONT_SIZE import ANNOTATION_FONT_SIZE
 from .ANNOTATION_WIDTH import ANNOTATION_WIDTH
 from .BAD_VARIANT_IDS import BAD_VARIANT_IDS

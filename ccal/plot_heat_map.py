@@ -47,7 +47,7 @@ def plot_heat_map(
 ):
 
     heat_map_axis_template = dict(
-        domain=heat_map_axis_domain, showgrid=False, zeroline=False
+        domain=heat_map_axis_domain, showgrid=False, zeroline=False, automargin=True
     )
 
     annotation_axis_template = dict(
@@ -206,7 +206,7 @@ def plot_heat_map(
 
         colorscale = make_colorscale(colormap=colormap, plot=False)
 
-    colorbar_template = dict(len=0.8, thickness=layout_width / 80)
+    colorbar_template = dict(len=0.64, thickness=layout_width / 64)
 
     if column_annotation is not None or row_annotation is not None:
 

@@ -21,7 +21,7 @@ def plot_bubble_map(
 
     layout_height = max(320, marker_size_max * 2 * df_size.shape[0])
 
-    axis_template = dict(showgrid=False, zeroline=False)
+    axis_template = dict(showgrid=False, zeroline=False, automargin=True)
 
     layout = dict(
         width=layout_width,
