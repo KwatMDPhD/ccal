@@ -8,7 +8,6 @@ DATA_DIRECTORY_PATH = "{}/../data".format(dirname(__file__))
 
 from .plot_bar import plot_bar
 from .dict_ import merge_dicts_with_callable
-from .dict_ import write_dict
 from .estimate_kernel_density import estimate_kernel_density
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .compression import gzip_compress_file
@@ -186,6 +185,7 @@ from .read_copynumber_gistic2 import read_copynumber_gistic2
 from .process_feature_x_sample import process_feature_x_sample
 from .access_maf import split_maf_by_tumor_sample_barcode
 from .access_maf import make_maf_from_vcf
+from .write_dict import write_dict
 from .git import create_gitkeep
 from .git import get_git_versions
 from .git import clean_git_url
