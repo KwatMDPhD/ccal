@@ -2,17 +2,10 @@ from warnings import warn
 
 from tables import NoSuchNodeError
 
-from .access_vcf import count_gene_impacts_from_variant_dicts, count_vcf_gz_rows
+from .access_vcf import count_gene_impacts_from_variant_dicts
 from .FeatureHDF5 import FeatureHDF5
 from .get_chromosome_size_from_fasta_gz import get_chromosome_size_from_fasta_gz
 from .VariantHDF5 import VariantHDF5
-
-
-def is_valid_vcf_gz(vcf_gz_file_path):
-
-    counts = count_vcf_gz_rows(vcf_gz_file_path, format_fields_to_count=("GT",))
-
-    return counts["n"] == counts["GT"]
 
 
 class Genome:
