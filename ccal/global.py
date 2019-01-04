@@ -3,7 +3,6 @@ from warnings import warn
 
 from tabix import open as tabix_open
 
-
 BAD_IDS = (".",)
 
 VCF_ANN_FIELDS = (

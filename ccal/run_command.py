@@ -1,4 +1,4 @@
-from subprocess import run, PIPE
+from subprocess import PIPE, run
 
 
 def run_command(command, print_command=False):

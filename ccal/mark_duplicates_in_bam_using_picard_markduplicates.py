@@ -1,8 +1,8 @@
 from os.path import dirname, isfile
-from .index_bam_using_samtools_index import index_bam_using_samtools_index
 
 from ._print_and_run_command import _print_and_run_command
 from .get_function_name import get_function_name
+from .index_bam_using_samtools_index import index_bam_using_samtools_index
 
 
 def mark_duplicates_in_bam_using_picard_markduplicates(

@@ -1,9 +1,9 @@
-from .get_variant_type import get_variant_type
-from .get_variant_start_and_end_positions import get_variant_start_and_end_positions
-from .get_population_allelic_frequencies import get_population_allelic_frequencies
-from .get_maf_variant_classification import get_maf_variant_classification
-from .get_genotype import get_genotype
 from .get_allelic_frequencies import get_allelic_frequencies
+from .get_genotype import get_genotype
+from .get_maf_variant_classification import get_maf_variant_classification
+from .get_population_allelic_frequencies import get_population_allelic_frequencies
+from .get_variant_start_and_end_positions import get_variant_start_and_end_positions
+from .get_variant_type import get_variant_type
 
 
 def update_variant_dict(variant_dict):

@@ -22,11 +22,15 @@ from .count_gene_impacts_from_variant_dicts import count_gene_impacts_from_varia
 from .create_gitkeep import create_gitkeep
 from .gsea import gsea
 from .plot_bayesian_nomogram import plot_bayesian_nomogram
-from .concatenate_vcf_gzs_using_bcftools_concat import concatenate_vcf_gzs_using_bcftools_concat
+from .concatenate_vcf_gzs_using_bcftools_concat import (
+    concatenate_vcf_gzs_using_bcftools_concat,
+)
 from .nmf_by_multiple_V_and_H import nmf_by_multiple_V_and_H
 from .get_open_port import get_open_port
 from .get_machine import get_machine
-from .gzip_decompress_and_bgzip_compress_file import gzip_decompress_and_bgzip_compress_file
+from .gzip_decompress_and_bgzip_compress_file import (
+    gzip_decompress_and_bgzip_compress_file,
+)
 from .index_gff3_df_by_name import index_gff3_df_by_name
 from .in_git_repository import in_git_repository
 from .shutdown_machine import shutdown_machine
@@ -40,14 +44,20 @@ from .plot_pie import plot_pie
 from .get_conda_environment import get_conda_environments
 from .shuffle_each_2d_array_slice import shuffle_each_2d_array_slice
 from .echo_or_print import echo_or_print
-from .get_variants_from_bam_using_freebayes_and_multiprocess import get_variants_from_bam_using_freebayes_and_multiprocess
+from .get_variants_from_bam_using_freebayes_and_multiprocess import (
+    get_variants_from_bam_using_freebayes_and_multiprocess,
+)
 from .check_bam_using_samtools_flagstat import check_bam_using_samtools_flagstat
 from .nmf_consensus_cluster_with_ks import nmf_consensus_cluster_with_ks
 from .compute_joint_probability import compute_joint_probability
-from .compute_mutational_signature_enrichment import compute_mutational_signature_enrichment
+from .compute_mutational_signature_enrichment import (
+    compute_mutational_signature_enrichment,
+)
 from .nd_array_is_sorted import nd_array_is_sorted
 from .make_object_int_mapping import make_object_int_mapping
-from .sort_and_index_bam_using_samtools_sort_and_index import sort_and_index_bam_using_samtools_sort_and_index
+from .sort_and_index_bam_using_samtools_sort_and_index import (
+    sort_and_index_bam_using_samtools_sort_and_index,
+)
 from .get_vcf_info import get_vcf_info
 from .VariantHDF5 import VariantHDF5
 from .GPSMap import GPSMap
@@ -57,7 +67,9 @@ from .plot_color_text import plot_color_text
 from .exit_ import exit_
 from .plot_heat_map import plot_heat_map
 from .read_json import read_json
-from .annotate_vcf_gz_using_bcftools_annotate import annotate_vcf_gz_using_bcftools_annotate
+from .annotate_vcf_gz_using_bcftools_annotate import (
+    annotate_vcf_gz_using_bcftools_annotate,
+)
 from .log_nd_array import log_nd_array
 from .get_shell_environment import get_shell_environment
 from .select_series_low_and_high_index import select_series_low_and_high_index
@@ -75,13 +87,17 @@ from .dump_gps_map import dump_gps_map
 from .drop_df_slice_greedily import drop_df_slice_greedily
 from .get_extreme_series_indices import get_extreme_series_indices
 from .establish_fai_index import establish_fai_index
-from .make_membership_df_from_categorical_series import make_membership_df_from_categorical_series
+from .make_membership_df_from_categorical_series import (
+    make_membership_df_from_categorical_series,
+)
 from .read_mutsignozzlereport2cv import read_mutsignozzlereport2cv
 from .train_and_classify import train_and_classify
 from .download_clinvar_vcf_gz import download_clinvar_vcf_gz
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
 from .get_variants_from_bam_using_strelka import get_variants_from_bam_using_strelka
-from .mark_duplicates_in_bam_using_picard_markduplicates import mark_duplicates_in_bam_using_picard_markduplicates
+from .mark_duplicates_in_bam_using_picard_markduplicates import (
+    mark_duplicates_in_bam_using_picard_markduplicates,
+)
 from .mount_volume import mount_volume
 from .normalize_contig import normalize_contig
 from .get_allelic_frequencies import get_allelic_frequencies
@@ -130,7 +146,9 @@ from .make_colorscale import make_colorscale
 from .math import rescale_x_y_coordiantes_in_polar_coordiante
 from .make_mesh_grid_coordinates_per_axis import make_mesh_grid_coordinates_per_axis
 from .index_bam_using_samtools_index import index_bam_using_samtools_index
-from .hierarchical_consensus_cluster_with_ks import hierarchical_consensus_cluster_with_ks
+from .hierarchical_consensus_cluster_with_ks import (
+    hierarchical_consensus_cluster_with_ks,
+)
 from .multiprocess import multiprocess
 from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
 from .drop_df_slice import drop_df_slice
@@ -159,7 +177,9 @@ from .get_vcf_sample_format import get_vcf_sample_format
 from .get_object_reference import get_object_reference
 from .annotate_vcf_gz_using_snpeff import annotate_vcf_gz_using_snpeff
 from .remove_paths import remove_paths
-from .group_and_apply_function_on_each_group_in_iterable import group_and_apply_function_on_each_group_in_iterable
+from .group_and_apply_function_on_each_group_in_iterable import (
+    group_and_apply_function_on_each_group_in_iterable,
+)
 from .compute_empirical_p_value import compute_empirical_p_value
 from .read_gct import read_gct
 from .train_and_regress import train_and_regress
@@ -178,7 +198,9 @@ from .copy_path import copy_path
 from .make_match_panels import make_match_panels
 from .align_fastq_gzs_using_bwa_mem import align_fastq_gzs_using_bwa_mem
 from .split_codons import split_codons
-from .count_transcripts_using_kallisto_quant import count_transcripts_using_kallisto_quant
+from .count_transcripts_using_kallisto_quant import (
+    count_transcripts_using_kallisto_quant,
+)
 from .read_copynumber_gistic2 import read_copynumber_gistic2
 from .download import download
 from .get_maf_variant_classification import get_maf_variant_classification
@@ -205,7 +227,9 @@ from .get_conda_prefix import get_conda_prefix
 from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .initialize_logger import initialize_logger
 from .reverse_transcribe_rna_sequence import reverse_transcribe_rna_sequence
-from .rename_chromosome_of_vcf_gz_using_bcftools_annotate import rename_chromosome_of_vcf_gz_using_bcftools_annotate
+from .rename_chromosome_of_vcf_gz_using_bcftools_annotate import (
+    rename_chromosome_of_vcf_gz_using_bcftools_annotate,
+)
 from .write_gmt import write_gmt
 from .single_sample_gsea import single_sample_gsea
 from .make_coordinates_for_reflection import make_coordinates_for_reflection

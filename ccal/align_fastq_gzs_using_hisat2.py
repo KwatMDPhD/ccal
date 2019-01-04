@@ -1,7 +1,7 @@
 from os.path import dirname, isfile
-from ._check_fastq_gzs import _check_fastq_gzs
 
 from . import DATA_DIRECTORY_PATH
+from ._check_fastq_gzs import _check_fastq_gzs
 from ._print_and_run_command import _print_and_run_command
 from .get_function_name import get_function_name
 
