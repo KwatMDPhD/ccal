@@ -12,11 +12,11 @@ from ._make_grid_values_and_categorical_labels import (
 )
 from ._plot_gps_map import _plot_gps_map
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
+from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
 from .compute_information_distance import compute_information_distance
 from .mds import mds
 from .normalize_nd_array import normalize_nd_array
 from .plot_heat_map import plot_heat_map
-from .style import CATEGORICAL_COLORS
 from .train_and_classify import train_and_classify
 
 element_marker_size = 16

@@ -1,13 +1,10 @@
 from numpy import nanmax, nanmin, unique
 from pandas import DataFrame, Series
 
+from .BINARY_COLORS_WHITE_BLACK import BINARY_COLORS_WHITE_BLACK
+from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
 from .make_colorscale import make_colorscale
 from .normalize_nd_array import normalize_nd_array
-from .style import (
-    BINARY_COLORS_WHITE_BLACK,
-    CATEGORICAL_COLORS,
-    CONTINUOUS_COLORSCALE_FOR_MATCH,
-)
 
 
 def _process_target_or_features_for_plotting(target_or_features, type_, plot_std):
@@ -50,7 +47,7 @@ def _process_target_or_features_for_plotting(target_or_features, type_, plot_std
 
             plot_max = plot_std
 
-        colorscale = CONTINUOUS_COLORSCALE_FOR_MATCH
+            colorscale = make_colorscale(colormap="bwr", plot=False)
 
     else:
 

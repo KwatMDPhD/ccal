@@ -1,7 +1,7 @@
 from numpy import asarray, cos, insert, linspace, pi, sin
 
+from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
 from .plot_and_save import plot_and_save
-from .style import CATEGORICAL_COLORS
 
 
 def plot_pie(

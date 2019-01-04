@@ -1,7 +1,7 @@
 from pandas import Series
 
+from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
 from .plot_and_save import plot_and_save
-from .style import CATEGORICAL_COLORS
 
 
 def plot_distributions(

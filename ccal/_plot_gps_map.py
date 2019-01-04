@@ -4,11 +4,12 @@ from numpy import asarray, cos, isnan, linspace, nan, pi, sin, unique, where
 from pandas import Series, isna
 
 from ._get_triangulation_edges import _get_triangulation_edges
+from .BINARY_COLORS_WHITE_BROWN import BINARY_COLORS_WHITE_BROWN
+from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
 from .make_colorscale import make_colorscale
 from .normalize_nd_array import normalize_nd_array
 from .plot_and_save import plot_and_save
-from .style import BINARY_COLORS_WHITE_BROWN, CATEGORICAL_COLORS
 
 
 def _plot_gps_map(

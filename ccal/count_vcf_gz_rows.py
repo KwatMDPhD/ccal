@@ -1,6 +1,6 @@
 from gzip import open as gzip_open
 
-VCF_COLUMNS = ("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT")
+from .VCF_COLUMNS import VCF_COLUMNS
 
 
 def count_vcf_gz_rows(

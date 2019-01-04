@@ -1,6 +1,6 @@
 from sys import exit
 
-from .log import echo_or_print
+from .echo_or_print import echo_or_print
 
 
 def exit_(str_, exception=None):

@@ -1,6 +1,6 @@
 from os.path import isdir
 
-from .subprocess_ import run_command
+from .run_command import run_command
 
 
 def mount_volume(volume_name, mount_directory_path):

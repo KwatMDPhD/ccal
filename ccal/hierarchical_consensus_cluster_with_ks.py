@@ -1,9 +1,9 @@
 from pandas import DataFrame, Index
 from scipy.spatial.distance import pdist, squareform
 
+from .establish_path import establish_path
 from .hierarchical_consensus_cluster import hierarchical_consensus_cluster
 from .multiprocess import multiprocess
-from .path import establish_path
 from .plot_heat_map import plot_heat_map
 from .plot_points import plot_points
 

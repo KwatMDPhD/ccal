@@ -1,12 +1,12 @@
 from numpy import asarray, nonzero, sort, unique
 from pandas import DataFrame
 
+from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
 from .check_nd_array_for_bad import check_nd_array_for_bad
 from .cluster_2d_array_slices import cluster_2d_array_slices
 from .make_colorscale import make_colorscale
 from .normalize_nd_array import normalize_nd_array
 from .plot_and_save import plot_and_save
-from .style import CATEGORICAL_COLORS
 
 
 def plot_heat_map(

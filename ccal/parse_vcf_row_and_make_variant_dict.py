@@ -1,23 +1,5 @@
-VCF_COLUMNS = ("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT")
-
-VCF_ANN_FIELDS = (
-    "ALT",
-    "effect",
-    "impact",
-    "gene_name",
-    "gene_id",
-    "feature_type",
-    "feature_id",
-    "transcript_biotype",
-    "rank",
-    "hgvsc",
-    "hgvsp",
-    "cdna_position",
-    "cds_position",
-    "protein_position",
-    "distance_to_feature",
-    "error",
-)
+from .VCF_ANN_FIELDS import VCF_ANN_FIELDS
+from .VCF_COLUMNS import VCF_COLUMNS
 
 
 def parse_vcf_row_and_make_variant_dict(vcf_row, n_info_ann=None):

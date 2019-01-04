@@ -1,6 +1,6 @@
 from os.path import isfile
 
-from .subprocess_ import run_command
+from .run_command import run_command
 
 
 def establish_fai_index(fasta_gz_file_path):

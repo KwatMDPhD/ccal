@@ -1,6 +1,6 @@
 from os.path import isfile
 
-from .network import download
+from .download import download
 
 
 def download_clinvar_vcf_gz(directory_path, version=None, overwrite=False):

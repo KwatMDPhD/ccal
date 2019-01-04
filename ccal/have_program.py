@@ -1,6 +1,6 @@
 from subprocess import CalledProcessError
 
-from .subprocess_ import run_command
+from .run_command import run_command
 
 
 def have_program(program_name):

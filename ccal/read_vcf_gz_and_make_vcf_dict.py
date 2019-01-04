@@ -1,14 +1,11 @@
 from gzip import open as gzip_open
 
-from numpy import nan
-from pandas import DataFrame, read_table
+from pandas import read_table
 
-from .access_vcf import (
-    VCF_COLUMNS,
-    get_vcf_sample_format,
-    parse_vcf_row_and_make_variant_dict,
-)
-from .str_ import split_str_ignoring_inside_quotes
+from ._describe_vcf_df import _describe_vcf_df
+from ._make_clean_vcf_df import _make_clean_vcf_df
+from .parse_vcf_row_and_make_variant_dict import parse_vcf_row_and_make_variant_dict
+from .split_str_ignoring_inside_quotes import split_str_ignoring_inside_quotes
 
 
 def read_vcf_gz_and_make_vcf_dict(vcf_gz_file_path, simplify=True, n_info_ann=1):
@@ -107,96 +104,3 @@ def read_vcf_gz_and_make_vcf_dict(vcf_gz_file_path, simplify=True, n_info_ann=1)
         vcf_dict["clean_vcf_df"] = _make_clean_vcf_df(vcf_dict["variant_dict"])
 
     return vcf_dict
-
-
-def _describe_vcf_df(vcf_df):
-
-    print("\nCHROM value counts:")
-
-    print(vcf_df["CHROM"].value_counts())
-
-    print("\nREF value counts:")
-
-    print(vcf_df["REF"].value_counts())
-
-    print("\nALT value counts:")
-
-    print(vcf_df["ALT"].value_counts())
-
-    print("\nQUAL description:")
-
-    qual = vcf_df["QUAL"]
-
-    qual = qual[qual.astype(str) != "."]
-
-    print(qual.astype(float).describe())
-
-    for sample in vcf_df.columns[9:]:
-
-        print("\n{} GT value counts:".format(sample))
-
-        try:
-
-            print(
-                vcf_df.apply(
-                    lambda row: get_vcf_sample_format(row["FORMAT"], row[sample], "GT"),
-                    axis=1,
-                ).value_counts()
-            )
-
-        except ValueError:
-
-            pass
-
-        print("\n{} DP description:".format(sample))
-
-        try:
-
-            print(
-                vcf_df.apply(
-                    lambda row: get_vcf_sample_format(row["FORMAT"], row[sample], "DP"),
-                    axis=1,
-                )
-                .astype(int)
-                .describe()
-            )
-
-        except ValueError:
-
-            pass
-
-
-def _make_clean_vcf_df(variant_dicts):
-
-    vcf_columns = VCF_COLUMNS[:-2]
-
-    info_fields = ("CLNSIG", "CLNDN")
-
-    info_ann_fields = ("gene_name", "transcript_biotype", "effect", "impact")
-
-    columns = vcf_columns + info_fields + info_ann_fields
-
-    vcf_df_rows = []
-
-    for i, variant_dict in enumerate(variant_dicts):
-
-        if variant_dict["FILTER"] == "PASS":
-
-            row = tuple(variant_dict[c] for c in vcf_columns) + tuple(
-                variant_dict.get(field, nan) for field in info_fields
-            )
-
-            ann_dicts = variant_dict.get("ANN")
-
-            if ann_dicts is not None:
-
-                for ann_i, ann_dict in ann_dicts.items():
-
-                    vcf_df_rows.append(
-                        row
-                        + tuple(ann_dict[ann_field] for ann_field in info_ann_fields)
-                    )
-
-    return (
-        DataFrame(vcf_df_rows, columns=columns).drop_duplicates().set_index("gene_name")
-    )

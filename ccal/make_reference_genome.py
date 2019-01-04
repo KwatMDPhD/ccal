@@ -2,7 +2,7 @@ from os.path import isfile, split
 
 from . import DATA_DIRECTORY_PATH
 from ._print_and_run_command import _print_and_run_command
-from .network import download
+from .download import download
 
 
 def make_reference_genome(directory_path, overwrite=False):
