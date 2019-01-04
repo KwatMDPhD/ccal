@@ -1,4 +1,5 @@
 from os.path import abspath
+
 VERSION = "0.9.0"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
 from .ANNOTATION_FONT_SIZE import ANNOTATION_FONT_SIZE
@@ -25,7 +26,9 @@ from ._anneal_node_and_element_positions import _anneal_node_and_element_positio
 from ._check_fastq_gzs import _check_fastq_gzs
 from ._check_node_x_element import _check_node_x_element
 from ._check_w_or_h import _check_w_or_h
-from ._cluster_clustering_x_element_and_compute_ccc import _cluster_clustering_x_element_and_compute_ccc
+from ._cluster_clustering_x_element_and_compute_ccc import (
+    _cluster_clustering_x_element_and_compute_ccc,
+)
 from ._compute_context_indices import _compute_context_indices
 from ._compute_norm import _compute_norm
 from ._count import _count
@@ -36,30 +39,42 @@ from ._get_target_grid_indices import _get_target_grid_indices
 from ._get_triangulation_edges import _get_triangulation_edges
 from ._gzip_compress import _gzip_compress
 from ._identify_what_to_count import _identify_what_to_count
-from ._ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import _ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays
+from ._ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import (
+    _ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays,
+)
 from ._make_annotations import _make_annotations
 from ._make_clean_vcf_df import _make_clean_vcf_df
 from ._make_context_matrix import _make_context_matrix
 from ._make_element_x_dimension import _make_element_x_dimension
-from ._make_grid_values_and_categorical_labels import _make_grid_values_and_categorical_labels
+from ._make_grid_values_and_categorical_labels import (
+    _make_grid_values_and_categorical_labels,
+)
 from ._make_variant_dict_consistent import _make_variant_dict_consistent
 from ._match import _match
-from ._match_randomly_sampled_target_and_features_to_compute_margin_of_errors import _match_randomly_sampled_target_and_features_to_compute_margin_of_errors
+from ._match_randomly_sampled_target_and_features_to_compute_margin_of_errors import (
+    _match_randomly_sampled_target_and_features_to_compute_margin_of_errors,
+)
 from ._match_target_and_features import _match_target_and_features
 from ._normalize_nd_array import _normalize_nd_array
-from ._permute_target_and_match_target_and_features import _permute_target_and_match_target_and_features
+from ._permute_target_and_match_target_and_features import (
+    _permute_target_and_match_target_and_features,
+)
 from ._plot_2d import _plot_2d
 from ._plot_gps_map import _plot_gps_map
 from ._plot_mountain import _plot_mountain
 from ._print_and_run_command import _print_and_run_command
-from ._process_target_or_features_for_plotting import _process_target_or_features_for_plotting
+from ._process_target_or_features_for_plotting import (
+    _process_target_or_features_for_plotting,
+)
 from ._single_sample_gseas import _single_sample_gseas
 from ._update_H_by_multiplicative_update import _update_H_by_multiplicative_update
 from ._update_W_by_multiplicative_update import _update_W_by_multiplicative_update
 from .add_conda_to_path import add_conda_to_path
 from .align_fastq_gzs_using_bwa_mem import align_fastq_gzs_using_bwa_mem
 from .align_fastq_gzs_using_hisat2 import align_fastq_gzs_using_hisat2
-from .annotate_vcf_gz_using_bcftools_annotate import annotate_vcf_gz_using_bcftools_annotate
+from .annotate_vcf_gz_using_bcftools_annotate import (
+    annotate_vcf_gz_using_bcftools_annotate,
+)
 from .annotate_vcf_gz_using_snpeff import annotate_vcf_gz_using_snpeff
 from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
@@ -83,15 +98,21 @@ from .compute_entropy import compute_entropy
 from .compute_information_coefficient import compute_information_coefficient
 from .compute_information_distance import compute_information_distance
 from .compute_joint_probability import compute_joint_probability
-from .compute_mutational_signature_enrichment import compute_mutational_signature_enrichment
+from .compute_mutational_signature_enrichment import (
+    compute_mutational_signature_enrichment,
+)
 from .compute_nd_array_margin_of_error import compute_nd_array_margin_of_error
 from .compute_posterior_probability import compute_posterior_probability
-from .concatenate_vcf_gzs_using_bcftools_concat import concatenate_vcf_gzs_using_bcftools_concat
+from .concatenate_vcf_gzs_using_bcftools_concat import (
+    concatenate_vcf_gzs_using_bcftools_concat,
+)
 from .conda_is_installed import conda_is_installed
 from .copy_path import copy_path
 from .correlate import correlate
 from .count_gene_impacts_from_variant_dicts import count_gene_impacts_from_variant_dicts
-from .count_transcripts_using_kallisto_quant import count_transcripts_using_kallisto_quant
+from .count_transcripts_using_kallisto_quant import (
+    count_transcripts_using_kallisto_quant,
+)
 from .count_vcf_gz_rows import count_vcf_gz_rows
 from .create_gitkeep import create_gitkeep
 from .cross_validate import cross_validate
@@ -136,22 +157,30 @@ from .get_unique_iterable_objects_in_order import get_unique_iterable_objects_in
 from .get_variant_start_and_end_positions import get_variant_start_and_end_positions
 from .get_variant_type import get_variant_type
 from .get_variants_from_bam_using_freebayes import get_variants_from_bam_using_freebayes
-from .get_variants_from_bam_using_freebayes_and_multiprocess import get_variants_from_bam_using_freebayes_and_multiprocess
+from .get_variants_from_bam_using_freebayes_and_multiprocess import (
+    get_variants_from_bam_using_freebayes_and_multiprocess,
+)
 from .get_variants_from_bam_using_strelka import get_variants_from_bam_using_strelka
 from .get_variants_from_vcf_gz import get_variants_from_vcf_gz
 from .get_vcf_info import get_vcf_info
 from .get_vcf_info_ann import get_vcf_info_ann
 from .get_vcf_sample_format import get_vcf_sample_format
 from .get_volume_name import get_volume_name
-from .group_and_apply_function_on_each_group_in_iterable import group_and_apply_function_on_each_group_in_iterable
+from .group_and_apply_function_on_each_group_in_iterable import (
+    group_and_apply_function_on_each_group_in_iterable,
+)
 from .group_iterable import group_iterable
 from .gsea import gsea
 from .gzip_compress_file import gzip_compress_file
-from .gzip_decompress_and_bgzip_compress_file import gzip_decompress_and_bgzip_compress_file
+from .gzip_decompress_and_bgzip_compress_file import (
+    gzip_decompress_and_bgzip_compress_file,
+)
 from .gzip_decompress_file import gzip_decompress_file
 from .have_program import have_program
 from .hierarchical_consensus_cluster import hierarchical_consensus_cluster
-from .hierarchical_consensus_cluster_with_ks import hierarchical_consensus_cluster_with_ks
+from .hierarchical_consensus_cluster_with_ks import (
+    hierarchical_consensus_cluster_with_ks,
+)
 from .in_git_repository import in_git_repository
 from .index_bam_using_samtools_index import index_bam_using_samtools_index
 from .index_gff3_df_by_name import index_gff3_df_by_name
@@ -176,14 +205,18 @@ from .make_file_name_from_str import make_file_name_from_str
 from .make_maf_from_vcf import make_maf_from_vcf
 from .make_match_panel import make_match_panel
 from .make_match_panels import make_match_panels
-from .make_membership_df_from_categorical_series import make_membership_df_from_categorical_series
+from .make_membership_df_from_categorical_series import (
+    make_membership_df_from_categorical_series,
+)
 from .make_mesh_grid_coordinates_per_axis import make_mesh_grid_coordinates_per_axis
 from .make_object_int_mapping import make_object_int_mapping
 from .make_random_color import make_random_color
 from .make_reference_genome import make_reference_genome
 from .make_summary_match_panel import make_summary_match_panel
 from .make_volume_dict import make_volume_dict
-from .mark_duplicates_in_bam_using_picard_markduplicates import mark_duplicates_in_bam_using_picard_markduplicates
+from .mark_duplicates_in_bam_using_picard_markduplicates import (
+    mark_duplicates_in_bam_using_picard_markduplicates,
+)
 from .mds import mds
 from .merge_dicts_with_callable import merge_dicts_with_callable
 from .mount_volume import mount_volume
@@ -225,9 +258,13 @@ from .read_where_and_map_column_names import read_where_and_map_column_names
 from .reboot_machine import reboot_machine
 from .remove_path import remove_path
 from .remove_paths import remove_paths
-from .rename_chromosome_of_vcf_gz_using_bcftools_annotate import rename_chromosome_of_vcf_gz_using_bcftools_annotate
+from .rename_chromosome_of_vcf_gz_using_bcftools_annotate import (
+    rename_chromosome_of_vcf_gz_using_bcftools_annotate,
+)
 from .replace_bad_objects_in_iterable import replace_bad_objects_in_iterable
-from .rescale_x_y_coordiantes_in_polar_coordiante import rescale_x_y_coordiantes_in_polar_coordiante
+from .rescale_x_y_coordiantes_in_polar_coordiante import (
+    rescale_x_y_coordiantes_in_polar_coordiante,
+)
 from .reverse_complement_dna_sequence import reverse_complement_dna_sequence
 from .reverse_transcribe_rna_sequence import reverse_transcribe_rna_sequence
 from .run_command import run_command
@@ -241,7 +278,9 @@ from .single_sample_gsea import single_sample_gsea
 from .single_sample_gseas import single_sample_gseas
 from .solve_ax_equal_b import solve_ax_equal_b
 from .solve_for_H import solve_for_H
-from .sort_and_index_bam_using_samtools_sort_and_index import sort_and_index_bam_using_samtools_sort_and_index
+from .sort_and_index_bam_using_samtools_sort_and_index import (
+    sort_and_index_bam_using_samtools_sort_and_index,
+)
 from .split_codons import split_codons
 from .split_df import split_df
 from .split_maf_by_tumor_sample_barcode import split_maf_by_tumor_sample_barcode
