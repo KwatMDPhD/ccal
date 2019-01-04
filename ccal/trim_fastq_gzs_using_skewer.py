@@ -1,13 +1,11 @@
 from os.path import dirname, isdir
 
-from ._gzip_compress import _gzip_compress
-
 from . import DATA_DIRECTORY_PATH
+from ._check_fastq_gzs import _check_fastq_gzs
+from ._gzip_compress import _gzip_compress
 from ._print_and_run_command import _print_and_run_command
 from .get_function_name import get_function_name
 from .multiprocess import multiprocess
-
-from ._check_fastq_gzs import _check_fastq_gzs
 
 GENERAL_BAD_SEQUENCES_FILE_PATH = "{}/general_bad_sequences.fasta".format(
     DATA_DIRECTORY_PATH

@@ -1,4 +1,5 @@
 from tabix import open as tabix_open
+
 from .parse_vcf_row_and_make_variant_dict import parse_vcf_row_and_make_variant_dict
 from .update_variant_dict import update_variant_dict
 

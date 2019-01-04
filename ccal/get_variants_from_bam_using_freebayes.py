@@ -1,4 +1,5 @@
 from os.path import dirname, isfile
+
 from ._print_and_run_command import _print_and_run_command
 from .bgzip_and_tabix import bgzip_and_tabix
 from .get_function_name import get_function_name

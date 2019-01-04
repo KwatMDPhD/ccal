@@ -1,5 +1,6 @@
-from .get_variant_type import get_variant_type
 from warnings import warn
+
+from .get_variant_type import get_variant_type
 from .is_inframe import is_inframe
 
 

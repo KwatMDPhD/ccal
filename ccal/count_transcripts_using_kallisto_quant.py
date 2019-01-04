@@ -1,4 +1,5 @@
 from os.path import isfile
+
 from ._check_fastq_gzs import _check_fastq_gzs
 from ._print_and_run_command import _print_and_run_command
 

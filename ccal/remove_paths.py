@@ -1,5 +1,5 @@
-from os.path import isdir, isfile, islink
 from os import listdir
+from os.path import isdir, isfile, islink
 
 from .remove_path import remove_path
 

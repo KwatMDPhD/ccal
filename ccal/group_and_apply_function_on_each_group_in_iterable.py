@@ -1,4 +1,5 @@
 from numpy import asarray, mean
+
 from .get_unique_iterable_objects_in_order import get_unique_iterable_objects_in_order
 
 

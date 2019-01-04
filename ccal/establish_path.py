@@ -1,6 +1,5 @@
 from os import mkdir
-from os.path import split, isdir
-
+from os.path import isdir, split
 
 from .clean_path import clean_path
 

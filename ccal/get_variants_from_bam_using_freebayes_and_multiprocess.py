@@ -1,6 +1,6 @@
+from .get_variants_from_bam_using_freebayes import get_variants_from_bam_using_freebayes
 from .multiprocess import multiprocess
 from .process_vcf_gz import concatenate_vcf_gzs_using_bcftools_concat
-from .get_variants_from_bam_using_freebayes import get_variants_from_bam_using_freebayes
 
 
 def get_variants_from_bam_using_freebayes_and_multiprocess(
