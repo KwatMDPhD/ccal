@@ -47,7 +47,7 @@ def _process_target_or_features_for_plotting(target_or_features, type_, plot_std
 
             plot_max = plot_std
 
-            colorscale = make_colorscale(colormap="bwr", plot=False)
+        colorscale = make_colorscale(colormap="bwr", plot=False)
 
     else:
 
