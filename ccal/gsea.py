@@ -4,7 +4,7 @@ from numpy import asarray, full, nan
 from numpy.random import choice
 from pandas import Series
 
-from .nd_array.nd_array.compute_empirical_p_value import compute_empirical_p_value
+from .compute_empirical_p_value import compute_empirical_p_value
 from .single_sample_gsea import single_sample_gsea
 
 

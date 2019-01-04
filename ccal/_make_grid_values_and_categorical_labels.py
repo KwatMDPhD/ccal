@@ -1,9 +1,7 @@
 from numpy import full, nan, rot90, unique
 
-from .kernel_density.kernel_density.compute_bandwidths import compute_bandwidths
-from .kernel_density.kernel_density.estimate_kernel_density import (
-    estimate_kernel_density,
-)
+from .compute_bandwidths import compute_bandwidths
+from .estimate_kernel_density import estimate_kernel_density
 
 
 def _make_grid_values_and_categorical_labels(

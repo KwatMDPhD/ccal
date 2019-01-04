@@ -3,8 +3,8 @@ from os.path import isfile
 from pandas import read_table
 
 from .make_match_panel import make_match_panel
-from .support.support.path import establish_path
-from .support.support.str_ import make_file_name_from_str
+from .path import establish_path
+from .str_ import make_file_name_from_str
 
 
 def make_match_panels(

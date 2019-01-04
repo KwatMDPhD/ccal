@@ -1,7 +1,7 @@
 from numpy import absolute, linspace, log2, sort
 
-from .plot.plot.plot_and_save import plot_and_save
-from .plot.plot.plot_points import plot_points
+from .plot_and_save import plot_and_save
+from .plot_points import plot_points
 
 
 def plot_bayesian_nomogram(

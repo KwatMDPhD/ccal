@@ -5,7 +5,7 @@ from warnings import warn
 
 from tables import Filters, HDF5ExtError, Int32Col, IsDescription, StringCol, open_file
 
-from .hdf5.hdf5.read_where_and_map_column_names import read_where_and_map_column_names
+from .read_where_and_map_column_names import read_where_and_map_column_names
 
 
 class FeatureHDF5:

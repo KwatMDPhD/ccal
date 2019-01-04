@@ -20,7 +20,7 @@ from .access_vcf import (
     get_vcf_sample_format,
     update_variant_dict,
 )
-from .hdf5.hdf5.read_where_and_map_column_names import read_where_and_map_column_names
+from .read_where_and_map_column_names import read_where_and_map_column_names
 
 
 class VariantHDF5:

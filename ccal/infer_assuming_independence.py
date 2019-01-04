@@ -1,11 +1,9 @@
 from numpy import absolute, full, linspace, meshgrid, nan, product, rot90
 
 from ._plot_2d import _plot_2d
+from .estimate_kernel_density import estimate_kernel_density
 from .infer import infer
-from .kernel_density.kernel_density.estimate_kernel_density import (
-    estimate_kernel_density,
-)
-from .plot.plot.plot_points import plot_points
+from .plot_points import plot_points
 
 
 def infer_assuming_independence(

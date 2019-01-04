@@ -1,9 +1,9 @@
 from numpy import full, nan
 from pandas import DataFrame, concat
 
+from .df import split_df
+from .multiprocess import multiprocess
 from .single_sample_gsea import single_sample_gsea
-from .support.support.df import split_df
-from .support.support.multiprocess import multiprocess
 
 
 def single_sample_gseas(

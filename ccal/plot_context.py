@@ -2,7 +2,7 @@ from numpy import absolute
 from pandas import Series
 
 from .compute_context import compute_context
-from .plot.plot.plot_and_save import plot_and_save
+from .plot_and_save import plot_and_save
 
 
 def plot_context(

@@ -2,11 +2,9 @@ from numpy import absolute, asarray, full, linspace, minimum, nan
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
 from ._compute_context_indices import _compute_context_indices
+from .check_nd_array_for_bad import check_nd_array_for_bad
 from .fit_skew_t_pdf import fit_skew_t_pdf
-from .nd_array.nd_array.check_nd_array_for_bad import check_nd_array_for_bad
-from .nd_array.nd_array.make_coordinates_for_reflection import (
-    make_coordinates_for_reflection,
-)
+from .make_coordinates_for_reflection import make_coordinates_for_reflection
 
 
 def compute_context(

@@ -1,7 +1,7 @@
 from numpy import issubdtype, number
 from pandas import DataFrame
 
-from .nd_array.nd_array.check_nd_array_for_bad import check_nd_array_for_bad
+from .check_nd_array_for_bad import check_nd_array_for_bad
 
 
 def _check_node_x_element(node_x_element):

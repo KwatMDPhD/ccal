@@ -7,7 +7,7 @@ from .access_vcf import (
     get_vcf_info_ann,
 )
 from .access_vcf_dict import read_vcf_gz_and_make_vcf_dict
-from .support.support.path import establish_path
+from .path import establish_path
 
 VARIANT_CLASSIFICATION_MUTSIG_EFFECT = {
     "3'-UTR": "noncoding",

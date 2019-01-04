@@ -8,7 +8,7 @@ from .access_vcf import (
     get_vcf_sample_format,
     parse_vcf_row_and_make_variant_dict,
 )
-from .support.support.str_ import split_str_ignoring_inside_quotes
+from .str_ import split_str_ignoring_inside_quotes
 
 
 def read_vcf_gz_and_make_vcf_dict(vcf_gz_file_path, simplify=True, n_info_ann=1):

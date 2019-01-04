@@ -1,9 +1,9 @@
 from numpy import nanmax, nanmin, unique
 from pandas import DataFrame, Series
 
-from .nd_array.nd_array.normalize_nd_array import normalize_nd_array
-from .plot.plot.make_colorscale import make_colorscale
-from .plot.plot.style import (
+from .make_colorscale import make_colorscale
+from .normalize_nd_array import normalize_nd_array
+from .style import (
     BINARY_COLORS_WHITE_BLACK,
     CATEGORICAL_COLORS,
     CONTINUOUS_COLORSCALE_FOR_MATCH,

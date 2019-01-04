@@ -10,14 +10,12 @@ from ._style import (
     LAYOUT_WIDTH,
     ROW_HEIGHT,
 )
-from .information.information.compute_information_coefficient import (
-    compute_information_coefficient,
-)
-from .nd_array.nd_array.cluster_2d_array_slices import cluster_2d_array_slices
-from .nd_array.nd_array.nd_array_is_sorted import nd_array_is_sorted
-from .plot.plot.plot_and_save import plot_and_save
-from .support.support.iterable import make_object_int_mapping
-from .support.support.series import get_extreme_series_indices
+from .cluster_2d_array_slices import cluster_2d_array_slices
+from .compute_information_coefficient import compute_information_coefficient
+from .iterable import make_object_int_mapping
+from .nd_array_is_sorted import nd_array_is_sorted
+from .plot_and_save import plot_and_save
+from .series import get_extreme_series_indices
 
 
 def make_match_panel(

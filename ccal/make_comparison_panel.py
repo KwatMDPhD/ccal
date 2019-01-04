@@ -1,13 +1,9 @@
 from numpy import asarray
 from pandas import DataFrame
 
-from .information.information.compute_information_coefficient import (
-    compute_information_coefficient,
-)
-from .nd_array.nd_array.apply_function_on_2_2d_arrays_slices import (
-    apply_function_on_2_2d_arrays_slices,
-)
-from .plot.plot.plot_heat_map import plot_heat_map
+from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
+from .compute_information_coefficient import compute_information_coefficient
+from .plot_heat_map import plot_heat_map
 
 
 def make_comparison_panel(

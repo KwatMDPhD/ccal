@@ -1,6 +1,6 @@
 from numpy import full, nan, sort
 
-from .nd_array.nd_array.normalize_nd_array import normalize_nd_array
+from .normalize_nd_array import normalize_nd_array
 
 
 def _make_element_x_dimension(node_x_element, node_x_dimension, n_pull, pull_power):

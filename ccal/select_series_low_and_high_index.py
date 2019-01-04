@@ -1,5 +1,6 @@
-from ccal import plot_points
 from pandas import Series
+
+from ccal import plot_points
 
 
 def select_series_low_and_high_index(

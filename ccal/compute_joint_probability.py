@@ -1,9 +1,7 @@
 from numpy import rot90
 
-from .kernel_density.kernel_density.estimate_kernel_density import (
-    estimate_kernel_density,
-)
-from .plot.plot.plot_heat_map import plot_heat_map
+from .estimate_kernel_density import estimate_kernel_density
+from .plot_heat_map import plot_heat_map
 
 
 def compute_joint_probability(

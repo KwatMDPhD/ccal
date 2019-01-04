@@ -2,8 +2,8 @@ from numpy import full, nan
 from pandas import DataFrame, concat
 
 from .compute_context import compute_context
-from .support.support.df import split_df
-from .support.support.multiprocess import multiprocess
+from .df import split_df
+from .multiprocess import multiprocess
 
 
 def make_context_matrix(

@@ -1,6 +1,6 @@
 from pandas import DataFrame
 
-from .linear_algebra.linear_algebra.solve_ax_equal_b import solve_ax_equal_b
+from .solve_ax_equal_b import solve_ax_equal_b
 
 
 def solve_for_H(V, W, method="nnls"):

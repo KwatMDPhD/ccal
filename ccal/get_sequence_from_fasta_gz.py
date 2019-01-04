@@ -1,5 +1,5 @@
 from .establish_fai_index import establish_fai_index
-from .support.support.subprocess_ import run_command
+from .subprocess_ import run_command
 
 
 def get_sequence_from_fasta_gz(

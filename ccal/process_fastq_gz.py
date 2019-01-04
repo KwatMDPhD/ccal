@@ -3,8 +3,8 @@ from sys import platform
 
 from . import DATA_DIRECTORY_PATH
 from ._print_and_run_command import _print_and_run_command
-from .support.support.get_function_name import get_function_name
-from .support.support.multiprocess import multiprocess
+from .get_function_name import get_function_name
+from .multiprocess import multiprocess
 
 GENERAL_BAD_SEQUENCES_FILE_PATH = "{}/general_bad_sequences.fasta".format(
     DATA_DIRECTORY_PATH

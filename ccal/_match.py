@@ -4,17 +4,11 @@ from numpy import apply_along_axis, array_split, concatenate, full, nan
 from numpy.random import choice, get_state, seed, set_state, shuffle
 from pandas import DataFrame
 
-from .nd_array.nd_array.apply_function_on_2_1d_arrays import (
-    apply_function_on_2_1d_arrays,
-)
-from .nd_array.nd_array.compute_empirical_p_values_and_fdrs import (
-    compute_empirical_p_values_and_fdrs,
-)
-from .nd_array.nd_array.compute_nd_array_margin_of_error import (
-    compute_nd_array_margin_of_error,
-)
-from .support.support.multiprocess import multiprocess
-from .support.support.series import get_extreme_series_indices
+from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
+from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
+from .compute_nd_array_margin_of_error import compute_nd_array_margin_of_error
+from .multiprocess import multiprocess
+from .series import get_extreme_series_indices
 
 
 def _match(

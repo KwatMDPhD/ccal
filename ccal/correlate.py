@@ -2,9 +2,9 @@ from numpy import full, nan
 from numpy.random import seed, shuffle
 from sklearn.linear_model import LinearRegression
 
-from .nd_array.nd_array.compute_empirical_p_value import compute_empirical_p_value
-from .plot.plot.plot_points import plot_points
-from .plot.plot.style import CATEGORICAL_COLORS
+from .compute_empirical_p_value import compute_empirical_p_value
+from .plot_points import plot_points
+from .style import CATEGORICAL_COLORS
 
 
 def correlate(
