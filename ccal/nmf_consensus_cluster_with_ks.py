@@ -1,11 +1,11 @@
 from numpy import asarray
 from pandas import DataFrame, Index
 
+from .multiprocess import multiprocess
 from .nmf_consensus_cluster import nmf_consensus_cluster
-from .plot.plot.plot_heat_map import plot_heat_map
-from .plot.plot.plot_points import plot_points
-from .support.support.multiprocess import multiprocess
-from .support.support.path import establish_path
+from .path import establish_path
+from .plot_heat_map import plot_heat_map
+from .plot_points import plot_points
 
 
 def nmf_consensus_cluster_with_ks(

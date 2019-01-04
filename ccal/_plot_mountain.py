@@ -1,6 +1,6 @@
 from numpy import absolute, asarray
 
-from .plot.plot.plot_and_save import plot_and_save
+from .plot_and_save import plot_and_save
 
 
 def _plot_mountain(

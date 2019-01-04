@@ -11,8 +11,8 @@ from ._style import (
     LAYOUT_WIDTH,
     ROW_HEIGHT,
 )
-from .plot.plot.plot_and_save import plot_and_save
-from .support.support.iterable import make_object_int_mapping
+from .iterable import make_object_int_mapping
+from .plot_and_save import plot_and_save
 
 eps = finfo(float).eps
 

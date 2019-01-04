@@ -2,15 +2,10 @@ from warnings import warn
 
 from tables import NoSuchNodeError
 
-from .feature.feature.FeatureHDF5 import FeatureHDF5
-from .sequence.sequence.get_chromosome_size_from_fasta_gz import (
-    get_chromosome_size_from_fasta_gz,
-)
-from .variant.variant.access_vcf import (
-    count_gene_impacts_from_variant_dicts,
-    count_vcf_gz_rows,
-)
-from .variant.variant.VariantHDF5 import VariantHDF5
+from .access_vcf import count_gene_impacts_from_variant_dicts, count_vcf_gz_rows
+from .FeatureHDF5 import FeatureHDF5
+from .get_chromosome_size_from_fasta_gz import get_chromosome_size_from_fasta_gz
+from .VariantHDF5 import VariantHDF5
 
 
 def is_valid_vcf_gz(vcf_gz_file_path):

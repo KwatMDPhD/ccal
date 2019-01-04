@@ -1,5 +1,5 @@
-from .plot.plot.make_colorscale import make_colorscale
-from .plot.plot.plot_and_save import plot_and_save
+from .make_colorscale import make_colorscale
+from .plot_and_save import plot_and_save
 
 
 def _plot_2d(_2d_array, title, xaxis_title, yaxis_title, layout_size=None):

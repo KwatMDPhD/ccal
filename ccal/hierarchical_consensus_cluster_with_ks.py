@@ -2,10 +2,10 @@ from pandas import DataFrame, Index
 from scipy.spatial.distance import pdist, squareform
 
 from .hierarchical_consensus_cluster import hierarchical_consensus_cluster
-from .plot.plot.plot_heat_map import plot_heat_map
-from .plot.plot.plot_points import plot_points
-from .support.support.multiprocess import multiprocess
-from .support.support.path import establish_path
+from .multiprocess import multiprocess
+from .path import establish_path
+from .plot_heat_map import plot_heat_map
+from .plot_points import plot_points
 
 
 def hierarchical_consensus_cluster_with_ks(

@@ -1,7 +1,7 @@
 from numpy import linspace, meshgrid
 
 from .make_colorscale import make_colorscale
-from .nd_array.nd_array.normalize_nd_array import normalize_nd_array
+from .normalize_nd_array import normalize_nd_array
 from .plot_and_save import plot_and_save
 
 

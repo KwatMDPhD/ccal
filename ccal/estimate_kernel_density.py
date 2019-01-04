@@ -1,8 +1,6 @@
 from statsmodels.nonparametric.kernel_density import KDEMultivariate
 
-from .nd_array.nd_array.make_mesh_grid_coordinates_per_axis import (
-    make_mesh_grid_coordinates_per_axis,
-)
+from .make_mesh_grid_coordinates_per_axis import make_mesh_grid_coordinates_per_axis
 
 
 def estimate_kernel_density(

@@ -2,9 +2,9 @@ from os.path import dirname, isdir, isfile
 
 from ._print_and_run_command import _print_and_run_command
 from .bgzip_and_tabix import bgzip_and_tabix
+from .get_function_name import get_function_name
+from .multiprocess import multiprocess
 from .process_vcf_gz import concatenate_vcf_gzs_using_bcftools_concat
-from .support.support.get_function_name import get_function_name
-from .support.support.multiprocess import multiprocess
 
 
 def sort_and_index_bam_using_samtools_sort_and_index(

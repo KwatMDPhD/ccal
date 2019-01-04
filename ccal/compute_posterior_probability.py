@@ -1,6 +1,6 @@
 from numpy import apply_along_axis, rot90
 
-from .plot.plot.plot_heat_map import plot_heat_map
+from .plot_heat_map import plot_heat_map
 
 
 def compute_posterior_probability(probability, plot=True, names=None):

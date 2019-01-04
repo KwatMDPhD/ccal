@@ -1,6 +1,3 @@
-from pandas import Series
-
-
 def merge_dicts_with_callable(dict_0, dict_1, callable_):
 
     merged_dict = {}
@@ -24,16 +21,3 @@ def merge_dicts_with_callable(dict_0, dict_1, callable_):
             raise ValueError("dict_0 or dict_1 changed during iteration.")
 
     return merged_dict
-
-
-def write_dict(dict_, key_name, value_name, file_path):
-
-    series = Series(dict_, name=value_name)
-
-    series.index.name = key_name
-
-    if not file_path.endswith(".tsv"):
-
-        file_path += ".tsv"
-
-    series.to_csv(file_path, sep="\t")

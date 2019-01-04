@@ -1,7 +1,7 @@
 from numpy.random import choice
 
-from .plot.plot.plot_distributions import plot_distributions
-from .plot.plot.plot_heat_map import plot_heat_map
+from .plot_distributions import plot_distributions
+from .plot_heat_map import plot_heat_map
 
 
 def summarize_feature_x_sample(

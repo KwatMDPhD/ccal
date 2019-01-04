@@ -1,9 +1,9 @@
 from numpy import full, nan
 from pandas import DataFrame, concat
 
+from .df import split_df
 from .fit_skew_t_pdf import fit_skew_t_pdf
-from .support.support.df import split_df
-from .support.support.multiprocess import multiprocess
+from .multiprocess import multiprocess
 
 
 def fit_skew_t_pdfs(df, n_job=1, output_file_path=None):

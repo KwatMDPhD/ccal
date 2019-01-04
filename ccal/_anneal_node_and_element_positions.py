@@ -4,10 +4,8 @@ from scipy.spatial import Delaunay
 from scipy.spatial.distance import euclidean, pdist, squareform
 from scipy.stats import pearsonr
 
-from .nd_array.nd_array.apply_function_on_2_2d_arrays_slices import (
-    apply_function_on_2_2d_arrays_slices,
-)
-from .plot.plot.plot_points import plot_points
+from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
+from .plot_points import plot_points
 
 
 def _anneal_node_and_element_positions(

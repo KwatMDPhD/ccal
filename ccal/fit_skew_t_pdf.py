@@ -2,7 +2,7 @@ from warnings import warn
 
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
-from .nd_array.nd_array.check_nd_array_for_bad import check_nd_array_for_bad
+from .check_nd_array_for_bad import check_nd_array_for_bad
 
 
 def fit_skew_t_pdf(

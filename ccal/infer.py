@@ -4,7 +4,7 @@ from ._get_target_grid_indices import _get_target_grid_indices
 from ._plot_2d import _plot_2d
 from .compute_joint_probability import compute_joint_probability
 from .compute_posterior_probability import compute_posterior_probability
-from .plot.plot.plot_points import plot_points
+from .plot_points import plot_points
 
 
 def infer(
