@@ -2,7 +2,7 @@ from warnings import warn
 
 from tables import NoSuchNodeError
 
-from .access_vcf import count_gene_impacts_from_variant_dicts
+from .count_gene_impacts_from_variant_dicts import count_gene_impacts_from_variant_dicts
 from .FeatureHDF5 import FeatureHDF5
 from .get_chromosome_size_from_fasta_gz import get_chromosome_size_from_fasta_gz
 from .VariantHDF5 import VariantHDF5

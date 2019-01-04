@@ -1,29 +1,3 @@
-from gzip import open as gzip_open
-from warnings import warn
-
-from tabix import open as tabix_open
-
-BAD_IDS = (".",)
-
-VCF_ANN_FIELDS = (
-    "ALT",
-    "effect",
-    "impact",
-    "gene_name",
-    "gene_id",
-    "feature_type",
-    "feature_id",
-    "transcript_biotype",
-    "rank",
-    "hgvsc",
-    "hgvsp",
-    "cdna_position",
-    "cds_position",
-    "protein_position",
-    "distance_to_feature",
-    "error",
-)
-
 VARIANT_EFFECTS = (
     # Loss of transcript or exon
     "transcript_ablation",

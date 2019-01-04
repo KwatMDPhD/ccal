@@ -1,5 +1,5 @@
-from .str_ import str_is_version
-from .subprocess_ import run_command
+from .run_command import run_command
+from .str_is_version import str_is_version
 
 
 def get_git_versions(sort=True):

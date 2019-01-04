@@ -1,8 +1,8 @@
 from .add_conda_to_path import add_conda_to_path
 from .conda_is_installed import conda_is_installed
-from .machine import get_machine
-from .network import download
-from .subprocess_ import run_command
+from .download import download
+from .get_machine import get_machine
+from .run_command import run_command
 
 
 def install_and_activate_conda(

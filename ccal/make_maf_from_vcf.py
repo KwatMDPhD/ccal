@@ -1,67 +1,10 @@
 from pandas import DataFrame, read_table
 
-from .access_vcf import (
-    get_maf_variant_classification,
-    get_variant_start_and_end_positions,
-    get_variant_type,
-    get_vcf_info_ann,
-)
-from .access_vcf_dict import read_vcf_gz_and_make_vcf_dict
-
-VARIANT_CLASSIFICATION_MUTSIG_EFFECT = {
-    "3'-UTR": "noncoding",
-    "3'Flank": "noncoding",
-    "3'Promoter": "noncoding",
-    "3'UTR": "noncoding",
-    "5'-Flank": "noncoding",
-    "5'-UTR": "noncoding",
-    "5'Flank": "noncoding",
-    "5'Promoter": "noncoding",
-    "5'UTR": "noncoding",
-    "De_novo_Start": "null",
-    "De_novo_Start_InFrame": "null",
-    "De_novo_Start_OutOfFrame": "null",
-    "Frame_Shift_Del": "null",
-    "Frame_Shift_Ins": "null",
-    "IGR": "noncoding",
-    "In_Frame_Del": "null",
-    "In_Frame_Ins": "null",
-    "Intron": "noncoding",
-    "Missense": "nonsilent",
-    "Missense_Mutation": "nonsilent",
-    "NCSD": "noncoding",
-    "Non-coding_Transcript": "noncoding",
-    "Nonsense": "null",
-    "Nonsense_Mutation": "null",
-    "Nonstop_Mutation": "null",
-    "Promoter": "noncoding",
-    "RNA": "noncoding",
-    "Read-through": "null",
-    "Silent": "silent",
-    "Splice": "null",
-    "Splice_Region": "null",
-    "Splice_Site": "null",
-    "Splice_Site_DNP": "null",
-    "Splice_Site_Del": "null",
-    "Splice_Site_Ins": "null",
-    "Splice_Site_ONP": "null",
-    "Splice_Site_SNP": "null",
-    "Start_Codon_DNP": "null",
-    "Start_Codon_Del": "null",
-    "Start_Codon_Ins": "null",
-    "Start_Codon_ONP": "null",
-    "Stop_Codon_DNP": "null",
-    "Stop_Codon_Del": "null",
-    "Stop_Codon_Ins": "null",
-    "Synonymous": "silent",
-    "Targeted_Region": "silent",
-    "Translation_Start_Site": "null",
-    "Variant_Classification": "effect",
-    "downstream": "noncoding",
-    "miRNA": "noncoding",
-    "upstream": "noncoding",
-    "upstream;downstream": "noncoding",
-}
+from .get_maf_variant_classification import get_maf_variant_classification
+from .get_variant_start_and_end_positions import get_variant_start_and_end_positions
+from .get_variant_type import get_variant_type
+from .get_vcf_info_ann import get_vcf_info_ann
+from .read_vcf_gz_and_make_vcf_dict import read_vcf_gz_and_make_vcf_dict
 
 
 def make_maf_from_vcf(

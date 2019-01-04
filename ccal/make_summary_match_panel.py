@@ -4,15 +4,13 @@ from ._make_annotations import _make_annotations
 from ._process_target_or_features_for_plotting import (
     _process_target_or_features_for_plotting,
 )
-from ._style import (
-    ANNOTATION_FONT_SIZE,
-    ANNOTATION_WIDTH,
-    LAYOUT_SIDE_MARGIN,
-    LAYOUT_WIDTH,
-    ROW_HEIGHT,
-)
-from .iterable import make_object_int_mapping
+from .ANNOTATION_FONT_SIZE import ANNOTATION_FONT_SIZE
+from .ANNOTATION_WIDTH import ANNOTATION_WIDTH
+from .LAYOUT_SIDE_MARGIN import LAYOUT_SIDE_MARGIN
+from .LAYOUT_WIDTH import LAYOUT_WIDTH
+from .make_object_int_mapping import make_object_int_mapping
 from .plot_and_save import plot_and_save
+from .ROW_HEIGHT import ROW_HEIGHT
 
 eps = finfo(float).eps
 

@@ -1,9 +1,9 @@
 from numpy import asarray
 from pandas import DataFrame, Index
 
+from .establish_path import establish_path
 from .multiprocess import multiprocess
 from .nmf_consensus_cluster import nmf_consensus_cluster
-from .path import establish_path
 from .plot_heat_map import plot_heat_map
 from .plot_points import plot_points
 

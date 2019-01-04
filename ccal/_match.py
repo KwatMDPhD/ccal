@@ -1,14 +1,16 @@
-from math import ceil
-
-from numpy import apply_along_axis, array_split, concatenate, full, nan
-from numpy.random import choice, get_state, seed, set_state, shuffle
+from numpy import array_split, concatenate
 from pandas import DataFrame
 
-from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
+from ._match_randomly_sampled_target_and_features_to_compute_margin_of_errors import (
+    _match_randomly_sampled_target_and_features_to_compute_margin_of_errors,
+)
+from ._match_target_and_features import _match_target_and_features
+from ._permute_target_and_match_target_and_features import (
+    _permute_target_and_match_target_and_features,
+)
 from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
-from .compute_nd_array_margin_of_error import compute_nd_array_margin_of_error
+from .get_extreme_series_indices import get_extreme_series_indices
 from .multiprocess import multiprocess
-from .series import get_extreme_series_indices
 
 
 def _match(
@@ -102,103 +104,3 @@ def _match(
         score_moe_p_value_fdr["FDR"] = fdrs
 
     return score_moe_p_value_fdr
-
-
-def _match_randomly_sampled_target_and_features_to_compute_margin_of_errors(
-    target,
-    features,
-    random_seed,
-    n_sampling,
-    match_function,
-    n_required_for_match_function,
-    raise_for_n_less_than_required,
-):
-
-    print("Computing MoE with {} sampling ...".format(n_sampling))
-
-    seed(random_seed)
-
-    feature_x_sampling = full((features.shape[0], n_sampling), nan)
-
-    n_sample = ceil(0.632 * target.size)
-
-    for i in range(n_sampling):
-
-        random_indices = choice(target.size, size=n_sample, replace=True)
-
-        sampled_target = target[random_indices]
-
-        sampled_features = features[:, random_indices]
-
-        random_state = get_state()
-
-        feature_x_sampling[:, i] = _match_target_and_features(
-            sampled_target,
-            sampled_features,
-            match_function,
-            n_required_for_match_function,
-            raise_for_n_less_than_required,
-        )
-
-        set_state(random_state)
-
-    return apply_along_axis(
-        compute_nd_array_margin_of_error, 1, feature_x_sampling, raise_for_bad=False
-    )
-
-
-def _permute_target_and_match_target_and_features(
-    target,
-    features,
-    random_seed,
-    n_permutation,
-    match_function,
-    n_required_for_match_function,
-    raise_for_n_less_than_required,
-):
-
-    print("Computing p-value and FDR with {} permutation ...".format(n_permutation))
-
-    seed(random_seed)
-
-    feature_x_permutation = full((features.shape[0], n_permutation), nan)
-
-    permuted_target = target.copy()
-
-    for i in range(n_permutation):
-
-        shuffle(permuted_target)
-
-        random_state = get_state()
-
-        feature_x_permutation[:, i] = _match_target_and_features(
-            permuted_target,
-            features,
-            match_function,
-            n_required_for_match_function,
-            raise_for_n_less_than_required,
-        )
-
-        set_state(random_state)
-
-    return feature_x_permutation
-
-
-def _match_target_and_features(
-    target,
-    features,
-    match_function,
-    n_required_for_match_function,
-    raise_for_n_less_than_required,
-):
-
-    return apply_along_axis(
-        apply_function_on_2_1d_arrays,
-        1,
-        features,
-        target,
-        match_function,
-        n_required=n_required_for_match_function,
-        raise_for_n_less_than_required=raise_for_n_less_than_required,
-        raise_for_bad=False,
-    )

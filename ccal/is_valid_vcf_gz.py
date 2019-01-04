@@ -1,4 +1,4 @@
-from .access_vcf import count_vcf_gz_rows
+from .count_vcf_gz_rows import count_vcf_gz_rows
 
 
 def is_valid_vcf_gz(vcf_gz_file_path):

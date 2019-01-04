@@ -1,7 +1,8 @@
 from numpy import nan
 from pandas import DataFrame
 
-from .df import drop_df_slice, drop_df_slice_greedily
+from .drop_df_slice import drop_df_slice
+from .drop_df_slice_greedily import drop_df_slice_greedily
 from .log_nd_array import log_nd_array
 from .normalize_nd_array import normalize_nd_array
 from .summarize_feature_x_sample import summarize_feature_x_sample

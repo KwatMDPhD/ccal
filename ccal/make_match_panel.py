@@ -3,19 +3,17 @@ from ._match import _match
 from ._process_target_or_features_for_plotting import (
     _process_target_or_features_for_plotting,
 )
-from ._style import (
-    ANNOTATION_FONT_SIZE,
-    ANNOTATION_WIDTH,
-    LAYOUT_SIDE_MARGIN,
-    LAYOUT_WIDTH,
-    ROW_HEIGHT,
-)
+from .ANNOTATION_FONT_SIZE import ANNOTATION_FONT_SIZE
+from .ANNOTATION_WIDTH import ANNOTATION_WIDTH
 from .cluster_2d_array_slices import cluster_2d_array_slices
 from .compute_information_coefficient import compute_information_coefficient
-from .iterable import make_object_int_mapping
+from .get_extreme_series_indices import get_extreme_series_indices
+from .LAYOUT_SIDE_MARGIN import LAYOUT_SIDE_MARGIN
+from .LAYOUT_WIDTH import LAYOUT_WIDTH
+from .make_object_int_mapping import make_object_int_mapping
 from .nd_array_is_sorted import nd_array_is_sorted
 from .plot_and_save import plot_and_save
-from .series import get_extreme_series_indices
+from .ROW_HEIGHT import ROW_HEIGHT
 
 
 def make_match_panel(

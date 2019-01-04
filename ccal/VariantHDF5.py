@@ -13,14 +13,13 @@ from tables import (
     open_file,
 )
 
-from .access_vcf import (
-    BAD_IDS,
-    get_vcf_info,
-    get_vcf_info_ann,
-    get_vcf_sample_format,
-    update_variant_dict,
-)
+from ._make_variant_dict_consistent import _make_variant_dict_consistent
+from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
+from .get_vcf_info import get_vcf_info
+from .get_vcf_info_ann import get_vcf_info_ann
+from .get_vcf_sample_format import get_vcf_sample_format
 from .read_where_and_map_column_names import read_where_and_map_column_names
+from .update_variant_dict import update_variant_dict
 
 
 class VariantHDF5:
@@ -197,7 +196,7 @@ class VariantHDF5:
 
                         cursor["POS"] = pos
 
-                        if id__ not in BAD_IDS:
+                        if id__ not in BAD_VARIANT_IDS:
 
                             cursor["ID"] = id__
 
@@ -397,19 +396,3 @@ class VariantHDF5:
             update_variant_dict(variant_dict)
 
         return variant_dicts
-
-
-def _make_variant_dict_consistent(
-    variant_dict, ann_fields=("effect", "impact", "gene_name"), format_fields=("GT",)
-):
-
-    variant_dict["ANN"] = {
-        0: {ann_field: variant_dict.get(ann_field) for ann_field in ann_fields}
-    }
-
-    variant_dict["sample"] = {
-        0: {
-            format_field: variant_dict.get(format_field)
-            for format_field in format_fields
-        }
-    }

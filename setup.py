@@ -6,7 +6,7 @@ from ccal import VERSION
 
 name = "ccal"
 
-url = "https://github.com/UCSD-CCAL/ccal"
+url = "https://github.com/KwatME/ccal"
 
 strs_to_skip = (".git", "__pycache__")
 

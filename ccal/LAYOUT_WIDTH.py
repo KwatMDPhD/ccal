@@ -1,0 +1,1 @@
+LAYOUT_WIDTH = 880

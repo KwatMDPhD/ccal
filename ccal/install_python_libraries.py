@@ -1,5 +1,5 @@
 from .get_installed_pip_libraries import get_installed_pip_libraries
-from .subprocess_ import run_command
+from .run_command import run_command
 
 
 def install_python_libraries(libraries):

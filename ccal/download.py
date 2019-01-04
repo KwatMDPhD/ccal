@@ -2,7 +2,7 @@ import ssl
 from os import getcwd
 from urllib.request import urlretrieve
 
-from .log import echo_or_print
+from .echo_or_print import echo_or_print
 
 
 def download(url, directory_path=getcwd()):
