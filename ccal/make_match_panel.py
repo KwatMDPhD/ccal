@@ -7,13 +7,13 @@ from .ANNOTATION_FONT_SIZE import ANNOTATION_FONT_SIZE
 from .ANNOTATION_WIDTH import ANNOTATION_WIDTH
 from .cluster_2d_array_slices import cluster_2d_array_slices
 from .compute_information_coefficient import compute_information_coefficient
-from .get_extreme_series_indices import get_extreme_series_indices
 from .LAYOUT_SIDE_MARGIN import LAYOUT_SIDE_MARGIN
 from .LAYOUT_WIDTH import LAYOUT_WIDTH
 from .make_object_int_mapping import make_object_int_mapping
 from .nd_array_is_sorted import nd_array_is_sorted
 from .plot_and_save import plot_and_save
 from .ROW_HEIGHT import ROW_HEIGHT
+from .select_series_indices import select_series_indices
 
 
 def make_match_panel(
@@ -105,11 +105,13 @@ def make_match_panel(
 
         score_moe_p_value_fdr = score_moe_p_value_fdr.reindex(index=features.index)
 
-    indices = get_extreme_series_indices(
-        score_moe_p_value_fdr["Score"],
-        extreme_feature_threshold,
-        ascending=score_ascending,
+    indices = select_series_indices(
+        score_moe_p_value_fdr["Score"], "<>", n=extreme_feature_threshold, plot=False
     )
+
+    if not score_ascending:
+
+        indices = indices[::-1]
 
     scores_to_plot = score_moe_p_value_fdr.loc[indices]
 

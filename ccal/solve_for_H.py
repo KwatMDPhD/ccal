@@ -6,7 +6,7 @@ from .solve_ax_equal_b import solve_ax_equal_b
 def solve_for_H(V, W, method="nnls"):
 
     print(
-        "Solving for H in V{} = W{} H{} ...".format(
+        "Solve for H in V{} = W{} * H{}.".format(
             V.shape, W.shape, (W.shape[1], V.shape[1])
         )
     )
