@@ -2,21 +2,16 @@ from os.path import abspath
 
 VERSION = "0.9.0"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
-from .ANNOTATION_FONT_SIZE import ANNOTATION_FONT_SIZE
-from .ANNOTATION_WIDTH import ANNOTATION_WIDTH
 from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
-from .BINARY_COLORS_RUBY_EMERALD import BINARY_COLORS_RUBY_EMERALD
-from .BINARY_COLORS_WHITE_BLACK import BINARY_COLORS_WHITE_BLACK
-from .BINARY_COLORS_WHITE_BROWN import BINARY_COLORS_WHITE_BROWN
-from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
 from .CODON_TO_AMINO_ACID import CODON_TO_AMINO_ACID
+from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
+from .COLOR_RUBY_EMERALD import COLOR_RUBY_EMERALD
+from .COLOR_WHITE_BLACK import COLOR_WHITE_BLACK
+from .COLOR_WHITE_BROWN import COLOR_WHITE_BROWN
 from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
 from .FeatureHDF5 import FeatureHDF5
 from .GPSMap import GPSMap
 from .Genome import Genome
-from .LAYOUT_SIDE_MARGIN import LAYOUT_SIDE_MARGIN
-from .LAYOUT_WIDTH import LAYOUT_WIDTH
-from .ROW_HEIGHT import ROW_HEIGHT
 from .VARIANT_CLASSIFICATION_MUTSIG_EFFECT import VARIANT_CLASSIFICATION_MUTSIG_EFFECT
 from .VARIANT_EFFECTS import VARIANT_EFFECTS
 from .VCF_ANN_FIELDS import VCF_ANN_FIELDS
@@ -51,21 +46,19 @@ from ._make_grid_values_and_categorical_labels import (
 )
 from ._make_variant_dict_consistent import _make_variant_dict_consistent
 from ._match import _match
-from ._match_randomly_sampled_target_and_features_to_compute_margin_of_errors import (
-    _match_randomly_sampled_target_and_features_to_compute_margin_of_errors,
+from ._match_randomly_sampled_target_and_data_to_compute_margin_of_errors import (
+    _match_randomly_sampled_target_and_data_to_compute_margin_of_errors,
 )
-from ._match_target_and_features import _match_target_and_features
+from ._match_target_and_data import _match_target_and_data
 from ._normalize_nd_array import _normalize_nd_array
-from ._permute_target_and_match_target_and_features import (
-    _permute_target_and_match_target_and_features,
+from ._permute_target_and_match_target_and_data import (
+    _permute_target_and_match_target_and_data,
 )
 from ._plot_2d import _plot_2d
 from ._plot_gps_map import _plot_gps_map
 from ._plot_mountain import _plot_mountain
 from ._print_and_run_command import _print_and_run_command
-from ._process_target_or_features_for_plotting import (
-    _process_target_or_features_for_plotting,
-)
+from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
 from ._single_sample_gseas import _single_sample_gseas
 from ._update_H_by_multiplicative_update import _update_H_by_multiplicative_update
 from ._update_W_by_multiplicative_update import _update_W_by_multiplicative_update
@@ -98,6 +91,7 @@ from .compute_entropy import compute_entropy
 from .compute_information_coefficient import compute_information_coefficient
 from .compute_information_distance import compute_information_distance
 from .compute_joint_probability import compute_joint_probability
+from .compute_kullback_leibler_divergence import compute_kullback_leibler_divergence
 from .compute_mutational_signature_enrichment import (
     compute_mutational_signature_enrichment,
 )

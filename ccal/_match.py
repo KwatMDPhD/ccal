@@ -1,12 +1,12 @@
 from numpy import array_split, concatenate
 from pandas import DataFrame
 
-from ._match_randomly_sampled_target_and_features_to_compute_margin_of_errors import (
-    _match_randomly_sampled_target_and_features_to_compute_margin_of_errors,
+from ._match_randomly_sampled_target_and_data_to_compute_margin_of_errors import (
+    _match_randomly_sampled_target_and_data_to_compute_margin_of_errors,
 )
-from ._match_target_and_features import _match_target_and_features
-from ._permute_target_and_match_target_and_features import (
-    _permute_target_and_match_target_and_features,
+from ._match_target_and_data import _match_target_and_data
+from ._permute_target_and_match_target_and_data import (
+    _permute_target_and_match_target_and_data,
 )
 from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
 from .multiprocess import multiprocess
@@ -15,13 +15,13 @@ from .select_series_indices import select_series_indices
 
 def _match(
     target,
-    features,
+    data,
     n_job,
     match_function,
     n_required_for_match_function,
     raise_for_n_less_than_required,
-    n_extreme_feature,
-    fraction_extreme_feature,
+    n_extreme,
+    fraction_extreme,
     random_seed,
     n_sampling,
     n_permutation,
@@ -29,7 +29,7 @@ def _match(
 
     score_moe_p_value_fdr = DataFrame(columns=("Score", "0.95 MoE", "P-Value", "FDR"))
 
-    n_job = min(features.shape[0], n_job)
+    n_job = min(data.shape[0], n_job)
 
     print(
         "Computing score using {} with {} process ...".format(
@@ -37,40 +37,40 @@ def _match(
         )
     )
 
-    features_split = array_split(features, n_job)
+    data_split = array_split(data, n_job)
 
     score_moe_p_value_fdr["Score"] = concatenate(
         multiprocess(
-            _match_target_and_features,
+            _match_target_and_data,
             (
                 (
                     target,
-                    features_,
+                    data_,
                     match_function,
                     n_required_for_match_function,
                     raise_for_n_less_than_required,
                 )
-                for features_ in features_split
+                for data_ in data_split
             ),
             n_job,
         )
     )
 
-    if n_extreme_feature is None and fraction_extreme_feature is None:
+    if n_extreme is None and fraction_extreme is None:
 
         indices = select_series_indices(
             score_moe_p_value_fdr["Score"],
             "<>",
-            n=n_extreme_feature,
-            fraction=fraction_extreme_feature,
+            n=n_extreme,
+            fraction=fraction_extreme,
             plot=False,
         )
 
         score_moe_p_value_fdr.loc[
             indices, "0.95 MoE"
-        ] = _match_randomly_sampled_target_and_features_to_compute_margin_of_errors(
+        ] = _match_randomly_sampled_target_and_data_to_compute_margin_of_errors(
             target,
-            features[indices],
+            data[indices],
             random_seed,
             n_sampling,
             match_function,
@@ -82,18 +82,18 @@ def _match(
             score_moe_p_value_fdr["Score"],
             concatenate(
                 multiprocess(
-                    _permute_target_and_match_target_and_features,
+                    _permute_target_and_match_target_and_data,
                     (
                         (
                             target,
-                            features_,
+                            data_,
                             random_seed,
                             n_permutation,
                             match_function,
                             n_required_for_match_function,
                             raise_for_n_less_than_required,
                         )
-                        for features_ in features_split
+                        for data_ in data_split
                     ),
                     n_job,
                 )

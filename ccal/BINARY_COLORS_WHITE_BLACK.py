@@ -1,1 +1,0 @@
-BINARY_COLORS_WHITE_BLACK = ("#ebf6f7", "#171412")
