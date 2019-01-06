@@ -1,16 +1,9 @@
 from numpy import finfo
 
 from ._make_annotations import _make_annotations
-from ._process_target_or_features_for_plotting import (
-    _process_target_or_features_for_plotting,
-)
-from .ANNOTATION_FONT_SIZE import ANNOTATION_FONT_SIZE
-from .ANNOTATION_WIDTH import ANNOTATION_WIDTH
-from .LAYOUT_SIDE_MARGIN import LAYOUT_SIDE_MARGIN
-from .LAYOUT_WIDTH import LAYOUT_WIDTH
+from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
 from .make_object_int_mapping import make_object_int_mapping
 from .plot_and_save import plot_and_save
-from .ROW_HEIGHT import ROW_HEIGHT
 
 eps = finfo(float).eps
 
@@ -19,15 +12,16 @@ def make_summary_match_panel(
     target,
     data_dicts,
     score_moe_p_value_fdr,
-    plot_only_columns_shared_by_target_and_all_features=False,
+    plot_only_columns_shared_by_target_and_all_data=False,
     target_ascending=True,
     target_type="continuous",
+    score_ascending=False,
     plot_std=None,
     title="Summary Match Panel",
-    layout_width=LAYOUT_WIDTH,
-    row_height=ROW_HEIGHT,
-    layout_side_margin=LAYOUT_SIDE_MARGIN,
-    annotation_font_size=ANNOTATION_FONT_SIZE,
+    layout_width=880,
+    row_height=64,
+    layout_side_margin=196,
+    annotation_font_size=10,
     html_file_path=None,
     plotly_html_file_path=None,
 ):
@@ -40,7 +34,7 @@ def make_summary_match_panel(
 
         target_name = target.name
 
-    if plot_only_columns_shared_by_target_and_all_features:
+    if plot_only_columns_shared_by_target_and_all_data:
 
         for data_dict in data_dicts.values():
 
@@ -54,7 +48,7 @@ def make_summary_match_panel(
 
         target.sort_values(ascending=target_ascending, inplace=True)
 
-    target, target_plot_min, target_plot_max, target_colorscale = _process_target_or_features_for_plotting(
+    target, target_plot_min, target_plot_max, target_colorscale = _process_target_or_data_for_plotting(
         target, target_type, plot_std
     )
 
@@ -110,20 +104,22 @@ def make_summary_match_panel(
 
         df = data_dict["df"]
 
-        features_to_plot = df[df.columns & target.index]
+        data_to_plot = df[df.columns & target.index]
 
-        score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr.loc[
-            features_to_plot.index
-        ].sort_values("Score", ascending=data_dict.get("emphasis", "high") == "low")
+        score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr.loc[data_to_plot.index]
 
-        features_to_plot = features_to_plot.loc[score_moe_p_value_fdr_to_plot.index]
+        score_moe_p_value_fdr_to_plot.sort_values(
+            "Score", ascending=score_ascending, inplace=True
+        )
+
+        data_to_plot = data_to_plot.loc[score_moe_p_value_fdr_to_plot.index]
 
         annotations = _make_annotations(
             score_moe_p_value_fdr_to_plot.dropna(axis=1, how="all")
         )
 
-        features_to_plot, features_plot_min, features_plot_max, features_colorscale = _process_target_or_features_for_plotting(
-            features_to_plot, data_dict["data_type"], plot_std
+        data_to_plot, data_plot_min, data_plot_max, data_colorscale = _process_target_or_data_for_plotting(
+            data_to_plot, data_dict["type"], plot_std
         )
 
         yaxis_name = "yaxis{}".format(len(data_dicts) - data_name_index).replace(
@@ -152,12 +148,12 @@ def make_summary_match_panel(
             dict(
                 yaxis=yaxis_name.replace("axis", ""),
                 type="heatmap",
-                z=features_to_plot.values[::-1],
-                x=features_to_plot.columns,
-                y=features_to_plot.index[::-1],
-                zmin=features_plot_min,
-                zmax=features_plot_max,
-                colorscale=features_colorscale,
+                z=data_to_plot.values[::-1],
+                x=data_to_plot.columns,
+                y=data_to_plot.index[::-1],
+                zmin=data_plot_min,
+                zmax=data_plot_max,
+                colorscale=data_colorscale,
                 showscale=False,
             )
         )
@@ -180,7 +176,7 @@ def make_summary_match_panel(
             )
         )
 
-        layout_annotation_template.update(dict(xanchor="left", width=ANNOTATION_WIDTH))
+        layout_annotation_template.update(dict(xanchor="left", width=64))
 
         for (
             annotation_index,

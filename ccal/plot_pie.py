@@ -1,6 +1,6 @@
 from numpy import asarray, cos, insert, linspace, pi, sin
 
-from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
+from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .plot_and_save import plot_and_save
 
 
@@ -120,7 +120,7 @@ def plot_pie(
 
     if colors is None:
 
-        colors = CATEGORICAL_COLORS
+        colors = COLOR_CATEGORICAL
 
     if insidetextfont is None:
 

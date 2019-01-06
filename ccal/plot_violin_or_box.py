@@ -1,4 +1,4 @@
-from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
+from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .plot_and_save import plot_and_save
 
 
@@ -50,7 +50,7 @@ def plot_violin_or_box(
 
         if colors is None:
 
-            color = CATEGORICAL_COLORS[i]
+            color = COLOR_CATEGORICAL[i]
 
         else:
 

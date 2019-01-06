@@ -126,7 +126,7 @@ def hierarchical_consensus_cluster_with_ks(
         plot_heat_map(
             k_x_column,
             sort_axis=1,
-            colorscale="CATEGORICAL_COLORS",
+            colorscale="COLOR_CATEGORICAL",
             title="HCC Column Cluster Distribution",
             xaxis_title=k_x_column.columns.name,
             yaxis_title=k_x_column.index.name,

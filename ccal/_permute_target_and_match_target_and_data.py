@@ -1,12 +1,12 @@
 from numpy import full, nan
 from numpy.random import get_state, seed, set_state, shuffle
 
-from ._match_target_and_features import _match_target_and_features
+from ._match_target_and_data import _match_target_and_data
 
 
-def _permute_target_and_match_target_and_features(
+def _permute_target_and_match_target_and_data(
     target,
-    features,
+    data,
     random_seed,
     n_permutation,
     match_function,
@@ -18,7 +18,7 @@ def _permute_target_and_match_target_and_features(
 
     seed(random_seed)
 
-    feature_x_permutation = full((features.shape[0], n_permutation), nan)
+    index_x_permutation = full((data.shape[0], n_permutation), nan)
 
     permuted_target = target.copy()
 
@@ -28,9 +28,9 @@ def _permute_target_and_match_target_and_features(
 
         random_state = get_state()
 
-        feature_x_permutation[:, i] = _match_target_and_features(
+        index_x_permutation[:, i] = _match_target_and_data(
             permuted_target,
-            features,
+            data,
             match_function,
             n_required_for_match_function,
             raise_for_n_less_than_required,
@@ -38,4 +38,4 @@ def _permute_target_and_match_target_and_features(
 
         set_state(random_state)
 
-    return feature_x_permutation
+    return index_x_permutation

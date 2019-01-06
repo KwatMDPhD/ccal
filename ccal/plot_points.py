@@ -1,4 +1,4 @@
-from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
+from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .plot_and_save import plot_and_save
 
 
@@ -60,7 +60,7 @@ def plot_points(
 
         if markers is None:
 
-            marker = dict(color=CATEGORICAL_COLORS[i])
+            marker = dict(color=COLOR_CATEGORICAL[i])
 
         else:
 

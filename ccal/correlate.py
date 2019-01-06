@@ -2,7 +2,7 @@ from numpy import full, nan
 from numpy.random import seed, shuffle
 from sklearn.linear_model import LinearRegression
 
-from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
+from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .compute_empirical_p_value import compute_empirical_p_value
 from .plot_points import plot_points
 
@@ -78,8 +78,8 @@ def correlate(
             names=("Data", "Fit"),
             modes=("markers", "lines"),
             markers=(
-                dict(size=marker_size, color=CATEGORICAL_COLORS[0]),
-                dict(color=CATEGORICAL_COLORS[1]),
+                dict(size=marker_size, color=COLOR_CATEGORICAL[0]),
+                dict(color=COLOR_CATEGORICAL[1]),
             ),
             title=title,
             xaxis_title=xaxis_title,

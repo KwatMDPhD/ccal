@@ -12,7 +12,7 @@ from ._make_grid_values_and_categorical_labels import (
 )
 from ._plot_gps_map import _plot_gps_map
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
-from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
+from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .compute_information_distance import compute_information_distance
 from .mds import mds
 from .normalize_nd_array import normalize_nd_array
@@ -327,7 +327,7 @@ class GPSMap:
 
         if label_colors is None:
 
-            label_colors = CATEGORICAL_COLORS[: element_labels.unique().size]
+            label_colors = COLOR_CATEGORICAL[: element_labels.unique().size]
 
         if w_or_h == "w":
 

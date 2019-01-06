@@ -1,32 +1,25 @@
 from ._make_annotations import _make_annotations
 from ._match import _match
-from ._process_target_or_features_for_plotting import (
-    _process_target_or_features_for_plotting,
-)
-from .ANNOTATION_FONT_SIZE import ANNOTATION_FONT_SIZE
-from .ANNOTATION_WIDTH import ANNOTATION_WIDTH
+from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
 from .cluster_2d_array_slices import cluster_2d_array_slices
 from .compute_information_coefficient import compute_information_coefficient
-from .LAYOUT_SIDE_MARGIN import LAYOUT_SIDE_MARGIN
-from .LAYOUT_WIDTH import LAYOUT_WIDTH
 from .make_object_int_mapping import make_object_int_mapping
 from .nd_array_is_sorted import nd_array_is_sorted
 from .plot_and_save import plot_and_save
-from .ROW_HEIGHT import ROW_HEIGHT
 from .select_series_indices import select_series_indices
 
 
 def make_match_panel(
     target,
-    features,
+    data,
     target_ascending=True,
     score_moe_p_value_fdr=None,
     n_job=1,
     match_function=compute_information_coefficient,
     n_required_for_match_function=2,
     raise_for_n_less_than_required=False,
-    n_extreme_feature=8,
-    fraction_extreme_feature=None,
+    n_extreme=8,
+    fraction_extreme=None,
     random_seed=20_121_020,
     n_sampling=0,
     n_permutation=0,
@@ -34,13 +27,13 @@ def make_match_panel(
     plot_only_sign=None,
     target_type="continuous",
     cluster_within_category=True,
-    features_type="continuous",
+    data_type="continuous",
     plot_std=None,
     title="Match Panel",
-    layout_width=LAYOUT_WIDTH,
-    row_height=ROW_HEIGHT,
-    layout_side_margin=LAYOUT_SIDE_MARGIN,
-    annotation_font_size=ANNOTATION_FONT_SIZE,
+    layout_width=880,
+    row_height=64,
+    layout_side_margin=196,
+    annotation_font_size=10,
     file_path_prefix=None,
     plotly_html_file_path_prefix=None,
 ):
@@ -53,11 +46,11 @@ def make_match_panel(
 
         target_name = target.name
 
-    common_indices = target.index & features.columns
+    common_indices = target.index & data.columns
 
     print(
-        "target.index ({}) & features.columns ({}) have {} in common.".format(
-            target.index.size, features.columns.size, len(common_indices)
+        "target.index ({}) & data.columns ({}) have {} in common.".format(
+            target.index.size, data.columns.size, len(common_indices)
         )
     )
 
@@ -71,19 +64,19 @@ def make_match_panel(
 
         target.sort_values(ascending=target_ascending, inplace=True)
 
-    features = features[target.index]
+    data = data[target.index]
 
     if score_moe_p_value_fdr is None:
 
         score_moe_p_value_fdr = _match(
             target.values,
-            features.values,
+            data.values,
             n_job,
             match_function,
             n_required_for_match_function,
             raise_for_n_less_than_required,
-            n_extreme_feature,
-            fraction_extreme_feature,
+            n_extreme,
+            fraction_extreme,
             random_seed,
             n_sampling,
             n_permutation,
@@ -93,7 +86,7 @@ def make_match_panel(
 
             return score_moe_p_value_fdr
 
-        score_moe_p_value_fdr.index = features.index
+        score_moe_p_value_fdr.index = data.index
 
         score_moe_p_value_fdr.sort_values(
             "Score", ascending=score_ascending, inplace=True
@@ -105,18 +98,18 @@ def make_match_panel(
 
     else:
 
-        score_moe_p_value_fdr = score_moe_p_value_fdr.reindex(index=features.index)
+        score_moe_p_value_fdr = score_moe_p_value_fdr.reindex(index=data.index)
 
     scores_to_plot = score_moe_p_value_fdr.copy()
 
-    if n_extreme_feature is not None and fraction_extreme_feature is not None:
+    if n_extreme is not None and fraction_extreme is not None:
 
         scores_to_plot = score_moe_p_value_fdr.loc[
             select_series_indices(
                 score_moe_p_value_fdr["Score"],
                 "<>",
-                n=n_extreme_feature,
-                fraction=fraction_extreme_feature,
+                n=n_extreme,
+                fraction=fraction_extreme,
                 plot=False,
             )
         ]
@@ -133,13 +126,13 @@ def make_match_panel(
 
         scores_to_plot = scores_to_plot.loc[indices]
 
-    scores_to_plot.sort_values("Score", inplace=True, ascending=score_ascending)
+    scores_to_plot.sort_values("Score", ascending=score_ascending, inplace=True)
 
-    features_to_plot = features.loc[scores_to_plot.index]
+    data_to_plot = data.loc[scores_to_plot.index]
 
     annotations = _make_annotations(scores_to_plot.dropna(axis=1, how="all"))
 
-    target, target_plot_min, target_plot_max, target_colorscale = _process_target_or_features_for_plotting(
+    target, target_plot_min, target_plot_max, target_colorscale = _process_target_or_data_for_plotting(
         target, target_type, plot_std
     )
 
@@ -148,42 +141,40 @@ def make_match_panel(
         and target_type in ("binary", "categorical")
         and 1 < target.value_counts().min()
         and nd_array_is_sorted(target.values)
-        and not features_to_plot.isna().all().any()
+        and not data_to_plot.isna().all().any()
     ):
 
         print("Clustering heat map within category ...")
 
         clustered_indices = cluster_2d_array_slices(
-            features_to_plot.values, 1, groups=target.values, raise_for_bad=False
+            data_to_plot.values, 1, groups=target.values, raise_for_bad=False
         )
 
         target = target.iloc[clustered_indices]
 
-        features_to_plot = features_to_plot.iloc[:, clustered_indices]
+        data_to_plot = data_to_plot.iloc[:, clustered_indices]
 
-    features_to_plot, features_plot_min, features_plot_max, features_colorscale = _process_target_or_features_for_plotting(
-        features_to_plot, features_type, plot_std
+    data_to_plot, data_plot_min, data_plot_max, data_colorscale = _process_target_or_data_for_plotting(
+        data_to_plot, data_type, plot_std
     )
 
-    target_row_fraction = max(0.01, 1 / (features_to_plot.shape[0] + 2))
+    target_row_fraction = max(0.01, 1 / (data_to_plot.shape[0] + 2))
 
     target_yaxis_domain = (1 - target_row_fraction, 1)
 
-    features_yaxis_domain = (0, 1 - target_row_fraction * 2)
+    data_yaxis_domain = (0, 1 - target_row_fraction * 2)
 
-    feature_row_fraction = (
-        features_yaxis_domain[1] - features_yaxis_domain[0]
-    ) / features_to_plot.shape[0]
+    data_row_fraction = (
+        data_yaxis_domain[1] - data_yaxis_domain[0]
+    ) / data_to_plot.shape[0]
 
     layout = dict(
         width=layout_width,
-        height=row_height * max(8, (features_to_plot.shape[0] + 2) ** 0.8),
+        height=row_height * max(8, (data_to_plot.shape[0] + 2) ** 0.8),
         margin=dict(l=layout_side_margin, r=layout_side_margin),
         xaxis=dict(anchor="y", tickfont=dict(size=annotation_font_size)),
         yaxis=dict(
-            domain=features_yaxis_domain,
-            dtick=1,
-            tickfont=dict(size=annotation_font_size),
+            domain=data_yaxis_domain, dtick=1, tickfont=dict(size=annotation_font_size)
         ),
         yaxis2=dict(
             domain=target_yaxis_domain, tickfont=dict(size=annotation_font_size)
@@ -208,12 +199,12 @@ def make_match_panel(
         dict(
             yaxis="y",
             type="heatmap",
-            z=features_to_plot.values[::-1],
-            x=features_to_plot.columns,
-            y=features_to_plot.index[::-1],
-            zmin=features_plot_min,
-            zmax=features_plot_max,
-            colorscale=features_colorscale,
+            z=data_to_plot.values[::-1],
+            x=data_to_plot.columns,
+            y=data_to_plot.index[::-1],
+            zmin=data_plot_min,
+            zmax=data_plot_max,
+            colorscale=data_colorscale,
             showscale=False,
         ),
     ]
@@ -224,7 +215,7 @@ def make_match_panel(
         xanchor="left",
         yanchor="middle",
         font=dict(size=annotation_font_size),
-        width=ANNOTATION_WIDTH,
+        width=64,
         showarrow=False,
     )
 
@@ -241,7 +232,7 @@ def make_match_panel(
             )
         )
 
-        y = features_yaxis_domain[1] - (feature_row_fraction / 2)
+        y = data_yaxis_domain[1] - (data_row_fraction / 2)
 
         for str_ in strs:
 
@@ -254,7 +245,7 @@ def make_match_panel(
                 )
             )
 
-            y -= feature_row_fraction
+            y -= data_row_fraction
 
     if file_path_prefix is None:
 

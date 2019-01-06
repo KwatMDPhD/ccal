@@ -175,7 +175,7 @@ def nmf_consensus_cluster_with_ks(
             plot_heat_map(
                 k_x_element,
                 sort_axis=1,
-                colorscale="CATEGORICAL_COLORS",
+                colorscale="COLOR_CATEGORICAL",
                 title="NMFCC {} Element Cluster Distribution".format(w_or_h.upper()),
                 xaxis_title=k_x_element.columns.name,
                 yaxis_title=k_x_element.index.name,

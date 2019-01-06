@@ -1,9 +1,9 @@
 from numpy import asarray, nonzero, sort, unique
 from pandas import DataFrame
 
-from .CATEGORICAL_COLORS import CATEGORICAL_COLORS
 from .check_nd_array_for_bad import check_nd_array_for_bad
 from .cluster_2d_array_slices import cluster_2d_array_slices
+from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .make_colorscale import make_colorscale
 from .normalize_nd_array import normalize_nd_array
 from .plot_and_save import plot_and_save
@@ -196,10 +196,10 @@ def plot_heat_map(
 
         y = y[::-1]
 
-    if colorscale == "CATEGORICAL_COLORS":
+    if colorscale == "COLOR_CATEGORICAL":
 
         colorscale = make_colorscale(
-            colors=CATEGORICAL_COLORS[: unique(z).size], plot=False
+            colors=COLOR_CATEGORICAL[: unique(z).size], plot=False
         )
 
     elif colorscale is None and colormap is not None:
@@ -236,7 +236,7 @@ def plot_heat_map(
 
             if column_annotation_colors is None:
 
-                column_annotation_colors = CATEGORICAL_COLORS[
+                column_annotation_colors = COLOR_CATEGORICAL[
                     : len(set(column_annotation))
                 ]
 
@@ -281,7 +281,7 @@ def plot_heat_map(
 
             if row_annotation_colors is None:
 
-                row_annotation_colors = CATEGORICAL_COLORS[: len(set(row_annotation))]
+                row_annotation_colors = COLOR_CATEGORICAL[: len(set(row_annotation))]
 
             data.append(
                 dict(

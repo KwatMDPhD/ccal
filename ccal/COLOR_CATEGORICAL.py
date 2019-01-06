@@ -1,4 +1,4 @@
-CATEGORICAL_COLORS = (
+COLOR_CATEGORICAL = (
     "#20d9ba",
     "#9017e6",
     "#ff1968",
