@@ -16,6 +16,26 @@ def select_series_indices(
     plotly_file_path=None,
 ):
 
+    if n is not None:
+
+        if direction in ("<", ">"):
+
+            n = min(n, series.size)
+
+        elif direction == "<>":
+
+            n = min(n, series.size // 2)
+
+    if fraction is not None:
+
+        if direction in ("<", ">"):
+
+            fraction = min(fraction, 1)
+
+        elif direction == "<>":
+
+            fraction = min(fraction, 1 / 2)
+
     series_sorted = series.sort_values()
 
     if direction == "<":
@@ -24,7 +44,7 @@ def select_series_indices(
 
             if n is not None:
 
-                threshold = series_sorted[n]
+                threshold = series_sorted.iloc[n]
 
             elif fraction is not None:
 
@@ -44,7 +64,7 @@ def select_series_indices(
 
             if n is not None:
 
-                threshold = series_sorted[-n]
+                threshold = series_sorted.iloc[-n]
 
             elif fraction is not None:
 
@@ -62,9 +82,9 @@ def select_series_indices(
 
         if n is not None:
 
-            threshold_low = series_sorted[n]
+            threshold_low = series_sorted.iloc[n]
 
-            threshold_high = series_sorted[-n]
+            threshold_high = series_sorted.iloc[-n]
 
         elif fraction is not None:
 
