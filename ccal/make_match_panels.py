@@ -71,7 +71,7 @@ def make_match_panels(
                 target_values,
                 data_dict["df"],
                 score_moe_p_value_fdr=score_moe_p_value_fdr,
-                features_type=data_dict["type"],
+                data_type=data_dict["type"],
                 title=suffix.replace("/", "<br>"),
                 file_path_prefix=file_path_prefix,
                 plotly_html_file_path_prefix=plotly_html_file_path_prefix,

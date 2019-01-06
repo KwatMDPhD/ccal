@@ -1,4 +1,4 @@
-from ccal import plot_and_save
+from .plot_and_save import plot_and_save
 
 
 def select_series_indices(
