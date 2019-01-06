@@ -102,7 +102,7 @@ def make_match_panel(
 
     scores_to_plot = score_moe_p_value_fdr.copy()
 
-    if n_extreme is not None and fraction_extreme is not None:
+    if n_extreme is not None or fraction_extreme is not None:
 
         scores_to_plot = score_moe_p_value_fdr.loc[
             select_series_indices(
