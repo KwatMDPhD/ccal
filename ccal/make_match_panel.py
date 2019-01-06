@@ -25,7 +25,8 @@ def make_match_panel(
     match_function=compute_information_coefficient,
     n_required_for_match_function=2,
     raise_for_n_less_than_required=False,
-    extreme_feature_threshold=8,
+    n_extreme_feature=8,
+    fraction_extreme_feature=None,
     random_seed=20_121_020,
     n_sampling=0,
     n_permutation=0,
@@ -81,7 +82,8 @@ def make_match_panel(
             match_function,
             n_required_for_match_function,
             raise_for_n_less_than_required,
-            extreme_feature_threshold,
+            n_extreme_feature,
+            fraction_extreme_feature,
             random_seed,
             n_sampling,
             n_permutation,
@@ -105,17 +107,19 @@ def make_match_panel(
 
         score_moe_p_value_fdr = score_moe_p_value_fdr.reindex(index=features.index)
 
-    indices = select_series_indices(
-        score_moe_p_value_fdr["Score"], "<>", n=extreme_feature_threshold, plot=False
-    )
+    scores_to_plot = score_moe_p_value_fdr.copy()
 
-    if not score_ascending:
+    if n_extreme_feature is not None and fraction_extreme_feature is not None:
 
-        indices = indices[::-1]
-
-    scores_to_plot = score_moe_p_value_fdr.loc[indices]
-
-    features_to_plot = features.loc[scores_to_plot.index]
+        scores_to_plot = score_moe_p_value_fdr.loc[
+            select_series_indices(
+                score_moe_p_value_fdr["Score"],
+                "<>",
+                n=n_extreme_feature,
+                fraction=fraction_extreme_feature,
+                plot=False,
+            )
+        ]
 
     if plot_only_sign is not None:
 
@@ -129,7 +133,9 @@ def make_match_panel(
 
         scores_to_plot = scores_to_plot.loc[indices]
 
-        features_to_plot = features_to_plot.loc[scores_to_plot.index]
+    scores_to_plot.sort_values("Score", inplace=True, ascending=score_ascending)
+
+    features_to_plot = features.loc[scores_to_plot.index]
 
     annotations = _make_annotations(scores_to_plot.dropna(axis=1, how="all"))
 

@@ -20,7 +20,8 @@ def _match(
     match_function,
     n_required_for_match_function,
     raise_for_n_less_than_required,
-    extreme_feature_threshold,
+    n_extreme_feature,
+    fraction_extreme_feature,
     random_seed,
     n_sampling,
     n_permutation,
@@ -55,13 +56,19 @@ def _match(
         )
     )
 
-    indices = select_series_indices(
-        score_moe_p_value_fdr["Score"], "<>", n=extreme_feature_threshold, plot=False
-    )
+    if n_extreme_feature is None and fraction_extreme_feature is None:
 
-    if len(indices):
+        indices = select_series_indices(
+            score_moe_p_value_fdr["Score"],
+            "<>",
+            n=n_extreme_feature,
+            fraction=fraction_extreme_feature,
+            plot=False,
+        )
 
-        moes = _match_randomly_sampled_target_and_features_to_compute_margin_of_errors(
+        score_moe_p_value_fdr.loc[
+            indices, "0.95 MoE"
+        ] = _match_randomly_sampled_target_and_features_to_compute_margin_of_errors(
             target,
             features[indices],
             random_seed,
@@ -71,36 +78,28 @@ def _match(
             raise_for_n_less_than_required,
         )
 
-        score_moe_p_value_fdr.loc[indices, "0.95 MoE"] = moes
-
-        random_scores = concatenate(
-            multiprocess(
-                _permute_target_and_match_target_and_features,
-                (
-                    (
-                        target,
-                        features_,
-                        random_seed,
-                        n_permutation,
-                        match_function,
-                        n_required_for_match_function,
-                        raise_for_n_less_than_required,
-                    )
-                    for features_ in features_split
-                ),
-                n_job,
-            )
-        ).flatten()
-
-        p_values, fdrs = compute_empirical_p_values_and_fdrs(
+        score_moe_p_value_fdr[["P-Value", "FDR"]] = compute_empirical_p_values_and_fdrs(
             score_moe_p_value_fdr["Score"],
-            random_scores,
+            concatenate(
+                multiprocess(
+                    _permute_target_and_match_target_and_features,
+                    (
+                        (
+                            target,
+                            features_,
+                            random_seed,
+                            n_permutation,
+                            match_function,
+                            n_required_for_match_function,
+                            raise_for_n_less_than_required,
+                        )
+                        for features_ in features_split
+                    ),
+                    n_job,
+                )
+            ).flatten(),
             "less_or_great",
             raise_for_bad=False,
         )
-
-        score_moe_p_value_fdr["P-Value"] = p_values
-
-        score_moe_p_value_fdr["FDR"] = fdrs
 
     return score_moe_p_value_fdr
