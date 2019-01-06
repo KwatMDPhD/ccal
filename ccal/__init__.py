@@ -138,7 +138,6 @@ from .get_chromosome_size_from_fasta_gz import get_chromosome_size_from_fasta_gz
 from .get_colormap_colors import get_colormap_colors
 from .get_conda_environments import get_conda_environments
 from .get_conda_prefix import get_conda_prefix
-from .get_extreme_series_indices import get_extreme_series_indices
 from .get_function_name import get_function_name
 from .get_genotype import get_genotype
 from .get_gff3_attribute import get_gff3_attribute
@@ -270,7 +269,7 @@ from .reverse_transcribe_rna_sequence import reverse_transcribe_rna_sequence
 from .run_command import run_command
 from .run_command_and_monitor import run_command_and_monitor
 from .select_gene_symbol import select_gene_symbol
-from .select_series_low_and_high_index import select_series_low_and_high_index
+from .select_series_indices import select_series_indices
 from .shuffle_each_2d_array_slice import shuffle_each_2d_array_slice
 from .shutdown_machine import shutdown_machine
 from .simulate_sequences_using_dwgsim import simulate_sequences_using_dwgsim

@@ -9,8 +9,8 @@ from ._permute_target_and_match_target_and_features import (
     _permute_target_and_match_target_and_features,
 )
 from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
-from .get_extreme_series_indices import get_extreme_series_indices
 from .multiprocess import multiprocess
+from .select_series_indices import select_series_indices
 
 
 def _match(
@@ -55,8 +55,8 @@ def _match(
         )
     )
 
-    indices = get_extreme_series_indices(
-        score_moe_p_value_fdr["Score"], extreme_feature_threshold
+    indices = select_series_indices(
+        score_moe_p_value_fdr["Score"], "<>", n=extreme_feature_threshold, plot=False
     )
 
     if len(indices):
