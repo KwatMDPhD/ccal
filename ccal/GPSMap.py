@@ -230,8 +230,10 @@ class GPSMap:
                     self.distance__node_x_node[
                         i, j
                     ] = function_to_blend_node_node_distance(
-                        self.w_distance__node_x_node[i, j],
-                        self.h_distance__node_x_node[i, j],
+                        (
+                            self.w_distance__node_x_node[i, j],
+                            self.h_distance__node_x_node[i, j],
+                        )
                     )
 
             if plot:
