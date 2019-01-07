@@ -8,8 +8,8 @@ from .plot_and_save import plot_and_save
 def plot_bubble_map(
     df_size,
     _2d_array_color=None,
-    colormap="bwr",
-    marker_size_max=24,
+    colormap_name="bwr",
+    marker_size_max=32,
     title=None,
     xaxis_title=None,
     yaxis_title=None,
@@ -17,11 +17,11 @@ def plot_bubble_map(
     plotly_html_file_path=None,
 ):
 
-    layout_width = max(320, marker_size_max * 2 * df_size.shape[1])
+    layout_width = max(640, marker_size_max * 2 * df_size.shape[1])
 
-    layout_height = max(320, marker_size_max * 2 * df_size.shape[0])
+    layout_height = max(640, marker_size_max * 2 * df_size.shape[0])
 
-    axis_template = dict(showgrid=False, zeroline=False, automargin=True)
+    axis_template = dict(zeroline=False, automargin=True)
 
     layout = dict(
         width=layout_width,
@@ -44,7 +44,6 @@ def plot_bubble_map(
     x, y = meshgrid(
         linspace(0, df_size.shape[1] - 1, df_size.shape[1]),
         linspace(0, df_size.shape[0] - 1, df_size.shape[0]),
-        indexing="ij",
     )
 
     if _2d_array_color is None:
@@ -56,14 +55,15 @@ def plot_bubble_map(
             type="scatter",
             x=x.ravel(),
             y=y.ravel()[::-1],
+            text=df_size.values.ravel(),
             mode="markers",
             marker=dict(
                 size=normalize_nd_array(df_size.values, None, "0-1").ravel()
                 * marker_size_max,
                 color=_2d_array_color.ravel(),
-                colorscale=make_colorscale(colormap=colormap, plot=False),
+                colorscale=make_colorscale(colormap=colormap_name, plot=False),
                 showscale=True,
-                colorbar=dict(len=0.64, thickness=layout_width / 64),
+                colorbar=dict(len=0.64, thickness=marker_size_max / 3),
                 line=dict(color="#000000"),
             ),
         )
