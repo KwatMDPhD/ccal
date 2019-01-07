@@ -1,4 +1,4 @@
-from numpy import diag, full, issubdtype, linspace, nan, number
+from numpy import diag, full, issubdtype, linspace, nan, number, sum
 from pandas import DataFrame, Series
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import pdist, squareform
@@ -31,6 +31,7 @@ class GPSMap:
         self,
         w=None,
         h=None,
+        function_to_blend_node_node_distance=sum,
         node_x_dimension=None,
         mds_random_seed=20121020,
         w_n_pull=None,
@@ -220,9 +221,18 @@ class GPSMap:
 
         if w is not None and h is not None:
 
-            self.distance__node_x_node = (
-                self.w_distance__node_x_node + self.h_distance__node_x_node
-            ) / 2
+            self.distance__node_x_node = full((len(self.nodes),) * 2, nan)
+
+            for i in range(len(self.nodes)):
+
+                for j in range(len(self.nodes)):
+
+                    self.distance__node_x_node[
+                        i, j
+                    ] = function_to_blend_node_node_distance(
+                        self.w_distance__node_x_node[i, j],
+                        self.h_distance__node_x_node[i, j],
+                    )
 
             if plot:
 
