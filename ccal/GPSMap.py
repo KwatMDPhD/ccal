@@ -1,4 +1,4 @@
-from numpy import diag, full, issubdtype, linspace, nan, number, mean
+from numpy import diag, full, issubdtype, linspace, mean, nan, number
 from pandas import DataFrame, Series
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import pdist, squareform
