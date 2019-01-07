@@ -1,4 +1,4 @@
-from numpy import diag, full, issubdtype, linspace, nan, number, sum
+from numpy import diag, full, issubdtype, linspace, nan, number, mean
 from pandas import DataFrame, Series
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import pdist, squareform
@@ -31,7 +31,7 @@ class GPSMap:
         self,
         w=None,
         h=None,
-        function_to_blend_node_node_distance=sum,
+        function_to_blend_node_node_distance=mean,
         node_x_dimension=None,
         mds_random_seed=20121020,
         w_n_pull=None,
