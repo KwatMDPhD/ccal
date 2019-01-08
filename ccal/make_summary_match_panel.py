@@ -18,7 +18,7 @@ def make_summary_match_panel(
     target_type="continuous",
     score_ascending=False,
     plot_std=None,
-    title="Summary Match Panel",
+    title=None,
     layout_width=880,
     row_height=64,
     layout_side_margin=196,
