@@ -52,7 +52,7 @@ def make_summary_match_panel(
         height=row_height / 2 * max(10, n_row),
         margin=dict(l=layout_side_margin, r=layout_side_margin),
         title=title,
-        xaxis=dict(anchor="y", showticklabels=False),
+        xaxis=dict(anchor="y", ticks=False, showticklabels=False),
         annotations=[],
     )
 
