@@ -16,15 +16,17 @@ def select_series_indices(
     plotly_file_path=None,
 ):
 
+    series_sorted = series.dropna().sort_values()
+
     if n is not None:
 
         if direction in ("<", ">"):
 
-            n = min(n, series.size)
+            n = min(n, series_sorted.size)
 
         elif direction == "<>":
 
-            n = min(n, series.size // 2)
+            n = min(n, series_sorted.size // 2)
 
     if fraction is not None:
 
@@ -35,8 +37,6 @@ def select_series_indices(
         elif direction == "<>":
 
             fraction = min(fraction, 1 / 2)
-
-    series_sorted = series.sort_values()
 
     if direction == "<":
 
