@@ -11,7 +11,7 @@ def make_comparison_panel(
     _2d_array_or_df_1,
     match_function=compute_information_coefficient,
     axis=0,
-    title="Comparison Panel",
+    title=None,
     name_0=None,
     name_1=None,
     file_path_prefix=None,
