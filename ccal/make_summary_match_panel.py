@@ -148,7 +148,7 @@ def make_summary_match_panel(
 
         data.append(
             dict(
-                yaxis=yaxis_name.replace("axis", ""),
+                yaxis=yaxis_name.replace("axis", "").replace("y0", "y"),
                 type="heatmap",
                 z=data_to_plot.values[::-1],
                 x=data_to_plot.columns,
