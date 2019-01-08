@@ -29,7 +29,7 @@ def make_match_panel(
     cluster_within_category=True,
     data_type="continuous",
     plot_std=None,
-    title="Match Panel",
+    title=None,
     layout_width=880,
     row_height=64,
     layout_side_margin=196,
