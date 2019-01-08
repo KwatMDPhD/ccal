@@ -11,7 +11,7 @@ eps = finfo(float).eps
 def make_summary_match_panel(
     target,
     data_dicts,
-    score_moe_p_value_fdr,
+    score_moe_p_value_fdr_dicts,
     plot_only_columns_shared_by_target_and_all_data=False,
     target_ascending=True,
     target_type="continuous",
@@ -60,10 +60,10 @@ def make_summary_match_panel(
 
     layout = dict(
         width=layout_width,
-        margin=dict(l=layout_side_margin, r=layout_side_margin),
-        xaxis=dict(anchor="y"),
         height=row_height / 2 * max(10, n_row),
+        margin=dict(l=layout_side_margin, r=layout_side_margin),
         title=title,
+        xaxis=dict(anchor="y"),
         annotations=[],
     )
 
@@ -106,7 +106,9 @@ def make_summary_match_panel(
 
         data_to_plot = df[df.columns & target.index]
 
-        score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr.loc[data_to_plot.index]
+        score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr_dicts[data_name].loc[
+            data_to_plot.index
+        ]
 
         score_moe_p_value_fdr_to_plot.sort_values(
             "Score", ascending=score_ascending, inplace=True
