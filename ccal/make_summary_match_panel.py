@@ -2,7 +2,6 @@ from numpy import finfo
 
 from ._make_annotations import _make_annotations
 from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
-from .make_object_int_mapping import make_object_int_mapping
 from .plot_and_save import plot_and_save
 
 eps = finfo(float).eps
@@ -26,23 +25,11 @@ def make_summary_match_panel(
     plotly_html_file_path=None,
 ):
 
-    if target.name is None:
-
-        target_name = "Target"
-
-    else:
-
-        target_name = target.name
-
     if plot_only_columns_shared_by_target_and_all_data:
 
         for data_dict in data_dicts.values():
 
             target = target.loc[target.index & data_dict["df"].columns]
-
-    if target.dtype == "O":
-
-        target = target.map(make_object_int_mapping(target)[0])
 
     if target_ascending is not None:
 
@@ -89,7 +76,7 @@ def make_summary_match_panel(
             type="heatmap",
             z=target.to_frame().T.values,
             x=target.index,
-            y=(target_name,),
+            y=(target.name,),
             text=(target.index,),
             zmin=target_plot_min,
             zmax=target_plot_max,
@@ -104,7 +91,7 @@ def make_summary_match_panel(
 
         df = data_dict["df"]
 
-        data_to_plot = df[df.columns & target.index]
+        data_to_plot = df.reindex(columns=target.index)
 
         score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr_dicts[data_name].loc[
             data_to_plot.index
