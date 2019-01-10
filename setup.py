@@ -1,11 +1,12 @@
 from os import walk
 
-from ccal import VERSION
 from setuptools import setup
+
+from ccal import VERSION
 
 name = "ccal"
 
-url = "https://github.com/UCSD-CCAL/ccal"
+url = "https://github.com/KwatME/ccal"
 
 strs_to_skip = (".git", "__pycache__")
 
