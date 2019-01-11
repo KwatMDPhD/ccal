@@ -59,7 +59,7 @@ def make_summary_match_panel(
 
     row_fraction = 1 / n_row
 
-    yaxis_name = "yaxis{}".format(len(data_dicts) + 1).replace("axis1", "axis")
+    yaxis_name = "yaxis{}".format(len(data_dicts) + 1)
 
     domain_end = 1
 
@@ -75,7 +75,7 @@ def make_summary_match_panel(
 
     data = [
         dict(
-            yaxis=yaxis_name.replace("axis", ""),
+            yaxis=yaxis_name,
             type="heatmap",
             z=target.to_frame().T.values,
             x=target.index,
@@ -114,9 +114,7 @@ def make_summary_match_panel(
             data_to_plot, data_dict["type"], plot_std
         )
 
-        yaxis_name = "yaxis{}".format(len(data_dicts) - data_name_index).replace(
-            "axis1", "axis"
-        )
+        yaxis_name = "yaxis{}".format(len(data_dicts) - data_name_index)
 
         domain_end = domain_start - row_fraction
 
@@ -138,7 +136,7 @@ def make_summary_match_panel(
 
         data.append(
             dict(
-                yaxis=yaxis_name.replace("axis", "").replace("y0", "y"),
+                yaxis=yaxis_name,
                 type="heatmap",
                 z=data_to_plot.values[::-1],
                 x=data_to_plot.columns,
