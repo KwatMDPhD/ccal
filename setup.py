@@ -1,7 +1,8 @@
 from os import walk
 
-from ccal import VERSION
 from setuptools import setup
+
+from ccal import VERSION
 
 package_data = []
 
