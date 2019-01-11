@@ -75,7 +75,7 @@ def make_summary_match_panel(
 
     data = [
         dict(
-            yaxis=yaxis_name,
+            yaxis=yaxis_name.replace("axis", ""),
             type="heatmap",
             z=target.to_frame().T.values,
             x=target.index,
