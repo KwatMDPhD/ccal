@@ -1,6 +1,6 @@
 from gzip import open as gzip_open
 
-from pandas import read_table
+from pandas import read_csv
 
 from ._describe_vcf_df import _describe_vcf_df
 from ._make_clean_vcf_df import _make_clean_vcf_df
@@ -79,7 +79,7 @@ def read_vcf_gz_and_make_vcf_dict(vcf_gz_file_path, simplify=True, n_info_ann=1)
 
     print("\nReading .vcf DataFrame ...")
 
-    vcf_df = read_table(vcf_gz_file_path, skiprows=n_row_to_skip)
+    vcf_df = read_csv(vcf_gz_file_path, sep="\t", skiprows=n_row_to_skip)
 
     columns = vcf_df.columns.tolist()
 

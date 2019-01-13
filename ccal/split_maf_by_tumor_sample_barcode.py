@@ -1,11 +1,11 @@
-from pandas import read_table
+from pandas import read_csv
 
 from .establish_path import establish_path
 
 
 def split_maf_by_tumor_sample_barcode(maf_file_path):
 
-    maf_df = read_table(maf_file_path, comment="#", encoding="ISO-8859-1")
+    maf_df = read_csv(maf_file_path, sep="\t", comment="#", encoding="ISO-8859-1")
 
     for i, maf_df_ in maf_df.groupby("Tumor_Sample_Barcode"):
 

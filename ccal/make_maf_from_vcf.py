@@ -1,4 +1,4 @@
-from pandas import DataFrame, read_table
+from pandas import DataFrame, read_csv
 
 from .get_maf_variant_classification import get_maf_variant_classification
 from .get_variant_start_and_end_positions import get_variant_start_and_end_positions
@@ -53,7 +53,9 @@ def make_maf_from_vcf(
         ),
     )
 
-    ensg_entrez_dict = read_table(ensg_entrez, index_col=0, squeeze=True).to_dict()
+    ensg_entrez_dict = read_csv(
+        ensg_entrez, sep="\t", index_col=0, squeeze=True
+    ).to_dict()
 
     print("Iterating through .vcf file DataFrame rows ...")
 

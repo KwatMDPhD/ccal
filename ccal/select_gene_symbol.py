@@ -1,7 +1,7 @@
 from os.path import dirname
 
 from numpy import asarray
-from pandas import isna, read_table
+from pandas import isna, read_csv
 
 
 def select_gene_symbol(
@@ -41,7 +41,9 @@ def select_gene_symbol(
     locus_type_to_keep=("gene with protein product",),
 ):
 
-    hgnc = read_table("{}/../data/hgnc.tsv".format(dirname(__file__)), index_col=0)
+    hgnc = read_csv(
+        "{}/../data/hgnc.tsv".format(dirname(__file__)), sep="\t", index_col=0
+    )
 
     removed_by_gene_family_name = asarray(
         tuple(

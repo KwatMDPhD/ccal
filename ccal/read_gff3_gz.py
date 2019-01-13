@@ -1,9 +1,9 @@
-from pandas import read_table
+from pandas import read_csv
 
 
 def read_gff3_gz(gff3_gz_file_path, only_type_to_keep=None):
 
-    gff3_df = read_table(gff3_gz_file_path, comment="#")
+    gff3_df = read_csv(gff3_gz_file_path, sep="\t", comment="#")
 
     gff3_df.columns = (
         "seqid",

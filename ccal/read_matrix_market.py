@@ -1,4 +1,4 @@
-from pandas import DataFrame, read_table
+from pandas import DataFrame, read_csv
 from scipy.io import mmread
 
 
@@ -12,8 +12,8 @@ def read_matrix_market(
 
     df = DataFrame(
         mmread(matrix_mtx_file_path).toarray(),
-        index=read_table(index_file_path, header=None).iloc[:, -1],
-        columns=read_table(column_file_path, header=None, squeeze=True),
+        index=read_csv(index_file_path, sep="\t", header=None).iloc[:, -1],
+        columns=read_csv(column_file_path, sep="\t", header=None, squeeze=True),
     )
 
     if df.index.has_duplicates:

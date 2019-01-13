@@ -1,9 +1,9 @@
-from pandas import read_table
+from pandas import read_csv
 
 
 def read_gct(gct_file_path, drop_description=True):
 
-    df = read_table(gct_file_path, skiprows=2)
+    df = read_csv(gct_file_path, sep="\t", skiprows=2)
 
     column_0, column_1 = df.columns[:2]
 

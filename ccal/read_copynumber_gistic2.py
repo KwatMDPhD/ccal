@@ -1,23 +1,24 @@
 from tarfile import open as tarfile_open
 
-from pandas import read_table
+from pandas import read_csv
 
 
 def read_copynumber_gistic2(tar_gz_file_path, genes):
 
     with tarfile_open(tar_gz_file_path) as tar_gz_file:
 
-        n = read_table(
+        n = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file
                     for file in tar_gz_file
                     if file.name.endswith("arraylistfile.txt")
                 )[0]
-            )
+            ),
+            sep="\t",
         ).shape[0]
 
-        df = read_table(
+        df = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file
@@ -25,6 +26,7 @@ def read_copynumber_gistic2(tar_gz_file_path, genes):
                     if file.name.endswith("amp_genes.conf_99.txt")
                 )[0]
             ),
+            sep="\t",
             index_col=0,
         ).dropna(how="all", axis=1)
 
@@ -34,7 +36,7 @@ def read_copynumber_gistic2(tar_gz_file_path, genes):
             lambda column: set(column.iloc[3:].dropna())
         ).to_dict()
 
-        df = read_table(
+        df = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file
@@ -42,6 +44,7 @@ def read_copynumber_gistic2(tar_gz_file_path, genes):
                     if file.name.endswith("del_genes.conf_99.txt")
                 )[0]
             ),
+            sep="\t",
             index_col=0,
         ).dropna(how="all", axis=1)
 
