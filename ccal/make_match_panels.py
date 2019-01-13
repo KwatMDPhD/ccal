@@ -1,6 +1,6 @@
 from os.path import isfile
 
-from pandas import read_table
+from pandas import read_csv
 
 from .establish_path import establish_path
 from .make_file_name_from_str import make_file_name_from_str
@@ -53,8 +53,8 @@ def make_match_panels(
                         )
                     )
 
-                    score_moe_p_value_fdr = read_table(
-                        score_moe_p_value_fdr_file_path, index_col=0
+                    score_moe_p_value_fdr = read_csv(
+                        score_moe_p_value_fdr_file_path, sep="\t", index_col=0
                     )
 
             if plotly_directory_path is None:

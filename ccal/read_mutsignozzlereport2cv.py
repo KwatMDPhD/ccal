@@ -1,13 +1,13 @@
 from tarfile import open as tarfile_open
 
-from pandas import read_table
+from pandas import read_csv
 
 
 def read_mutsignozzlereport2cv(tar_gz_file_path, genes):
 
     with tarfile_open(tar_gz_file_path) as tar_gz_file:
 
-        n = read_table(
+        n = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file
@@ -15,10 +15,11 @@ def read_mutsignozzlereport2cv(tar_gz_file_path, genes):
                     if file.name.endswith("patient_counts_and_rates.txt")
                 )[0]
             ),
+            sep="\t",
             index_col=1,
         ).shape[0]
 
-        maf = read_table(
+        maf = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file
@@ -26,18 +27,20 @@ def read_mutsignozzlereport2cv(tar_gz_file_path, genes):
                     if file.name.endswith("final_analysis_set.maf")
                 )[0]
             ),
+            sep="\t",
             encoding="ISO-8859-1",
             low_memory=False,
         )
 
         gene_group = maf.groupby("Hugo_Symbol")
 
-        df = read_table(
+        df = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file for file in tar_gz_file if file.name.endswith("sig_genes.txt")
                 )[0]
             ),
+            sep="\t",
             index_col=1,
         )
 

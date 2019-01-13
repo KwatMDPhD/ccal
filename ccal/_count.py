@@ -2,7 +2,7 @@ import copy
 import re
 from warnings import warn
 
-from pandas import read_table
+from pandas import read_csv
 
 from .normalize_contig import normalize_contig
 
@@ -27,9 +27,9 @@ def _count(
 
         column_indices = [4, 5, 10, 12]
 
-    df = read_table(mutation_file_path, comment="#", encoding="ISO-8859-1").iloc[
-        :, column_indices
-    ]
+    df = read_csv(
+        mutation_file_path, sep="\t", comment="#", encoding="ISO-8859-1"
+    ).iloc[:, column_indices]
 
     signature_component_dict_ = copy.deepcopy(signature_component_dict)
 
