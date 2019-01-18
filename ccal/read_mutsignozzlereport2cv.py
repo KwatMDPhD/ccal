@@ -27,8 +27,8 @@ def read_mutsignozzlereport2cv(tar_gz_file_path, genes):
                     if file.name.endswith("final_analysis_set.maf")
                 )[0]
             ),
-            sep="\t",
             encoding="iso-8859-1",
+            sep="\t",
         )
 
         gene_group = maf.groupby("Hugo_Symbol")
