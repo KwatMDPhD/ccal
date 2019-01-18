@@ -2,6 +2,7 @@ from os.path import abspath
 
 VERSION = "0.9.1"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
+from .map_cell_line_names import map_cell_line_names
 from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
 from .CODON_TO_AMINO_ACID import CODON_TO_AMINO_ACID
 from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
