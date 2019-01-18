@@ -28,7 +28,7 @@ def _count(
         column_indices = [4, 5, 10, 12]
 
     df = read_csv(
-        mutation_file_path, sep="\t", comment="#", encoding="ISO-8859-1"
+        mutation_file_path, comment="#", sep="\t", encoding="iso-8859-1"
     ).iloc[:, column_indices]
 
     signature_component_dict_ = copy.deepcopy(signature_component_dict)

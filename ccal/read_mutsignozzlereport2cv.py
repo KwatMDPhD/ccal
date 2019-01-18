@@ -28,8 +28,7 @@ def read_mutsignozzlereport2cv(tar_gz_file_path, genes):
                 )[0]
             ),
             sep="\t",
-            encoding="ISO-8859-1",
-            low_memory=False,
+            encoding="iso-8859-1",
         )
 
         gene_group = maf.groupby("Hugo_Symbol")
