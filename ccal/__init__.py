@@ -64,6 +64,7 @@ from .cast_str_to_builtins import cast_str_to_builtins
 from .check_bam_using_samtools_flagstat import check_bam_using_samtools_flagstat
 from .check_fastq_gzs_using_fastqc import check_fastq_gzs_using_fastqc
 from .check_nd_array_for_bad import check_nd_array_for_bad
+from .clean_and_write_df_to_tsv import clean_and_write_df_to_tsv
 from .clean_git_url import clean_git_url
 from .clean_name import clean_name
 from .clean_path import clean_path
@@ -253,7 +254,6 @@ from .trim_fastq_gzs_using_skewer import trim_fastq_gzs_using_skewer
 from .unmount_volume import unmount_volume
 from .untitle_str import untitle_str
 from .update_variant_dict import update_variant_dict
-from .write_df_to_tsv import write_df_to_tsv
 from .write_dict import write_dict
 from .write_gct import write_gct
 from .write_gmt import write_gmt

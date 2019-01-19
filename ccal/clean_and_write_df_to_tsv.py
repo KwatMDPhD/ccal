@@ -1,7 +1,7 @@
 from .drop_df_slice_greedily import drop_df_slice_greedily
 
 
-def write_df_to_tsv(df, index_name, tsv_file_path):
+def clean_and_write_df_to_tsv(df, index_name, tsv_file_path):
 
     assert not df.index.hasnans
 
