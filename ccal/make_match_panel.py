@@ -28,6 +28,7 @@ def make_match_panel(
     target_type="continuous",
     cluster_within_category=True,
     data_type="continuous",
+    do_plot=True,
     plot_std=None,
     title=None,
     layout_width=880,
@@ -99,6 +100,10 @@ def make_match_panel(
     else:
 
         score_moe_p_value_fdr = score_moe_p_value_fdr.reindex(index=data.index)
+
+    if not do_plot:
+
+        return score_moe_p_value_fdr
 
     scores_to_plot = score_moe_p_value_fdr.copy()
 
