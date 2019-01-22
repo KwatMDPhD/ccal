@@ -1,7 +1,6 @@
-from os import walk
+from setuptools import find_packages, setup
 
 from ccal import VERSION
-from setuptools import find_packages, setup
 
 setup(
     name="ccal",
