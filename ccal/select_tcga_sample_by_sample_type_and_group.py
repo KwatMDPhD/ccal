@@ -5,7 +5,7 @@ def select_tcga_sample_by_sample_type_and_group(df, sample_type="01"):
 
     print(df.shape)
 
-    df = df.loc[:, df.columns.str[14:16] == sample_type]
+    df = df.loc[:, df.columns.str[13:15] == sample_type]
 
     print(df.shape)
 
