@@ -3,38 +3,39 @@ from pandas import concat
 
 def select_tcga_sample_by_sample_type_and_group(df, sample_type="01"):
 
-    print(df.shape)
+    df_sample_type_selected = df.loc[:, df.columns.str[13:15] == sample_type]
 
-    df = df.loc[:, df.columns.str[13:15] == sample_type]
+    print("df_sample_type_selected: {}".format(df_sample_type_selected.shape))
 
-    print(df.shape)
+    duplicated = df_sample_type_selected.columns.str[:12].duplicated(keep=False)
 
-    duplicated = df.columns.str[:12].duplicated(keep=False)
+    df_sample_type_selected_not_duplicated = df_sample_type_selected.loc[:, ~duplicated]
 
-    df_not_duplicated = df.loc[:, ~duplicated]
+    df_sample_type_selected_not_duplicated.columns = df_sample_type_selected_not_duplicated.columns.str[
+        :12
+    ]
 
-    df_not_duplicated.columns = df_not_duplicated.columns.str[:12]
+    print(
+        "df_sample_type_selected_not_duplicated: {}".format(
+            df_sample_type_selected.shape
+        )
+    )
 
-    print(df_not_duplicated.shape)
+    df_sample_type_selected_duplicated = df_sample_type_selected.loc[:, duplicated]
 
-    df_duplicated = df.loc[:, duplicated]
+    print(
+        "df_sample_type_selected_duplicated: {}".format(
+            df_sample_type_selected_duplicated.shape
+        )
+    )
 
-    print(df_duplicated.shape)
+    if not df_sample_type_selected_duplicated.empty:
 
-    if df_duplicated.empty:
-
-        df = df_not_duplicated
-
-    else:
-
-        df_duplicated_grouped = df_duplicated.groupby(
-            by=df_duplicated.columns.str[:12], axis=1
+        df_sample_type_selected_duplicated = df_sample_type_selected_duplicated.groupby(
+            by=df_sample_type_selected_duplicated.columns.str[:12], axis=1
         ).mean()
 
-        print(df_duplicated_grouped.shape)
-
-        df = concat((df_not_duplicated, df_duplicated_grouped), axis=1)
-
-        print(df.shape)
-
-    return df
+    return concat(
+        (df_sample_type_selected_not_duplicated, df_sample_type_selected_duplicated),
+        axis=1,
+    )
