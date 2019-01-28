@@ -1,7 +1,7 @@
 from pandas import concat
 
 
-def select_tcga_sample_by_sample_type_and_group(df, sample_type="01"):
+def select_tcga_sample_by_sample_type_and_group(df, sample_type):
 
     df_sample_type_selected = df.loc[:, df.columns.str[13:15] == sample_type]
 
