@@ -188,7 +188,6 @@ from .is_valid_vcf_gz import is_valid_vcf_gz
 from .load_gps_map import load_gps_map
 from .log_and_return_response import log_and_return_response
 from .log_nd_array import log_nd_array
-from .make_case_annotations import make_case_annotations
 from .make_categorical_colors import make_categorical_colors
 from .make_colorscale import make_colorscale
 from .make_colorscale_from_colors import make_colorscale_from_colors
@@ -266,6 +265,9 @@ from .run_command import run_command
 from .run_command_and_monitor import run_command_and_monitor
 from .select_gene_symbol import select_gene_symbol
 from .select_series_indices import select_series_indices
+from .select_tcga_sample_by_sample_type_and_group import (
+    select_tcga_sample_by_sample_type_and_group,
+)
 from .shuffle_each_2d_array_slice import shuffle_each_2d_array_slice
 from .shutdown_machine import shutdown_machine
 from .simulate_sequences_using_dwgsim import simulate_sequences_using_dwgsim
