@@ -38,7 +38,7 @@ def make_match_panel(
     file_path_prefix=None,
     plotly_html_file_path_prefix=None,
 ):
-
+    
     if target.name is None:
 
         target_name = "Target"
@@ -47,31 +47,14 @@ def make_match_panel(
 
         target_name = target.name
 
-    common_indices = target.index & data.columns
 
-    print(
-        "target.index ({}) & data.columns ({}) have {} in common.".format(
-            target.index.size, data.columns.size, len(common_indices)
-        )
-    )
-
-    target = target[common_indices]
-
-    if target.dtype == "O":
-
-        target = target.map(make_object_int_mapping(target)[0])
-
-    if target_ascending is not None:
-
-        target.sort_values(ascending=target_ascending, inplace=True)
-
-    data = data[target.index]
 
     if score_moe_p_value_fdr is None:
 
         score_moe_p_value_fdr = _match(
-            target.values,
-            data.values,
+            target,
+            data,
+            target_ascending,
             n_job,
             match_function,
             n_required_for_match_function,
@@ -87,7 +70,7 @@ def make_match_panel(
 
             return score_moe_p_value_fdr
 
-        score_moe_p_value_fdr.index = data.index
+        #score_moe_p_value_fdr.index = data.index
 
         score_moe_p_value_fdr.sort_values(
             "Score", ascending=score_ascending, inplace=True
