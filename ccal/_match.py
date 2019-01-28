@@ -9,6 +9,8 @@ from ._permute_target_and_match_target_and_data import (
     _permute_target_and_match_target_and_data,
 )
 from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
+from .compute_information_coefficient import compute_information_coefficient
+from .make_object_int_mapping import make_object_int_mapping
 from .multiprocess import multiprocess
 from .select_series_indices import select_series_indices
 
@@ -16,16 +18,42 @@ from .select_series_indices import select_series_indices
 def _match(
     target,
     data,
-    n_job,
-    match_function,
-    n_required_for_match_function,
-    raise_for_n_less_than_required,
-    n_extreme,
-    fraction_extreme,
-    random_seed,
-    n_sampling,
-    n_permutation,
+    target_ascending=True,
+    n_job=1,
+    match_function=compute_information_coefficient,
+    n_required_for_match_function=2,
+    raise_for_n_less_than_required=False,
+    n_extreme=8,
+    fraction_extreme=None,
+    random_seed=20_121_020,
+    n_sampling=0,
+    n_permutation=0,
 ):
+    
+    common_indices = target.index & data.columns
+
+    print(
+        "target.index ({}) & data.columns ({}) have {} in common.".format(
+            target.index.size, data.columns.size, len(common_indices)
+        )
+    )
+
+    target = target[common_indices]
+
+    if target.dtype == "O":
+
+        target = target.map(make_object_int_mapping(target)[0])
+
+    if target_ascending is not None:
+
+        target.sort_values(ascending=target_ascending, inplace=True)
+
+    data = data[target.index]
+
+    save_indx = data.index
+
+    target = target.values
+    data = data.values
 
     score_moe_p_value_fdr = DataFrame(columns=("Score", "0.95 MoE", "P-Value", "FDR"))
 
@@ -55,6 +83,8 @@ def _match(
             n_job,
         )
     )
+
+
 
     if n_extreme is None and fraction_extreme is None:
 
@@ -101,5 +131,7 @@ def _match(
             "less_or_great",
             raise_for_bad=False,
         )
+
+    score_moe_p_value_fdr.index = save_indx
 
     return score_moe_p_value_fdr
