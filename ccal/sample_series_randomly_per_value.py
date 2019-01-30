@@ -10,8 +10,6 @@ def sample_series_randomly_per_value(series, n_per_value=None, random_seed=20121
 
     for group_name, group_series in series.groupby(series):
 
-        print(group_series.size)
-
         if n_per_value <= group_series.size:
 
             indices_selected.extend(
@@ -22,6 +20,6 @@ def sample_series_randomly_per_value(series, n_per_value=None, random_seed=20121
 
         else:
 
-            print("Not sampling {0}; N {0} < {1}.".format(group_name, n_per_value))
+            print("Not sampling {}; N < {}.".format(group_name, n_per_value))
 
     return series[indices_selected]
