@@ -13,7 +13,7 @@ def nmf_consensus_cluster_with_ks(
     ks,
     n_job=1,
     n_clustering=10,
-    n_iteration=int(1e8),
+    n_iteration=int(1e3),
     random_seed=20121020,
     linkage_method="ward",
     plot_w=True,

@@ -12,7 +12,7 @@ def nmf_consensus_cluster(
     df,
     k,
     n_clustering=10,
-    n_iteration=int(1e8),
+    n_iteration=int(1e3),
     random_seed=20121020,
     linkage_method="ward",
     plot_w=True,
