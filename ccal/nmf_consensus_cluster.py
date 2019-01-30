@@ -36,7 +36,7 @@ def nmf_consensus_cluster(
             print("\t(K={}) {}/{} ...".format(k, clustering + 1, n_clustering))
 
         w, h, e = nmf_by_multiplicative_update(
-            df, k, n_iteration=n_iteration, random_seed=random_seed + clustering
+            df.values, k, n_iteration=n_iteration, random_seed=random_seed + clustering
         )
 
         if clustering == 0:
