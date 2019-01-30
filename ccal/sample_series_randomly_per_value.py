@@ -7,6 +7,8 @@ def sample_series_randomly_per_value(series, n_per_value=None, random_seed=20121
 
         n_per_value = series.value_counts().min()
 
+        print("n_per_value = {}".format(n_per_value))
+
     indices_selected = []
 
     seed(random_seed)
