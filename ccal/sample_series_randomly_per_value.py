@@ -1,7 +1,11 @@
 from numpy.random import seed
 
 
-def sample_series_randomly_per_value(series, n_per_value, random_seed=20121020):
+def sample_series_randomly_per_value(series, n_per_value=None, random_seed=20121020):
+
+    if n_per_value is None:
+
+        n_per_value = series.value_counts().min()
 
     indices_selected = []
 
