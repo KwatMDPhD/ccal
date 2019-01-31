@@ -4,7 +4,6 @@ from pandas import DataFrame, Index
 from ._cluster_clustering_x_element_and_compute_ccc import (
     _cluster_clustering_x_element_and_compute_ccc,
 )
-
 from .nmf_by_sklearn import nmf_by_sklearn
 from .plot_heat_map import plot_heat_map
 
