@@ -4,7 +4,8 @@ from pandas import DataFrame, Index
 from ._cluster_clustering_x_element_and_compute_ccc import (
     _cluster_clustering_x_element_and_compute_ccc,
 )
-from .nmf_by_multiplicative_update import nmf_by_multiplicative_update
+
+from .nmf_by_sklearn import nmf_by_sklearn
 from .plot_heat_map import plot_heat_map
 
 
@@ -35,7 +36,7 @@ def nmf_consensus_cluster(
 
             print("\t(K={}) {}/{} ...".format(k, clustering + 1, n_clustering))
 
-        w, h, e = nmf_by_multiplicative_update(
+        w, h, e = nmf_by_sklearn(
             df.values, k, n_iteration=n_iteration, random_seed=random_seed + clustering
         )
 

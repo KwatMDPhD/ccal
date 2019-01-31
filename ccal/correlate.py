@@ -48,8 +48,8 @@ def correlate(
             permuted_r2s[i] = m_.score(xs, y_)
 
         p_value = min(
-            compute_empirical_p_value(r2, permuted_r2s, "less"),
-            compute_empirical_p_value(r2, permuted_r2s, "great"),
+            compute_empirical_p_value(r2, permuted_r2s, "<"),
+            compute_empirical_p_value(r2, permuted_r2s, ">"),
         )
 
     else:
