@@ -17,11 +17,11 @@ def compute_empirical_p_value(
 
         random_values_good = random_values[is_good]
 
-        if p_value_direction == "less":
+        if p_value_direction == "<":
 
             n_significant_random_value = (random_values_good <= value).sum()
 
-        elif p_value_direction == "great":
+        elif p_value_direction == ">":
 
             n_significant_random_value = (value <= random_values_good).sum()
 

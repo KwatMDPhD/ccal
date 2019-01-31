@@ -88,8 +88,8 @@ def gsea(
             )
 
         p_value = min(
-            compute_empirical_p_value(score, permutation_scores, "less"),
-            compute_empirical_p_value(score, permutation_scores, "great"),
+            compute_empirical_p_value(score, permutation_scores, "<"),
+            compute_empirical_p_value(score, permutation_scores, ">"),
         )
 
     return score, p_value
