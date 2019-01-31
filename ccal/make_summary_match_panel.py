@@ -106,9 +106,7 @@ def make_summary_match_panel(
 
         data_to_plot = data_to_plot.loc[score_moe_p_value_fdr_to_plot.index]
 
-        annotations = _make_annotations(
-            score_moe_p_value_fdr_to_plot.dropna(axis=1, how="all")
-        )
+        annotations = _make_annotations(score_moe_p_value_fdr_to_plot)
 
         data_to_plot, data_plot_min, data_plot_max, data_colorscale = _process_target_or_data_for_plotting(
             data_to_plot, data_dict["type"], plot_std
