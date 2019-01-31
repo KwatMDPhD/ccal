@@ -130,7 +130,7 @@ def make_match_panel(
 
     data_to_plot = data.loc[scores_to_plot.index]
 
-    annotations = _make_annotations(scores_to_plot.dropna(axis=1, how="all"))
+    annotations = _make_annotations(scores_to_plot)
 
     target, target_plot_min, target_plot_max, target_colorscale = _process_target_or_data_for_plotting(
         target, target_type, plot_std
