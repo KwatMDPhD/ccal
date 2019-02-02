@@ -1,4 +1,4 @@
-from numpy import inf, absolute, concatenate, cumsum
+from numpy import absolute, concatenate, cumsum, inf
 
 from .compute_kullback_leibler_divergence import compute_kullback_leibler_divergence
 
