@@ -3,7 +3,6 @@ from ._match import _match
 from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
 from .cluster_2d_array_slices import cluster_2d_array_slices
 from .compute_information_coefficient import compute_information_coefficient
-from .make_object_int_mapping import make_object_int_mapping
 from .nd_array_is_sorted import nd_array_is_sorted
 from .plot_and_save import plot_and_save
 from .select_series_indices import select_series_indices
@@ -38,14 +37,6 @@ def make_match_panel(
     plotly_html_file_path_prefix=None,
 ):
 
-    if target.name is None:
-
-        target_name = "Target"
-
-    else:
-
-        target_name = target.name
-
     common_indices = target.index & data.columns
 
     print(
@@ -55,10 +46,6 @@ def make_match_panel(
     )
 
     target = target[common_indices]
-
-    if target.dtype == "O":
-
-        target = target.map(make_object_int_mapping(target)[0])
 
     if target_ascending is not None:
 
@@ -189,7 +176,7 @@ def make_match_panel(
             type="heatmap",
             z=target.to_frame().T.values,
             x=target.index,
-            y=(target_name,),
+            y=(target.name,),
             text=(target.index,),
             zmin=target_plot_min,
             zmax=target_plot_max,
