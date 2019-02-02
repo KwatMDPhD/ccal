@@ -17,10 +17,6 @@ def fit_skew_t_pdf(
 
     keyword_arguments = {}
 
-    guessed_location = _1d_array.mean()
-
-    guessed_scale = _1d_array.std() / 2
-
     if fit_fixed_location is not None:
 
         keyword_arguments["floc"] = fit_fixed_location
@@ -33,17 +29,13 @@ def fit_skew_t_pdf(
 
         keyword_arguments["loc"] = fit_initial_location
 
-    else:
-
-        keyword_arguments["loc"] = guessed_location
-
     if fit_initial_scale is not None:
 
         keyword_arguments["scale"] = fit_initial_scale
 
     else:
 
-        keyword_arguments["scale"] = guessed_scale
+        keyword_arguments["scale"] = _1d_array.std() / 2
 
     skew_t_model = ACSkewT_gen()
 
@@ -55,7 +47,7 @@ def fit_skew_t_pdf(
 
         warn("Refitting with scale = (standard deviation / 2) ...")
 
-        keyword_arguments["fscale"] = guessed_scale
+        keyword_arguments["fscale"] = keyword_arguments["scale"]
 
         degree_of_freedom, shape, location, scale = skew_t_model.fit(
             _1d_array, **keyword_arguments
@@ -65,7 +57,7 @@ def fit_skew_t_pdf(
 
             warn("Refitting with location = mean ...")
 
-            keyword_arguments["floc"] = guessed_location
+            keyword_arguments["floc"] = _1d_array.mean()
 
             degree_of_freedom, shape, location, scale = skew_t_model.fit(
                 _1d_array, **keyword_arguments
