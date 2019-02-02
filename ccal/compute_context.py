@@ -21,7 +21,6 @@ def compute_context(
     n_grid=1e3,
     degree_of_freedom_for_tail_reduction=1e8,
     minimum_kl=1e-2,
-    scale_with_kl=True,
     multiply_distance_from_reference_argmax=False,
     global_location=None,
     global_scale=None,
@@ -68,7 +67,6 @@ def compute_context(
         pdf,
         shape_pdf_reference,
         minimum_kl,
-        scale_with_kl,
         multiply_distance_from_reference_argmax,
     )
 
@@ -106,7 +104,6 @@ def compute_context(
             pdf,
             location_pdf_reference,
             minimum_kl,
-            scale_with_kl,
             multiply_distance_from_reference_argmax,
         )
 
