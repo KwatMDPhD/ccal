@@ -1,45 +1,23 @@
-from warnings import warn
-
-from numpy import absolute, concatenate, cumsum, finfo, full, log, nan, zeros_like
-
-eps = finfo(float).eps
+from numpy import inf, absolute, concatenate, cumsum, log
 
 
 def _compute_context_indices(
-    grid, pdf, pdf_reference, minimum_kl, multiply_distance_from_reference_argmax
+    grid, pdf, pdf_reference, multiply_distance_from_reference_argmax
 ):
 
-    pdf = pdf.clip(min=eps)
-
-    pdf_reference = pdf_reference.clip(min=eps)
-
     center = pdf_reference.argmax()
-
-    if center == 0 or center == (grid.size - 1):
-
-        warn("PDF reference is monotonic.")
-
-        return full(grid.size, nan)
 
     left_kl = pdf[:center] * log(pdf[:center] / pdf_reference[:center])
 
     right_kl = pdf[center:] * log(pdf[center:] / pdf_reference[center:])
 
-    if left_kl.sum() / left_kl.size < minimum_kl:
+    left_kl[left_kl == inf] = 0
 
-        left_context_indices = zeros_like(left_kl)
+    right_kl[right_kl == inf] = 0
 
-    else:
+    left_context_indices = -cumsum((left_kl / left_kl.sum())[::-1])[::-1]
 
-        left_context_indices = -cumsum((left_kl / left_kl.sum())[::-1])[::-1]
-
-    if right_kl.sum() / right_kl.size < minimum_kl:
-
-        right_context_indices = zeros_like(right_kl)
-
-    else:
-
-        right_context_indices = cumsum(right_kl / right_kl.sum())
+    right_context_indices = cumsum(right_kl / right_kl.sum())
 
     left_context_indices *= left_kl.sum() / left_kl.size
 

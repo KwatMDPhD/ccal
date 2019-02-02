@@ -20,7 +20,6 @@ def compute_context(
     fit_initial_scale=None,
     n_grid=1e3,
     degree_of_freedom_for_tail_reduction=1e8,
-    minimum_kl=1e-2,
     multiply_distance_from_reference_argmax=False,
     global_location=None,
     global_scale=None,
@@ -63,11 +62,7 @@ def compute_context(
     )
 
     shape_context_indices = _compute_context_indices(
-        grid,
-        pdf,
-        shape_pdf_reference,
-        minimum_kl,
-        multiply_distance_from_reference_argmax,
+        grid, pdf, shape_pdf_reference, multiply_distance_from_reference_argmax
     )
 
     if any(
@@ -100,11 +95,7 @@ def compute_context(
         )
 
         location_context_indices = _compute_context_indices(
-            grid,
-            pdf,
-            location_pdf_reference,
-            minimum_kl,
-            multiply_distance_from_reference_argmax,
+            grid, pdf, location_pdf_reference, multiply_distance_from_reference_argmax
         )
 
         context_indices = shape_context_indices + location_context_indices
