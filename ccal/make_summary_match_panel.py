@@ -2,7 +2,7 @@ from ._make_annotations import _make_annotations
 from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
 from .plot_and_save import plot_and_save
 
-eps = 1e-8
+_0 = 1e-8
 
 
 def make_summary_match_panel(
@@ -61,7 +61,7 @@ def make_summary_match_panel(
 
     domain_start = domain_end - row_fraction
 
-    if abs(domain_start) <= eps:
+    if abs(domain_start) <= _0:
 
         domain_start = 0
 
@@ -112,13 +112,13 @@ def make_summary_match_panel(
 
         domain_end = domain_start - row_fraction
 
-        if abs(domain_end) <= eps:
+        if abs(domain_end) <= _0:
 
             domain_end = 0
 
         domain_start = domain_end - data_dict["df"].shape[0] * row_fraction
 
-        if abs(domain_start) <= eps:
+        if abs(domain_start) <= _0:
 
             domain_start = 0
 
