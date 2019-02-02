@@ -2,17 +2,12 @@ from warnings import warn
 
 from numpy import absolute, concatenate, cumsum, finfo, full, log, nan, zeros_like
 
+eps = finfo(float).eps
+
 
 def _compute_context_indices(
-    grid,
-    pdf,
-    pdf_reference,
-    minimum_kl,
-    scale_with_kl,
-    multiply_distance_from_reference_argmax,
+    grid, pdf, pdf_reference, minimum_kl, multiply_distance_from_reference_argmax
 ):
-
-    eps = finfo(float).eps
 
     pdf = pdf.clip(min=eps)
 
@@ -46,11 +41,9 @@ def _compute_context_indices(
 
         right_context_indices = cumsum(right_kl / right_kl.sum())
 
-    if scale_with_kl:
+    left_context_indices *= left_kl.sum() / left_kl.size
 
-        left_context_indices *= left_kl.sum() / left_kl.size
-
-        right_context_indices *= right_kl.sum() / right_kl.size
+    right_context_indices *= right_kl.sum() / right_kl.size
 
     context_indices = concatenate((left_context_indices, right_context_indices))
 
