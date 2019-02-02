@@ -231,9 +231,11 @@ def plot_context(
 
     is_negative = context_dict["context_indices"] < 0
 
+    is_positive = 0 < context_dict["context_indices"]
+
     for name, indices, color in (
         ("- Context", is_negative, "#0088ff"),
-        ("+ Context", ~is_negative, "#ff1968"),
+        ("+ Context", is_positive, "#ff1968"),
     ):
 
         data.append(
