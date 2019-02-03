@@ -2,15 +2,16 @@ from numpy import asarray
 from pandas import DataFrame, Index
 
 from .establish_path import establish_path
+from .mf_consensus_cluster import mf_consensus_cluster
 from .multiprocess import multiprocess
-from .nmf_consensus_cluster import nmf_consensus_cluster
 from .plot_heat_map import plot_heat_map
 from .plot_points import plot_points
 
 
-def nmf_consensus_cluster_with_ks(
+def mf_consensus_cluster_with_ks(
     df,
     ks,
+    mf_function="nmf_by_sklearn",
     n_job=1,
     n_clustering=10,
     n_iteration=int(1e3),
@@ -50,11 +51,12 @@ def nmf_consensus_cluster_with_ks(
     ) in zip(
         ks,
         multiprocess(
-            nmf_consensus_cluster,
+            mf_consensus_cluster,
             (
                 (
                     df,
                     k,
+                    mf_function,
                     n_clustering,
                     n_iteration,
                     random_seed,
@@ -82,7 +84,7 @@ def nmf_consensus_cluster_with_ks(
 
     keys = Index(("K{}".format(k) for k in ks), name="K")
 
-    file_name = "nmf_error.html"
+    file_name = "mf_error.html"
 
     if directory_path is None:
 
@@ -110,7 +112,7 @@ def nmf_consensus_cluster_with_ks(
         tuple(k_return[key]["h_element_cluster.ccc"] for key in keys)
     )
 
-    file_name = "nmfcc.w_h_element_cluster.ccc.html"
+    file_name = "mfcc.w_h_element_cluster.ccc.html"
 
     if directory_path is None:
 
@@ -157,12 +159,12 @@ def nmf_consensus_cluster_with_ks(
         if directory_path is not None:
 
             k_x_element.to_csv(
-                "{}/nmfcc.k_x_{}_element.tsv".format(directory_path, w_or_h), sep="\t"
+                "{}/mfcc.k_x_{}_element.tsv".format(directory_path, w_or_h), sep="\t"
             )
 
         if plot_df:
 
-            file_name = "nmfcc.k_x_{}_element.distribution.html".format(w_or_h)
+            file_name = "mfcc.k_x_{}_element.distribution.html".format(w_or_h)
 
             if directory_path is None:
 

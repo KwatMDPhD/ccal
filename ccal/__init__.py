@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = "0.9.2"
+VERSION = "0.9.3"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
 from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
 from .CODON_TO_AMINO_ACID import CODON_TO_AMINO_ACID
@@ -213,14 +213,14 @@ from .mark_duplicates_in_bam_using_picard_markduplicates import (
 )
 from .mds import mds
 from .merge_dicts_with_callable import merge_dicts_with_callable
+from .mf_by_multiplicative_update import mf_by_multiplicative_update
+from .mf_consensus_cluster import mf_consensus_cluster
+from .mf_consensus_cluster_with_ks import mf_consensus_cluster_with_ks
 from .mount_volume import mount_volume
 from .multiprocess import multiprocess
 from .nd_array_is_sorted import nd_array_is_sorted
 from .nmf_by_multiple_V_and_H import nmf_by_multiple_V_and_H
-from .nmf_by_multiplicative_update import nmf_by_multiplicative_update
 from .nmf_by_sklearn import nmf_by_sklearn
-from .nmf_consensus_cluster import nmf_consensus_cluster
-from .nmf_consensus_cluster_with_ks import nmf_consensus_cluster_with_ks
 from .normalize_contig import normalize_contig
 from .normalize_df import normalize_df
 from .normalize_nd_array import normalize_nd_array
