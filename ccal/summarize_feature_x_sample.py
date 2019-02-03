@@ -9,9 +9,9 @@ def summarize_feature_x_sample(
     feature_x_sample_alias="Feature-x-Sample",
     feature_x_sample_value_name=None,
     plot=True,
-    plot_heat_map_max_size=int(2e5),
-    plot_distributions_max_size=int(2e4),
-    plot_rug_max_size=int(2e3),
+    plot_heat_map_max_size=640000,
+    plot_distributions_max_size=64000,
+    plot_rug_max_size=6400,
 ):
 
     if feature_x_sample_value_name is None:
