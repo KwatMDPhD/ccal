@@ -6,7 +6,7 @@ from ._update_H_by_multiplicative_update import _update_H_by_multiplicative_upda
 from ._update_W_by_multiplicative_update import _update_W_by_multiplicative_update
 
 
-def nmf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=20121020):
+def mf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=20121020):
 
     R_norms = full(n_iteration + 1, nan)
 
