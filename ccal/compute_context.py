@@ -14,8 +14,6 @@ def compute_context(
     scale=None,
     degree_of_freedom=None,
     shape=None,
-    fit_fixed_location=None,
-    fit_fixed_scale=None,
     fit_initial_location=None,
     fit_initial_scale=None,
     n_grid=1e3,
@@ -38,8 +36,6 @@ def compute_context(
 
         n_data, location, scale, degree_of_freedom, shape = fit_skew_t_pdf(
             _1d_array_good,
-            fit_fixed_location=fit_fixed_location,
-            fit_fixed_scale=fit_fixed_scale,
             fit_initial_location=fit_initial_location,
             fit_initial_scale=fit_initial_scale,
         )
