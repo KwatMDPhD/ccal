@@ -2,6 +2,7 @@ from warnings import warn
 
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
+from .ALMOST_ZERO import ALMOST_ZERO
 from .check_nd_array_for_bad import check_nd_array_for_bad
 
 
@@ -11,7 +12,13 @@ def fit_skew_t_pdf(_1d_array, fit_initial_location=None, fit_initial_scale=None)
 
     keyword_arguments = {}
 
-    keyword_arguments["loc"] = _1d_array.mean()
+    mean = _1d_array.mean()
+
+    if abs(mean) <= ALMOST_ZERO:
+
+        mean = 0
+
+    keyword_arguments["loc"] = mean
 
     keyword_arguments["scale"] = _1d_array.std() / 2
 
