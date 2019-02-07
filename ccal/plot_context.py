@@ -23,6 +23,7 @@ def plot_context(
     global_degree_of_freedom=None,
     global_shape=None,
     y_max_is_pdf_max=False,
+    n_bin=0,
     plot_rug=True,
     layout_width=None,
     layout_height=None,
@@ -157,6 +158,7 @@ def plot_context(
             marker=dict(color="#20d9ba"),
             histnorm="probability density",
             hoverinfo="x+y",
+            nbinsx=n_bin,
         )
     )
 
