@@ -148,6 +148,10 @@ def plot_context(
 
     data = []
 
+    _1d_array_min = _1d_array.min()
+
+    _1d_array_max = _1d_array.max()
+
     data.append(
         dict(
             yaxis="y2",
@@ -159,6 +163,11 @@ def plot_context(
             histnorm="probability density",
             hoverinfo="x+y",
             nbinsx=n_bin,
+            xbins=dict(
+                start=_1d_array_min,
+                end=_1d_array_max,
+                size=_1d_array_max - _1d_array_min / n_bin,
+            ),
         )
     )
 
