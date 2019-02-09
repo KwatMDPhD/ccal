@@ -1,4 +1,4 @@
-from numpy import absolute
+from numpy import absolute, nanmax
 from pandas import Series
 
 from .compute_context import compute_context
@@ -77,7 +77,7 @@ def plot_context(
 
     absolute_context_indices = absolute(context_indices)
 
-    absolute_context_indices_max = absolute_context_indices.max()
+    absolute_context_indices_max = nanmax(absolute_context_indices)
 
     if y_max_is_pdf_max:
 
