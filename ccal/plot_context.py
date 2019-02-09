@@ -23,7 +23,7 @@ def plot_context(
     global_degree_of_freedom=None,
     global_shape=None,
     y_max_is_pdf_max=False,
-    n_bin=0,
+    n_bin=None,
     plot_rug=True,
     layout_width=None,
     layout_height=None,
@@ -148,10 +148,6 @@ def plot_context(
 
     data = []
 
-    _1d_array_min = _1d_array.min()
-
-    _1d_array_max = _1d_array.max()
-
     data.append(
         dict(
             yaxis="y2",
@@ -162,14 +158,20 @@ def plot_context(
             marker=dict(color="#20d9ba"),
             histnorm="probability density",
             hoverinfo="x+y",
-            nbinsx=n_bin,
-            xbins=dict(
-                start=_1d_array_min,
-                end=_1d_array_max,
-                size=_1d_array_max - _1d_array_min / n_bin,
-            ),
         )
     )
+
+    if n_bin is not None:
+
+        _1d_array_min = _1d_array.min()
+
+        _1d_array_max = _1d_array.max()
+
+        data[-1]["xbins"] = dict(
+            start=_1d_array_min,
+            end=_1d_array_max,
+            size=(_1d_array_max - _1d_array_min) / n_bin,
+        )
 
     if plot_rug:
 
