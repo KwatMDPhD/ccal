@@ -18,6 +18,10 @@ def select_series_indices(
 
     series_sorted = series.dropna().sort_values()
 
+    if series_sorted.empty:
+
+        return
+
     if n is not None:
 
         if direction in ("<", ">"):

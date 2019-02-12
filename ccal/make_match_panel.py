@@ -69,31 +69,29 @@ def make_match_panel(
             n_permutation,
         )
 
-        if score_moe_p_value_fdr.isna().values.all():
-
-            return score_moe_p_value_fdr
-
         score_moe_p_value_fdr.index = data.index
-
-        score_moe_p_value_fdr.sort_values(
-            "Score", ascending=score_ascending, inplace=True
-        )
-
-        if file_path_prefix is not None:
-
-            score_moe_p_value_fdr.to_csv("{}.tsv".format(file_path_prefix), sep="\t")
 
     else:
 
         score_moe_p_value_fdr = score_moe_p_value_fdr.reindex(index=data.index)
 
+    if score_moe_p_value_fdr.isna().values.all():
+
+        return score_moe_p_value_fdr
+
+    score_moe_p_value_fdr.sort_values("Score", ascending=score_ascending, inplace=True)
+
+    if file_path_prefix is not None:
+
+        score_moe_p_value_fdr.to_csv("{}.tsv".format(file_path_prefix), sep="\t")
+
     scores_to_plot = score_moe_p_value_fdr.copy()
 
     if n_extreme is not None or fraction_extreme is not None:
 
-        scores_to_plot = score_moe_p_value_fdr.loc[
+        scores_to_plot = scores_to_plot.loc[
             select_series_indices(
-                score_moe_p_value_fdr["Score"],
+                scores_to_plot["Score"],
                 "<>",
                 n=n_extreme,
                 fraction=fraction_extreme,
