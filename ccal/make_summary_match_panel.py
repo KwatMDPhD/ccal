@@ -48,9 +48,13 @@ def make_summary_match_panel(
         height=row_height / 2 * max(10, n_row),
         margin=dict(l=layout_side_margin, r=layout_side_margin),
         title=title,
-        xaxis=dict(anchor="y", **xaxis_kwargs),
+        xaxis=dict(anchor="y"),
         annotations=[],
     )
+
+    if xaxis_kwargs is not None:
+
+        layout["xaxis"].update(xaxis_kwargs)
 
     row_fraction = 1 / n_row
 

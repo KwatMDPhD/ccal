@@ -75,15 +75,55 @@ def make_match_panel(
 
         score_moe_p_value_fdr = score_moe_p_value_fdr.reindex(index=data.index)
 
-    if score_moe_p_value_fdr.isna().values.all():
-
-        return score_moe_p_value_fdr
-
     score_moe_p_value_fdr.sort_values("Score", ascending=score_ascending, inplace=True)
 
     if file_path_prefix is not None:
 
         score_moe_p_value_fdr.to_csv("{}.tsv".format(file_path_prefix), sep="\t")
+
+    if score_moe_p_value_fdr.isna().values.all():
+
+        return score_moe_p_value_fdr
+
+    if file_path_prefix is None:
+
+        html_file_path = None
+
+    else:
+
+        html_file_path = "{}.score_ranking.html".format(file_path_prefix)
+
+    score_without_na = score_moe_p_value_fdr["Score"].dropna()
+
+    if score_without_na.size < 1e3:
+
+        mode = "markers"
+
+    else:
+
+        mode = "lines"
+
+    plot_and_save(
+        dict(
+            layout=dict(
+                title=dict(text="Score Ranking"),
+                xaxis=dict(title="Rank"),
+                yaxis=dict(title="Score"),
+            ),
+            data=[
+                dict(
+                    type="scatter",
+                    x=tuple(range(score_without_na.size)),
+                    y=score_without_na,
+                    text=score_without_na.index,
+                    mode=mode,
+                    marker=dict(color="#20d9ba"),
+                )
+            ],
+        ),
+        html_file_path,
+        None,
+    )
 
     scores_to_plot = score_moe_p_value_fdr.copy()
 

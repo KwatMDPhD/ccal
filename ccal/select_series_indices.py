@@ -112,6 +112,14 @@ def select_series_indices(
 
     if plot:
 
+        if series_sorted.size < 1e3:
+
+            mode = "markers"
+
+        else:
+
+            mode = "lines"
+
         plot_and_save(
             dict(
                 layout=dict(title=title, xaxis=xaxis, yaxis=yaxis),
@@ -122,8 +130,8 @@ def select_series_indices(
                         x=tuple(range(series_sorted.size)),
                         y=series_sorted,
                         text=series_sorted.index,
-                        mode="markers",
-                        marker=dict(color="#20d9ba"),
+                        mode=mode,
+                        marker=dict(color="#d0d0d0"),
                     ),
                     dict(
                         type="scatter",
@@ -132,7 +140,7 @@ def select_series_indices(
                         y=series_sorted[is_selected],
                         text=series_sorted.index[is_selected],
                         mode="markers",
-                        marker=dict(color="#9017e6"),
+                        marker=dict(color="#20d9ba"),
                     ),
                 ],
             ),
