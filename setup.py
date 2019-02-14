@@ -8,7 +8,7 @@ setup(
     name=name,
     version=VERSION,
     url="https://github.com/KwatME/{}".format(name),
-    author="Kwat Medetgul-Ernar (Huwate Yeerna)",
+    author="Kwat Medetgul-Ernar",
     author_email="kwatme8@gmail.com",
     packages=find_packages(),
     python_requires=">=3.6",

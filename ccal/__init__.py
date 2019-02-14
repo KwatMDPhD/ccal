@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = "0.9.4"
+VERSION = "1.0.1"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
 from .ALMOST_ZERO import ALMOST_ZERO
 from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
