@@ -45,6 +45,10 @@ def make_match_panel(
         )
     )
 
+    if common_indices.size == 0:
+
+        return
+
     target = target[common_indices]
 
     if target_ascending is not None:
