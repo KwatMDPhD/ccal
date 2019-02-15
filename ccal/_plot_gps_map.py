@@ -247,7 +247,7 @@ def _plot_gps_map(
                             cmin=min_,
                             cmax=max_,
                             colorscale=annotation_colorscale,
-                            showscale=True,
+                            showscale=annotation_type == "continuous",
                             colorbar=dict(len=0.64, thickness=layout_size / 80),
                             line=element_marker_line,
                         ),

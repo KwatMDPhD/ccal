@@ -6,7 +6,6 @@ def plot_color_text(
     texts,
     orientation="vertical",
     marker_size=None,
-    textfont_size=None,
     layout_width=None,
     layout_height=None,
     html_file_path=None,
@@ -45,7 +44,6 @@ def plot_color_text(
                     text=texts,
                     marker=dict(size=marker_size, color=colors),
                     textposition=textposition,
-                    textfont=dict(size=textfont_size),
                 )
             ],
         ),
