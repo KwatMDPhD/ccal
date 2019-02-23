@@ -2,7 +2,7 @@ from warnings import warn
 
 from numpy import absolute, in1d
 
-from ._plot_mountain import _plot_mountain
+from ._plot_gsea_mountain import _plot_gsea_mountain
 
 
 def single_sample_gsea(
@@ -10,8 +10,8 @@ def single_sample_gsea(
     gene_set_genes,
     statistic="ks",
     plot=True,
-    title=None,
-    gene_score_name=None,
+    title="GSEA Mountain Plot",
+    gene_score_name="Gene Score",
     annotation_text_font_size=16,
     annotation_text_width=88,
     annotation_text_yshift=64,
@@ -73,7 +73,7 @@ def single_sample_gsea(
 
     if plot:
 
-        _plot_mountain(
+        _plot_gsea_mountain(
             cumulative_sums,
             in_,
             gene_score_sorted,

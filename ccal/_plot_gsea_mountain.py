@@ -3,7 +3,7 @@ from numpy import absolute, asarray
 from .plot_and_save import plot_and_save
 
 
-def _plot_mountain(
+def _plot_gsea_mountain(
     cumulative_sums,
     hits,
     gene_score,
@@ -19,23 +19,14 @@ def _plot_mountain(
     plotly_html_file_path,
 ):
 
-    if title is None:
-
-        title = "GSEA Mountain Plot"
-
-    if gene_score_name is None:
-
-        gene_score_name = "Gene Score"
-
     layout = dict(
         width=layout_width,
         height=layout_height,
         hovermode="closest",
-        title=title,
+        title=dict(text=title),
         xaxis=dict(anchor="y", title="Rank"),
         yaxis=dict(domain=(0, 0.16), title=gene_score_name),
         yaxis2=dict(domain=(0.20, 1), title="Enrichment"),
-        legend=dict(orientation="h"),
     )
 
     data = []
@@ -82,7 +73,7 @@ def _plot_mountain(
         dict(
             yaxis="y2",
             type="scatter",
-            name="Gene Set",
+            name="Gene in Gene Set",
             x=gene_xs,
             y=(0,) * len(gene_xs),
             text=gene_texts,
