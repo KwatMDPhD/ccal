@@ -1,6 +1,6 @@
 from os.path import abspath
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
 from .ALMOST_ZERO import ALMOST_ZERO
 from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
@@ -57,7 +57,7 @@ from ._permute_target_and_match_target_and_data import (
 )
 from ._plot_2d import _plot_2d
 from ._plot_gps_map import _plot_gps_map
-from ._plot_mountain import _plot_mountain
+from ._plot_gsea_mountain import _plot_gsea_mountain
 from ._print_and_run_command import _print_and_run_command
 from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
 from ._single_sample_gseas import _single_sample_gseas
