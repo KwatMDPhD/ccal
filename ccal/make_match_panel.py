@@ -95,7 +95,7 @@ def make_match_panel(
 
     else:
 
-        html_file_path = "{}.score_ranking.html".format(file_path_prefix)
+        html_file_path = "{}.rank_score.html".format(file_path_prefix)
 
     score_without_na = score_moe_p_value_fdr["Score"].dropna()
 
@@ -110,9 +110,9 @@ def make_match_panel(
     plot_and_save(
         dict(
             layout=dict(
-                title=dict(text="Score Ranking"),
+                title=dict(text="Score Rank"),
                 xaxis=dict(title="Rank"),
-                yaxis=dict(title="Score"),
+                yaxis=dict(title="Score ({})".format(match_function.__name__)),
             ),
             data=[
                 dict(
@@ -201,12 +201,17 @@ def make_match_panel(
         width=layout_width,
         height=row_height * max(8, (data_to_plot.shape[0] + 2) ** 0.8),
         margin=dict(l=layout_side_margin, r=layout_side_margin),
-        xaxis=dict(anchor="y", tickfont=dict(size=annotation_font_size)),
+        xaxis=dict(anchor="y", title="", tickfont=dict(size=annotation_font_size)),
         yaxis=dict(
-            domain=data_yaxis_domain, dtick=1, tickfont=dict(size=annotation_font_size)
+            domain=data_yaxis_domain,
+            title="",
+            dtick=1,
+            tickfont=dict(size=annotation_font_size),
         ),
         yaxis2=dict(
-            domain=target_yaxis_domain, tickfont=dict(size=annotation_font_size)
+            domain=target_yaxis_domain,
+            title="",
+            tickfont=dict(size=annotation_font_size),
         ),
         title=title,
         annotations=[],
