@@ -72,7 +72,7 @@ def plot_rank_and_highlight(
                 ),
                 dict(
                     type="scatter",
-                    name="highlights",
+                    name="Highlights",
                     x=highlight_indices,
                     y=abs(element_value[highlight_indices]),
                     text=element_value[highlight_indices].index,
