@@ -6,6 +6,8 @@ from .plot_and_save import plot_and_save
 def plot_rank_and_highlight(
     element_value,
     highlights,
+    opacity=0.24,
+    highlights_marker_size=16,
     title=None,
     yaxis=None,
     html_file_path=None,
@@ -18,8 +20,6 @@ def plot_rank_and_highlight(
 
     positive_indices = nonzero(0 < element_value)[0]
 
-    opacity = 0.16
-
     if highlights is None:
 
         highlight_indices = ()
@@ -29,8 +29,6 @@ def plot_rank_and_highlight(
         highlight_indices = nonzero(
             [gene_set in highlights for gene_set in element_value.index]
         )[0]
-
-    highlights_marker_size = 16
 
     plot_and_save(
         dict(
