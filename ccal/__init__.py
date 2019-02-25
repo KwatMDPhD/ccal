@@ -1,7 +1,8 @@
 from os.path import abspath
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
+from .plot_rank_and_highlight import plot_rank_and_highlight
 from .ALMOST_ZERO import ALMOST_ZERO
 from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
 from .CODON_TO_AMINO_ACID import CODON_TO_AMINO_ACID

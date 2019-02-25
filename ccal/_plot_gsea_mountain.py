@@ -57,7 +57,7 @@ def _plot_gsea_mountain(
         dict(
             yaxis="y2",
             type="scatter",
-            name="Peak",
+            name="Peak ({:.3f})".format(score),
             x=(grid[cumulative_sums_argmax],),
             y=(cumulative_sums[cumulative_sums_argmax],),
             mode="markers",
@@ -73,7 +73,7 @@ def _plot_gsea_mountain(
         dict(
             yaxis="y2",
             type="scatter",
-            name="Gene in Gene Set",
+            name="Gene",
             x=gene_xs,
             y=(0,) * len(gene_xs),
             text=gene_texts,
@@ -90,16 +90,15 @@ def _plot_gsea_mountain(
 
     is_negative = gene_score < 0
 
-    for indices, color in (
-        (is_negative, negative_color),
-        (~is_negative, positive_color),
+    for indices, name, color in (
+        (is_negative, "- Gene Score", negative_color),
+        (~is_negative, "+ Gene Score", positive_color),
     ):
 
         data.append(
             dict(
                 type="scatter",
-                name="Gene Score",
-                legendgroup="Gene Score",
+                name=name,
                 x=grid[indices],
                 y=gene_score[indices],
                 line=dict(width=line_width, color=color),
@@ -108,18 +107,6 @@ def _plot_gsea_mountain(
         )
 
     layout["annotations"] = [
-        dict(
-            xref="paper",
-            yref="paper",
-            x=0.5,
-            y=1.05,
-            text="<b>Score = {:.3f}</b>".format(score),
-            showarrow=False,
-            font=dict(size=16, color="#ffffff"),
-            bgcolor=(negative_color, positive_color)[0 <= score],
-            borderpad=3.2,
-        )
-    ] + [
         dict(
             x=x,
             y=0,
