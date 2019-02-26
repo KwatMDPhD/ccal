@@ -11,7 +11,6 @@ def _plot_gsea_mountain(
     layout_width,
     layout_height,
     title,
-    gene_score_name,
     annotation_text_font_size,
     annotation_text_width,
     annotation_text_yshift,
@@ -25,7 +24,7 @@ def _plot_gsea_mountain(
         hovermode="closest",
         title=dict(text=title),
         xaxis=dict(anchor="y", title="Rank"),
-        yaxis=dict(domain=(0, 0.16), title=gene_score_name),
+        yaxis=dict(domain=(0, 0.16), title=gene_score.name),
         yaxis2=dict(domain=(0.20, 1), title="Enrichment"),
     )
 
@@ -61,7 +60,7 @@ def _plot_gsea_mountain(
             x=(grid[cumulative_sums_argmax],),
             y=(cumulative_sums[cumulative_sums_argmax],),
             mode="markers",
-            marker=dict(size=16, color=(negative_color, positive_color)[0 <= score]),
+            marker=dict(size=12, color=(negative_color, positive_color)[0 <= score]),
         )
     )
 

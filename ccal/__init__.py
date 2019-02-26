@@ -2,7 +2,6 @@ from os.path import abspath
 
 VERSION = "1.0.3"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
-from .plot_rank_and_highlight import plot_rank_and_highlight
 from .ALMOST_ZERO import ALMOST_ZERO
 from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
 from .CODON_TO_AMINO_ACID import CODON_TO_AMINO_ACID
@@ -236,6 +235,7 @@ from .plot_context import plot_context
 from .plot_distributions import plot_distributions
 from .plot_heat_map import plot_heat_map
 from .plot_pie import plot_pie
+from .plot_point_and_annotate import plot_point_and_annotate
 from .plot_points import plot_points
 from .plot_table import plot_table
 from .plot_violin_or_box import plot_violin_or_box

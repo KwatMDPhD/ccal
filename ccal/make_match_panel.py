@@ -32,7 +32,7 @@ def make_match_panel(
     layout_width=880,
     row_height=64,
     layout_side_margin=196,
-    annotation_font_size=10,
+    annotation_font_size=8.8,
     file_path_prefix=None,
     plotly_html_file_path_prefix=None,
 ):
@@ -110,7 +110,7 @@ def make_match_panel(
     plot_and_save(
         dict(
             layout=dict(
-                title=dict(text="Score Rank"),
+                title=dict(text="Score"),
                 xaxis=dict(title="Rank"),
                 yaxis=dict(title="Score ({})".format(match_function.__name__)),
             ),
