@@ -45,11 +45,11 @@ def make_match_panel(
         )
     )
 
-    if common_indices.size == 0:
+    target = target[common_indices]
+
+    if target.dropna().unique().size < 2:
 
         return
-
-    target = target[common_indices]
 
     if target_ascending is not None:
 
@@ -201,17 +201,12 @@ def make_match_panel(
         width=layout_width,
         height=row_height * max(8, (data_to_plot.shape[0] + 2) ** 0.8),
         margin=dict(l=layout_side_margin, r=layout_side_margin),
-        xaxis=dict(anchor="y", title="", tickfont=dict(size=annotation_font_size)),
+        xaxis=dict(anchor="y", tickfont=dict(size=annotation_font_size)),
         yaxis=dict(
-            domain=data_yaxis_domain,
-            title="",
-            dtick=1,
-            tickfont=dict(size=annotation_font_size),
+            domain=data_yaxis_domain, dtick=1, tickfont=dict(size=annotation_font_size)
         ),
         yaxis2=dict(
-            domain=target_yaxis_domain,
-            title="",
-            tickfont=dict(size=annotation_font_size),
+            domain=target_yaxis_domain, tickfont=dict(size=annotation_font_size)
         ),
         title=title,
         annotations=[],
