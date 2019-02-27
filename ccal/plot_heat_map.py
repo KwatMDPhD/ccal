@@ -50,9 +50,7 @@ def plot_heat_map(
         domain=heat_map_axis_domain, showgrid=False, zeroline=False, automargin=True
     )
 
-    annotation_axis_template = dict(
-        showgrid=False, zeroline=False, ticks="", showticklabels=False
-    )
+    annotation_axis_template = dict(zeroline=False, ticks="", showticklabels=False)
 
     if xaxis_title is not None:
 

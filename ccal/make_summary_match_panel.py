@@ -48,7 +48,7 @@ def make_summary_match_panel(
         height=row_height / 2 * max(10, n_row),
         margin=dict(l=layout_side_margin, r=layout_side_margin),
         title=title,
-        xaxis=dict(anchor="y", title=""),
+        xaxis=dict(anchor="y"),
         annotations=[],
     )
 
@@ -69,9 +69,7 @@ def make_summary_match_panel(
         domain_start = 0
 
     layout[yaxis_name] = dict(
-        domain=(domain_start, domain_end),
-        title="",
-        tickfont=dict(size=annotation_font_size),
+        domain=(domain_start, domain_end), tickfont=dict(size=annotation_font_size)
     )
 
     data = [
@@ -129,7 +127,6 @@ def make_summary_match_panel(
 
         layout[yaxis_name] = dict(
             domain=(domain_start, domain_end),
-            title="",
             dtick=1,
             tickfont=dict(size=annotation_font_size),
         )
