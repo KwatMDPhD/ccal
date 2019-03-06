@@ -1,23 +1,5 @@
 from os.path import abspath
 
-VERSION = "1.0.3"
-print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
-from .ALMOST_ZERO import ALMOST_ZERO
-from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
-from .CODON_TO_AMINO_ACID import CODON_TO_AMINO_ACID
-from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
-from .COLOR_RUBY_EMERALD import COLOR_RUBY_EMERALD
-from .COLOR_WHITE_BLACK import COLOR_WHITE_BLACK
-from .COLOR_WHITE_BROWN import COLOR_WHITE_BROWN
-from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
-from .FeatureHDF5 import FeatureHDF5
-from .GPSMap import GPSMap
-from .Genome import Genome
-from .VARIANT_CLASSIFICATION_MUTSIG_EFFECT import VARIANT_CLASSIFICATION_MUTSIG_EFFECT
-from .VARIANT_EFFECTS import VARIANT_EFFECTS
-from .VCF_ANN_FIELDS import VCF_ANN_FIELDS
-from .VCF_COLUMNS import VCF_COLUMNS
-from .VariantHDF5 import VariantHDF5
 from ._anneal_node_and_element_positions import _anneal_node_and_element_positions
 from ._check_fastq_gzs import _check_fastq_gzs
 from ._check_node_x_element import _check_node_x_element
@@ -66,12 +48,14 @@ from ._update_W_by_multiplicative_update import _update_W_by_multiplicative_upda
 from .add_conda_to_path import add_conda_to_path
 from .align_fastq_gzs_using_bwa_mem import align_fastq_gzs_using_bwa_mem
 from .align_fastq_gzs_using_hisat2 import align_fastq_gzs_using_hisat2
+from .ALMOST_ZERO import ALMOST_ZERO
 from .annotate_vcf_gz_using_bcftools_annotate import (
     annotate_vcf_gz_using_bcftools_annotate,
 )
 from .annotate_vcf_gz_using_snpeff import annotate_vcf_gz_using_snpeff
 from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
+from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
 from .bgzip_and_tabix import bgzip_and_tabix
 from .cast_series_to_builtins import cast_series_to_builtins
 from .cast_str_to_builtins import cast_str_to_builtins
@@ -84,6 +68,11 @@ from .clean_name import clean_name
 from .clean_path import clean_path
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
 from .cluster_2d_array_slices import cluster_2d_array_slices
+from .CODON_TO_AMINO_ACID import CODON_TO_AMINO_ACID
+from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
+from .COLOR_RUBY_EMERALD import COLOR_RUBY_EMERALD
+from .COLOR_WHITE_BLACK import COLOR_WHITE_BLACK
+from .COLOR_WHITE_BROWN import COLOR_WHITE_BROWN
 from .compute_bandwidths import compute_bandwidths
 from .compute_context import compute_context
 from .compute_correlation_distance import compute_correlation_distance
@@ -112,6 +101,7 @@ from .count_transcripts_using_kallisto_quant import (
 from .count_vcf_gz_rows import count_vcf_gz_rows
 from .create_gitkeep import create_gitkeep
 from .cross_validate import cross_validate
+from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
 from .download import download
 from .download_and_parse_geo_data import download_and_parse_geo_data
 from .download_clinvar_vcf_gz import download_clinvar_vcf_gz
@@ -124,10 +114,12 @@ from .establish_path import establish_path
 from .estimate_kernel_density import estimate_kernel_density
 from .exit_ import exit_
 from .faidx_fasta import faidx_fasta
+from .FeatureHDF5 import FeatureHDF5
 from .filter_vcf_gz_using_bcftools_view import filter_vcf_gz_using_bcftools_view
 from .fit_skew_t_pdf import fit_skew_t_pdf
 from .fit_skew_t_pdfs import fit_skew_t_pdfs
 from .flatten_nested_iterable import flatten_nested_iterable
+from .Genome import Genome
 from .get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
 from .get_allelic_frequencies import get_allelic_frequencies
 from .get_chromosome_size_from_fasta_gz import get_chromosome_size_from_fasta_gz
@@ -161,6 +153,7 @@ from .get_vcf_info import get_vcf_info
 from .get_vcf_info_ann import get_vcf_info_ann
 from .get_vcf_sample_format import get_vcf_sample_format
 from .get_volume_name import get_volume_name
+from .GPSMap import GPSMap
 from .group_and_apply_function_on_each_group_in_iterable import (
     group_and_apply_function_on_each_group_in_iterable,
 )
@@ -296,7 +289,15 @@ from .trim_fastq_gzs_using_skewer import trim_fastq_gzs_using_skewer
 from .unmount_volume import unmount_volume
 from .untitle_str import untitle_str
 from .update_variant_dict import update_variant_dict
+from .VARIANT_CLASSIFICATION_MUTSIG_EFFECT import VARIANT_CLASSIFICATION_MUTSIG_EFFECT
+from .VARIANT_EFFECTS import VARIANT_EFFECTS
+from .VariantHDF5 import VariantHDF5
+from .VCF_ANN_FIELDS import VCF_ANN_FIELDS
+from .VCF_COLUMNS import VCF_COLUMNS
 from .write_dict import write_dict
 from .write_gct import write_gct
 from .write_gmt import write_gmt
 from .write_json import write_json
+
+VERSION = "1.0.3"
+print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
