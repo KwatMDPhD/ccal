@@ -48,10 +48,6 @@ def single_sample_gsea(
 
     cumulative_sums = y.cumsum()
 
-    if statistic not in ("ks", "auc"):
-
-        raise ValueError("Unknown statistic: {}.".format(statistic))
-
     if statistic == "ks":
 
         max_ = cumulative_sums.max()

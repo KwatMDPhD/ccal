@@ -33,7 +33,7 @@ def select_tcga_sample_by_sample_type_and_group(df, sample_type):
 
         df_sample_type_selected_duplicated = df_sample_type_selected_duplicated.groupby(
             by=df_sample_type_selected_duplicated.columns.str[:12], axis=1
-        ).mean()
+        ).median()
 
     return concat(
         (df_sample_type_selected_not_duplicated, df_sample_type_selected_duplicated),
