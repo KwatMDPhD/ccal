@@ -65,7 +65,6 @@ from .check_nd_array_for_bad import check_nd_array_for_bad
 from .clean_and_write_df_to_tsv import clean_and_write_df_to_tsv
 from .clean_git_url import clean_git_url
 from .clean_name import clean_name
-from .clean_path import clean_path
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
 from .cluster_2d_array_slices import cluster_2d_array_slices
 from .CODON_TO_AMINO_ACID import CODON_TO_AMINO_ACID
@@ -92,7 +91,6 @@ from .concatenate_vcf_gzs_using_bcftools_concat import (
     concatenate_vcf_gzs_using_bcftools_concat,
 )
 from .conda_is_installed import conda_is_installed
-from .copy_path import copy_path
 from .correlate import correlate
 from .count_gene_impacts_from_variant_dicts import count_gene_impacts_from_variant_dicts
 from .count_transcripts_using_kallisto_quant import (
@@ -103,6 +101,7 @@ from .create_gitkeep import create_gitkeep
 from .cross_validate import cross_validate
 from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
 from .download import download
+from .download_and_extract import download_and_extract
 from .download_and_parse_geo_data import download_and_parse_geo_data
 from .download_clinvar_vcf_gz import download_clinvar_vcf_gz
 from .drop_df_slice import drop_df_slice
@@ -121,6 +120,7 @@ from .fit_skew_t_pdfs import fit_skew_t_pdfs
 from .flatten_nested_iterable import flatten_nested_iterable
 from .Genome import Genome
 from .get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
+from .get_absolute_path import get_absolute_path
 from .get_allelic_frequencies import get_allelic_frequencies
 from .get_chromosome_size_from_fasta_gz import get_chromosome_size_from_fasta_gz
 from .get_colormap_colors import get_colormap_colors
@@ -257,7 +257,6 @@ from .rescale_x_y_coordiantes_in_polar_coordiante import (
 from .reverse_complement_dna_sequence import reverse_complement_dna_sequence
 from .reverse_transcribe_rna_sequence import reverse_transcribe_rna_sequence
 from .run_command import run_command
-from .run_command_and_monitor import run_command_and_monitor
 from .sample_series_randomly_per_value import sample_series_randomly_per_value
 from .select_gene_symbol import select_gene_symbol
 from .select_series_indices import select_series_indices
@@ -265,7 +264,6 @@ from .select_tcga_sample_by_sample_type_and_group import (
     select_tcga_sample_by_sample_type_and_group,
 )
 from .shuffle_each_2d_array_slice import shuffle_each_2d_array_slice
-from .shutdown_machine import shutdown_machine
 from .simulate_sequences_using_dwgsim import simulate_sequences_using_dwgsim
 from .single_sample_gsea import single_sample_gsea
 from .single_sample_gseas import single_sample_gseas
@@ -286,7 +284,6 @@ from .train_and_regress import train_and_regress
 from .transcribe_dna_sequence import transcribe_dna_sequence
 from .translate_nucleotide_sequence import translate_nucleotide_sequence
 from .trim_fastq_gzs_using_skewer import trim_fastq_gzs_using_skewer
-from .unmount_volume import unmount_volume
 from .untitle_str import untitle_str
 from .update_variant_dict import update_variant_dict
 from .VARIANT_CLASSIFICATION_MUTSIG_EFFECT import VARIANT_CLASSIFICATION_MUTSIG_EFFECT
@@ -299,5 +296,5 @@ from .write_gct import write_gct
 from .write_gmt import write_gmt
 from .write_json import write_json
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 print("CCAL version {} @ {}".format(VERSION, abspath(__file__)))
