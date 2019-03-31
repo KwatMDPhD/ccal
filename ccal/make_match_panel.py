@@ -45,7 +45,7 @@ def make_match_panel(
         )
     )
 
-    target = target[common_indices]
+    target = target[common_indices].dropna()
 
     if target.dropna().unique().size < 2:
 
