@@ -105,17 +105,20 @@ def plot_context(
 
         yaxis2_min = 0
 
-    layout = dict(
-        width=layout_width,
-        height=layout_height,
-        title=title,
-        xaxis=dict(anchor="y", title=xaxis_title),
-        yaxis=dict(
-            domain=(0, yaxis_max), dtick=1, zeroline=False, showticklabels=False
-        ),
-        yaxis2=dict(domain=(yaxis2_min, 1)),
-        legend=dict(orientation="h", xanchor="center", x=0.5, y=-0.2),
-    )
+    layout = {
+        "width": layout_width,
+        "height": layout_height,
+        "title": title,
+        "xaxis": {"anchor": "y", "title": xaxis_title},
+        "yaxis": {
+            "domain": (0, yaxis_max),
+            "dtick": 1,
+            "zeroline": False,
+            "showticklabels": False,
+        },
+        "yaxis2": {"domain": (yaxis2_min, 1)},
+        "legend": {"orientation": "h", "xanchor": "center", "x": 0.5, "y": -0.2},
+    }
 
     annotations = []
 
@@ -133,32 +136,32 @@ def plot_context(
     ):
 
         annotations.append(
-            dict(
-                xref="paper",
-                yref="paper",
-                x=(i + 1) / (5 + 1),
-                y=1.064,
-                xanchor="center",
-                text=template.format(fit_parameter),
-                showarrow=False,
-            )
+            {
+                "xref": "paper",
+                "yref": "paper",
+                "x": (i + 1) / (5 + 1),
+                "y": 1.064,
+                "xanchor": "center",
+                "text": template.format(fit_parameter),
+                "showarrow": False,
+            }
         )
 
-    layout.update(annotations=annotations)
+    layout.update({"annotations": annotations})
 
     data = []
 
     data.append(
-        dict(
-            yaxis="y2",
-            type="histogram",
-            name="Data",
-            legendgroup="Data",
-            x=_1d_array,
-            marker=dict(color="#20d9ba"),
-            histnorm="probability density",
-            hoverinfo="x+y",
-        )
+        {
+            "yaxis": "y2",
+            "type": "histogram",
+            "name": "Data",
+            "legendgroup": "Data",
+            "x": _1d_array,
+            "marker": {"color": "#20d9ba"},
+            "histnorm": "probability density",
+            "hoverinfo": "x+y",
+        }
     )
 
     if n_bin is not None:
@@ -167,26 +170,26 @@ def plot_context(
 
         _1d_array_max = _1d_array.max()
 
-        data[-1]["xbins"] = dict(
-            start=_1d_array_min,
-            end=_1d_array_max,
-            size=(_1d_array_max - _1d_array_min) / n_bin,
-        )
+        data[-1]["xbins"] = {
+            "start": _1d_array_min,
+            "end": _1d_array_max,
+            "size": (_1d_array_max - _1d_array_min) / n_bin,
+        }
 
     if plot_rug:
 
         data.append(
-            dict(
-                type="scatter",
-                legendgroup="Data",
-                showlegend=False,
-                x=_1d_array,
-                y=(0,) * _1d_array.size,
-                text=text,
-                mode="markers",
-                marker=dict(symbol="line-ns-open", color="#20d9ba"),
-                hoverinfo="x+text",
-            )
+            {
+                "type": "scatter",
+                "legendgroup": "Data",
+                "showlegend": False,
+                "x": _1d_array,
+                "y": (0,) * _1d_array.size,
+                "text": text,
+                "mode": "markers",
+                "marker": {"symbol": "line-ns-open", "color": "#20d9ba"},
+                "hoverinfo": "x+text",
+            }
         )
 
     grid = context_dict["grid"]
@@ -196,14 +199,14 @@ def plot_context(
     pdf = context_dict["pdf"]
 
     data.append(
-        dict(
-            yaxis="y2",
-            type="scatter",
-            name="PDF",
-            x=grid,
-            y=pdf,
-            line=dict(width=line_width, color="#24e7c0"),
-        )
+        {
+            "yaxis": "y2",
+            "type": "scatter",
+            "name": "PDF",
+            "x": grid,
+            "y": pdf,
+            "line": {"width": line_width, "color": "#24e7c0"},
+        }
     )
 
     shape_pdf_reference = context_dict["shape_pdf_reference"]
@@ -211,14 +214,14 @@ def plot_context(
     shape_pdf_reference[pdf <= shape_pdf_reference] = None
 
     data.append(
-        dict(
-            yaxis="y2",
-            type="scatter",
-            name="Shape Reference",
-            x=grid,
-            y=shape_pdf_reference,
-            line=dict(width=line_width, color="#9017e6"),
-        )
+        {
+            "yaxis": "y2",
+            "type": "scatter",
+            "name": "Shape Reference",
+            "x": grid,
+            "y": shape_pdf_reference,
+            "line": {"width": line_width, "color": "#9017e6"},
+        }
     )
 
     location_pdf_reference = context_dict["location_pdf_reference"]
@@ -228,14 +231,14 @@ def plot_context(
         location_pdf_reference[pdf <= location_pdf_reference] = None
 
         data.append(
-            dict(
-                yaxis="y2",
-                type="scatter",
-                name="Location Reference",
-                x=grid,
-                y=location_pdf_reference,
-                line=dict(width=line_width, color="#4e40d8"),
-            )
+            {
+                "yaxis": "y2",
+                "type": "scatter",
+                "name": "Location Reference",
+                "x": grid,
+                "y": location_pdf_reference,
+                "line": {"width": line_width, "color": "#4e40d8"},
+            }
         )
 
     is_negative = context_dict["context_indices"] < 0
@@ -248,15 +251,17 @@ def plot_context(
     ):
 
         data.append(
-            dict(
-                yaxis="y2",
-                type="scatter",
-                name=name,
-                x=grid[indices],
-                y=absolute_context_indices[indices],
-                line=dict(width=line_width, color=color),
-                fill="tozeroy",
-            )
+            {
+                "yaxis": "y2",
+                "type": "scatter",
+                "name": name,
+                "x": grid[indices],
+                "y": absolute_context_indices[indices],
+                "line": {"width": line_width, "color": color},
+                "fill": "tozeroy",
+            }
         )
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

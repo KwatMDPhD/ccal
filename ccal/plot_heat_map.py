@@ -46,11 +46,14 @@ def plot_heat_map(
     plotly_html_file_path=None,
 ):
 
-    heat_map_axis_template = dict(
-        domain=heat_map_axis_domain, showgrid=False, zeroline=False, automargin=True
-    )
+    heat_map_axis_template = {
+        "domain": heat_map_axis_domain,
+        "showgrid": False,
+        "zeroline": False,
+        "automargin": True,
+    }
 
-    annotation_axis_template = dict(zeroline=False, ticks="", showticklabels=False)
+    annotation_axis_template = {"zeroline": False, "ticks": "", "showticklabels": False}
 
     if xaxis_title is not None:
 
@@ -76,25 +79,25 @@ def plot_heat_map(
 
         y_ticks = None
 
-    layout = dict(
-        width=layout_width,
-        height=layout_height,
-        title=title,
-        xaxis=dict(
-            title=xaxis_title,
-            ticks=x_ticks,
-            showticklabels=show_x_tick,
+    layout = {
+        "width": layout_width,
+        "height": layout_height,
+        "title": title,
+        "xaxis": {
+            "title": xaxis_title,
+            "ticks": x_ticks,
+            "showticklabels": show_x_tick,
             **heat_map_axis_template,
-        ),
-        xaxis2=dict(domain=annotation_axis_domain, **annotation_axis_template),
-        yaxis=dict(
-            title=yaxis_title,
-            ticks=y_ticks,
-            showticklabels=show_y_tick,
+        },
+        "xaxis2": {"domain": annotation_axis_domain, **annotation_axis_template},
+        "yaxis": {
+            "title": yaxis_title,
+            "ticks": y_ticks,
+            "showticklabels": show_y_tick,
             **heat_map_axis_template,
-        ),
-        yaxis2=dict(domain=annotation_axis_domain, **annotation_axis_template),
-    )
+        },
+        "yaxis2": {"domain": annotation_axis_domain, **annotation_axis_template},
+    }
 
     if isinstance(z, DataFrame):
 
@@ -204,31 +207,31 @@ def plot_heat_map(
 
         colorscale = make_colorscale(colormap=colormap, plot=False)
 
-    colorbar_template = dict(len=0.64, thickness=layout_width / 64)
+    colorbar_template = {"len": 0.64, "thickness": layout_width / 64}
 
     if column_annotation is not None or row_annotation is not None:
 
         colorbar_template["y"] = (heat_map_axis_domain[1] - heat_map_axis_domain[0]) / 2
 
     data = [
-        dict(
-            type="heatmap",
-            z=z,
-            x=x,
-            y=y,
-            colorscale=colorscale,
-            zmin=zmin,
-            zmax=zmax,
-            showscale=showscale,
-            colorbar=dict(x=colorbar_x, **colorbar_template),
-        )
+        {
+            "type": "heatmap",
+            "z": z,
+            "x": x,
+            "y": y,
+            "colorscale": colorscale,
+            "zmin": zmin,
+            "zmax": zmax,
+            "showscale": showscale,
+            "colorbar": {"x": colorbar_x, **colorbar_template},
+        }
     ]
 
     if column_annotation is not None or row_annotation is not None:
 
         layout["annotations"] = []
 
-        annotation_kwargs = dict(showarrow=False, borderpad=0)
+        annotation_kwargs = {"showarrow": False, "borderpad": 0}
 
         if column_annotation is not None:
 
@@ -239,24 +242,24 @@ def plot_heat_map(
                 ]
 
             data.append(
-                dict(
-                    yaxis="y2",
-                    type="heatmap",
-                    z=tuple((i,) for i in column_annotation),
-                    transpose=True,
-                    colorscale=make_colorscale(
+                {
+                    "yaxis": "y2",
+                    "type": "heatmap",
+                    "z": tuple((i,) for i in column_annotation),
+                    "transpose": True,
+                    "colorscale": make_colorscale(
                         colors=column_annotation_colors, plot=False
                     ),
-                    showscale=False,
-                    hoverinfo="x+z",
-                )
+                    "showscale": False,
+                    "hoverinfo": "x+z",
+                }
             )
 
             if column_annotation_str is not None:
 
                 if column_annotation_kwargs is None:
 
-                    column_annotation_kwargs = dict(textangle=-90)
+                    column_annotation_kwargs = {"textangle": -90}
 
                 for a in unique(column_annotation):
 
@@ -265,14 +268,14 @@ def plot_heat_map(
                     index_0 = indices[0]
 
                     layout["annotations"].append(
-                        dict(
-                            yref="y2",
-                            x=index_0 + (indices[-1] - index_0) / 2,
-                            y=0,
-                            text="<b>{}</b>".format(column_annotation_str[a]),
+                        {
+                            "yref": "y2",
+                            "x": index_0 + (indices[-1] - index_0) / 2,
+                            "y": 0,
+                            "text": "<b>{}</b>".format(column_annotation_str[a]),
                             **annotation_kwargs,
                             **column_annotation_kwargs,
-                        )
+                        }
                     )
 
         if row_annotation is not None:
@@ -282,23 +285,23 @@ def plot_heat_map(
                 row_annotation_colors = COLOR_CATEGORICAL[: len(set(row_annotation))]
 
             data.append(
-                dict(
-                    xaxis="x2",
-                    type="heatmap",
-                    z=tuple((i,) for i in row_annotation),
-                    colorscale=make_colorscale(
+                {
+                    "xaxis": "x2",
+                    "type": "heatmap",
+                    "z": tuple((i,) for i in row_annotation),
+                    "colorscale": make_colorscale(
                         colors=row_annotation_colors, plot=False
                     ),
-                    showscale=False,
-                    hoverinfo="y+z",
-                )
+                    "showscale": False,
+                    "hoverinfo": "y+z",
+                }
             )
 
             if row_annotation_str is not None:
 
                 if row_annotation_kwargs is None:
 
-                    row_annotation_kwargs = dict()
+                    row_annotation_kwargs = {}
 
                 for a in unique(row_annotation):
 
@@ -307,14 +310,16 @@ def plot_heat_map(
                     index_0 = indices[0]
 
                     layout["annotations"].append(
-                        dict(
-                            xref="x2",
-                            x=0,
-                            y=index_0 + (indices[-1] - index_0) / 2,
-                            text="<b>{}</b>".format(row_annotation_str[a]),
+                        {
+                            "xref": "x2",
+                            "x": 0,
+                            "y": index_0 + (indices[-1] - index_0) / 2,
+                            "text": "<b>{}</b>".format(row_annotation_str[a]),
                             **annotation_kwargs,
                             **row_annotation_kwargs,
-                        )
+                        }
                     )
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

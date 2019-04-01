@@ -78,8 +78,8 @@ def correlate(
             names=("Data", "Fit"),
             modes=("markers", "lines"),
             markers=(
-                dict(size=marker_size, color=COLOR_CATEGORICAL[0]),
-                dict(color=COLOR_CATEGORICAL[1]),
+                {"size": marker_size, "color": COLOR_CATEGORICAL[0]},
+                {"color": COLOR_CATEGORICAL[1]},
             ),
             title=title,
             xaxis_title=xaxis_title,

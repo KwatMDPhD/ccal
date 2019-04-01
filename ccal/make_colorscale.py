@@ -40,24 +40,24 @@ def make_colorscale(
         colors = tuple(t[1] for t in colorscale)
 
         plot_and_save(
-            dict(
-                layout=dict(
-                    width=layout_width,
-                    height=layout_height,
-                    title=title,
-                    xaxis=dict(tickmode="array", tickvals=x, ticktext=colors),
-                    yaxis=dict(ticks="", showticklabels=False),
-                ),
-                data=[
-                    dict(
-                        type="heatmap",
-                        z=(x,),
-                        colorscale=colorscale,
-                        showscale=False,
-                        hoverinfo="x+text",
-                    )
+            {
+                "layout": {
+                    "width": layout_width,
+                    "height": layout_height,
+                    "title": title,
+                    "xaxis": {"tickmode": "array", "tickvals": x, "ticktext": colors},
+                    "yaxis": {"ticks": "", "showticklabels": False},
+                },
+                "data": [
+                    {
+                        "type": "heatmap",
+                        "z": (x,),
+                        "colorscale": colorscale,
+                        "showscale": False,
+                        "hoverinfo": "x+text",
+                    }
                 ],
-            ),
+            },
             html_file_path,
             plotly_html_file_path,
         )

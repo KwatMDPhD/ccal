@@ -20,15 +20,15 @@ def plot_points(
     plotly_html_file_path=None,
 ):
 
-    layout = dict(
-        width=layout_width,
-        height=layout_height,
-        title=title,
-        xaxis=dict(title=xaxis_title),
-        yaxis=dict(title=yaxis_title),
-        legend=dict(orientation=legend_orientation),
-        hovermode="closest",
-    )
+    layout = {
+        "width": layout_width,
+        "height": layout_height,
+        "title": title,
+        "xaxis": {"title": xaxis_title},
+        "yaxis": {"title": yaxis_title},
+        "legend": {"orientation": legend_orientation},
+        "hovermode": "closest",
+    }
 
     data = []
 
@@ -60,7 +60,7 @@ def plot_points(
 
         if markers is None:
 
-            marker = dict(color=COLOR_CATEGORICAL[i])
+            marker = {"color": COLOR_CATEGORICAL[i]}
 
         else:
 
@@ -75,16 +75,18 @@ def plot_points(
             textposition = textpositions[i]
 
         data.append(
-            dict(
-                type="scatter",
-                name=name,
-                x=x,
-                y=y,
-                mode=mode,
-                text=text,
-                marker=marker,
-                textposition=textposition,
-            )
+            {
+                "type": "scatter",
+                "name": name,
+                "x": x,
+                "y": y,
+                "mode": mode,
+                "text": text,
+                "marker": marker,
+                "textposition": textposition,
+            }
         )
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

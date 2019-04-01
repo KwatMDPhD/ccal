@@ -121,29 +121,29 @@ def select_series_indices(
             mode = "lines"
 
         plot_and_save(
-            dict(
-                layout=dict(title=title, xaxis=xaxis, yaxis=yaxis),
-                data=[
-                    dict(
-                        type="scatter",
-                        name="All",
-                        x=tuple(range(series_sorted.size)),
-                        y=series_sorted,
-                        text=series_sorted.index,
-                        mode=mode,
-                        marker=dict(color="#d0d0d0"),
-                    ),
-                    dict(
-                        type="scatter",
-                        name="Selected",
-                        x=is_selected.nonzero()[0],
-                        y=series_sorted[is_selected],
-                        text=series_sorted.index[is_selected],
-                        mode="markers",
-                        marker=dict(color="#20d9ba"),
-                    ),
+            {
+                "layout": {"title": title, "xaxis": xaxis, "yaxis": yaxis},
+                "data": [
+                    {
+                        "type": "scatter",
+                        "name": "All",
+                        "x": tuple(range(series_sorted.size)),
+                        "y": series_sorted,
+                        "text": series_sorted.index,
+                        "mode": mode,
+                        "marker": {"color": "#d0d0d0"},
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Selected",
+                        "x": is_selected.nonzero()[0],
+                        "y": series_sorted[is_selected],
+                        "text": series_sorted.index[is_selected],
+                        "mode": "markers",
+                        "marker": {"color": "#20d9ba"},
+                    },
                 ],
-            ),
+            },
             html_file_path,
             plotly_file_path,
         )

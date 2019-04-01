@@ -12,7 +12,7 @@ def plot_and_save(figure, html_file_path, plotly_html_file_path):
                 figure,
                 filename=html_file_path,
                 auto_open=False,
-                config=dict(editable=True),
+                config={"editable": True},
             )
         )
 
@@ -27,4 +27,4 @@ def plot_and_save(figure, html_file_path, plotly_html_file_path):
             )
         )
 
-    iplot(figure, config=dict(editable=True))
+    iplot(figure, config={"editable": True})
