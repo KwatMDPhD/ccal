@@ -31,17 +31,20 @@ def plot_distributions(
 
         yaxis2_min = 0
 
-    layout = dict(
-        width=layout_width,
-        height=layout_height,
-        title=title,
-        xaxis=dict(anchor="y", title=xaxis_title),
-        yaxis=dict(
-            domain=(0, yaxis_max), dtick=1, zeroline=False, showticklabels=False
-        ),
-        yaxis2=dict(domain=(yaxis2_min, 1), title=histnorm.title()),
-        barmode="overlay",
-    )
+    layout = {
+        "width": layout_width,
+        "height": layout_height,
+        "title": title,
+        "xaxis": {"anchor": "y", "title": xaxis_title},
+        "yaxis": {
+            "domain": (0, yaxis_max),
+            "dtick": 1,
+            "zeroline": False,
+            "showticklabels": False,
+        },
+        "yaxis2": {"domain": (yaxis2_min, 1), "title": histnorm.title()},
+        "barmode": "overlay",
+    }
 
     data = []
 
@@ -64,17 +67,17 @@ def plot_distributions(
             color = colors[i]
 
         data.append(
-            dict(
-                yaxis="y2",
-                type="histogram",
-                name=name,
-                legendgroup=i,
-                x=x,
-                marker=dict(color=color),
-                histnorm=histnorm,
-                opacity=0.8,
-                hoverinfo="x+y",
-            )
+            {
+                "yaxis": "y2",
+                "type": "histogram",
+                "name": name,
+                "legendgroup": i,
+                "x": x,
+                "marker": {"color": color},
+                "histnorm": histnorm,
+                "opacity": 0.8,
+                "hoverinfo": "x+y",
+            }
         )
 
         if plot_rug:
@@ -94,17 +97,19 @@ def plot_distributions(
                 text = texts[i]
 
             data.append(
-                dict(
-                    type="scatter",
-                    legendgroup=i,
-                    showlegend=False,
-                    x=x,
-                    y=(i,) * len(x),
-                    text=text,
-                    mode="markers",
-                    marker=dict(symbol="line-ns-open", color=color),
-                    hoverinfo="x+text",
-                )
+                {
+                    "type": "scatter",
+                    "legendgroup": i,
+                    "showlegend": False,
+                    "x": x,
+                    "y": (i,) * len(x),
+                    "text": text,
+                    "mode": "markers",
+                    "marker": {"symbol": "line-ns-open", "color": color},
+                    "hoverinfo": "x+text",
+                }
             )
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

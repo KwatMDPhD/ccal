@@ -107,16 +107,26 @@ def plot_pie(
 
         annotation_border_colors = annotation_border_colors[order]
 
-    axis_template = dict(showgrid=False, zeroline=False, ticks="", showticklabels=False)
+    axis_template = {
+        "showgrid": False,
+        "zeroline": False,
+        "ticks": "",
+        "showticklabels": False,
+    }
 
-    layout = dict(
-        width=layout_width,
-        height=layout_height,
-        margin=dict(l=layout_margin, r=layout_margin, b=layout_margin, t=layout_margin),
-        title=title,
-        xaxis=dict(**axis_template),
-        yaxis=dict(**axis_template),
-    )
+    layout = {
+        "width": layout_width,
+        "height": layout_height,
+        "margin": {
+            "l": layout_margin,
+            "r": layout_margin,
+            "b": layout_margin,
+            "t": layout_margin,
+        },
+        "title": title,
+        "xaxis": axis_template,
+        "yaxis": axis_template,
+    }
 
     if colors is None:
 
@@ -124,47 +134,47 @@ def plot_pie(
 
     if insidetextfont is None:
 
-        insidetextfont = dict(color="#ebf6f7")
+        insidetextfont = {"color": "#ebf6f7"}
 
     if outsidetextfont is None:
 
-        outsidetextfont = dict(color="#000000")
+        outsidetextfont = {"color": "#000000"}
 
     data = [
-        dict(
-            type="pie",
-            values=values,
-            labels=labels,
-            opacity=0.8,
-            marker=dict(colors=colors, line=dict(width=1.6, color="#ffffff")),
-            textinfo=textinfo,
-            insidetextfont=insidetextfont,
-            outsidetextfont=outsidetextfont,
-            hole=hole,
-            sort=False,
-            direction="clockwise",
-            domain=dict(
-                x=(1 - pie_domain_range, pie_domain_range),
-                y=(1 - pie_domain_range, pie_domain_range),
-            ),
-            showlegend=showlegend,
-        )
+        {
+            "type": "pie",
+            "values": values,
+            "labels": labels,
+            "opacity": 0.8,
+            "marker": {"colors": colors, "line": {"width": 1.6, "color": "#ffffff"}},
+            "textinfo": textinfo,
+            "insidetextfont": insidetextfont,
+            "outsidetextfont": outsidetextfont,
+            "hole": hole,
+            "sort": False,
+            "direction": "clockwise",
+            "domain": {
+                "x": (1 - pie_domain_range, pie_domain_range),
+                "y": (1 - pie_domain_range, pie_domain_range),
+            },
+            "showlegend": showlegend,
+        }
     ]
 
-    annotation_template = dict(xref="x", yref="y", showarrow=False)
+    annotation_template = {"xref": "x", "yref": "y", "showarrow": False}
 
     layout_annotations = []
 
     if hole is not None and hole_text is not None:
 
         layout_annotations.append(
-            dict(
-                x=0,
-                y=0,
-                text="<b>{}</b>".format(hole_text),
-                font=hole_text_font,
+            {
+                "x": 0,
+                "y": 0,
+                "text": "<b>{}</b>".format(hole_text),
+                "font": hole_text_font,
                 **annotation_template,
-            )
+            }
         )
 
     if annotations is not None:
@@ -221,22 +231,25 @@ def plot_pie(
                     annotation_border_color = annotation_border_colors[i][j]
 
                 layout_annotations.append(
-                    dict(
-                        x=cos(radian + pi / 2),
-                        y=sin(radian + pi / 2),
-                        text="<b>{}</b>".format(annotation),
-                        textangle=annotation_text_angle,
-                        font=dict(
-                            size=annotation_font_size, color=annotation_font_color
-                        ),
-                        bgcolor=annotation_background_color,
-                        bordercolor=annotation_border_color,
-                        width=annotation_width,
-                        borderwidth=annotation_border_width,
+                    {
+                        "x": cos(radian + pi / 2),
+                        "y": sin(radian + pi / 2),
+                        "text": "<b>{}</b>".format(annotation),
+                        "textangle": annotation_text_angle,
+                        "font": {
+                            "size": annotation_font_size,
+                            "color": annotation_font_color,
+                        },
+                        "bgcolor": annotation_background_color,
+                        "bordercolor": annotation_border_color,
+                        "width": annotation_width,
+                        "borderwidth": annotation_border_width,
                         **annotation_template,
-                    )
+                    }
                 )
 
-    layout.update(annotations=layout_annotations)
+    layout.update({"annotations": layout_annotations})
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

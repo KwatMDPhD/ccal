@@ -36,17 +36,22 @@ def _plot_gps_map(
     plotly_html_file_path,
 ):
 
-    axis_template = dict(showgrid=False, zeroline=False, ticks="", showticklabels=False)
+    axis_template = {
+        "showgrid": False,
+        "zeroline": False,
+        "ticks": "",
+        "showticklabels": False,
+    }
 
-    layout = dict(
-        width=layout_size,
-        height=layout_size,
-        title=title,
-        titlefont=dict(size=32, color="#4c221b"),
-        xaxis=axis_template,
-        yaxis=axis_template,
-        hovermode="closest",
-    )
+    layout = {
+        "width": layout_size,
+        "height": layout_size,
+        "title": title,
+        "titlefont": {"size": 32, "color": "#4c221b"},
+        "xaxis": axis_template,
+        "yaxis": axis_template,
+        "hovermode": "closest",
+    }
 
     data = []
 
@@ -55,37 +60,39 @@ def _plot_gps_map(
     edge_xs, edge_ys = _get_triangulation_edges(node_x_dimension)
 
     data.append(
-        dict(
-            type="scatter",
-            name="Simplex",
-            legendgroup=node_name,
-            showlegend=False,
-            x=edge_xs,
-            y=edge_ys,
-            mode="lines",
-            line=dict(color="#23191e"),
-            opacity=node_opacity,
-            hoverinfo=None,
-        )
+        {
+            "type": "scatter",
+            "name": "Simplex",
+            "legendgroup": node_name,
+            "showlegend": False,
+            "x": edge_xs,
+            "y": edge_ys,
+            "mode": "lines",
+            "line": {"color": "#23191e"},
+            "opacity": node_opacity,
+            "hoverinfo": None,
+        }
     )
 
     data.append(
-        dict(
-            type="scatter",
-            name=node_name,
-            legendgroup=node_name,
-            x=node_x_dimension[:, 0],
-            y=node_x_dimension[:, 1],
-            text=nodes,
-            mode="markers+text",
-            marker=dict(
-                size=32, color="#2e211b", line=dict(width=2.4, color="#ffffff")
-            ),
-            textposition="middle center",
-            textfont=dict(size=12, color="#ebf6f7"),
-            opacity=node_opacity,
-            hoverinfo="text",
-        )
+        {
+            "type": "scatter",
+            "name": node_name,
+            "legendgroup": node_name,
+            "x": node_x_dimension[:, 0],
+            "y": node_x_dimension[:, 1],
+            "text": nodes,
+            "mode": "markers+text",
+            "marker": {
+                "size": 32,
+                "color": "#2e211b",
+                "line": {"width": 2.4, "color": "#ffffff"},
+            },
+            "textposition": "middle center",
+            "textfont": {"size": 12, "color": "#ebf6f7"},
+            "opacity": node_opacity,
+            "hoverinfo": "text",
+        }
     )
 
     if element_labels is not None:
@@ -95,19 +102,19 @@ def _plot_gps_map(
         y = linspace(0, 1, grid_values.shape[0])
 
         data.append(
-            dict(
-                type="contour",
-                name="Contour",
-                showlegend=False,
-                z=grid_values[::-1],
-                x=x,
-                y=y,
-                autocontour=False,
-                ncontours=24,
-                contours=dict(coloring="none"),
-                showscale=False,
-                opacity=node_opacity,
-            )
+            {
+                "type": "contour",
+                "name": "Contour",
+                "showlegend": False,
+                "z": grid_values[::-1],
+                "x": x,
+                "y": y,
+                "autocontour": False,
+                "ncontours": 24,
+                "contours": {"coloring": "none"},
+                "showscale": False,
+                "opacity": node_opacity,
+            }
         )
 
         grid_labels_unique = unique(grid_labels[~isnan(grid_labels)]).astype(int)
@@ -119,23 +126,23 @@ def _plot_gps_map(
             z[grid_labels != label] = nan
 
             data.append(
-                dict(
-                    type="heatmap",
-                    z=z[::-1],
-                    x=x,
-                    y=y,
-                    colorscale=make_colorscale(
+                {
+                    "type": "heatmap",
+                    "z": z[::-1],
+                    "x": x,
+                    "y": y,
+                    "colorscale": make_colorscale(
                         colormap=LinearSegmentedColormap.from_list(
                             None, ("#ffffff", label_colors[label])
                         ),
                         plot=False,
                     ),
-                    showscale=False,
-                    opacity=grid_label_opacity,
-                )
+                    "showscale": False,
+                    "opacity": grid_label_opacity,
+                }
             )
 
-    element_marker_line = dict(width=1, color="#000000")
+    element_marker_line = {"width": 1, "color": "#000000"}
 
     element_opacity = 0.88
 
@@ -232,28 +239,27 @@ def _plot_gps_map(
                 annotation_series = annotation_series[~is_na]
 
                 data.append(
-                    dict(
-                        type="scatter",
-                        name=element_name,
-                        showlegend=False,
-                        x=element_x_dimension[~is_na, 0],
-                        y=element_x_dimension[~is_na, 1],
-                        # TODO: add value in text
-                        text=annotation_series.index,
-                        mode="markers",
-                        marker=dict(
-                            size=element_marker_size,
-                            color=annotation_series.values,
-                            cmin=min_,
-                            cmax=max_,
-                            colorscale=annotation_colorscale,
-                            showscale=annotation_type == "continuous",
-                            colorbar=dict(len=0.64, thickness=layout_size / 80),
-                            line=element_marker_line,
-                        ),
-                        opacity=element_opacity,
-                        hoverinfo="text",
-                    )
+                    {
+                        "type": "scatter",
+                        "name": element_name,
+                        "showlegend": False,
+                        "x": element_x_dimension[~is_na, 0],
+                        "y": element_x_dimension[~is_na, 1],
+                        "text": annotation_series.index,
+                        "mode": "markers",
+                        "marker": {
+                            "size": element_marker_size,
+                            "color": annotation_series.values,
+                            "cmin": min_,
+                            "cmax": max_,
+                            "colorscale": annotation_colorscale,
+                            "showscale": annotation_type == "continuous",
+                            "colorbar": {"len": 0.64, "thickness": layout_size / 80},
+                            "line": element_marker_line,
+                        },
+                        "opacity": element_opacity,
+                        "hoverinfo": "text",
+                    }
                 )
 
             else:
@@ -287,15 +293,15 @@ def _plot_gps_map(
                     path += " Z"
 
                     shapes.append(
-                        dict(
-                            type="path",
-                            x0=x,
-                            y0=y,
-                            path=path,
-                            fillcolor=color,
-                            line=element_marker_line,
-                            opacity=element_opacity,
-                        )
+                        {
+                            "type": "path",
+                            "x0": x,
+                            "y0": y,
+                            "path": path,
+                            "fillcolor": color,
+                            "line": element_marker_line,
+                            "opacity": element_opacity,
+                        }
                     )
 
         if 1 < annotation_x_element.shape[0]:
@@ -311,40 +317,44 @@ def _plot_gps_map(
             label_str = str(label)
 
             data.append(
-                dict(
-                    type="scatter",
-                    name=label_str,
-                    legendgroup=label_str,
-                    x=element_x_dimension[element_indices, 0][0],
-                    y=element_x_dimension[element_indices, 1][0],
-                    text=asarray(elements)[element_indices],
-                    mode="markers",
-                    marker=dict(
-                        size=element_marker_size,
-                        color=label_colors[label],
-                        line=element_marker_line,
-                    ),
-                    opacity=element_opacity,
-                    hoverinfo="text",
-                )
+                {
+                    "type": "scatter",
+                    "name": label_str,
+                    "legendgroup": label_str,
+                    "x": element_x_dimension[element_indices, 0][0],
+                    "y": element_x_dimension[element_indices, 1][0],
+                    "text": asarray(elements)[element_indices],
+                    "mode": "markers",
+                    "marker": {
+                        "size": element_marker_size,
+                        "color": label_colors[label],
+                        "line": element_marker_line,
+                    },
+                    "opacity": element_opacity,
+                    "hoverinfo": "text",
+                }
             )
 
     else:
 
         data.append(
-            dict(
-                type="scatter",
-                name=element_name,
-                x=element_x_dimension[:, 0],
-                y=element_x_dimension[:, 1],
-                text=elements,
-                mode="markers",
-                marker=dict(
-                    size=element_marker_size, color="#20d9ba", line=element_marker_line
-                ),
-                opacity=element_opacity,
-                hoverinfo="text",
-            )
+            {
+                "type": "scatter",
+                "name": element_name,
+                "x": element_x_dimension[:, 0],
+                "y": element_x_dimension[:, 1],
+                "text": elements,
+                "mode": "markers",
+                "marker": {
+                    "size": element_marker_size,
+                    "color": "#20d9ba",
+                    "line": element_marker_line,
+                },
+                "opacity": element_opacity,
+                "hoverinfo": "text",
+            }
         )
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

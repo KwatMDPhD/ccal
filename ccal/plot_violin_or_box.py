@@ -20,13 +20,13 @@ def plot_violin_or_box(
     plotly_html_file_path=None,
 ):
 
-    layout = dict(
-        width=layout_width,
-        height=layout_height,
-        title=title,
-        xaxis=dict(title=xaxis_title),
-        yaxis=dict(title=yaxis_title),
-    )
+    layout = {
+        "width": layout_width,
+        "height": layout_height,
+        "title": title,
+        "xaxis": {"title": xaxis_title},
+        "yaxis": {"title": yaxis_title},
+    }
 
     data = []
 
@@ -58,25 +58,29 @@ def plot_violin_or_box(
 
         if violin_or_box == "violin":
 
-            arguments = dict(
-                scalemode="count", meanline=dict(visible=True), points=points
-            )
+            arguments = {
+                "scalemode": "count",
+                "meanline": {"visible": True},
+                "points": points,
+            }
 
         elif violin_or_box == "box":
 
-            arguments = dict(boxmean="sd", boxpoints=points)
+            arguments = {"boxmean": "sd", "boxpoints": points}
 
         data.append(
-            dict(
-                type=violin_or_box,
-                name=name,
-                x=x,
-                y=y,
-                pointpos=pointpos,
-                jitter=jitter,
-                marker=dict(color=color),
+            {
+                "type": violin_or_box,
+                "name": name,
+                "x": x,
+                "y": y,
+                "pointpos": pointpos,
+                "jitter": jitter,
+                "marker": {"color": color},
                 **arguments,
-            )
+            }
         )
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

@@ -21,25 +21,25 @@ def plot_bubble_map(
 
     layout_height = max(640, marker_size_max * 2 * df_size.shape[0])
 
-    axis_template = dict(zeroline=False, automargin=True)
+    axis_template = {"zeroline": False, "automargin": True}
 
-    layout = dict(
-        width=layout_width,
-        height=layout_height,
-        title=title,
-        xaxis=dict(
-            tickvals=tuple(range(df_size.shape[1])),
-            ticktext=df_size.columns,
-            title="{} ({})".format(xaxis_title, df_size.shape[1]),
+    layout = {
+        "width": layout_width,
+        "height": layout_height,
+        "title": title,
+        "xaxis": {
+            "tickvals": tuple(range(df_size.shape[1])),
+            "ticktext": df_size.columns,
+            "title": "{} ({})".format(xaxis_title, df_size.shape[1]),
             **axis_template,
-        ),
-        yaxis=dict(
-            tickvals=tuple(range(df_size.shape[0])),
-            ticktext=df_size.index[::-1],
-            title="{} ({})".format(yaxis_title, df_size.shape[0]),
+        },
+        "yaxis": {
+            "tickvals": tuple(range(df_size.shape[0])),
+            "ticktext": df_size.index[::-1],
+            "title": "{} ({})".format(yaxis_title, df_size.shape[0]),
             **axis_template,
-        ),
-    )
+        },
+    }
 
     x, y = meshgrid(
         linspace(0, df_size.shape[1] - 1, df_size.shape[1]),
@@ -51,22 +51,24 @@ def plot_bubble_map(
         _2d_array_color = df_size.values
 
     data = [
-        dict(
-            type="scatter",
-            x=x.ravel(),
-            y=y.ravel()[::-1],
-            text=df_size.values.ravel(),
-            mode="markers",
-            marker=dict(
-                size=normalize_nd_array(df_size.values, None, "0-1").ravel()
+        {
+            "type": "scatter",
+            "x": x.ravel(),
+            "y": y.ravel()[::-1],
+            "text": df_size.values.ravel(),
+            "mode": "markers",
+            "marker": {
+                "size": normalize_nd_array(df_size.values, None, "0-1").ravel()
                 * marker_size_max,
-                color=_2d_array_color.ravel(),
-                colorscale=make_colorscale(colormap=colormap_name, plot=False),
-                showscale=True,
-                colorbar=dict(len=0.64, thickness=marker_size_max / 3),
-                line=dict(color="#000000"),
-            ),
-        )
+                "color": _2d_array_color.ravel(),
+                "colorscale": make_colorscale(colormap=colormap_name, plot=False),
+                "showscale": True,
+                "colorbar": {"len": 0.64, "thickness": marker_size_max / 3},
+                "line": {"color": "#000000"},
+            },
+        }
     ]
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

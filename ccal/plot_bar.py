@@ -23,9 +23,12 @@ def plot_bar(
     plotly_html_file_path=None,
 ):
 
-    layout = dict(
-        width=layout_width, height=layout_height, title=title, barmode=barmode
-    )
+    layout = {
+        "width": layout_width,
+        "height": layout_height,
+        "title": title,
+        "barmode": barmode,
+    }
 
     if position_labels is None:
 
@@ -48,15 +51,15 @@ def plot_bar(
         anchor = "x2"
 
     axis_dicts = (
-        dict(ticks="outside", anchor=anchor),
-        dict(
-            domain=(0, position_label_size),
-            showgrid=False,
-            zeroline=False,
-            ticks="",
-            showticklabels=False,
-        ),
-        dict(domain=(position_label_size, 1)),
+        {"ticks": "outside", "anchor": anchor},
+        {
+            "domain": (0, position_label_size),
+            "showgrid": False,
+            "zeroline": False,
+            "ticks": "",
+            "showticklabels": False,
+        },
+        {"domain": (position_label_size, 1)},
     )
 
     for axis, axis_dict in zip(axes, axis_dicts):
@@ -65,15 +68,15 @@ def plot_bar(
 
     if orientation == "v":
 
-        layout["xaxis"].update(dict(title=xaxis_title, dtick=xaxis_dtick))
+        layout["xaxis"].update({"title": xaxis_title, "dtick": xaxis_dtick})
 
-        layout["yaxis2"].update(dict(title=yaxis_title, dtick=yaxis_dtick))
+        layout["yaxis2"].update({"title": yaxis_title, "dtick": yaxis_dtick})
 
     elif orientation == "h":
 
-        layout["xaxis2"].update(dict(title=xaxis_title, dtick=xaxis_dtick))
+        layout["xaxis2"].update({"title": xaxis_title, "dtick": xaxis_dtick})
 
-        layout["yaxis"].update(dict(title=yaxis_title, dtick=yaxis_dtick))
+        layout["yaxis"].update({"title": yaxis_title, "dtick": yaxis_dtick})
 
     data = []
 
@@ -95,22 +98,22 @@ def plot_bar(
 
             color = colors[i]
 
-        trace = dict(
-            type="bar",
-            name=name,
-            x=x,
-            y=y,
-            orientation=orientation,
-            marker=dict(color=color),
-        )
+        trace = {
+            "type": "bar",
+            "name": name,
+            "x": x,
+            "y": y,
+            "orientation": orientation,
+            "marker": {"color": color},
+        }
 
         if orientation == "v":
 
-            trace.update(yaxis="y2")
+            trace.update({"yaxis": "y2"})
 
         elif orientation == "h":
 
-            trace.update(xaxis="x2")
+            trace.update({"xaxis": "x2"})
 
         data.append(trace)
 
@@ -128,25 +131,27 @@ def plot_bar(
 
                 color = position_label_colors[i]
 
-            annotation = dict(
-                xref="x",
-                yref="y",
-                text="<b>{}</b>".format(label),
-                font=dict(color=color),
-                bordercolor="#ebf6f7",
-                showarrow=False,
-            )
+            annotation = {
+                "xref": "x",
+                "yref": "y",
+                "text": "<b>{}</b>".format(label),
+                "font": {"color": color},
+                "bordercolor": "#ebf6f7",
+                "showarrow": False,
+            }
 
             if orientation == "v":
 
-                annotation.update(dict(x=i, y=0, textangle=-90))
+                annotation.update({"x": i, "y": 0, "textangle": -90})
 
             elif orientation == "h":
 
-                annotation.update(dict(x=0, y=i, textangle=0))
+                annotation.update({"x": 0, "y": i, "textangle": 0})
 
             layout_annotations.append(annotation)
 
-        layout.update(annotations=layout_annotations)
+        layout.update({"annotations": layout_annotations})
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

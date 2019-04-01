@@ -37,16 +37,20 @@ def plot_bayesian_nomogram(
                 "conditional_probability shape should be {}.".format(grid_shape)
             )
 
-    layout = dict(
-        width=960,
-        height=80 * max(8, len(conditional_probabilities)),
-        title="Bayesian Nomogram",
-        yaxis=dict(
-            zeroline=False, ticks="", showticklabels=False, title="Evidence", dtick=1
-        ),
-        xaxis=dict(title="Log Odds Ratio"),
-        hovermode="closest",
-    )
+    layout = {
+        "width": 960,
+        "height": 80 * max(8, len(conditional_probabilities)),
+        "title": "Bayesian Nomogram",
+        "xaxis": {"title": "Log Odds Ratio"},
+        "yaxis": {
+            "zeroline": False,
+            "ticks": "",
+            "showticklabels": False,
+            "title": "Evidence",
+            "dtick": 1,
+        },
+        "hovermode": "closest",
+    }
 
     data = []
 
@@ -89,6 +93,10 @@ def plot_bayesian_nomogram(
 
         y = (i,) * 2
 
-        data.append(dict(type="scatter", legendgroup=name, name=name, x=x, y=y))
+        data.append(
+            {"type": "scatter", "legendgroup": name, "name": name, "x": x, "y": y}
+        )
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )

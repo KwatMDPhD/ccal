@@ -12,7 +12,7 @@ def plot_color_text(
     plotly_html_file_path=None,
 ):
 
-    axis = dict(showgrid=False, zeroline=False, ticks="", showticklabels=False)
+    axis = {"showgrid": False, "zeroline": False, "ticks": "", "showticklabels": False}
 
     if orientation == "horizontal":
 
@@ -31,22 +31,25 @@ def plot_color_text(
         textposition = "middle right"
 
     plot_and_save(
-        dict(
-            layout=dict(
-                width=layout_width, height=layout_height, xaxis=axis, yaxis=axis
-            ),
-            data=[
-                dict(
-                    type="scatter",
-                    mode="markers+text",
-                    x=x,
-                    y=y,
-                    text=texts,
-                    marker=dict(size=marker_size, color=colors),
-                    textposition=textposition,
-                )
+        {
+            "layout": {
+                "width": layout_width,
+                "height": layout_height,
+                "xaxis": axis,
+                "yaxis": axis,
+            },
+            "data": [
+                {
+                    "type": "scatter",
+                    "mode": "markers+text",
+                    "x": x,
+                    "y": y,
+                    "text": texts,
+                    "marker": {"size": marker_size, "color": colors},
+                    "textposition": textposition,
+                }
             ],
-        ),
+        },
         html_file_path,
         plotly_html_file_path,
     )

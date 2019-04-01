@@ -108,23 +108,23 @@ def make_match_panel(
         mode = "lines"
 
     plot_and_save(
-        dict(
-            layout=dict(
-                title=dict(text="Score"),
-                xaxis=dict(title="Rank"),
-                yaxis=dict(title="Score ({})".format(match_function.__name__)),
-            ),
-            data=[
-                dict(
-                    type="scatter",
-                    x=tuple(range(score_without_na.size)),
-                    y=score_without_na,
-                    text=score_without_na.index,
-                    mode=mode,
-                    marker=dict(color="#20d9ba"),
-                )
+        {
+            "layout": {
+                "title": {"text": "Score"},
+                "xaxis": {"title": "Rank"},
+                "yaxis": {"title": "Score ({})".format(match_function.__name__)},
+            },
+            "data": [
+                {
+                    "type": "scatter",
+                    "x": tuple(range(score_without_na.size)),
+                    "y": score_without_na,
+                    "text": score_without_na.index,
+                    "mode": mode,
+                    "marker": {"color": "#20d9ba"},
+                }
             ],
-        ),
+        },
         html_file_path,
         None,
     )
@@ -197,68 +197,71 @@ def make_match_panel(
         data_yaxis_domain[1] - data_yaxis_domain[0]
     ) / data_to_plot.shape[0]
 
-    layout = dict(
-        width=layout_width,
-        height=row_height * max(8, (data_to_plot.shape[0] + 2) ** 0.8),
-        margin=dict(l=layout_side_margin, r=layout_side_margin),
-        xaxis=dict(anchor="y", tickfont=dict(size=annotation_font_size)),
-        yaxis=dict(
-            domain=data_yaxis_domain, dtick=1, tickfont=dict(size=annotation_font_size)
-        ),
-        yaxis2=dict(
-            domain=target_yaxis_domain, tickfont=dict(size=annotation_font_size)
-        ),
-        title=title,
-        annotations=[],
-    )
+    layout = {
+        "width": layout_width,
+        "height": row_height * max(8, (data_to_plot.shape[0] + 2) ** 0.8),
+        "margin": {"l": layout_side_margin, "r": layout_side_margin},
+        "xaxis": {"anchor": "y", "tickfont": {"size": annotation_font_size}},
+        "yaxis": {
+            "domain": data_yaxis_domain,
+            "dtick": 1,
+            "tickfont": {"size": annotation_font_size},
+        },
+        "yaxis2": {
+            "domain": target_yaxis_domain,
+            "tickfont": {"size": annotation_font_size},
+        },
+        "title": title,
+        "annotations": [],
+    }
 
     data = [
-        dict(
-            yaxis="y2",
-            type="heatmap",
-            z=target.to_frame().T.values,
-            x=target.index,
-            y=(target.name,),
-            text=(target.index,),
-            zmin=target_plot_min,
-            zmax=target_plot_max,
-            colorscale=target_colorscale,
-            showscale=False,
-        ),
-        dict(
-            yaxis="y",
-            type="heatmap",
-            z=data_to_plot.values[::-1],
-            x=data_to_plot.columns,
-            y=data_to_plot.index[::-1],
-            zmin=data_plot_min,
-            zmax=data_plot_max,
-            colorscale=data_colorscale,
-            showscale=False,
-        ),
+        {
+            "yaxis": "y2",
+            "type": "heatmap",
+            "z": target.to_frame().T.values,
+            "x": target.index,
+            "y": (target.name,),
+            "text": (target.index,),
+            "zmin": target_plot_min,
+            "zmax": target_plot_max,
+            "colorscale": target_colorscale,
+            "showscale": False,
+        },
+        {
+            "yaxis": "y",
+            "type": "heatmap",
+            "z": data_to_plot.values[::-1],
+            "x": data_to_plot.columns,
+            "y": data_to_plot.index[::-1],
+            "zmin": data_plot_min,
+            "zmax": data_plot_max,
+            "colorscale": data_colorscale,
+            "showscale": False,
+        },
     ]
 
-    layout_annotation_template = dict(
-        xref="paper",
-        yref="paper",
-        xanchor="left",
-        yanchor="middle",
-        font=dict(size=annotation_font_size),
-        width=64,
-        showarrow=False,
-    )
+    layout_annotation_template = {
+        "xref": "paper",
+        "yref": "paper",
+        "xanchor": "left",
+        "yanchor": "middle",
+        "font": {"size": annotation_font_size},
+        "width": 64,
+        "showarrow": False,
+    }
 
     for annotation_index, (annotation, strs) in enumerate(annotations.items()):
 
         x = 1.0016 + annotation_index / 10
 
         layout["annotations"].append(
-            dict(
-                x=x,
-                y=target_yaxis_domain[1] - (target_row_fraction / 2),
-                text="<b>{}</b>".format(annotation),
+            {
+                "x": x,
+                "y": target_yaxis_domain[1] - (target_row_fraction / 2),
+                "text": "<b>{}</b>".format(annotation),
                 **layout_annotation_template,
-            )
+            }
         )
 
         y = data_yaxis_domain[1] - (data_row_fraction / 2)
@@ -266,12 +269,12 @@ def make_match_panel(
         for str_ in strs:
 
             layout["annotations"].append(
-                dict(
-                    x=x,
-                    y=y,
-                    text="<b>{}</b>".format(str_),
+                {
+                    "x": x,
+                    "y": y,
+                    "text": "<b>{}</b>".format(str_),
                     **layout_annotation_template,
-                )
+                }
             )
 
             y -= data_row_fraction
@@ -293,7 +296,7 @@ def make_match_panel(
         plotly_html_file_path = "{}.html".format(plotly_html_file_path_prefix)
 
     plot_and_save(
-        dict(layout=layout, data=data),
+        {"layout": layout, "data": data},
         html_file_path=html_file_path,
         plotly_html_file_path=plotly_html_file_path,
     )

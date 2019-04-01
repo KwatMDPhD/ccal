@@ -43,14 +43,14 @@ def make_summary_match_panel(
 
         n_row += data_dict["df"].shape[0]
 
-    layout = dict(
-        width=layout_width,
-        height=row_height / 2 * max(10, n_row),
-        margin=dict(l=layout_side_margin, r=layout_side_margin),
-        title=title,
-        xaxis=dict(anchor="y"),
-        annotations=[],
-    )
+    layout = {
+        "width": layout_width,
+        "height": row_height / 2 * max(10, n_row),
+        "margin": {"l": layout_side_margin, "r": layout_side_margin},
+        "title": title,
+        "xaxis": {"anchor": "y"},
+        "annotations": [],
+    }
 
     if xaxis_kwargs is not None:
 
@@ -68,23 +68,24 @@ def make_summary_match_panel(
 
         domain_start = 0
 
-    layout[yaxis_name] = dict(
-        domain=(domain_start, domain_end), tickfont=dict(size=annotation_font_size)
-    )
+    layout[yaxis_name] = {
+        "domain": (domain_start, domain_end),
+        "tickfont": {"size": annotation_font_size},
+    }
 
     data = [
-        dict(
-            yaxis=yaxis_name.replace("axis", ""),
-            type="heatmap",
-            z=target.to_frame().T.values,
-            x=target.index,
-            y=(target.name,),
-            text=(target.index,),
-            zmin=target_plot_min,
-            zmax=target_plot_max,
-            colorscale=target_colorscale,
-            showscale=False,
-        )
+        {
+            "yaxis": yaxis_name.replace("axis", ""),
+            "type": "heatmap",
+            "z": target.to_frame().T.values,
+            "x": target.index,
+            "y": (target.name,),
+            "text": (target.index,),
+            "zmin": target_plot_min,
+            "zmax": target_plot_max,
+            "colorscale": target_colorscale,
+            "showscale": False,
+        }
     ]
 
     for data_name_index, (data_name, data_dict) in enumerate(data_dicts.items()):
@@ -125,45 +126,45 @@ def make_summary_match_panel(
 
             domain_start = 0
 
-        layout[yaxis_name] = dict(
-            domain=(domain_start, domain_end),
-            dtick=1,
-            tickfont=dict(size=annotation_font_size),
-        )
+        layout[yaxis_name] = {
+            "domain": (domain_start, domain_end),
+            "dtick": 1,
+            "tickfont": {"size": annotation_font_size},
+        }
 
         data.append(
-            dict(
-                yaxis=yaxis_name.replace("axis", ""),
-                type="heatmap",
-                z=data_to_plot.values[::-1],
-                x=data_to_plot.columns,
-                y=data_to_plot.index[::-1],
-                zmin=data_plot_min,
-                zmax=data_plot_max,
-                colorscale=data_colorscale,
-                showscale=False,
-            )
+            {
+                "yaxis": yaxis_name.replace("axis", ""),
+                "type": "heatmap",
+                "z": data_to_plot.values[::-1],
+                "x": data_to_plot.columns,
+                "y": data_to_plot.index[::-1],
+                "zmin": data_plot_min,
+                "zmax": data_plot_max,
+                "colorscale": data_colorscale,
+                "showscale": False,
+            }
         )
 
-        layout_annotation_template = dict(
-            xref="paper",
-            yref="paper",
-            yanchor="middle",
-            font=dict(size=annotation_font_size),
-            showarrow=False,
-        )
+        layout_annotation_template = {
+            "xref": "paper",
+            "yref": "paper",
+            "yanchor": "middle",
+            "font": {"size": annotation_font_size},
+            "showarrow": False,
+        }
 
         layout["annotations"].append(
-            dict(
-                xanchor="center",
-                x=0.5,
-                y=domain_end + (row_fraction / 2),
-                text="<b>{}</b>".format(data_name),
+            {
+                "xanchor": "center",
+                "x": 0.5,
+                "y": domain_end + (row_fraction / 2),
+                "text": "<b>{}</b>".format(data_name),
                 **layout_annotation_template,
-            )
+            }
         )
 
-        layout_annotation_template.update(dict(xanchor="left", width=64))
+        layout_annotation_template.update({"xanchor": "left", "width": 64})
 
         for (
             annotation_index,
@@ -175,12 +176,12 @@ def make_summary_match_panel(
             if data_name_index == 0:
 
                 layout["annotations"].append(
-                    dict(
-                        x=x,
-                        y=1 - (row_fraction / 2),
-                        text="<b>{}</b>".format(annotation_column_name),
+                    {
+                        "x": x,
+                        "y": 1 - (row_fraction / 2),
+                        "text": "<b>{}</b>".format(annotation_column_name),
                         **layout_annotation_template,
-                    )
+                    }
                 )
 
             y = domain_end - (row_fraction / 2)
@@ -188,14 +189,16 @@ def make_summary_match_panel(
             for str_ in annotation_column_strs:
 
                 layout["annotations"].append(
-                    dict(
-                        x=x,
-                        y=y,
-                        text="<b>{}</b>".format(str_),
+                    {
+                        "x": x,
+                        "y": y,
+                        "text": "<b>{}</b>".format(str_),
                         **layout_annotation_template,
-                    )
+                    }
                 )
 
                 y -= row_fraction
 
-    plot_and_save(dict(layout=layout, data=data), html_file_path, plotly_html_file_path)
+    plot_and_save(
+        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
+    )
