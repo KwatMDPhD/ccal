@@ -230,7 +230,6 @@ from .plot_heat_map import plot_heat_map
 from .plot_pie import plot_pie
 from .plot_point_and_annotate import plot_point_and_annotate
 from .plot_points import plot_points
-from .plot_table import plot_table
 from .plot_violin_or_box import plot_violin_or_box
 from .process_feature_x_sample import process_feature_x_sample
 from .read_copynumber_gistic2 import read_copynumber_gistic2
