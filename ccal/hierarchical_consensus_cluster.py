@@ -91,7 +91,7 @@ def hierarchical_consensus_cluster(
 
         print("Plotting df ...")
 
-        file_name = "cluster.html"
+        file_name = "df_cluster.html"
 
         if directory_path is None:
 
