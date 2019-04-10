@@ -23,4 +23,4 @@ def read_correlate_copynumber_vs_mrnaseq(tar_gz_file_path, genes):
             index_col=1,
         )
 
-        return n, df.loc[genes, "cor"].to_dict()
+        return n, df["cor"].reindex(genes).to_dict()
