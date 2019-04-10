@@ -5,7 +5,7 @@ from ._compute_norm import _compute_norm
 from ._update_H_by_multiplicative_update import _update_H_by_multiplicative_update
 
 
-def nmf_by_multiple_V_and_H(
+def mf_by_multiple_V_and_H(
     Vs, k, weights=None, n_iteration=int(1e3), random_seed=20121020
 ):
 
