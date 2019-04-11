@@ -2,7 +2,7 @@ from os.path import abspath
 
 from ._anneal_node_and_element_positions import _anneal_node_and_element_positions
 from ._check_fastq_gzs import _check_fastq_gzs
-from ._check_node_x_element import _check_node_x_element
+from ._check_gps_map_node_x_element import _check_gps_map_node_x_element
 from ._check_w_or_h import _check_w_or_h
 from ._cluster_clustering_x_element_and_compute_ccc import (
     _cluster_clustering_x_element_and_compute_ccc,
