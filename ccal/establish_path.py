@@ -4,7 +4,7 @@ from os.path import isdir, split
 from .get_absolute_path import get_absolute_path
 
 
-def establish_path(path, path_type, print_=True):
+def establish_path(path, path_type):
 
     path = get_absolute_path(path)
 
@@ -20,10 +20,6 @@ def establish_path(path, path_type, print_=True):
 
             path += "/"
 
-    else:
-
-        raise ValueError("Unknown path_type: {}.".format(path_type))
-
     directory_path, file_name = split(path)
 
     missing_directory_paths = []
@@ -38,6 +34,4 @@ def establish_path(path, path_type, print_=True):
 
         mkdir(directory_path)
 
-        if print_:
-
-            print("Created directory {}.".format(directory_path))
+        print("Created directory {}.".format(directory_path))

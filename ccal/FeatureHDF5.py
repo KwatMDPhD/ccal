@@ -5,7 +5,9 @@ from warnings import warn
 
 from tables import Filters, HDF5ExtError, Int32Col, IsDescription, StringCol, open_file
 
-from .read_where_and_map_column_names import read_where_and_map_column_names
+from .read_where_and_map_column_name_on_hdf5_table import (
+    read_where_and_map_column_name_on_hdf5_table,
+)
 
 
 class FeatureHDF5:
@@ -24,18 +26,6 @@ class FeatureHDF5:
         self._feature_hdf5 = None
 
         self._name_seqid = {}
-
-        self._initialize(reset=reset)
-
-    def __del__(self):
-
-        if self._feature_hdf5:
-
-            self._feature_hdf5.close()
-
-            print("Destructor closed {}.".format(self._feature_hdf5_file_path))
-
-    def _initialize(self, reset=False):
 
         if not reset:
 
@@ -69,7 +59,7 @@ class FeatureHDF5:
 
                 self._feature_hdf5.close()
 
-                print("\tClosed {} ...".format(self._feature_hdf5_file_path))
+                print("\tClosed {}.".format(self._feature_hdf5_file_path))
 
             print("\tMaking {} ...".format(self._feature_hdf5_file_path))
 
@@ -78,6 +68,14 @@ class FeatureHDF5:
             print("\tReading {} ...".format(self._feature_hdf5_file_path))
 
             self._feature_hdf5 = open_file(self._feature_hdf5_file_path)
+
+    def __del__(self):
+
+        if self._feature_hdf5:
+
+            self._feature_hdf5.close()
+
+            print("Destructor closed {}.".format(self._feature_hdf5_file_path))
 
     def _make_feature_hdf5(self):
 
@@ -111,7 +109,7 @@ class FeatureHDF5:
 
                     seqid_ = line.split(sep="\t")[0]
 
-                    if seqid_ != seqid:
+                    if seqid != seqid_:
 
                         print("\t{} ...".format(seqid_))
 
@@ -139,7 +137,7 @@ class FeatureHDF5:
 
                     if i % n_per_print == 0:
 
-                        print("\t{:,}/{:,} ...".format(i, n))
+                        print("\t{:,}/{:,} ...".format(i + 1, n))
 
                     line = line.decode(errors="replace")
 
@@ -148,7 +146,7 @@ class FeatureHDF5:
                         continue
 
                     seqid, source, type, start, end, score, strand, phase, attributes = line.split(
-                        "\t"
+                        sep="\t"
                     )
 
                     if type not in self._types:
@@ -248,7 +246,7 @@ class FeatureHDF5:
             "/", "seqid_{}_features".format(seqid)
         )
 
-        feature_dicts = read_where_and_map_column_names(
+        feature_dicts = read_where_and_map_column_name_on_hdf5_table(
             seqid_table, "Name == b'{}'".format(name)
         )
 
@@ -260,7 +258,7 @@ class FeatureHDF5:
             "/", "seqid_{}_features".format(seqid)
         )
 
-        feature_dicts = read_where_and_map_column_names(
+        feature_dicts = read_where_and_map_column_name_on_hdf5_table(
             seqid_table,
             "({} <= start) & (end <= {})".format(start_position, end_position),
         )
