@@ -2,7 +2,7 @@ import GEOparse
 from pandas import DataFrame, concat, isna
 
 
-def download_and_parse_geo_data(geo_id, directory_path):
+def download_and_parse_geo(geo_id, directory_path):
 
     print("Downloading {} into {} ...".format(geo_id, directory_path))
 
@@ -30,7 +30,7 @@ def download_and_parse_geo_data(geo_id, directory_path):
         if sample_table.empty:
 
             raise ValueError(
-                "Sample {} has an empty table (look at this data on the GEO website and check for any linked supplementary file, which may be additional data.)".format(
+                "Sample {} has an empty table (check for any linked or additional supplementary file in the GEO website.)".format(
                     gsm.name
                 )
             )

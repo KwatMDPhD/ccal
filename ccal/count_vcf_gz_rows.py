@@ -61,7 +61,7 @@ def count_vcf_gz_rows(
 
             line_split = line.decode().split(sep="\t")
 
-            chrom, pos, id_, ref, alt, qual, filter_, info, format_, sample = line_split
+            chrom, pos, id_, ref, alt, qual, filter_, info, format, sample = line_split
 
             if info_fields_to_count is not None:
 
@@ -77,7 +77,7 @@ def count_vcf_gz_rows(
 
             if format_fields_to_count is not None:
 
-                format_fields = format_.split(sep=":")
+                format_fields = format.split(sep=":")
 
                 for field in format_fields_to_count:
 

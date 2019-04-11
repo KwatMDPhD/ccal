@@ -4,7 +4,7 @@ def split_str_ignoring_inside_quotes(str, separator):
 
     part = ""
 
-    for str_split in str.split(separator):
+    for str_split in str.split(sep=separator):
 
         if '"' in str_split:
 

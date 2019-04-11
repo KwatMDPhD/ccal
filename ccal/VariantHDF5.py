@@ -17,7 +17,9 @@ from ._make_variant_dict_consistent import _make_variant_dict_consistent
 from .get_vcf_info import get_vcf_info
 from .get_vcf_info_ann import get_vcf_info_ann
 from .get_vcf_sample_format import get_vcf_sample_format
-from .read_where_and_map_column_names import read_where_and_map_column_names
+from .read_where_and_map_column_name_on_hdf5_table import (
+    read_where_and_map_column_name_on_hdf5_table,
+)
 from .update_variant_dict import update_variant_dict
 
 
@@ -41,18 +43,6 @@ class VariantHDF5:
         self._id_chrom = {}
 
         self._gene_chrom = {}
-
-        self._initialize(reset=reset)
-
-    def __del__(self):
-
-        if self._variant_hdf5:
-
-            self._variant_hdf5.close()
-
-            print("Destructor closed {}.".format(self._variant_hdf5_file_path))
-
-    def _initialize(self, reset=False):
 
         if not reset:
 
@@ -94,7 +84,7 @@ class VariantHDF5:
 
                 self._variant_hdf5.close()
 
-                print("\tClosed {} ...".format(self._variant_hdf5_file_path))
+                print("\tClosed {}.".format(self._variant_hdf5_file_path))
 
             print("\tMaking {} ...".format(self._variant_hdf5_file_path))
 
@@ -103,6 +93,14 @@ class VariantHDF5:
             print("\tReading {} ...".format(self._variant_hdf5_file_path))
 
             self._variant_hdf5 = open_file(self._variant_hdf5_file_path, mode="r")
+
+    def __del__(self):
+
+        if self._variant_hdf5:
+
+            self._variant_hdf5.close()
+
+            print("Destructor closed {}.".format(self._variant_hdf5_file_path))
 
     def _make_variant_hdf5(self):
 
@@ -120,23 +118,29 @@ class VariantHDF5:
 
                 line = vcf_gz_file.readline().decode()
 
-            print("Counting variants per chromosome ...")
+            print("Counting variants per chrom ...")
 
             chrom_n_row = defaultdict(lambda: 0)
+
+            n = 0
 
             chrom = None
 
             while line:
 
-                chrom_ = line.split(sep="\t")[0]
+                n += 1
 
-                if chrom_ != chrom:
+                if not line.startswith("#"):
 
-                    print("\t{} ...".format(chrom_))
+                    chrom_ = line.split(sep="\t")[0]
 
-                    chrom = chrom_
+                    if chrom != chrom_:
 
-                chrom_n_row[chrom_] += 1
+                        print("\t{} ...".format(chrom_))
+
+                        chrom = chrom_
+
+                    chrom_n_row[chrom_] += 1
 
                 line = vcf_gz_file.readline().decode()
 
@@ -150,8 +154,6 @@ class VariantHDF5:
 
                 chrom_table_row = {}
 
-                n = sum(chrom_n_row.values())
-
                 n_per_print = max(1, n // 10)
 
                 vcf_gz_file.seek(data_start_position)
@@ -160,12 +162,16 @@ class VariantHDF5:
 
                     if i % n_per_print == 0:
 
-                        print("\t{:,}/{:,} ...".format(i, n))
+                        print("\t{:,}/{:,} ...".format(i + 1, n))
 
                     line = line.decode(errors="replace").replace("�", "?")
 
-                    chrom, pos, id_, ref, alt, qual, filter_, info, format_, sample = line.split(
-                        "\t"
+                    if line.startswith("#"):
+
+                        continue
+
+                    chrom, pos, id, ref, alt, qual, filter_, info, format, sample = line.split(
+                        sep="\t"
                     )
 
                     if qual == ".":
@@ -189,17 +195,17 @@ class VariantHDF5:
 
                     cursor = chrom_table_row[chrom]
 
-                    for id__ in id_.split(sep=";"):
+                    for id_ in id.split(sep=";"):
 
                         cursor["CHROM"] = chrom
 
                         cursor["POS"] = pos
 
-                        if id__ not in (".",):
+                        if id_ != ".":
 
-                            cursor["ID"] = id__
+                            cursor["ID"] = id_
 
-                            self._id_chrom[id__] = chrom
+                            self._id_chrom[id_] = chrom
 
                         cursor["REF"] = ref
 
@@ -238,7 +244,7 @@ class VariantHDF5:
 
                                     self._gene_chrom[info_ann_field_value_0] = chrom
 
-                        cursor["GT"] = get_vcf_sample_format(format_, sample, "GT")
+                        cursor["GT"] = get_vcf_sample_format(format, sample, "GT")
 
                         cursor.append()
 
@@ -337,7 +343,7 @@ class VariantHDF5:
             "/", "chromosome_{}_variants".format(chrom)
         )
 
-        variant_dicts = read_where_and_map_column_names(
+        variant_dicts = read_where_and_map_column_name_on_hdf5_table(
             chrom_table, "ID == b'{}'".format(id_)
         )
 
@@ -365,7 +371,7 @@ class VariantHDF5:
             "/", "chromosome_{}_variants".format(chrom)
         )
 
-        variant_dicts = read_where_and_map_column_names(
+        variant_dicts = read_where_and_map_column_name_on_hdf5_table(
             chrom_table, "gene_name == b'{}'".format(gene)
         )
 
@@ -383,7 +389,7 @@ class VariantHDF5:
             "/", "chromosome_{}_variants".format(chrom)
         )
 
-        variant_dicts = read_where_and_map_column_names(
+        variant_dicts = read_where_and_map_column_name_on_hdf5_table(
             chrom_table,
             "({} <= POS) & (POS <= {})".format(start_position, end_position),
         )
