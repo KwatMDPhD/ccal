@@ -14,7 +14,6 @@ from tables import (
 )
 
 from ._make_variant_dict_consistent import _make_variant_dict_consistent
-from .BAD_VARIANT_IDS import BAD_VARIANT_IDS
 from .get_vcf_info import get_vcf_info
 from .get_vcf_info_ann import get_vcf_info_ann
 from .get_vcf_sample_format import get_vcf_sample_format
@@ -196,7 +195,7 @@ class VariantHDF5:
 
                         cursor["POS"] = pos
 
-                        if id__ not in BAD_VARIANT_IDS:
+                        if id__ not in (".",):
 
                             cursor["ID"] = id__
 

@@ -1,4 +1,4 @@
-def title_str(str_):
+def title_str(str):
 
     original_uppers = []
 
@@ -6,7 +6,7 @@ def title_str(str_):
 
     upper_start = upper_end = None
 
-    for i, character in enumerate(str_):
+    for i, character in enumerate(str):
 
         if character.isupper():
 
@@ -36,13 +36,11 @@ def title_str(str_):
 
         original_uppers.append((upper_start, upper_end))
 
-    str_ = str_.title().replace("_", " ")
+    str = str.title().replace("_", " ")
 
     for upper_start, upper_end in original_uppers:
 
-        str_ = (
-            str_[:upper_start] + str_[upper_start:upper_end].upper() + str_[upper_end:]
-        )
+        str = str[:upper_start] + str[upper_start:upper_end].upper() + str[upper_end:]
 
     for lowercase_character in (
         "a",
@@ -61,9 +59,9 @@ def title_str(str_):
         "vs",
     ):
 
-        str_ = str_.replace(
+        str = str.replace(
             " {} ".format(lowercase_character.title()),
             " {} ".format(lowercase_character),
         )
 
-    return " ".join(sub_str.strip() for sub_str in str_.split())
+    return " ".join(sub_str.strip() for sub_str in str.split())

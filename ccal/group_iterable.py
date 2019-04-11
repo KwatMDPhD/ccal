@@ -4,9 +4,9 @@ def group_iterable(iterable, n, keep_leftover_group=False):
 
     group = []
 
-    for object_ in iterable:
+    for object in iterable:
 
-        group.append(object_)
+        group.append(object)
 
         if len(group) == n:
 

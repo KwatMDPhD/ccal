@@ -9,10 +9,10 @@ def get_1d_array_unique_objects_in_order(_1d_array, raise_for_bad=True):
 
     unique_objects_in_order = []
 
-    for object_ in _1d_array:
+    for object in _1d_array:
 
-        if object_ not in unique_objects_in_order:
+        if object not in unique_objects_in_order:
 
-            unique_objects_in_order.append(object_)
+            unique_objects_in_order.append(object)
 
     return asarray(unique_objects_in_order)

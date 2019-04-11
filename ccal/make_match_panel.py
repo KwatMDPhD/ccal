@@ -266,13 +266,13 @@ def make_match_panel(
 
         y = data_yaxis_domain[1] - (data_row_fraction / 2)
 
-        for str_ in strs:
+        for str in strs:
 
             layout["annotations"].append(
                 {
                     "x": x,
                     "y": y,
-                    "text": "<b>{}</b>".format(str_),
+                    "text": "<b>{}</b>".format(str),
                     **layout_annotation_template,
                 }
             )

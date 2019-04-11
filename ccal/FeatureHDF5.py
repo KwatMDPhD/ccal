@@ -147,11 +147,11 @@ class FeatureHDF5:
 
                         continue
 
-                    seqid, source, type_, start, end, score, strand, phase, attributes = line.split(
+                    seqid, source, type, start, end, score, strand, phase, attributes = line.split(
                         "\t"
                     )
 
-                    if type_ not in self._types:
+                    if type not in self._types:
 
                         continue
 

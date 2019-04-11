@@ -1,25 +1,25 @@
-def cast_str_to_builtins(str_):
+def cast_strto_builtins(str):
 
-    if str_ == "None":
+    if str == "None":
 
         return None
 
-    elif str_ == "True":
+    elif str == "True":
 
         return True
 
-    elif str_ == "False":
+    elif str == "False":
 
         return False
 
-    for type_ in (int, float):
+    for type in (int, float):
 
         try:
 
-            return type_(str_)
+            return type(str)
 
         except ValueError:
 
             pass
 
-    return str_
+    return str

@@ -1,7 +1,7 @@
-def str_is_version(str_):
+def str_is_version(str):
 
     return (
-        "." in str_
-        and len(str_.split(sep=".")) == 3
-        and all(i.isnumeric() for i in str_.split(sep="."))
+        "." in str
+        and len(str.split(sep=".")) == 3
+        and all(i.isnumeric() for i in str.split(sep="."))
     )

@@ -1,9 +1,8 @@
 from numpy import absolute, full, linspace, meshgrid, nan, product, rot90
+from .plot_and_save import plot_and_save
 
-from ._plot_2d import _plot_2d
 from .estimate_kernel_density import estimate_kernel_density
 from .infer import infer
-from .plot_points import plot_points
 
 
 def infer_assuming_independence(
@@ -15,8 +14,6 @@ def infer_assuming_independence(
     plot=True,
     names=None,
 ):
-
-    print("\nInfering assuming independence ...")
 
     n_dimension = len(variables)
 
@@ -65,15 +62,19 @@ def infer_assuming_independence(
 
     if plot:
 
-        title = "P({} = {:.2f}) = {:.2f}".format(names[-1], t, p_tvt)
+        name = "P({} = {:.2f}) = {:.2f}".format(names[-1], t, p_tvt)
 
-        plot_points(
-            (grid_tv,),
-            (p_tv,),
-            names=(title,),
-            title=title,
-            xaxis_title=names[-1],
-            yaxis_title="Probability",
+        plot_and_save(
+            {
+                "layout": {
+                    "title": {"text": name},
+                    "xaxis": {"title": names[-1]},
+                    "yaxis": {"title": "Probability"},
+                },
+                "data": [{"type": "scatter", "x": grid_tv, "y": p_tv, "name": name}],
+            },
+            None,
+            None,
         )
 
     p_tvt__1ntvs = []
@@ -119,11 +120,21 @@ def infer_assuming_independence(
 
     if plot and n_dimension == 3:
 
-        _plot_2d(
-            rot90(p_tvt__ntvs),
-            "P({} = {} | {}, {})".format(names[2], target, names[0], names[1]),
-            names[0],
-            names[1],
+        plot_and_save(
+            {
+                "layout": {
+                    "title": {
+                        "text": "P({} = {} | {}, {})".format(
+                            names[-1], target, names[0], names[1]
+                        )
+                    },
+                    "xaxis": {"title": names[0]},
+                    "yaxis": {"title": names[1]},
+                },
+                "data": [{"type": "heatmap", "z": rot90(p_tvt__ntvs)[::-1]}],
+            },
+            None,
+            None,
         )
 
     return None, p_tvt__ntvs

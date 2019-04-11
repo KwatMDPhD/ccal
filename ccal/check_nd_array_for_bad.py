@@ -26,7 +26,7 @@ def check_nd_array_for_bad(nd_array, raise_for_bad=True):
     if 0 < n_bad:
 
         message = "{} good & {} bad ({}).".format(
-            nd_array.size - n_bad, n_bad, ", ".join(bads)
+            nd_array.size - n_bad, n_bad, "|".join(bads)
         )
 
         if raise_for_bad:
@@ -37,4 +37,6 @@ def check_nd_array_for_bad(nd_array, raise_for_bad=True):
 
             warn(message)
 
-    return is_bad
+    else:
+
+        return is_bad

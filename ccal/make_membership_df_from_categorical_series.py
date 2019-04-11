@@ -7,8 +7,8 @@ def make_membership_df_from_categorical_series(series):
 
     object_x_index.index.name = series.name
 
-    for object_ in object_x_index.index:
+    for object in object_x_index.index:
 
-        object_x_index.loc[object_] = (series == object_).astype(int)
+        object_x_index.loc[object] = (series == object).astype(int)
 
     return object_x_index

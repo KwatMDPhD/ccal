@@ -186,13 +186,13 @@ def make_summary_match_panel(
 
             y = domain_end - (row_fraction / 2)
 
-            for str_ in annotation_column_strs:
+            for str in annotation_column_strs:
 
                 layout["annotations"].append(
                     {
                         "x": x,
                         "y": y,
-                        "text": "<b>{}</b>".format(str_),
+                        "text": "<b>{}</b>".format(str),
                         **layout_annotation_template,
                     }
                 )

@@ -1,16 +1,16 @@
 def flatten_nested_iterable(iterable, iterable_types=(list, tuple)):
 
-    list_ = list(iterable)
+    list = list(iterable)
 
     i = 0
 
-    while i < len(list_):
+    while i < len(list):
 
-        while isinstance(list_[i], iterable_types):
+        while isinstance(list[i], iterable_types):
 
-            if not len(list_[i]):
+            if not len(list[i]):
 
-                list_.pop(i)
+                list.pop(i)
 
                 i -= 1
 
@@ -18,8 +18,8 @@ def flatten_nested_iterable(iterable, iterable_types=(list, tuple)):
 
             else:
 
-                list_[i : i + 1] = list_[i]
+                list[i : i + 1] = list[i]
 
         i += 1
 
-    return list_
+    return list

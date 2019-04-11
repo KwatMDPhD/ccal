@@ -1,17 +1,15 @@
-import ssl
 from os.path import basename, join
 from urllib.parse import urlsplit
-from urllib.request import urlretrieve
+
+from requests import get
 
 
 def download(url, directory_path):
 
-    file_name = basename(urlsplit(url).path)
+    file_path = join(directory_path, basename(urlsplit(url).path))
 
-    file_path = join(directory_path, file_name)
+    with open(file_path, "wb") as file:
 
-    ssl._create_default_https_context = ssl._create_unverified_context
-
-    urlretrieve(url, file_path)
+        file.write(get(url, allow_redirects=True).content)
 
     return file_path

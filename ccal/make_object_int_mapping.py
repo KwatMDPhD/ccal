@@ -7,10 +7,10 @@ def make_object_int_mapping(iterable):
 
     int_object = {}
 
-    for int_, object in enumerate(get_unique_iterable_objects_in_order(iterable)):
+    for int, object in enumerate(get_unique_iterable_objects_in_order(iterable)):
 
-        object_int[object] = int_
+        object_int[object] = int
 
-        int_object[int_] = object
+        int_object[int] = object
 
     return object_int, int_object
