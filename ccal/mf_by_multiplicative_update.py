@@ -1,7 +1,7 @@
 from numpy import full, nan
 from numpy.random import random_sample, seed
 
-from ._compute_norm import _compute_norm
+from .compute_matrix_norm import compute_matrix_norm
 from ._update_H_by_multiplicative_update import _update_H_by_multiplicative_update
 from ._update_W_by_multiplicative_update import _update_W_by_multiplicative_update
 from .RANDOM_SEED import RANDOM_SEED
@@ -17,7 +17,7 @@ def mf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=RANDOM_S
 
     H = random_sample(size=(k, V.shape[1]))
 
-    R_norms[0] = _compute_norm(V - W @ H)
+    R_norms[0] = compute_matrix_norm(V - W @ H)
 
     for i in range(n_iteration):
 
@@ -25,8 +25,6 @@ def mf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=RANDOM_S
 
         H = _update_H_by_multiplicative_update(V, W, H)
 
-        R_norms[i + 1] = _compute_norm(V - W @ H)
-
-        # TODO: stop based on tolerance
+        R_norms[i + 1] = compute_matrix_norm(V - W @ H)
 
     return W, H, R_norms
