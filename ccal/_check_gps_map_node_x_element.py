@@ -4,7 +4,7 @@ from pandas import DataFrame
 from .check_nd_array_for_bad import check_nd_array_for_bad
 
 
-def _check_node_x_element(node_x_element):
+def _check_gps_map_node_x_element(node_x_element):
 
     if not isinstance(node_x_element, DataFrame):
 
