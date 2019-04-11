@@ -1,4 +1,7 @@
-def sample_series_randomly_per_value(series, n_per_value=None, random_seed=20121020):
+from .RANDOM_SEED import RANDOM_SEED
+
+
+def sample_series_randomly_per_value(series, n_per_value=None, random_seed=RANDOM_SEED):
 
     if n_per_value is None:
 

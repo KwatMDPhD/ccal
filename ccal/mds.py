@@ -1,6 +1,8 @@
 from scipy.spatial.distance import pdist, squareform
 from sklearn.manifold import MDS
 
+from .RANDOM_SEED import RANDOM_SEED
+
 
 def mds(
     n_target_dimension,
@@ -13,7 +15,7 @@ def mds(
     verbose=0,
     eps=1e-3,
     n_job=1,
-    random_seed=20121020,
+    random_seed=RANDOM_SEED,
 ):
 
     if isinstance(distance_function, str) and distance__point_x_point is None:

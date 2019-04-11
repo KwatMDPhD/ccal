@@ -33,7 +33,7 @@ def gsea(
         index=gene_x_sample.index,
     )
 
-    print("Computing gene set {} enrichment ...".format(genes.name))
+    print("Computing gene set enrichment for {} ...".format(genes.name))
 
     score = single_sample_gsea(
         gene_score,

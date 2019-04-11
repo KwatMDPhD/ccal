@@ -7,7 +7,7 @@ def have_program(program_name):
 
     try:
 
-        return bool(run_command("which {}".format(program_name)).stdout.strip())
+        return bool(run_command("type {}".format(program_name)).stdout.strip())
 
     except CalledProcessError:
 

@@ -17,6 +17,7 @@ from .compute_information_distance import compute_information_distance
 from .mds import mds
 from .normalize_nd_array import normalize_nd_array
 from .plot_heat_map import plot_heat_map
+from .RANDOM_SEED import RANDOM_SEED
 from .train_and_classify import train_and_classify
 
 element_marker_size = 16
@@ -33,7 +34,7 @@ class GPSMap:
         h=None,
         function_to_blend_node_node_distance=mean,
         node_x_dimension=None,
-        mds_random_seed=20121020,
+        mds_random_seed=RANDOM_SEED,
         w_n_pull=None,
         w_pull_power=None,
         h_n_pull=None,
@@ -635,7 +636,7 @@ class GPSMap:
         node_element_score_weight=0.5,
         n_fraction_node_to_move=1,
         n_fraction_element_to_move=1,
-        random_seed=20121020,
+        random_seed=RANDOM_SEED,
         n_iteration=int(1e3),
         initial_temperature=1e-4,
         scale=1e-3,

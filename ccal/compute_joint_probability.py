@@ -1,7 +1,7 @@
 from numpy import rot90
-from .plot_and_save import plot_and_save
 
 from .estimate_kernel_density import estimate_kernel_density
+from .plot_and_save import plot_and_save
 
 
 def compute_joint_probability(

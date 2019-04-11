@@ -57,7 +57,7 @@ def count_vcf_gz_rows(
 
             if i % 1e5 == 0:
 
-                print("\t{:,} ...".format(i))
+                print("\t{:,} ...".format(i + 1))
 
             line_split = line.decode().split(sep="\t")
 

@@ -4,6 +4,6 @@ def get_gff3_attribute(attributes, field):
 
         field_, value = field_value.split(sep="=")
 
-        if field_ == field:
+        if field == field_:
 
             return value

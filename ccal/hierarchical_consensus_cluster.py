@@ -1,3 +1,5 @@
+from os.path import join
+
 from numpy import full, nan
 from numpy.random import randint, seed
 from pandas import DataFrame, Index, Series
@@ -11,6 +13,7 @@ from .make_membership_df_from_categorical_series import (
     make_membership_df_from_categorical_series,
 )
 from .plot_heat_map import plot_heat_map
+from .RANDOM_SEED import RANDOM_SEED
 
 
 def hierarchical_consensus_cluster(
@@ -19,7 +22,7 @@ def hierarchical_consensus_cluster(
     distance__column_x_column=None,
     distance_function="euclidean",
     n_clustering=10,
-    random_seed=20121020,
+    random_seed=RANDOM_SEED,
     linkage_method="ward",
     plot_df=True,
     directory_path=None,
@@ -79,19 +82,17 @@ def hierarchical_consensus_cluster(
         )
 
         cluster_x_column.index = Index(
-            ("C{}".format(cluster) for cluster in cluster_x_column.index),
+            ("Cluster{}".format(cluster) for cluster in cluster_x_column.index),
             name="Cluster",
         )
 
-        cluster_x_column.to_csv(
-            "{}/cluster_x_column.tsv".format(directory_path), sep="\t"
-        )
+        cluster_x_column.to_csv(join(directory_path, "cluster_x_column.tsv"), sep="\t")
 
     if plot_df:
 
         print("Plotting df ...")
 
-        file_name = "df_cluster.html"
+        file_name = "df.html"
 
         if directory_path is None:
 
@@ -99,7 +100,7 @@ def hierarchical_consensus_cluster(
 
         else:
 
-            html_file_path = "{}/{}".format(directory_path, file_name)
+            html_file_path = join(directory_path, file_name)
 
         plot_heat_map(
             df,

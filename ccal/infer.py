@@ -1,9 +1,9 @@
 from numpy import absolute, argmax, linspace, rot90
-from .plot_and_save import plot_and_save
 
 from ._get_target_grid_indices import _get_target_grid_indices
 from .compute_joint_probability import compute_joint_probability
 from .compute_posterior_probability import compute_posterior_probability
+from .plot_and_save import plot_and_save
 
 
 def infer(
@@ -72,9 +72,9 @@ def infer(
                     "data": [
                         {
                             "type": "scatter",
+                            "name": name,
                             "x": tuple(range(grid_size)),
                             "y": p_tvt__ntvs,
-                            "name": name,
                         }
                     ],
                 },

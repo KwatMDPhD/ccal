@@ -1,3 +1,5 @@
+from os.path import join
+
 from numpy import full, nan
 from pandas import DataFrame, Index
 
@@ -7,6 +9,7 @@ from ._cluster_clustering_x_element_and_compute_ccc import (
 from .mf_by_multiplicative_update import mf_by_multiplicative_update
 from .nmf_by_sklearn import nmf_by_sklearn
 from .plot_heat_map import plot_heat_map
+from .RANDOM_SEED import RANDOM_SEED
 
 
 def mf_consensus_cluster(
@@ -15,7 +18,7 @@ def mf_consensus_cluster(
     mf_function="nmf_by_sklearn",
     n_clustering=10,
     n_iteration=int(1e3),
-    random_seed=20121020,
+    random_seed=RANDOM_SEED,
     linkage_method="ward",
     plot_w=True,
     plot_h=True,
@@ -57,7 +60,7 @@ def mf_consensus_cluster(
 
             e_0 = e
 
-            factors = Index(("F{}".format(i) for i in range(k)), name="Factor")
+            factors = Index(("Factor{}".format(i) for i in range(k)), name="Factor")
 
             w_0 = DataFrame(w_0, index=df.index, columns=factors)
 
@@ -65,9 +68,9 @@ def mf_consensus_cluster(
 
             if directory_path is not None:
 
-                w_0.to_csv("{}/w.tsv".format(directory_path), sep="\t")
+                w_0.to_csv(join(directory_path, "w.tsv"), sep="\t")
 
-                h_0.to_csv("{}/h.tsv".format(directory_path), sep="\t")
+                h_0.to_csv(join(directory_path, "h.tsv"), sep="\t")
 
             if plot_w:
 
@@ -81,14 +84,14 @@ def mf_consensus_cluster(
 
                 else:
 
-                    html_file_path = "{}/{}".format(directory_path, file_name)
+                    html_file_path = join(directory_path, file_name)
 
                 plot_heat_map(
                     w_0,
                     normalization_axis=1,
                     normalization_method="-0-",
                     cluster_axis=0,
-                    title="MF K{} W".format(k),
+                    title="MF K={} W".format(k),
                     xaxis_title=w_0.columns.name,
                     yaxis_title=w_0.index.name,
                     html_file_path=html_file_path,
@@ -106,14 +109,14 @@ def mf_consensus_cluster(
 
                 else:
 
-                    html_file_path = "{}/{}".format(directory_path, file_name)
+                    html_file_path = join(directory_path, file_name)
 
                 plot_heat_map(
                     h_0,
                     normalization_axis=0,
                     normalization_method="-0-",
                     cluster_axis=1,
-                    title="MF K{} H".format(k),
+                    title="MF K={} H".format(k),
                     xaxis_title=h_0.columns.name,
                     yaxis_title=h_0.index.name,
                     html_file_path=html_file_path,
@@ -135,7 +138,7 @@ def mf_consensus_cluster(
 
         print("Plotting df ...")
 
-        file_name = "df_cluster.html"
+        file_name = "df.html"
 
         if directory_path is None:
 
@@ -143,7 +146,7 @@ def mf_consensus_cluster(
 
         else:
 
-            html_file_path = "{}/{}".format(directory_path, file_name)
+            html_file_path = join(directory_path, file_name)
 
         plot_heat_map(
             df,

@@ -72,7 +72,7 @@ class VariantHDF5:
 
             except (OSError, FileNotFoundError, HDF5ExtError) as exception:
 
-                warn("\tFailed: {}.".format(exception))
+                warn("Failed: {}.".format(exception))
 
                 reset = True
 

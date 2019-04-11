@@ -41,9 +41,7 @@ class Genome:
 
         except KeyError as exception:
 
-            warn(
-                "(self._variant_hdf5.get_variant_by_id) KeyError: {}.".format(exception)
-            )
+            warn("KeyError: {}.".format(exception))
 
             variant_dicts = []
 
@@ -57,21 +55,13 @@ class Genome:
 
         except KeyError as exception:
 
-            warn(
-                "(self._reference_gene_hdf5.get_features_by_name) KeyError: {}.".format(
-                    exception
-                )
-            )
+            warn("KeyError: {}.".format(exception))
 
             gene_dicts = []
 
         if 1 < len(gene_dicts):
 
-            warn(
-                "(self._reference_gene_hdf5.get_features_by_name) {} matches multiple genes, but using only the 1st one.".format(
-                    gene
-                )
-            )
+            warn("{} matches multiple genes, but using only the 1st one.".format(gene))
 
             gene_dicts = gene_dicts[:1]
 
@@ -83,16 +73,12 @@ class Genome:
 
         except KeyError as exception:
 
-            warn(
-                "(self._variant_hdf5.get_variants_by_gene) KeyError: {}.".format(
-                    exception
-                )
-            )
+            warn("KeyError: {}.".format(exception))
 
             if len(gene_dicts) == 1:
 
                 warn(
-                    "VariantHDF5 does not have gene {} information, so getting gene variants using region from FeatureHDF5 ...".format(
+                    "VariantHDF5 does not have gene {}, so using gene region (from FeatureHDF5) to get variants ...".format(
                         gene
                     )
                 )
@@ -109,11 +95,7 @@ class Genome:
 
                 except NoSuchNodeError as exception:
 
-                    warn(
-                        "(self._variant_hdf5.get_variants_by_region) NoSuchNodeError: {}.".format(
-                            exception
-                        )
-                    )
+                    warn("NoSuchNodeError: {}.".format(exception))
 
                     variant_dicts = []
 
@@ -151,11 +133,7 @@ class Genome:
 
         except NoSuchNodeError as exception:
 
-            warn(
-                "(self._reference_gene_hdf5.get_features_by_region) NoSuchNodeError: {}.".format(
-                    exception
-                )
-            )
+            warn("NoSuchNodeError: {}.".format(exception))
 
             gene_dicts = []
 
@@ -169,11 +147,7 @@ class Genome:
 
         except NoSuchNodeError as exception:
 
-            warn(
-                "(self._variant_hdf5.get_variants_by_region) NoSuchNodeError: {}.".format(
-                    exception
-                )
-            )
+            warn("NoSuchNodeError: {}.".format(exception))
 
             variant_dicts = []
 
