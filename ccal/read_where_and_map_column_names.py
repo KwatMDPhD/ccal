@@ -11,7 +11,7 @@ def read_where_and_map_column_names(hdf5_table, query):
 
     for row in hdf5_table.read_where(query):
 
-        dict_ = {}
+        dict = {}
 
         for column, value in zip(columns, row):
 
@@ -31,8 +31,8 @@ def read_where_and_map_column_names(hdf5_table, query):
 
                 value = value.decode()
 
-            dict_[column] = value
+            dict[column] = value
 
-        dicts.append(dict_)
+        dicts.append(dict)
 
     return dicts

@@ -1,13 +1,13 @@
 def log_and_return_response(response, logger=None):
 
-    str_ = response.get_data().decode().strip()
+    str = response.get_data().decode().strip()
 
     if logger is None:
 
-        print(str_)
+        print(str)
 
     else:
 
-        logger.debug(str_)
+        logger.debug(str)
 
     return response

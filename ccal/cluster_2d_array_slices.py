@@ -54,9 +54,9 @@ def cluster_2d_array_slices(
 
         indices = []
 
-        for i in get_1d_array_unique_objects_in_order(groups):
+        for group in get_1d_array_unique_objects_in_order(groups):
 
-            group_indices = where(groups == i)[0]
+            group_indices = where(groups == group)[0]
 
             clustered_indices = dendrogram(
                 linkage(

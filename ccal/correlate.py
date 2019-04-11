@@ -1,10 +1,11 @@
 from numpy import full, nan
 from numpy.random import seed, shuffle
 from sklearn.linear_model import LinearRegression
+from pandas import isna
 
 from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .compute_empirical_p_value import compute_empirical_p_value
-from .plot_points import plot_points
+from .plot_and_save import plot_and_save
 
 
 def correlate(
@@ -54,36 +55,49 @@ def correlate(
 
     else:
 
-        p_value = None
+        p_value = nan
 
     if plot:
 
         r2_p_value_str = "R^2={:.3f}".format(r2)
 
-        if p_value is not None:
+        if not isna(p_value):
 
-            r2_p_value_str += " & P-Value={:.3e}".format(p_value)
+            r2_p_value_str = "{} & P-Value={:.3e}".format(r2_p_value_str, p_value)
 
         if title:
 
-            title += "\n{}".format(r2_p_value_str)
+            title = "{}\n{}".format(title, r2_p_value_str)
 
         else:
 
             title = r2_p_value_str
 
-        plot_points(
-            (x, x),
-            (y, model.coef_ * x + model.intercept_),
-            names=("Data", "Fit"),
-            modes=("markers", "lines"),
-            markers=(
-                {"size": marker_size, "color": COLOR_CATEGORICAL[0]},
-                {"color": COLOR_CATEGORICAL[1]},
-            ),
-            title=title,
-            xaxis_title=xaxis_title,
-            yaxis_title=yaxis_title,
+        plot_and_save(
+            {
+                "layout": {
+                    "title": {"text": title},
+                    "xaxis": {"title": xaxis_title},
+                    "yaxis": {"title": yaxis_title},
+                },
+                "data": [
+                    {
+                        "type": "scatter",
+                        "x": x,
+                        "y": y,
+                        "name": "Data",
+                        "mode": "markers",
+                        "marker": {"size": marker_size, "color": COLOR_CATEGORICAL[0]},
+                    },
+                    {
+                        "type": "scatter",
+                        "x": x,
+                        "y": model.coef_ * x + model.intercept_,
+                        "name": "Fit",
+                        "marker": {"color": COLOR_CATEGORICAL[1]},
+                    },
+                ],
+            },
             html_file_path=html_file_path,
             plotly_html_file_path=plotly_html_file_path,
         )

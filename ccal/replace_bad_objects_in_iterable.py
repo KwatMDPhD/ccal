@@ -8,5 +8,5 @@ def replace_bad_objects_in_iterable(
 ):
 
     return tuple(
-        where(object_ in bad_objects, replacement, object_) for object_ in iterable
+        where(object in bad_objects, replacement, object) for object in iterable
     )

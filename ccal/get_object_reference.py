@@ -1,12 +1,12 @@
 from .cast_str_to_builtins import cast_str_to_builtins
 
 
-def get_object_reference(object_, namespace):
+def get_objectreference(object, namespace):
 
-    for reference, object__ in namespace.items():
+    for reference, object_ in namespace.items():
 
-        if object__ is object_:
+        if object is object_:
 
             return reference
 
-    return cast_str_to_builtins(object_)
+    return cast_str_to_builtins(object)

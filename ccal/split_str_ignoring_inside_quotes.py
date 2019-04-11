@@ -1,10 +1,10 @@
-def split_str_ignoring_inside_quotes(str_, separator):
+def split_str_ignoring_inside_quotes(str, separator):
 
     splits = []
 
     part = ""
 
-    for str_split in str_.split(separator):
+    for str_split in str.split(separator):
 
         if '"' in str_split:
 
