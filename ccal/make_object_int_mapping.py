@@ -1,4 +1,4 @@
-from .get_unique_iterable_objects_in_order import get_unique_iterable_objects_in_order
+from pandas import Series
 
 
 def make_object_int_mapping(iterable):
@@ -7,7 +7,7 @@ def make_object_int_mapping(iterable):
 
     int_object = {}
 
-    for int, object in enumerate(get_unique_iterable_objects_in_order(iterable)):
+    for int, object in enumerate(Series(iterable).sort_values().unique()):
 
         object_int[object] = int
 

@@ -1,3 +1,4 @@
+from os.path import join
 from pandas import read_csv
 
 from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
@@ -6,7 +7,7 @@ from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
 def map_cell_line_names(cell_line_names):
 
     cell_line_name_best_cell_line_name = read_csv(
-        "{}/cell_line_name_best_cell_line_name.tsv".format(DATA_DIRECTORY_PATH),
+        join(DATA_DIRECTORY_PATH, "cell_line_name_best_cell_line_name.tsv"),
         sep="\t",
         index_col=0,
         squeeze=True,
@@ -14,7 +15,7 @@ def map_cell_line_names(cell_line_names):
 
     best_cell_line_names = []
 
-    cell_line_names_failed_to_map = set()
+    cell_line_names_failed_to_map = []
 
     for cell_line_name in cell_line_names:
 
@@ -28,12 +29,14 @@ def map_cell_line_names(cell_line_names):
 
             best_cell_line_names.append(cell_line_name)
 
-            cell_line_names_failed_to_map.add(cell_line_name)
+            cell_line_names_failed_to_map.append(cell_line_name)
 
     if 0 < len(cell_line_names_failed_to_map):
 
         print(
-            "Cell line names failed to map: {}.".format(cell_line_names_failed_to_map)
+            "Cell line names failed to map: {}.".format(
+                set(cell_line_names_failed_to_map)
+            )
         )
 
     return best_cell_line_names

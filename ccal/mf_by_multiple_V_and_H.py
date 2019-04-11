@@ -1,7 +1,7 @@
 from numpy import full, nan, sum
 from numpy.random import random_sample, seed
 
-from ._compute_norm import _compute_norm
+from .compute_matrix_norm import compute_matrix_norm
 from ._update_H_by_multiplicative_update import _update_H_by_multiplicative_update
 from .RANDOM_SEED import RANDOM_SEED
 
@@ -18,13 +18,13 @@ def mf_by_multiple_V_and_H(
 
     Hs = [random_sample(size=(k, V.shape[1])) for V in Vs]
 
-    R_norms[:, 0] = [_compute_norm(Vs[i] - W @ Hs[i]) for i in range(len(Vs))]
+    R_norms[:, 0] = [compute_matrix_norm(Vs[i] - W @ Hs[i]) for i in range(len(Vs))]
 
-    V_0_norm = _compute_norm(Vs[0])
+    V_0_norm = compute_matrix_norm(Vs[0])
 
     if weights is None:
 
-        weights = [V_0_norm / _compute_norm(V) for V in Vs]
+        weights = [V_0_norm / compute_matrix_norm(V) for V in Vs]
 
     for j in range(n_iteration):
 
@@ -38,8 +38,8 @@ def mf_by_multiple_V_and_H(
             _update_H_by_multiplicative_update(Vs[i], W, Hs[i]) for i in range(len(Vs))
         ]
 
-        R_norms[:, j + 1] = [_compute_norm(Vs[i] - W @ Hs[i]) for i in range(len(Vs))]
-
-        # TODO: stop based on tolerance
+        R_norms[:, j + 1] = [
+            compute_matrix_norm(Vs[i] - W @ Hs[i]) for i in range(len(Vs))
+        ]
 
     return W, Hs, R_norms

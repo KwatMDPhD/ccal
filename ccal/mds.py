@@ -7,8 +7,8 @@ from .RANDOM_SEED import RANDOM_SEED
 def mds(
     n_target_dimension,
     point_x_dimension=None,
-    distance_function="euclidean",
     distance__point_x_point=None,
+    distance_function="euclidean",
     metric=True,
     n_init=int(1e3),
     max_iter=int(1e3),
@@ -18,35 +18,26 @@ def mds(
     random_seed=RANDOM_SEED,
 ):
 
-    if isinstance(distance_function, str) and distance__point_x_point is None:
+    keyword_arguments = {
+        "n_components": n_target_dimension,
+        "metric": metric,
+        "n_init": n_init,
+        "max_iter": max_iter,
+        "verbose": verbose,
+        "eps": eps,
+        "n_jobs": n_job,
+        "random_state": random_seed,
+    }
 
-        mds_ = MDS(
-            n_components=n_target_dimension,
-            dissimilarity=distance_function,
-            metric=metric,
-            n_init=n_init,
-            max_iter=max_iter,
-            verbose=verbose,
-            eps=eps,
-            n_jobs=n_job,
-            random_state=random_seed,
-        )
+    if distance__point_x_point is None and not callable(distance_function):
+
+        mds_ = MDS(dissimilarity=distance_function, **keyword_arguments)
 
         point_x_target_dimension = mds_.fit_transform(point_x_dimension)
 
     else:
 
-        mds_ = MDS(
-            n_components=n_target_dimension,
-            dissimilarity="precomputed",
-            metric=metric,
-            n_init=n_init,
-            max_iter=max_iter,
-            verbose=verbose,
-            eps=eps,
-            n_jobs=n_job,
-            random_state=random_seed,
-        )
+        mds_ = MDS(dissimilarity="precomputed", **keyword_arguments)
 
         if distance__point_x_point is None:
 

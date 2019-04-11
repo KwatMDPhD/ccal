@@ -8,7 +8,7 @@ from ._cluster_clustering_x_element_and_compute_ccc import (
     _cluster_clustering_x_element_and_compute_ccc,
 )
 from ._compute_context_indices import _compute_context_indices
-from ._compute_norm import _compute_norm
+from .compute_matrix_norm import compute_matrix_norm
 from ._count import _count
 from ._describe_vcf_df import _describe_vcf_df
 from ._fit_skew_t_pdfs import _fit_skew_t_pdfs

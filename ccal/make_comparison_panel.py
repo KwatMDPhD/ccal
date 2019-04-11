@@ -15,7 +15,6 @@ def make_comparison_panel(
     name_0=None,
     name_1=None,
     file_path_prefix=None,
-    plotly_html_file_path_prefix=None,
 ):
 
     comparison = apply_function_on_2_2d_arrays_slices(
@@ -52,14 +51,6 @@ def make_comparison_panel(
 
         html_file_path = "{}.html".format(file_path_prefix)
 
-    if plotly_html_file_path_prefix is None:
-
-        plotly_html_file_path = None
-
-    else:
-
-        plotly_html_file_path = "{}.html".format(plotly_html_file_path_prefix)
-
     plot_heat_map(
         comparison,
         cluster_axis="01",
@@ -67,7 +58,6 @@ def make_comparison_panel(
         xaxis_title=name_1,
         yaxis_title=name_0,
         html_file_path=html_file_path,
-        plotly_html_file_path=plotly_html_file_path,
     )
 
     return comparison
