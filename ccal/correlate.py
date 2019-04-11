@@ -1,18 +1,19 @@
 from numpy import full, nan
 from numpy.random import seed, shuffle
-from sklearn.linear_model import LinearRegression
 from pandas import isna
+from sklearn.linear_model import LinearRegression
 
 from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .compute_empirical_p_value import compute_empirical_p_value
 from .plot_and_save import plot_and_save
+from .RANDOM_SEED import RANDOM_SEED
 
 
 def correlate(
     x,
     y,
     n_permutation=0,
-    random_seed=20121020,
+    random_seed=RANDOM_SEED,
     plot=True,
     marker_size=16,
     title=None,

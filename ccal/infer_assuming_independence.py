@@ -1,8 +1,8 @@
 from numpy import absolute, full, linspace, meshgrid, nan, product, rot90
-from .plot_and_save import plot_and_save
 
 from .estimate_kernel_density import estimate_kernel_density
 from .infer import infer
+from .plot_and_save import plot_and_save
 
 
 def infer_assuming_independence(
@@ -71,7 +71,7 @@ def infer_assuming_independence(
                     "xaxis": {"title": names[-1]},
                     "yaxis": {"title": "Probability"},
                 },
-                "data": [{"type": "scatter", "x": grid_tv, "y": p_tv, "name": name}],
+                "data": [{"type": "scatter", "name": name, "x": grid_tv, "y": p_tv}],
             },
             None,
             None,

@@ -1,11 +1,14 @@
+from os.path import join
+
 from numpy import asarray
 from pandas import DataFrame, Index
 
 from .establish_path import establish_path
 from .mf_consensus_cluster import mf_consensus_cluster
 from .multiprocess import multiprocess
+from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
-from .plot_points import plot_points
+from .RANDOM_SEED import RANDOM_SEED
 
 
 def mf_consensus_cluster_with_ks(
@@ -15,7 +18,7 @@ def mf_consensus_cluster_with_ks(
     n_job=1,
     n_clustering=10,
     n_iteration=int(1e3),
-    random_seed=20121020,
+    random_seed=RANDOM_SEED,
     linkage_method="ward",
     plot_w=True,
     plot_h=True,
@@ -29,7 +32,7 @@ def mf_consensus_cluster_with_ks(
 
     else:
 
-        k_directory_paths = tuple("{}/{}".format(directory_path, k) for k in ks)
+        k_directory_paths = tuple(join(directory_path, k) for k in ks)
 
         for k_directory_path in k_directory_paths:
 
@@ -92,16 +95,26 @@ def mf_consensus_cluster_with_ks(
 
     else:
 
-        html_file_path = "{}/{}".format(directory_path, file_name)
+        html_file_path = join(directory_path, file_name)
 
-    plot_points(
-        (ks,),
-        (tuple(k_return[key]["e"] for key in keys),),
-        modes=("lines+markers",),
-        title="MF Error",
-        xaxis_title="K",
-        yaxis_title="Error",
-        html_file_path=html_file_path,
+    plot_and_save(
+        {
+            "layout": {
+                "title": {"text": "MF Error"},
+                "xaxis": {"title": "K"},
+                "yaxis": {"title": "Error"},
+            },
+            "data": [
+                {
+                    "type": "scatter",
+                    "x": ks,
+                    "y": tuple(k_return[key]["e"] for key in keys),
+                    "mode": "lines+markers",
+                }
+            ],
+        },
+        html_file_path,
+        None,
     )
 
     w_element_cluster__ccc = asarray(
@@ -120,21 +133,41 @@ def mf_consensus_cluster_with_ks(
 
     else:
 
-        html_file_path = "{}/{}".format(directory_path, file_name)
+        html_file_path = join(directory_path, file_name)
 
-    plot_points(
-        (ks,) * 3,
-        (
-            w_element_cluster__ccc,
-            h_element_cluster__ccc,
-            (w_element_cluster__ccc + h_element_cluster__ccc) / 2,
-        ),
-        names=("W Element Cluster CCC", "H Element Cluster CCC", "W H Mean"),
-        modes=("lines+markers",) * 3,
-        title="MFCC W H Element Cluster CCC",
-        xaxis_title="K",
-        yaxis_title="CCC",
-        html_file_path=html_file_path,
+    plot_and_save(
+        {
+            "layout": {
+                "title": {"text": "MFCC W H Element Cluster CCC"},
+                "xaxis": {"title": "K"},
+                "yaxis": {"title": "CCC"},
+            },
+            "data": [
+                {
+                    "type": "scatter",
+                    "name": "W Element Cluster CCC",
+                    "x": ks,
+                    "y": w_element_cluster__ccc,
+                    "mode": "lines+markers",
+                },
+                {
+                    "type": "scatter",
+                    "name": "W Element Cluster CCC",
+                    "x": ks,
+                    "y": h_element_cluster__ccc,
+                    "mode": "lines+markers",
+                },
+                {
+                    "type": "scatter",
+                    "name": "W H Mean",
+                    "x": ks,
+                    "y": (w_element_cluster__ccc + h_element_cluster__ccc) / 2,
+                    "mode": "lines+markers",
+                },
+            ],
+        },
+        html_file_path,
+        None,
     )
 
     for w_or_h, k_x_element in (
@@ -159,7 +192,7 @@ def mf_consensus_cluster_with_ks(
         if directory_path is not None:
 
             k_x_element.to_csv(
-                "{}/mfcc.k_x_{}_element.tsv".format(directory_path, w_or_h), sep="\t"
+                join(directory_path, "mfcc.k_x_{}_element.tsv".format(w_or_h)), sep="\t"
             )
 
         if plot_df:
@@ -172,7 +205,7 @@ def mf_consensus_cluster_with_ks(
 
             else:
 
-                html_file_path = "{}/{}".format(directory_path, file_name)
+                html_file_path = join(directory_path, file_name)
 
             plot_heat_map(
                 k_x_element,

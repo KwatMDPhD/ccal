@@ -1,12 +1,9 @@
 from subprocess import CalledProcessError
 
-from .echo_or_print import echo_or_print
 from .run_command import run_command
 
 
-def in_git_repository():
-
-    echo_or_print("Checking if in git repository ...")
+def is_in_git_repository():
 
     try:
 

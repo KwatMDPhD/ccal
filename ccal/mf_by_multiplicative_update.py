@@ -4,9 +4,10 @@ from numpy.random import random_sample, seed
 from ._compute_norm import _compute_norm
 from ._update_H_by_multiplicative_update import _update_H_by_multiplicative_update
 from ._update_W_by_multiplicative_update import _update_W_by_multiplicative_update
+from .RANDOM_SEED import RANDOM_SEED
 
 
-def mf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=20121020):
+def mf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=RANDOM_SEED):
 
     R_norms = full(n_iteration + 1, nan)
 

@@ -4,7 +4,7 @@ from .get_variant_type import get_variant_type
 from .is_inframe import is_inframe
 
 
-def get_maf_variant_classification(effect, ref, alt):
+def convert_vcf_effect_to_maf_variant_classification(effect, ref, alt):
 
     variant_type = get_variant_type(ref, alt)
 

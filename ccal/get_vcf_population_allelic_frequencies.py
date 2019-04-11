@@ -1,7 +1,7 @@
 from warnings import warn
 
 
-def get_population_allelic_frequencies(caf):
+def get_vcf_population_allelic_frequencies(caf):
 
     try:
 
@@ -12,7 +12,7 @@ def get_population_allelic_frequencies(caf):
 
     except ValueError:
 
-        warn("Bad CAF {}.".format(caf))
+        warn("Bad CAF: {}.".format(caf))
 
         return [
             float(population_allelic_frequency)
