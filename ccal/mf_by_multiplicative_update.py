@@ -2,9 +2,9 @@ from numpy import full, nan
 from numpy.random import random_sample, seed
 
 from .compute_matrix_norm import compute_matrix_norm
-from ._update_H_by_multiplicative_update import _update_H_by_multiplicative_update
-from ._update_W_by_multiplicative_update import _update_W_by_multiplicative_update
 from .RANDOM_SEED import RANDOM_SEED
+from .update_H_by_multiplicative_update import update_H_by_multiplicative_update
+from .update_W_by_multiplicative_update import update_W_by_multiplicative_update
 
 
 def mf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=RANDOM_SEED):
@@ -21,9 +21,9 @@ def mf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=RANDOM_S
 
     for i in range(n_iteration):
 
-        W = _update_W_by_multiplicative_update(V, W, H)
+        W = update_W_by_multiplicative_update(V, W, H)
 
-        H = _update_H_by_multiplicative_update(V, W, H)
+        H = update_H_by_multiplicative_update(V, W, H)
 
         R_norms[i + 1] = compute_matrix_norm(V - W @ H)
 

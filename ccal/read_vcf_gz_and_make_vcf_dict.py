@@ -2,7 +2,6 @@ from gzip import open as gzip_open
 
 from pandas import read_csv
 
-from ._describe_vcf_df import _describe_vcf_df
 from ._make_clean_vcf_df import _make_clean_vcf_df
 from .parse_vcf_row_and_make_variant_dict import parse_vcf_row_and_make_variant_dict
 from .split_str_ignoring_inside_quotes import split_str_ignoring_inside_quotes
@@ -88,8 +87,6 @@ def read_vcf_gz_and_make_vcf_dict(vcf_gz_file_path, simplify=True, n_info_ann=1)
     vcf_df.columns = columns
 
     vcf_dict["vcf_df"] = vcf_df
-
-    _describe_vcf_df(vcf_dict["vcf_df"])
 
     if simplify:
 

@@ -114,7 +114,6 @@ def mf_consensus_cluster_with_ks(
             ],
         },
         html_file_path,
-        None,
     )
 
     w_element_cluster__ccc = asarray(
@@ -167,7 +166,6 @@ def mf_consensus_cluster_with_ks(
             ],
         },
         html_file_path,
-        None,
     )
 
     for w_or_h, k_x_element in (

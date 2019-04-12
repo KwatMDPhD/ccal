@@ -47,7 +47,6 @@ def compute_joint_probability(
                     "data": [{"type": "heatmap", "z": rot90(kernel_density)[::-1]}],
                 },
                 None,
-                None,
             )
 
         if plot_probability:
@@ -61,7 +60,6 @@ def compute_joint_probability(
                     },
                     "data": [{"type": "heatmap", "z": rot90(probability)[::-1]}],
                 },
-                None,
                 None,
             )
 

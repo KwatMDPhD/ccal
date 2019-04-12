@@ -1,11 +1,11 @@
 from numpy import concatenate, where
 from scipy.cluster.hierarchy import dendrogram, linkage
 
-from ._ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import (
-    _ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays,
-)
 from .check_nd_array_for_bad import check_nd_array_for_bad
 from .get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
+from .ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import (
+    ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays,
+)
 
 
 def cluster_2d_array_slices(
@@ -27,7 +27,7 @@ def cluster_2d_array_slices(
     if distance_function is None:
 
         distance_function = (
-            _ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays
+            ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays
         )
 
     if groups is None:

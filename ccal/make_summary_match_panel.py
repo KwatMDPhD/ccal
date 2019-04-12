@@ -1,7 +1,9 @@
-from ._make_annotations import _make_annotations
-from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
 from .ALMOST_ZERO import ALMOST_ZERO
+from .make_match_panel_annotations import make_match_panel_annotations
 from .plot_and_save import plot_and_save
+from .process_match_panel_target_or_data_for_plotting import (
+    process_match_panel_target_or_data_for_plotting,
+)
 
 
 def make_summary_match_panel(
@@ -20,7 +22,6 @@ def make_summary_match_panel(
     annotation_font_size=8.8,
     xaxis_kwargs=None,
     html_file_path=None,
-    plotly_html_file_path=None,
 ):
 
     if plot_only_columns_shared_by_target_and_all_data:
@@ -33,7 +34,7 @@ def make_summary_match_panel(
 
         target.sort_values(ascending=target_ascending, inplace=True)
 
-    target, target_plot_min, target_plot_max, target_colorscale = _process_target_or_data_for_plotting(
+    target, target_plot_min, target_plot_max, target_colorscale = process_match_panel_target_or_data_for_plotting(
         target, target_type, plot_std
     )
 
@@ -106,9 +107,9 @@ def make_summary_match_panel(
 
         data_to_plot = data_to_plot.loc[score_moe_p_value_fdr_to_plot.index]
 
-        annotations = _make_annotations(score_moe_p_value_fdr_to_plot)
+        annotations = make_match_panel_annotations(score_moe_p_value_fdr_to_plot)
 
-        data_to_plot, data_plot_min, data_plot_max, data_colorscale = _process_target_or_data_for_plotting(
+        data_to_plot, data_plot_min, data_plot_max, data_colorscale = process_match_panel_target_or_data_for_plotting(
             data_to_plot, data_dict["type"], plot_std
         )
 
@@ -199,6 +200,4 @@ def make_summary_match_panel(
 
                 y -= row_fraction
 
-    plot_and_save(
-        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
-    )
+    plot_and_save({"layout": layout, "data": data}, html_file_path)

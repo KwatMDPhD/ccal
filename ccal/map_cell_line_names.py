@@ -1,4 +1,5 @@
 from os.path import join
+
 from pandas import read_csv
 
 from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH

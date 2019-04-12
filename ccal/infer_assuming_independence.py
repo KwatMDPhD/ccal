@@ -74,7 +74,6 @@ def infer_assuming_independence(
                 "data": [{"type": "scatter", "name": name, "x": grid_tv, "y": p_tv}],
             },
             None,
-            None,
         )
 
     p_tvt__1ntvs = []
@@ -133,7 +132,6 @@ def infer_assuming_independence(
                 },
                 "data": [{"type": "heatmap", "z": rot90(p_tvt__ntvs)[::-1]}],
             },
-            None,
             None,
         )
 

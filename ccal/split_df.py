@@ -1,11 +1,5 @@
 def split_df(df, axis, n_split):
 
-    if not (0 < n_split <= df.shape[axis]):
-
-        raise ValueError(
-            "Invalid: 0 < n_split ({}) <= n_slices ({})".format(n_split, df.shape[axis])
-        )
-
     n = df.shape[axis] // n_split
 
     dfs = []

@@ -3,18 +3,20 @@ from pandas import DataFrame, Series
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import pdist, squareform
 
-from ._anneal_node_and_element_positions import _anneal_node_and_element_positions
-from ._check_gps_map_node_x_element import _check_gps_map_node_x_element
-from ._make_element_x_dimension import _make_element_x_dimension
-from ._make_grid_values_and_categorical_labels import (
-    _make_grid_values_and_categorical_labels,
+from .anneal_gps_map_node_and_element_positions import (
+    anneal_gps_map_node_and_element_positions,
 )
-from ._plot_gps_map import _plot_gps_map
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
+from .check_gps_map_node_x_element import check_gps_map_node_x_element
 from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .compute_information_distance import compute_information_distance
+from .make_gps_map_element_x_dimension import make_gps_map_element_x_dimension
+from .make_gps_map_grid_values_and_categorical_labels import (
+    make_gps_map_grid_values_and_categorical_labels,
+)
 from .mds import mds
 from .normalize_nd_array import normalize_nd_array
+from .plot_gps_map import plot_gps_map
 from .plot_heat_map import plot_heat_map
 from .RANDOM_SEED import RANDOM_SEED
 from .train_and_classify import train_and_classify
@@ -113,11 +115,11 @@ class GPSMap:
 
         if w is not None:
 
-            _check_gps_map_node_x_element(w)
+            check_gps_map_node_x_element(w)
 
         if h is not None:
 
-            _check_gps_map_node_x_element(h)
+            check_gps_map_node_x_element(h)
 
         if w is not None and h is not None:
 
@@ -268,13 +270,13 @@ class GPSMap:
 
         if w is not None:
 
-            self.w_element_x_dimension = _make_element_x_dimension(
+            self.w_element_x_dimension = make_gps_map_element_x_dimension(
                 self.w, self.node_x_dimension, self.w_n_pull, self.w_pull_power
             )
 
         if h is not None:
 
-            self.h_element_x_dimension = _make_element_x_dimension(
+            self.h_element_x_dimension = make_gps_map_element_x_dimension(
                 self.h, self.node_x_dimension, self.h_n_pull, self.h_pull_power
             )
 
@@ -292,7 +294,6 @@ class GPSMap:
         layout_size=880,
         title=None,
         html_file_path=None,
-        plotly_html_file_path=None,
     ):
 
         if w_or_h == "w":
@@ -345,7 +346,7 @@ class GPSMap:
 
             title = w_or_h.title()
 
-        _plot_gps_map(
+        plot_gps_map(
             self.nodes,
             self.node_name,
             self.node_x_dimension,
@@ -366,7 +367,6 @@ class GPSMap:
             layout_size,
             title,
             html_file_path,
-            plotly_html_file_path,
         )
 
     def set_element_labels(
@@ -412,7 +412,7 @@ class GPSMap:
                     == -1
                 )
 
-        grid_values, grid_labels = _make_grid_values_and_categorical_labels(
+        grid_values, grid_labels = make_gps_map_grid_values_and_categorical_labels(
             element_x_dimension,
             element_labels,
             self.n_grid,
@@ -494,10 +494,9 @@ class GPSMap:
         layout_size=880,
         title=None,
         html_file_path=None,
-        plotly_html_file_path=None,
     ):
 
-        _check_gps_map_node_x_element(node_x_predicting_element)
+        check_gps_map_node_x_element(node_x_predicting_element)
 
         predicting_elements = node_x_predicting_element.columns
 
@@ -545,7 +544,7 @@ class GPSMap:
 
             label_colors = self.h_label_colors
 
-        predicting_element_x_dimension = _make_element_x_dimension(
+        predicting_element_x_dimension = make_gps_map_element_x_dimension(
             node_x_predicting_element.values, self.node_x_dimension, n_pull, pull_power
         )
 
@@ -587,7 +586,7 @@ class GPSMap:
 
             title = "{} (predicted)".format(w_or_h.title())
 
-        _plot_gps_map(
+        plot_gps_map(
             self.nodes,
             self.node_name,
             self.node_x_dimension,
@@ -608,7 +607,6 @@ class GPSMap:
             layout_size,
             title,
             html_file_path,
-            plotly_html_file_path,
         )
 
         return predicted_element_labels
@@ -697,7 +695,7 @@ class GPSMap:
 
             element_x_dimension = self.h_element_x_dimension
 
-        node_x_dimension, element_x_dimension = _anneal_node_and_element_positions(
+        node_x_dimension, element_x_dimension = anneal_gps_map_node_and_element_positions(
             self.distance__node_x_node,
             distance__element_x_element,
             distance__node_x_element,

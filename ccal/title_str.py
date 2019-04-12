@@ -4,7 +4,9 @@ def title_str(str):
 
     on_upper = False
 
-    upper_start = upper_end = None
+    upper_start = None
+
+    upper_end = None
 
     for i, character in enumerate(str):
 
@@ -30,7 +32,9 @@ def title_str(str):
 
                 original_uppers.append((upper_start, upper_end))
 
-                upper_start = upper_end = None
+                upper_start = None
+
+                upper_end = None
 
     if upper_start:
 

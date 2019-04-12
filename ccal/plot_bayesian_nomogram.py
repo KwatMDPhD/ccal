@@ -1,7 +1,6 @@
 from numpy import absolute, linspace, log2, sort
 
 from .plot_and_save import plot_and_save
-from .plot_points import plot_points
 
 
 def plot_bayesian_nomogram(
@@ -12,7 +11,6 @@ def plot_bayesian_nomogram(
     conditional_probabilities,
     names,
     html_file_path=None,
-    plotly_html_file_path=None,
 ):
 
     target_hit_probability = (target == target_hit).sum() / target.size
@@ -34,13 +32,12 @@ def plot_bayesian_nomogram(
         if conditional_probability.shape != grid_shape:
 
             raise ValueError(
-                "conditional_probability shape should be {}.".format(grid_shape)
+                "conditional_probabilities[i].shape should be {}.".format(grid_shape)
             )
 
     layout = {
-        "width": 960,
         "height": 80 * max(8, len(conditional_probabilities)),
-        "title": "Bayesian Nomogram",
+        "title": {"text": "Bayesian Nomogram"},
         "xaxis": {"title": "Log Odds Ratio"},
         "yaxis": {
             "zeroline": False,
@@ -49,7 +46,6 @@ def plot_bayesian_nomogram(
             "title": "Evidence",
             "dtick": 1,
         },
-        "hovermode": "closest",
     }
 
     data = []
@@ -71,32 +67,44 @@ def plot_bayesian_nomogram(
             / (target_hit_probability / target_miss_probability)
         )
 
-        plot_points(
-            (tuple(range(grid_size)),) * 4,
-            (
-                target,
-                target_hit_conditional_probability,
-                target_miss_conditional_probability,
-                log_odds_ratios,
-            ),
-            names=(
-                name,
-                "P(hit | {})".format(name),
-                "P(miss | {})".format(name),
-                "Log Odds Ratio",
-            ),
-            title=name,
-            legend_orientation="h",
+        x = tuple(range(grid_size))
+
+        plot_and_save(
+            {
+                "layout": {"title": {"text": name}, "legend": {"orientation": "v"}},
+                "data": [
+                    {"type": "scatter", "name": name, "x": x, "y": target},
+                    {
+                        "type": "scatter",
+                        "name": "P(hit | {})".format(name),
+                        "x": x,
+                        "y": target_hit_conditional_probability,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "P(miss | {})".format(name),
+                        "x": x,
+                        "y": target_miss_conditional_probability,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Log Odds Ratio",
+                        "x": x,
+                        "y": log_odds_ratios,
+                    },
+                ],
+            },
+            None,
         )
-
-        x = (log_odds_ratios.min(), log_odds_ratios.max())
-
-        y = (i,) * 2
 
         data.append(
-            {"type": "scatter", "legendgroup": name, "name": name, "x": x, "y": y}
+            {
+                "type": "scatter",
+                "legendgroup": name,
+                "name": name,
+                "x": (log_odds_ratios.min(), log_odds_ratios.max()),
+                "y": (i, i),
+            }
         )
 
-    plot_and_save(
-        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
-    )
+    plot_and_save({"layout": layout, "data": data}, html_file_path)

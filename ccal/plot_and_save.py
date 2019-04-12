@@ -3,7 +3,11 @@ from plotly.offline import plot as offline_plot
 from plotly.plotly import plot as plotly_plot
 
 
-def plot_and_save(figure, html_file_path, plotly_html_file_path):
+def plot_and_save(figure, html_file_path, plotly_html_file_path=None):
+
+    if "layout" in figure:
+
+        figure["layout"].update({"automargin": True, "hovermode": "closest"})
 
     if html_file_path is not None:
 
