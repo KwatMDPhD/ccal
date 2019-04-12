@@ -6,7 +6,7 @@ from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 def match_target_and_data(
     target,
     data,
-    function,
+    match_function,
     n_required_for_match_function,
     raise_for_n_less_than_required,
 ):
@@ -16,7 +16,7 @@ def match_target_and_data(
         1,
         data,
         target,
-        function,
+        match_function,
         n_required=n_required_for_match_function,
         raise_for_n_less_than_required=raise_for_n_less_than_required,
         raise_for_bad=False,

@@ -2,7 +2,9 @@ from numpy import full, nan
 from sklearn.model_selection import KFold
 
 
-def cross_validate(model, sample_x_feature, sample_class, n_partition, scoring_funcion):
+def cross_validate_model(
+    model, sample_x_feature, sample_class, n_partition, scoring_funcion
+):
 
     scores = full(n_partition, nan)
 

@@ -12,7 +12,7 @@ def match_randomly_sampled_target_and_data_to_compute_margin_of_errors(
     data,
     random_seed,
     n_sampling,
-    function,
+    match_function,
     n_required_for_match_function,
     raise_for_n_less_than_required,
 ):
@@ -38,7 +38,7 @@ def match_randomly_sampled_target_and_data_to_compute_margin_of_errors(
         index_x_sampling[:, i] = match_target_and_data(
             sampled_target,
             sampled_data,
-            function,
+            match_function,
             n_required_for_match_function,
             raise_for_n_less_than_required,
         )

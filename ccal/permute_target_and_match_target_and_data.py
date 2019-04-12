@@ -9,7 +9,7 @@ def permute_target_and_match_target_and_data(
     data,
     random_seed,
     n_permutation,
-    function,
+    match_function,
     n_required_for_match_function,
     raise_for_n_less_than_required,
 ):
@@ -31,7 +31,7 @@ def permute_target_and_match_target_and_data(
         index_x_permutation[:, i] = match_target_and_data(
             permuted_target,
             data,
-            function,
+            match_function,
             n_required_for_match_function,
             raise_for_n_less_than_required,
         )

@@ -1,4 +1,4 @@
-def cast_strto_builtins(str):
+def cast_str_to_builtin(str):
 
     if str == "None":
 

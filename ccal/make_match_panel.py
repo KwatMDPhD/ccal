@@ -21,7 +21,7 @@ def make_match_panel(
     target_ascending=True,
     score_moe_p_value_fdr=None,
     n_job=1,
-    function=compute_information_coefficient,
+    match_function=compute_information_coefficient,
     n_required_for_match_function=2,
     raise_for_n_less_than_required=False,
     n_extreme=8,
@@ -66,7 +66,7 @@ def make_match_panel(
             target.values,
             data.values,
             n_job,
-            function,
+            match_function,
             n_required_for_match_function,
             raise_for_n_less_than_required,
             n_extreme,
@@ -121,7 +121,7 @@ def make_match_panel(
             "layout": {
                 "title": {"text": "Score"},
                 "xaxis": {"title": "Rank"},
-                "yaxis": {"title": "Score ({})".format(function.__name__)},
+                "yaxis": {"title": "Score ({})".format(match_function.__name__)},
             },
             "data": [
                 {

@@ -9,8 +9,8 @@ from scipy.spatial.distance import pdist, squareform
 from .cluster_clustering_x_element_and_compute_ccc import (
     cluster_clustering_x_element_and_compute_ccc,
 )
-from .make_membership_df_from_categorical_series import (
-    make_membership_df_from_categorical_series,
+from .make_binary_df_from_categorical_series import (
+    make_binary_df_from_categorical_series,
 )
 from .plot_heat_map import plot_heat_map
 from .RANDOM_SEED import RANDOM_SEED
@@ -77,7 +77,7 @@ def hierarchical_consensus_cluster(
 
     if directory_path is not None:
 
-        cluster_x_column = make_membership_df_from_categorical_series(
+        cluster_x_column = make_binary_df_from_categorical_series(
             Series(column_cluster, index=df.columns)
         )
 

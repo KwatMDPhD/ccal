@@ -1,4 +1,4 @@
-def clean_git_url(git_url):
+def normalize_git_url(git_url):
 
     for str in ("/", ".git"):
 

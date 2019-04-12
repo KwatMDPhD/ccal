@@ -1,7 +1,7 @@
 from pandas import Series
 
 
-def make_object_int_mapping(iterable):
+def make_object_int_and_int_object_for_iterable(iterable):
 
     object_int = {}
 

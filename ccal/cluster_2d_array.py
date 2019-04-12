@@ -8,7 +8,7 @@ from .ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import (
 )
 
 
-def cluster_2d_array_slices(
+def cluster_2d_array(
     _2d_array,
     axis,
     groups=None,

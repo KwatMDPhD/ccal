@@ -2,14 +2,14 @@ from warnings import warn
 
 from pandas import Series
 
-from .cast_str_to_builtins import cast_str_to_builtins
+from .cast_str_to_builtin import cast_str_to_builtin
 from .replace_bad_objects_in_iterable import replace_bad_objects_in_iterable
 
 
-def cast_series_to_builtins(series):
+def cast_series_to_builtin(series):
 
     list = replace_bad_objects_in_iterable(
-        tuple(cast_str_to_builtins(object) for object in series)
+        tuple(cast_str_to_builtin(object) for object in series)
     )
 
     try:

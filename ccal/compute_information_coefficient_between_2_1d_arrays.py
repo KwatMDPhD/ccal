@@ -11,11 +11,17 @@ ro.conversion.py2ri = numpy2ri
 mass = importr("MASS")
 
 
-def compute_information_coefficient(x, y, n_grid=24):
+def compute_information_coefficient_between_2_1d_arrays(
+    _1d_array_0, _1d_array_1, n_grid=24
+):
 
-    pearson_correlation = pearsonr(x, y)[0]
+    pearson_correlation = pearsonr(_1d_array_0, _1d_array_1)[0]
 
-    if isnan(pearson_correlation) or unique(x).size == 1 or unique(y).size == 1:
+    if (
+        isnan(pearson_correlation)
+        or unique(_1d_array_0).size == 1
+        or unique(_1d_array_1).size == 1
+    ):
 
         return nan
 
@@ -23,22 +29,25 @@ def compute_information_coefficient(x, y, n_grid=24):
 
         pearson_correlation_abs = abs(pearson_correlation)
 
-        bandwidth_x = mass.bcv(x)[0] * (1 - pearson_correlation_abs * 0.75)
+        bandwidth_x = mass.bcv(_1d_array_0)[0] * (1 - pearson_correlation_abs * 0.75)
 
-        bandwidth_y = mass.bcv(y)[0] * (1 - pearson_correlation_abs * 0.75)
+        bandwidth_y = mass.bcv(_1d_array_1)[0] * (1 - pearson_correlation_abs * 0.75)
 
         fxy = (
             asarray(
                 mass.kde2d(
-                    x, y, asarray((bandwidth_x, bandwidth_y)), n=asarray((n_grid,))
+                    _1d_array_0,
+                    _1d_array_1,
+                    asarray((bandwidth_x, bandwidth_y)),
+                    n=asarray((n_grid,)),
                 )[2]
             )
             + eps
         )
 
-        dx = (x.max() - x.min()) / (n_grid - 1)
+        dx = (_1d_array_0.max() - _1d_array_0.min()) / (n_grid - 1)
 
-        dy = (y.max() - y.min()) / (n_grid - 1)
+        dy = (_1d_array_1.max() - _1d_array_1.min()) / (n_grid - 1)
 
         pxy = fxy / (fxy.sum() * dx * dy)
 

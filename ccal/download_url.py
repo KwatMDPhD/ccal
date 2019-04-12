@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 from requests import get
 
 
-def download(url, directory_path):
+def download_url(url, directory_path):
 
     file_path = join(directory_path, basename(urlsplit(url).path))
 
