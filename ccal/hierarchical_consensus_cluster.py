@@ -6,8 +6,8 @@ from pandas import DataFrame, Index, Series
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import pdist, squareform
 
-from ._cluster_clustering_x_element_and_compute_ccc import (
-    _cluster_clustering_x_element_and_compute_ccc,
+from .cluster_clustering_x_element_and_compute_ccc import (
+    cluster_clustering_x_element_and_compute_ccc,
 )
 from .make_membership_df_from_categorical_series import (
     make_membership_df_from_categorical_series,
@@ -71,7 +71,7 @@ def hierarchical_consensus_cluster(
             criterion="maxclust",
         )
 
-    column_cluster, column_cluster__ccc = _cluster_clustering_x_element_and_compute_ccc(
+    column_cluster, column_cluster__ccc = cluster_clustering_x_element_and_compute_ccc(
         clustering_x_column, k, linkage_method
     )
 

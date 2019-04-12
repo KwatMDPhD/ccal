@@ -9,7 +9,7 @@ from .plot_heat_map import plot_heat_map
 def make_comparison_panel(
     _2d_array_or_df_0,
     _2d_array_or_df_1,
-    match_function=compute_information_coefficient,
+    function=compute_information_coefficient,
     axis=0,
     title=None,
     name_0=None,
@@ -18,7 +18,7 @@ def make_comparison_panel(
 ):
 
     comparison = apply_function_on_2_2d_arrays_slices(
-        asarray(_2d_array_or_df_0), asarray(_2d_array_or_df_1), match_function, axis
+        asarray(_2d_array_or_df_0), asarray(_2d_array_or_df_1), function, axis
     )
 
     if isinstance(_2d_array_or_df_0, DataFrame) and isinstance(

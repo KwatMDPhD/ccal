@@ -23,7 +23,6 @@ def gsea(
     annotation_text_width=88,
     annotation_text_yshift=64,
     html_file_path=None,
-    plotly_html_file_path=None,
 ):
 
     print("Computing gene scores ...")
@@ -46,7 +45,6 @@ def gsea(
         annotation_text_width=annotation_text_width,
         annotation_text_yshift=annotation_text_yshift,
         html_file_path=html_file_path,
-        plotly_html_file_path=plotly_html_file_path,
     )
 
     if n_permutation is None:

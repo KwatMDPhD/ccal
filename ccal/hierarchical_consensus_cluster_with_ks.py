@@ -111,7 +111,6 @@ def hierarchical_consensus_cluster_with_ks(
             ],
         },
         html_file_path,
-        None,
     )
 
     k_x_column = DataFrame(

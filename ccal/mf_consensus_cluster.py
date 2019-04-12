@@ -3,8 +3,8 @@ from os.path import join
 from numpy import full, nan
 from pandas import DataFrame, Index
 
-from ._cluster_clustering_x_element_and_compute_ccc import (
-    _cluster_clustering_x_element_and_compute_ccc,
+from .cluster_clustering_x_element_and_compute_ccc import (
+    cluster_clustering_x_element_and_compute_ccc,
 )
 from .mf_by_multiplicative_update import mf_by_multiplicative_update
 from .nmf_by_sklearn import nmf_by_sklearn
@@ -126,11 +126,11 @@ def mf_consensus_cluster(
 
         clustering_x_h_element[clustering, :] = h.argmax(axis=0)
 
-    w_element_cluster, w_element_cluster__ccc = _cluster_clustering_x_element_and_compute_ccc(
+    w_element_cluster, w_element_cluster__ccc = cluster_clustering_x_element_and_compute_ccc(
         clustering_x_w_element, k, linkage_method
     )
 
-    h_element_cluster, h_element_cluster__ccc = _cluster_clustering_x_element_and_compute_ccc(
+    h_element_cluster, h_element_cluster__ccc = cluster_clustering_x_element_and_compute_ccc(
         clustering_x_h_element, k, linkage_method
     )
 

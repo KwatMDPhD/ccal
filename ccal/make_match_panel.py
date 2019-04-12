@@ -1,10 +1,17 @@
-from ._make_annotations import _make_annotations
-from ._match import _match
-from ._process_target_or_data_for_plotting import _process_target_or_data_for_plotting
+from warnings import warn
+
 from .cluster_2d_array_slices import cluster_2d_array_slices
 from .compute_information_coefficient import compute_information_coefficient
+from .make_match_panel_annotations import make_match_panel_annotations
+from .match_target_and_data_and_compute_statistics import (
+    match_target_and_data_and_compute_statistics,
+)
 from .nd_array_is_sorted import nd_array_is_sorted
 from .plot_and_save import plot_and_save
+from .process_match_panel_target_or_data_for_plotting import (
+    process_match_panel_target_or_data_for_plotting,
+)
+from .RANDOM_SEED import RANDOM_SEED
 from .select_series_indices import select_series_indices
 
 
@@ -14,15 +21,16 @@ def make_match_panel(
     target_ascending=True,
     score_moe_p_value_fdr=None,
     n_job=1,
-    match_function=compute_information_coefficient,
+    function=compute_information_coefficient,
     n_required_for_match_function=2,
     raise_for_n_less_than_required=False,
     n_extreme=8,
     fraction_extreme=None,
-    random_seed=20_121_020,
+    random_seed=RANDOM_SEED,
     n_sampling=0,
     n_permutation=0,
     score_ascending=False,
+    plot=True,
     plot_only_sign=None,
     target_type="continuous",
     cluster_within_category=True,
@@ -34,7 +42,6 @@ def make_match_panel(
     layout_side_margin=196,
     annotation_font_size=8.8,
     file_path_prefix=None,
-    plotly_html_file_path_prefix=None,
 ):
 
     common_indices = target.index & data.columns
@@ -47,10 +54,6 @@ def make_match_panel(
 
     target = target[common_indices].dropna()
 
-    if target.dropna().unique().size < 2:
-
-        return
-
     if target_ascending is not None:
 
         target.sort_values(ascending=target_ascending, inplace=True)
@@ -59,11 +62,11 @@ def make_match_panel(
 
     if score_moe_p_value_fdr is None:
 
-        score_moe_p_value_fdr = _match(
+        score_moe_p_value_fdr = match_target_and_data_and_compute_statistics(
             target.values,
             data.values,
             n_job,
-            match_function,
+            function,
             n_required_for_match_function,
             raise_for_n_less_than_required,
             n_extreme,
@@ -86,6 +89,12 @@ def make_match_panel(
         score_moe_p_value_fdr.to_csv("{}.tsv".format(file_path_prefix), sep="\t")
 
     if score_moe_p_value_fdr.isna().values.all():
+
+        warn("score_moe_p_value_fdr has only na.")
+
+        return score_moe_p_value_fdr
+
+    if not plot:
 
         return score_moe_p_value_fdr
 
@@ -112,7 +121,7 @@ def make_match_panel(
             "layout": {
                 "title": {"text": "Score"},
                 "xaxis": {"title": "Rank"},
-                "yaxis": {"title": "Score ({})".format(match_function.__name__)},
+                "yaxis": {"title": "Score ({})".format(function.__name__)},
             },
             "data": [
                 {
@@ -126,7 +135,6 @@ def make_match_panel(
             ],
         },
         html_file_path,
-        None,
     )
 
     scores_to_plot = score_moe_p_value_fdr.copy()
@@ -147,11 +155,11 @@ def make_match_panel(
 
         if plot_only_sign == "-":
 
-            indices = scores_to_plot["Score"] <= 0
+            indices = scores_to_plot["Score"] < 0
 
         elif plot_only_sign == "+":
 
-            indices = 0 <= scores_to_plot["Score"]
+            indices = 0 < scores_to_plot["Score"]
 
         scores_to_plot = scores_to_plot.loc[indices]
 
@@ -159,31 +167,31 @@ def make_match_panel(
 
     data_to_plot = data.loc[scores_to_plot.index]
 
-    annotations = _make_annotations(scores_to_plot)
+    annotations = make_match_panel_annotations(scores_to_plot)
 
-    target, target_plot_min, target_plot_max, target_colorscale = _process_target_or_data_for_plotting(
+    target_to_plot, target_plot_min, target_plot_max, target_colorscale = process_match_panel_target_or_data_for_plotting(
         target, target_type, plot_std
     )
 
     if (
         cluster_within_category
         and target_type in ("binary", "categorical")
-        and 1 < target.value_counts().min()
-        and nd_array_is_sorted(target.values)
+        and 1 < target_to_plot.value_counts().min()
+        and nd_array_is_sorted(target_to_plot.values)
         and not data_to_plot.isna().all().any()
     ):
 
-        print("Clustering heat map within category ...")
+        print("Clustering within category ...")
 
         clustered_indices = cluster_2d_array_slices(
-            data_to_plot.values, 1, groups=target.values, raise_for_bad=False
+            data_to_plot.values, 1, groups=target_to_plot.values, raise_for_bad=False
         )
 
-        target = target.iloc[clustered_indices]
+        target_to_plot = target_to_plot.iloc[clustered_indices]
 
         data_to_plot = data_to_plot.iloc[:, clustered_indices]
 
-    data_to_plot, data_plot_min, data_plot_max, data_colorscale = _process_target_or_data_for_plotting(
+    data_to_plot, data_plot_min, data_plot_max, data_colorscale = process_match_panel_target_or_data_for_plotting(
         data_to_plot, data_type, plot_std
     )
 
@@ -219,10 +227,10 @@ def make_match_panel(
         {
             "yaxis": "y2",
             "type": "heatmap",
-            "z": target.to_frame().T.values,
-            "x": target.index,
-            "y": (target.name,),
-            "text": (target.index,),
+            "z": target_to_plot.to_frame().T.values,
+            "x": target_to_plot.index,
+            "y": (target_to_plot.name,),
+            "text": (target_to_plot.index,),
             "zmin": target_plot_min,
             "zmax": target_plot_max,
             "colorscale": target_colorscale,
@@ -287,18 +295,6 @@ def make_match_panel(
 
         html_file_path = "{}.html".format(file_path_prefix)
 
-    if plotly_html_file_path_prefix is None:
-
-        plotly_html_file_path = None
-
-    else:
-
-        plotly_html_file_path = "{}.html".format(plotly_html_file_path_prefix)
-
-    plot_and_save(
-        {"layout": layout, "data": data},
-        html_file_path=html_file_path,
-        plotly_html_file_path=plotly_html_file_path,
-    )
+    plot_and_save({"layout": layout, "data": data}, html_file_path)
 
     return score_moe_p_value_fdr

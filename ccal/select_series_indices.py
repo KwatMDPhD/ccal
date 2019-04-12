@@ -13,14 +13,9 @@ def select_series_indices(
     xaxis=None,
     yaxis=None,
     html_file_path=None,
-    plotly_file_path=None,
 ):
 
     series_sorted = series.dropna().sort_values()
-
-    if series_sorted.empty:
-
-        return
 
     if n is not None:
 
@@ -40,7 +35,7 @@ def select_series_indices(
 
         elif direction == "<>":
 
-            fraction = min(fraction, 1 / 2)
+            fraction = min(fraction, 0.5)
 
     if direction == "<":
 
@@ -122,7 +117,7 @@ def select_series_indices(
 
         plot_and_save(
             {
-                "layout": {"title": title, "xaxis": xaxis, "yaxis": yaxis},
+                "layout": {"title": {"text": title}, "xaxis": xaxis, "yaxis": yaxis},
                 "data": [
                     {
                         "type": "scatter",
@@ -145,7 +140,6 @@ def select_series_indices(
                 ],
             },
             html_file_path,
-            plotly_file_path,
         )
 
     return series_sorted.index[is_selected]

@@ -1,8 +1,8 @@
 from numpy import absolute, argmax, linspace, rot90
 
-from ._get_target_grid_indices import _get_target_grid_indices
 from .compute_joint_probability import compute_joint_probability
 from .compute_posterior_probability import compute_posterior_probability
+from .get_target_grid_indices import get_target_grid_indices
 from .plot_and_save import plot_and_save
 
 
@@ -42,7 +42,7 @@ def infer(
 
     if target is "max":
 
-        t_grid_coordinates = _get_target_grid_indices(p_tv__ntvs, argmax)
+        t_grid_coordinates = get_target_grid_indices(p_tv__ntvs, argmax)
 
     else:
 
@@ -50,7 +50,7 @@ def infer(
 
         t_i = absolute(t_grid - target).argmin()
 
-        t_grid_coordinates = _get_target_grid_indices(p_tv__ntvs, lambda _: t_i)
+        t_grid_coordinates = get_target_grid_indices(p_tv__ntvs, lambda _: t_i)
 
     p_tvt__ntvs = p_tv__ntvs[t_grid_coordinates].reshape(
         (grid_size,) * (n_dimension - 1)
@@ -79,7 +79,6 @@ def infer(
                     ],
                 },
                 None,
-                None,
             )
 
         elif n_dimension == 3:
@@ -97,7 +96,6 @@ def infer(
                     },
                     "data": [{"type": "heatmap", "z": rot90(p_tvt__ntvs)[::-1]}],
                 },
-                None,
                 None,
             )
 

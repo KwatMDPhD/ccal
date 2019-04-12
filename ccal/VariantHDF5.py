@@ -13,10 +13,10 @@ from tables import (
     open_file,
 )
 
-from ._make_variant_dict_consistent import _make_variant_dict_consistent
 from .get_vcf_info import get_vcf_info
 from .get_vcf_info_ann import get_vcf_info_ann
 from .get_vcf_sample_format import get_vcf_sample_format
+from .make_variant_dict_consistent import make_variant_dict_consistent
 from .read_where_and_map_column_name_on_hdf5_table import (
     read_where_and_map_column_name_on_hdf5_table,
 )
@@ -357,7 +357,7 @@ class VariantHDF5:
 
             raise ValueError("Found {} variants with ID {}.".format(n_variants, id_))
 
-        _make_variant_dict_consistent(variant_dict)
+        make_variant_dict_consistent(variant_dict)
 
         update_variant_dict(variant_dict)
 
@@ -377,7 +377,7 @@ class VariantHDF5:
 
         for variant_dict in variant_dicts:
 
-            _make_variant_dict_consistent(variant_dict)
+            make_variant_dict_consistent(variant_dict)
 
             update_variant_dict(variant_dict)
 
@@ -396,7 +396,7 @@ class VariantHDF5:
 
         for variant_dict in variant_dicts:
 
-            _make_variant_dict_consistent(variant_dict)
+            make_variant_dict_consistent(variant_dict)
 
             update_variant_dict(variant_dict)
 

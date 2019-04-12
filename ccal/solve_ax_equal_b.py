@@ -5,10 +5,6 @@ from scipy.optimize import nnls
 
 def solve_ax_equal_b(a, b, method="pinv"):
 
-    if method not in ("pinv", "nnls"):
-
-        raise ValueError("Unknown method: {}.".format(method))
-
     if method == "pinv":
 
         x = dot(pinv(a), b)

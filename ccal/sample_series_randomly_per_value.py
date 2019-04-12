@@ -1,7 +1,7 @@
 from .RANDOM_SEED import RANDOM_SEED
 
 
-def sample_series_randomly_per_value(series, n_per_value=None, random_seed=RANDOM_SEED):
+def sample_from_each_series_value(series, n_per_value=None, random_seed=RANDOM_SEED):
 
     if n_per_value is None:
 
@@ -11,7 +11,7 @@ def sample_series_randomly_per_value(series, n_per_value=None, random_seed=RANDO
 
     indices_selected = []
 
-    for group_name, group_series in series.groupby(series):
+    for group_name, group_series in series.groupby(by=series):
 
         if n_per_value <= group_series.size:
 
@@ -23,6 +23,10 @@ def sample_series_randomly_per_value(series, n_per_value=None, random_seed=RANDO
 
         else:
 
-            print("Not sampling {}; N < {}.".format(group_name, n_per_value))
+            print(
+                "Not sampling {}, which appears less than {} times.".format(
+                    group_name, n_per_value
+                )
+            )
 
     return series[indices_selected]

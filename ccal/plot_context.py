@@ -30,7 +30,6 @@ def plot_context(
     title=None,
     xaxis_title=None,
     html_file_path=None,
-    plotly_html_file_path=None,
 ):
 
     if isinstance(_1d_array_or_series, Series):
@@ -262,6 +261,4 @@ def plot_context(
             }
         )
 
-    plot_and_save(
-        {"layout": layout, "data": data}, html_file_path, plotly_html_file_path
-    )
+    plot_and_save({"layout": layout, "data": data}, html_file_path)

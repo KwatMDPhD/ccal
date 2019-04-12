@@ -1,4 +1,4 @@
-from os.path import isfile
+from os.path import isfile, join
 
 from pandas import read_csv
 
@@ -12,9 +12,8 @@ def make_match_panels(
     data_dicts,
     drop_negative_target=False,
     directory_path=None,
-    plotly_directory_path=None,
     read_score_moe_p_value_fdr=False,
-    **make_match_panel_kwargs,
+    **make_match_panel_keyword_arguments,
 ):
 
     for target_name, target_values in target_x_sample.iterrows():
@@ -25,26 +24,29 @@ def make_match_panels(
 
         for data_name, data_dict in data_dicts.items():
 
-            suffix = "{}/{}".format(target_name, make_file_name_from_str(data_name))
+            suffix = join(
+                make_file_name_from_str(target_name), make_file_name_from_str(data_name)
+            )
 
             print("Making match panel for {} ...".format(suffix))
-
-            score_moe_p_value_fdr = None
 
             if directory_path is None:
 
                 file_path_prefix = None
 
+                score_moe_p_value_fdr = None
+
             else:
 
-                file_path_prefix = "{}/{}".format(directory_path, suffix)
+                file_path_prefix = join(directory_path, suffix)
 
                 establish_path(file_path_prefix, "file")
 
                 score_moe_p_value_fdr_file_path = "{}.tsv".format(file_path_prefix)
 
-                if read_score_moe_p_value_fdr and isfile(
-                    score_moe_p_value_fdr_file_path
+                if (
+                    isfile(score_moe_p_value_fdr_file_path)
+                    and read_score_moe_p_value_fdr
                 ):
 
                     print(
@@ -57,15 +59,9 @@ def make_match_panels(
                         score_moe_p_value_fdr_file_path, sep="\t", index_col=0
                     )
 
-            if plotly_directory_path is None:
+                else:
 
-                plotly_html_file_path_prefix = None
-
-            else:
-
-                plotly_html_file_path_prefix = "{}/{}".format(
-                    plotly_directory_path, suffix
-                )
+                    score_moe_p_value_fdr = None
 
             make_match_panel(
                 target_values,
@@ -74,6 +70,5 @@ def make_match_panels(
                 data_type=data_dict["type"],
                 title=suffix.replace("/", "<br>"),
                 file_path_prefix=file_path_prefix,
-                plotly_html_file_path_prefix=plotly_html_file_path_prefix,
-                **make_match_panel_kwargs,
+                **make_match_panel_keyword_arguments,
             )

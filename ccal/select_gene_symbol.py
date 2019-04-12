@@ -1,7 +1,9 @@
-from os.path import dirname
+from os.path import join
 
 from numpy import asarray
 from pandas import isna, read_csv
+
+from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
 
 
 def select_gene_symbol(
@@ -41,39 +43,37 @@ def select_gene_symbol(
     locus_type_to_keep=("gene with protein product",),
 ):
 
-    hgnc = read_csv(
-        "{}/../data/hgnc.tsv".format(dirname(__file__)), sep="\t", index_col=0
-    )
+    hgnc = read_csv(join(DATA_DIRECTORY_PATH, "hgnc.tsv"), sep="\t", index_col=0)
 
-    removed_by_gene_family_name = asarray(
+    remove_by_gene_family_name = asarray(
         tuple(
-            not isna(str)
-            and any(removing_str in str for removing_str in gene_family_name_to_remove)
-            for str in hgnc["Gene Family Name"]
+            not isna(gene_family_name)
+            and any(str in gene_family_name for str in gene_family_name_to_remove)
+            for gene_family_name in hgnc["Gene Family Name"]
         )
     )
 
     print(
         "Removing {}/{} by gene family name ...".format(
-            removed_by_gene_family_name.sum(), removed_by_gene_family_name.size
+            remove_by_gene_family_name.sum(), remove_by_gene_family_name.size
         )
     )
 
-    kept_by_locus_type = asarray(
+    keep_by_locus_type = asarray(
         tuple(
-            not isna(str)
-            and any(keeping_str in str for keeping_str in locus_type_to_keep)
-            for str in hgnc["Locus Type"]
+            not isna(locus_type)
+            and any(str in locus_type for str in locus_type_to_keep)
+            for locus_type in hgnc["Locus Type"]
         )
     )
 
     print(
         "Keeping {}/{} by locus type ...".format(
-            kept_by_locus_type.sum(), kept_by_locus_type.size
+            keep_by_locus_type.sum(), keep_by_locus_type.size
         )
     )
 
-    remove = removed_by_gene_family_name | ~kept_by_locus_type
+    remove = remove_by_gene_family_name | ~keep_by_locus_type
 
     print("Removing {} ...".format(remove.sum()))
 
@@ -85,14 +85,15 @@ def select_gene_symbol(
 
         df.columns = ("N Removed",)
 
+        print(df)
+
     gene_symbols = (
         hgnc.loc[~remove, ["Approved Symbol", "Previous Symbols"]]
         .unstack()
         .dropna()
         .unique()
-        .tolist()
     )
 
-    print("Selected {} gene symbols.".format(len(gene_symbols)))
+    print("Selected {} gene symbols.".format(gene_symbols.size))
 
-    return gene_symbols
+    return gene_symbols.tolist()

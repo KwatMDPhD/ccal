@@ -25,7 +25,7 @@ def index_gff3_df_by_name(gff3_df):
 
     rescued = []
 
-    for name, df_ in df.groupby("Name"):
+    for name, df_ in df.groupby(by="Name"):
 
         if 1 < df_.shape[0]:
 

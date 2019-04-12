@@ -27,7 +27,6 @@ def compute_posterior_probability(probability, plot=True, names=None):
                 "data": [{"type": "heatmap", "z": rot90(p_tv__ntvs)[::-1]}],
             },
             None,
-            None,
         )
 
     return p_tv__ntvs
