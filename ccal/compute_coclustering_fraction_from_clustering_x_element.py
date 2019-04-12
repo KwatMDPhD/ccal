@@ -1,7 +1,7 @@
 from numpy import zeros
 
 
-def compute_coclustering_from_clustering_x_element(clustering_x_element):
+def compute_coclustering_fraction_from_clustering_x_element(clustering_x_element):
 
     n_coclustering__element_x_element = zeros((clustering_x_element.shape[1],) * 2)
 

@@ -1,7 +1,7 @@
 from scipy.spatial import Delaunay
 
 
-def get_triangulation_edges_from_point_x_dimension(point_x_dimension):
+def get_point_x_dimension_triangulation_edges(point_x_dimension):
 
     edge_xs = []
 

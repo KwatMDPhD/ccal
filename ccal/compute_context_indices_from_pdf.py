@@ -3,7 +3,7 @@ from numpy import absolute, concatenate, cumsum, inf
 from .compute_kullback_leibler_divergence import compute_kullback_leibler_divergence
 
 
-def compute_context_indices_from_pdf_and_pdf_reference(
+def compute_context_indices_from_pdf(
     grid, pdf, pdf_reference, multiply_distance_from_reference_argmax
 ):
 

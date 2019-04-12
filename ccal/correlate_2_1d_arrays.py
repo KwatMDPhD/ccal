@@ -9,9 +9,9 @@ from .plot_and_save import plot_and_save
 from .RANDOM_SEED import RANDOM_SEED
 
 
-def correlate_x_and_y(
-    x,
-    y,
+def correlate_2_1d_arrays(
+    _1d_array_0,
+    _1d_array_1,
     n_permutation=0,
     random_seed=RANDOM_SEED,
     plot=True,
@@ -24,11 +24,11 @@ def correlate_x_and_y(
 
     model = LinearRegression()
 
-    xs = tuple((x_,) for x_ in x)
+    xs = tuple((x_,) for x_ in _1d_array_0)
 
-    model.fit(xs, y)
+    model.fit(xs, _1d_array_1)
 
-    r2 = model.score(xs, y)
+    r2 = model.score(xs, _1d_array_1)
 
     if n_permutation:
 
@@ -36,7 +36,7 @@ def correlate_x_and_y(
 
         m_ = LinearRegression()
 
-        y_ = y.copy()
+        y_ = _1d_array_1.copy()
 
         seed(random_seed)
 
@@ -83,16 +83,16 @@ def correlate_x_and_y(
                 "data": [
                     {
                         "type": "scatter",
-                        "x": x,
-                        "y": y,
+                        "x": _1d_array_0,
+                        "y": _1d_array_1,
                         "name": "Data",
                         "mode": "markers",
                         "marker": {"size": marker_size, "color": COLOR_CATEGORICAL[0]},
                     },
                     {
                         "type": "scatter",
-                        "x": x,
-                        "y": model.coef_ * x + model.intercept_,
+                        "x": _1d_array_0,
+                        "y": model.coef_ * _1d_array_0 + model.intercept_,
                         "name": "Fit",
                         "marker": {"color": COLOR_CATEGORICAL[1]},
                     },

@@ -1,4 +1,4 @@
-def split_str_ignoring_inside_quotes(str, separator):
+def split_str_ignoring_quotes(str, separator):
 
     splits = []
 

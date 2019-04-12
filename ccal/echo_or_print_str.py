@@ -4,8 +4,8 @@ from random import choice
 from click import secho
 
 
-def echo_or_print(
-    text,
+def echo_or_print_str(
+    str,
     fg=None,
     bg=None,
     bold=None,
@@ -25,7 +25,7 @@ def echo_or_print(
     try:
 
         secho(
-            text,
+            str,
             fg=fg,
             bg=bg,
             bold=bold,
@@ -38,4 +38,4 @@ def echo_or_print(
 
     except UnsupportedOperation:
 
-        print(text)
+        print(str)

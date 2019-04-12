@@ -5,7 +5,7 @@ from .check_nd_array_for_bad import check_nd_array_for_bad
 from .compute_empirical_p_value import compute_empirical_p_value
 
 
-def compute_empirical_p_values_and_fdrs(
+def compute_empirical_p_values_and_fdrs_from_values_and_random_values(
     values, random_values, p_value_direction, raise_for_bad=True
 ):
 

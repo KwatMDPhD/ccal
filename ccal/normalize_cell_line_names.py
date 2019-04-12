@@ -5,7 +5,7 @@ from pandas import read_csv
 from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
 
 
-def map_cell_line_names(cell_line_names):
+def normalize_cell_line_names(cell_line_names):
 
     cell_line_name_best_cell_line_name = read_csv(
         join(DATA_DIRECTORY_PATH, "cell_line_name_best_cell_line_name.tsv"),

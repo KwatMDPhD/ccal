@@ -1,4 +1,4 @@
-def merge_dicts_with_callable(dict_0, dict_1, callable):
+def merge_dicts_with_function(dict_0, dict_1, function):
 
     dict = {}
 
@@ -6,7 +6,7 @@ def merge_dicts_with_callable(dict_0, dict_1, callable):
 
         if key in dict_0 and key in dict_1:
 
-            dict[key] = callable(dict_0[key], dict_1[key])
+            dict[key] = function(dict_0[key], dict_1[key])
 
         elif key in dict_0:
 
