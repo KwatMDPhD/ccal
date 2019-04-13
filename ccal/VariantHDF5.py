@@ -23,26 +23,61 @@ from .read_where_and_map_column_name_on_hdf5_table import (
 from .update_variant_dict import update_variant_dict
 
 
+class _VariantDescription(IsDescription):
+
+    CHROM = StringCol(256)
+
+    POS = Int32Col()
+
+    ID = StringCol(256)
+
+    REF = StringCol(256)
+
+    ALT = StringCol(256)
+
+    QUAL = Float32Col()
+
+    CAF = StringCol(256)
+
+    CLNDISDB = StringCol(256)
+
+    CLNDN = StringCol(256)
+
+    CLNSIG = StringCol(256)
+
+    CLNREVSTAT = StringCol(256)
+
+    CLNVI = StringCol(256)
+
+    effect = StringCol(256)
+
+    impact = StringCol(256)
+
+    gene_name = StringCol(256)
+
+    GT = StringCol(256)
+
+
 class VariantHDF5:
     def __init__(self, vcf_gz_file_path, reset=False):
 
-        self._vcf_gz_file_path = vcf_gz_file_path
+        self.vcf_gz_file_path = vcf_gz_file_path
 
-        self._variant_hdf5_file_path = "{}.hdf5".format(self._vcf_gz_file_path)
+        self.variant_hdf5_file_path = "{}.hdf5".format(self.vcf_gz_file_path)
 
-        self._id_chrom_pickle_gz_file_path = "{}.id_chrom.pickle.gz".format(
-            self._vcf_gz_file_path
+        self.id_chrom_pickle_gz_file_path = "{}.id_chrom.pickle.gz".format(
+            self.vcf_gz_file_path
         )
 
-        self._gene_chrom_pickle_gz_file_path = "{}.gene_chrom.pickle.gz".format(
-            self._vcf_gz_file_path
+        self.gene_chrom_pickle_gz_file_path = "{}.gene_chrom.pickle.gz".format(
+            self.vcf_gz_file_path
         )
 
-        self._variant_hdf5 = None
+        self.variant_hdf5 = None
 
-        self._id_chrom = {}
+        self.id_chrom = {}
 
-        self._gene_chrom = {}
+        self.gene_chrom = {}
 
         if not reset:
 
@@ -50,25 +85,25 @@ class VariantHDF5:
 
                 print("Initializing VariantHDF5 ...")
 
-                print("\tReading {} ...".format(self._variant_hdf5_file_path))
+                print("\tReading {} ...".format(self.variant_hdf5_file_path))
 
-                self._variant_hdf5 = open_file(self._variant_hdf5_file_path, mode="r")
+                self.variant_hdf5 = open_file(self.variant_hdf5_file_path, mode="r")
 
-                print("\tReading {} ...".format(self._id_chrom_pickle_gz_file_path))
+                print("\tReading {} ...".format(self.id_chrom_pickle_gz_file_path))
 
                 with gzip_open(
-                    self._id_chrom_pickle_gz_file_path
+                    self.id_chrom_pickle_gz_file_path
                 ) as id_chrom_pickle_gz_file:
 
-                    self._id_chrom = load(id_chrom_pickle_gz_file)
+                    self.id_chrom = load(id_chrom_pickle_gz_file)
 
-                print("\tReading {} ...".format(self._gene_chrom_pickle_gz_file_path))
+                print("\tReading {} ...".format(self.gene_chrom_pickle_gz_file_path))
 
                 with gzip_open(
-                    self._gene_chrom_pickle_gz_file_path
+                    self.gene_chrom_pickle_gz_file_path
                 ) as gene_chrom_pickle_gz_file:
 
-                    self._gene_chrom = load(gene_chrom_pickle_gz_file)
+                    self.gene_chrom = load(gene_chrom_pickle_gz_file)
 
             except (OSError, FileNotFoundError, HDF5ExtError) as exception:
 
@@ -80,266 +115,228 @@ class VariantHDF5:
 
             print("Resetting ...")
 
-            if self._variant_hdf5:
+            if self.variant_hdf5:
 
-                self._variant_hdf5.close()
+                self.variant_hdf5.close()
 
-                print("\tClosed {}.".format(self._variant_hdf5_file_path))
+                print("\tClosed {}.".format(self.variant_hdf5_file_path))
 
-            print("\tMaking {} ...".format(self._variant_hdf5_file_path))
+            print("\tMaking {} ...".format(self.variant_hdf5_file_path))
 
-            self._make_variant_hdf5()
+            with gzip_open(self.vcf_gz_file_path) as vcf_gz_file:
 
-            print("\tReading {} ...".format(self._variant_hdf5_file_path))
+                print("Getting data-start position ...")
 
-            self._variant_hdf5 = open_file(self._variant_hdf5_file_path, mode="r")
-
-    def __del__(self):
-
-        if self._variant_hdf5:
-
-            self._variant_hdf5.close()
-
-            print("Destructor closed {}.".format(self._variant_hdf5_file_path))
-
-    def _make_variant_hdf5(self):
-
-        with gzip_open(self._vcf_gz_file_path) as vcf_gz_file:
-
-            print("Getting data-start position ...")
-
-            data_start_position = None
-
-            line = vcf_gz_file.readline().decode()
-
-            while line.startswith("#"):
-
-                data_start_position = vcf_gz_file.tell()
+                data_start_position = None
 
                 line = vcf_gz_file.readline().decode()
 
-            print("Counting variants per chrom ...")
+                while line.startswith("#"):
 
-            chrom_n_row = defaultdict(lambda: 0)
+                    data_start_position = vcf_gz_file.tell()
 
-            n = 0
+                    line = vcf_gz_file.readline().decode()
 
-            chrom = None
+                print("Counting variants per chrom ...")
 
-            while line:
+                chrom_n_row = defaultdict(lambda: 0)
 
-                n += 1
+                n = 0
 
-                if not line.startswith("#"):
+                chrom = None
 
-                    chrom_ = line.split(sep="\t")[0]
+                while line:
 
-                    if chrom != chrom_:
+                    n += 1
 
-                        print("\t{} ...".format(chrom_))
+                    if not line.startswith("#"):
 
-                        chrom = chrom_
+                        chrom_ = line.split(sep="\t")[0]
 
-                    chrom_n_row[chrom_] += 1
+                        if chrom != chrom_:
 
-                line = vcf_gz_file.readline().decode()
+                            print("\t{} ...".format(chrom_))
 
-            print("Making {} ...".format(self._variant_hdf5_file_path))
+                            chrom = chrom_
 
-            with open_file(
-                self._variant_hdf5_file_path,
-                mode="w",
-                filters=Filters(complevel=1, complib="blosc"),
-            ) as variant_hdf5:
+                        chrom_n_row[chrom_] += 1
 
-                chrom_table_row = {}
+                    line = vcf_gz_file.readline().decode()
 
-                n_per_print = max(1, n // 10)
+                print("Making {} ...".format(self.variant_hdf5_file_path))
 
-                vcf_gz_file.seek(data_start_position)
+                with open_file(
+                    self.variant_hdf5_file_path,
+                    mode="w",
+                    filters=Filters(complevel=1, complib="blosc"),
+                ) as variant_hdf5:
 
-                for i, line in enumerate(vcf_gz_file):
+                    chrom_table_row = {}
 
-                    if i % n_per_print == 0:
+                    n_per_print = max(1, n // 10)
 
-                        print("\t{:,}/{:,} ...".format(i + 1, n))
+                    vcf_gz_file.seek(data_start_position)
 
-                    line = line.decode(errors="replace").replace("�", "?")
+                    for i, line in enumerate(vcf_gz_file):
 
-                    if line.startswith("#"):
+                        if i % n_per_print == 0:
 
-                        continue
+                            print("\t{:,}/{:,} ...".format(i + 1, n))
 
-                    chrom, pos, id, ref, alt, qual, filter_, info, format, sample = line.split(
-                        sep="\t"
-                    )
+                        line = line.decode(errors="replace").replace("�", "?")
 
-                    if qual == ".":
+                        if line.startswith("#"):
 
-                        warn("Skipped row {} because QUAL==.:\n{}".format(i, line))
+                            continue
 
-                        continue
-
-                    if chrom not in chrom_table_row:
-
-                        print("\t\tMaking {} table ...".format(chrom))
-
-                        chrom_table = variant_hdf5.create_table(
-                            "/",
-                            "chromosome_{}_variants".format(chrom),
-                            description=self._VariantDescription,
-                            expectedrows=chrom_n_row[chrom],
+                        chrom, pos, id, ref, alt, qual, filter_, info, format, sample = line.split(
+                            sep="\t"
                         )
 
-                        chrom_table_row[chrom] = chrom_table.row
+                        if qual == ".":
 
-                    cursor = chrom_table_row[chrom]
+                            warn("Skipped row {} because QUAL==.:\n{}".format(i, line))
 
-                    for id_ in id.split(sep=";"):
+                            continue
 
-                        cursor["CHROM"] = chrom
+                        if chrom not in chrom_table_row:
 
-                        cursor["POS"] = pos
+                            print("\t\tMaking {} table ...".format(chrom))
 
-                        if id_ != ".":
+                            chrom_table = variant_hdf5.create_table(
+                                "/",
+                                "chromosome_{}_variants".format(chrom),
+                                description=_VariantDescription,
+                                expectedrows=chrom_n_row[chrom],
+                            )
 
-                            cursor["ID"] = id_
+                            chrom_table_row[chrom] = chrom_table.row
 
-                            self._id_chrom[id_] = chrom
+                        cursor = chrom_table_row[chrom]
 
-                        cursor["REF"] = ref
+                        for id_ in id.split(sep=";"):
 
-                        cursor["ALT"] = alt
+                            cursor["CHROM"] = chrom
 
-                        cursor["QUAL"] = qual
+                            cursor["POS"] = pos
 
-                        for info_field in (
+                            if id_ != ".":
+
+                                cursor["ID"] = id_
+
+                                self.id_chrom[id_] = chrom
+
+                            cursor["REF"] = ref
+
+                            cursor["ALT"] = alt
+
+                            cursor["QUAL"] = qual
+
+                            for info_field in (
+                                "CAF",
+                                "CLNDISDB",
+                                "CLNDN",
+                                "CLNSIG",
+                                "CLNREVSTAT",
+                                "CLNVI",
+                            ):
+
+                                info_field_value = get_vcf_info(info, info_field)
+
+                                if info_field_value:
+
+                                    cursor[info_field] = info_field_value
+
+                            for info_ann_field in ("effect", "impact", "gene_name"):
+
+                                info_ann_field_values = get_vcf_info_ann(
+                                    info, info_ann_field
+                                )
+
+                                if len(info_ann_field_values):
+
+                                    info_ann_field_value_0 = info_ann_field_values[0]
+
+                                    cursor[info_ann_field] = info_ann_field_value_0
+
+                                    if info_ann_field == "gene_name":
+
+                                        self.gene_chrom[info_ann_field_value_0] = chrom
+
+                            cursor["GT"] = get_vcf_sample_format(format, sample, "GT")
+
+                            cursor.append()
+
+                    print("\tFlushing tables and making column indices ...")
+
+                    for chrom in chrom_table_row:
+
+                        print("\t\t{} table ...".format(chrom))
+
+                        chrom_table = variant_hdf5.get_node(
+                            "/", "chromosome_{}_variants".format(chrom)
+                        )
+
+                        chrom_table.flush()
+
+                        for column in (
+                            "CHROM",
+                            "POS",
+                            "ID",
+                            "REF",
+                            "ALT",
+                            "QUAL",
                             "CAF",
                             "CLNDISDB",
                             "CLNDN",
                             "CLNSIG",
                             "CLNREVSTAT",
                             "CLNVI",
+                            "effect",
+                            "impact",
+                            "gene_name",
+                            "GT",
                         ):
 
-                            info_field_value = get_vcf_info(info, info_field)
+                            chrom_table.cols._f_col(column).create_csindex()
 
-                            if info_field_value:
+                    self.variant_hdf5 = variant_hdf5
 
-                                cursor[info_field] = info_field_value
+                    print(self.variant_hdf5)
 
-                        for info_ann_field in ("effect", "impact", "gene_name"):
+                    print("Writing {} ...".format(self.id_chrom_pickle_gz_file_path))
 
-                            info_ann_field_values = get_vcf_info_ann(
-                                info, info_ann_field
-                            )
+                    with gzip_open(
+                        self.id_chrom_pickle_gz_file_path, mode="wb"
+                    ) as id_chrom_pickle_gz_file:
 
-                            if len(info_ann_field_values):
+                        dump(self.id_chrom, id_chrom_pickle_gz_file)
 
-                                info_ann_field_value_0 = info_ann_field_values[0]
+                    print("Writing {} ...".format(self.gene_chrom_pickle_gz_file_path))
 
-                                cursor[info_ann_field] = info_ann_field_value_0
+                    with gzip_open(
+                        self.gene_chrom_pickle_gz_file_path, mode="wb"
+                    ) as gene_chrom_pickle_gz_file:
 
-                                if info_ann_field == "gene_name":
+                        dump(self.gene_chrom, gene_chrom_pickle_gz_file)
 
-                                    self._gene_chrom[info_ann_field_value_0] = chrom
+            print("\tReading {} ...".format(self.variant_hdf5_file_path))
 
-                        cursor["GT"] = get_vcf_sample_format(format, sample, "GT")
+            self.variant_hdf5 = open_file(self.variant_hdf5_file_path, mode="r")
 
-                        cursor.append()
+    def __del__(self):
 
-                print("\tFlushing tables and making column indices ...")
+        if self.variant_hdf5:
 
-                for chrom in chrom_table_row:
+            self.variant_hdf5.close()
 
-                    print("\t\t{} table ...".format(chrom))
-
-                    chrom_table = variant_hdf5.get_node(
-                        "/", "chromosome_{}_variants".format(chrom)
-                    )
-
-                    chrom_table.flush()
-
-                    for column in (
-                        "CHROM",
-                        "POS",
-                        "ID",
-                        "REF",
-                        "ALT",
-                        "QUAL",
-                        "CAF",
-                        "CLNDISDB",
-                        "CLNDN",
-                        "CLNSIG",
-                        "CLNREVSTAT",
-                        "CLNVI",
-                        "effect",
-                        "impact",
-                        "gene_name",
-                        "GT",
-                    ):
-
-                        chrom_table.cols._f_col(column).create_csindex()
-
-                self._variant_hdf5 = variant_hdf5
-
-                print(self._variant_hdf5)
-
-                print("Writing {} ...".format(self._id_chrom_pickle_gz_file_path))
-
-                with gzip_open(
-                    self._id_chrom_pickle_gz_file_path, mode="wb"
-                ) as id_chrom_pickle_gz_file:
-
-                    dump(self._id_chrom, id_chrom_pickle_gz_file)
-
-                print("Writing {} ...".format(self._gene_chrom_pickle_gz_file_path))
-
-                with gzip_open(
-                    self._gene_chrom_pickle_gz_file_path, mode="wb"
-                ) as gene_chrom_pickle_gz_file:
-
-                    dump(self._gene_chrom, gene_chrom_pickle_gz_file)
-
-    class _VariantDescription(IsDescription):
-
-        CHROM = StringCol(256)
-
-        POS = Int32Col()
-
-        ID = StringCol(256)
-
-        REF = StringCol(256)
-
-        ALT = StringCol(256)
-
-        QUAL = Float32Col()
-
-        CAF = StringCol(256)
-
-        CLNDISDB = StringCol(256)
-
-        CLNDN = StringCol(256)
-
-        CLNSIG = StringCol(256)
-
-        CLNREVSTAT = StringCol(256)
-
-        CLNVI = StringCol(256)
-
-        effect = StringCol(256)
-
-        impact = StringCol(256)
-
-        gene_name = StringCol(256)
-
-        GT = StringCol(256)
+            print("Destructor closed {}.".format(self.variant_hdf5_file_path))
 
     def get_variant_by_id(self, id_):
 
-        chrom = self._id_chrom[id_]
+        chrom = self.id_chrom[id_]
 
-        chrom_table = self._variant_hdf5.get_node(
+        chrom_table = self.variant_hdf5.get_node(
             "/", "chromosome_{}_variants".format(chrom)
         )
 
@@ -365,9 +362,9 @@ class VariantHDF5:
 
     def get_variants_by_gene(self, gene):
 
-        chrom = self._gene_chrom[gene]
+        chrom = self.gene_chrom[gene]
 
-        chrom_table = self._variant_hdf5.get_node(
+        chrom_table = self.variant_hdf5.get_node(
             "/", "chromosome_{}_variants".format(chrom)
         )
 
@@ -385,7 +382,7 @@ class VariantHDF5:
 
     def get_variants_by_region(self, chrom, start_position, end_position):
 
-        chrom_table = self._variant_hdf5.get_node(
+        chrom_table = self.variant_hdf5.get_node(
             "/", "chromosome_{}_variants".format(chrom)
         )
 

@@ -3,7 +3,7 @@ from numpy import isnan, nan
 from .check_nd_array_for_bad import check_nd_array_for_bad
 
 
-def compute_empirical_p_value_from_value_and_random_values(
+def compute_empirical_p_value(
     value, random_values, p_value_direction, raise_for_bad=True
 ):
 

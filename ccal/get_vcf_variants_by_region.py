@@ -4,19 +4,25 @@ from .parse_vcf_row_and_make_variant_dict import parse_vcf_row_and_make_variant_
 from .update_variant_dict import update_variant_dict
 
 
-def get_vcf_gz_variants_by_region(
-    chromosome, start_position, end_position, pytabix_handle=None, vcf_gz_file_path=None
+def get_vcf_variants_by_region(
+    chromosome,
+    start_position,
+    end_position,
+    pytabix_handle=None,
+    vcf_or_vcf_gz_file_path=None,
 ):
 
     if pytabix_handle is None:
 
-        if vcf_gz_file_path is None:
+        if vcf_or_vcf_gz_file_path is None:
 
-            raise ValueError("Provide either pytabix_handle or vcf_gz_file_path.")
+            raise ValueError(
+                "Provide either pytabix_handle or vcf_or_vcf_gz_file_path."
+            )
 
         else:
 
-            pytabix_handle = tabix_open(vcf_gz_file_path)
+            pytabix_handle = tabix_open(vcf_or_vcf_gz_file_path)
 
     variants = pytabix_handle.query(chromosome, start_position, end_position)
 

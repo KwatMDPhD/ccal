@@ -1,4 +1,4 @@
-def split_str_ignoring_quotes(str, separator):
+def skip_quote_and_split_str(str, separator):
 
     splits = []
 
