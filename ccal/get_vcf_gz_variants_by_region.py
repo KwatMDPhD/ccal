@@ -4,7 +4,7 @@ from .parse_vcf_row_and_make_variant_dict import parse_vcf_row_and_make_variant_
 from .update_variant_dict import update_variant_dict
 
 
-def get_vcf_variants_by_region(
+def get_vcf_gz_variants_by_region(
     chromosome, start_position, end_position, pytabix_handle=None, vcf_gz_file_path=None
 ):
 

@@ -2,7 +2,7 @@ from .VCF_ANN_FIELDS import VCF_ANN_FIELDS
 from .VCF_COLUMNS import VCF_COLUMNS
 
 
-def parse_vcf_row_and_make_variant_dict(vcf_row, n_info_ann=None):
+def make_variant_dict_from_vcf_row(vcf_row, n_info_ann=None):
 
     variant_dict = {
         column: vcf_row[i]

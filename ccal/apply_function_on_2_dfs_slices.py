@@ -1,4 +1,3 @@
-from numpy import asarray
 from pandas import DataFrame
 
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
@@ -6,10 +5,10 @@ from .compute_information_coefficient import compute_information_coefficient
 from .plot_heat_map import plot_heat_map
 
 
-def make_comparison_panel(
-    _2d_array_or_df_0,
-    _2d_array_or_df_1,
-    match_function=compute_information_coefficient,
+def apply_function_on_2_dfs_slices(
+    df_0,
+    df_1,
+    function=compute_information_coefficient,
     axis=0,
     title=None,
     name_0=None,
@@ -18,28 +17,16 @@ def make_comparison_panel(
 ):
 
     comparison = apply_function_on_2_2d_arrays_slices(
-        asarray(_2d_array_or_df_0), asarray(_2d_array_or_df_1), match_function, axis
+        df_0.values, df_1.values, function, axis
     )
 
-    if isinstance(_2d_array_or_df_0, DataFrame) and isinstance(
-        _2d_array_or_df_1, DataFrame
-    ):
+    if axis == 0:
 
-        if axis == 0:
+        comparison = DataFrame(comparison, index=df_0.columns, columns=df_1.columns)
 
-            comparison = DataFrame(
-                comparison,
-                index=_2d_array_or_df_0.columns,
-                columns=_2d_array_or_df_1.columns,
-            )
+    elif axis == 1:
 
-        elif axis == 1:
-
-            comparison = DataFrame(
-                comparison,
-                index=_2d_array_or_df_0.index,
-                columns=_2d_array_or_df_1.index,
-            )
+        comparison = DataFrame(comparison, index=df_0.index, columns=df_1.index)
 
     if file_path_prefix is None:
 
