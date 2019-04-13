@@ -4,15 +4,15 @@ from scipy.stats import rankdata
 from .check_nd_array_for_bad import check_nd_array_for_bad
 
 
-def _normalize_nd_array(_nd_array, method, rank_method, raise_for_bad):
+def _normalize_nd_array(nd_array, method, rank_method, raise_for_bad):
 
-    is_good = ~check_nd_array_for_bad(_nd_array, raise_for_bad=raise_for_bad)
+    is_good = ~check_nd_array_for_bad(nd_array, raise_for_bad=raise_for_bad)
 
-    nd_array_normalized = full(_nd_array.shape, nan)
+    nd_array_normalized = full(nd_array.shape, nan)
 
     if is_good.any():
 
-        nd_array_good = _nd_array[is_good]
+        nd_array_good = nd_array[is_good]
 
         if method == "-0-":
 

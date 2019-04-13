@@ -6,7 +6,7 @@ from .multiprocess import multiprocess
 from .split_df import split_df
 
 
-def _fit_skew_t_pdfs(df):
+def _fit_skew_t_pdf_on_each_df_row(df):
 
     skew_t_pdf_fit_parameter = full((df.shape[0], 5), nan)
 
@@ -31,11 +31,11 @@ def _fit_skew_t_pdfs(df):
     )
 
 
-def fit_skew_t_pdfs(df, n_job=1, output_file_path=None):
+def fit_skew_t_pdf_on_each_df_row(df, n_job=1, output_file_path=None):
 
     skew_t_pdf_fit_parameter = concat(
         multiprocess(
-            _fit_skew_t_pdfs,
+            _fit_skew_t_pdf_on_each_df_row,
             ((df_,) for df_ in split_df(df, 0, min(df.shape[0], n_job))),
             n_job,
         )
