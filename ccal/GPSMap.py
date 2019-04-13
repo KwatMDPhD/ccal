@@ -280,7 +280,7 @@ class GPSMap:
                 self.h, self.node_x_dimension, self.h_n_pull, self.h_pull_power
             )
 
-    def plot_gps_map(
+    def plot(
         self,
         w_or_h,
         grid_label_opacity=None,
@@ -611,7 +611,7 @@ class GPSMap:
 
         return predicted_element_labels
 
-    def anneal_node_and_element_positions(
+    def anneal(
         self,
         w_or_h,
         node_node_score_weight=0,

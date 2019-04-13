@@ -1,4 +1,4 @@
-def str_is_version(str):
+def is_str_version(str):
 
     str_split = str.split(sep=".")
 
