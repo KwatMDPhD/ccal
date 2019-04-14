@@ -1,3 +1,3 @@
-def untitle_str(str_):
+def untitle_str(str):
 
-    return str_.lower().replace(" ", "_").replace("-", "_")
+    return str.lower().replace(" ", "_").replace("-", "_")

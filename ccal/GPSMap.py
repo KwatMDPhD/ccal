@@ -3,27 +3,29 @@ from pandas import DataFrame, Series
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import pdist, squareform
 
-from ._anneal_node_and_element_positions import _anneal_node_and_element_positions
-from ._check_node_x_element import _check_node_x_element
-from ._check_w_or_h import _check_w_or_h
-from ._make_element_x_dimension import _make_element_x_dimension
-from ._make_grid_values_and_categorical_labels import (
-    _make_grid_values_and_categorical_labels,
+from .anneal_gps_map_node_and_element_positions import (
+    anneal_gps_map_node_and_element_positions,
 )
-from ._plot_gps_map import _plot_gps_map
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
+from .check_gps_map_node_x_element import check_gps_map_node_x_element
 from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .compute_information_distance import compute_information_distance
+from .make_gps_map_element_x_dimension import make_gps_map_element_x_dimension
+from .make_gps_map_grid_values_and_categorical_labels import (
+    make_gps_map_grid_values_and_categorical_labels,
+)
 from .mds import mds
 from .normalize_nd_array import normalize_nd_array
+from .plot_gps_map import plot_gps_map
 from .plot_heat_map import plot_heat_map
+from .RANDOM_SEED import RANDOM_SEED
 from .train_and_classify import train_and_classify
 
 element_marker_size = 16
 
 grid_label_opacity_without_annotation = 0.64
 
-grid_label_opacity_with_annotation = grid_label_opacity_without_annotation * 0.64
+grid_label_opacity_with_annotation = 0.32
 
 
 class GPSMap:
@@ -33,7 +35,7 @@ class GPSMap:
         h=None,
         function_to_blend_node_node_distance=mean,
         node_x_dimension=None,
-        mds_random_seed=20121020,
+        mds_random_seed=RANDOM_SEED,
         w_n_pull=None,
         w_pull_power=None,
         h_n_pull=None,
@@ -85,8 +87,6 @@ class GPSMap:
 
         self.w_element_labels = None
 
-        self.w_labels = None
-
         self.w_bandwidth_factor = None
 
         self.w_grid_values = None
@@ -96,8 +96,6 @@ class GPSMap:
         self.w_label_colors = None
 
         self.h_element_labels = None
-
-        self.h_labels = None
 
         self.h_bandwidth_factor = None
 
@@ -117,11 +115,11 @@ class GPSMap:
 
         if w is not None:
 
-            _check_node_x_element(w)
+            check_gps_map_node_x_element(w)
 
         if h is not None:
 
-            _check_node_x_element(h)
+            check_gps_map_node_x_element(h)
 
         if w is not None and h is not None:
 
@@ -139,9 +137,13 @@ class GPSMap:
 
             self.nodes = w.index.tolist()
 
+            self.node_name = w.index.name
+
         elif h is not None:
 
             self.nodes = h.index.tolist()
+
+            self.node_name = h.index.name
 
         if w is not None:
 
@@ -150,6 +152,10 @@ class GPSMap:
             self.w_elements = w.columns.tolist()
 
             self.w_element_name = w.columns.name
+
+            self.w_distance__node_x_node = squareform(
+                pdist(self.w, metric=compute_information_distance)
+            )
 
             if plot:
 
@@ -162,12 +168,6 @@ class GPSMap:
                     xaxis_title=self.w_element_name,
                     yaxis_title=self.node_name,
                 )
-
-            self.w_distance__node_x_node = squareform(
-                pdist(self.w, metric=compute_information_distance)
-            )
-
-            if plot:
 
                 plot_heat_map(
                     DataFrame(
@@ -189,6 +189,10 @@ class GPSMap:
 
             self.h_element_name = h.columns.name
 
+            self.h_distance__node_x_node = squareform(
+                pdist(self.h, metric=compute_information_distance)
+            )
+
             if plot:
 
                 plot_heat_map(
@@ -200,12 +204,6 @@ class GPSMap:
                     xaxis_title=self.h_element_name,
                     yaxis_title=self.node_name,
                 )
-
-            self.h_distance__node_x_node = squareform(
-                pdist(self.h, metric=compute_information_distance)
-            )
-
-            if plot:
 
                 plot_heat_map(
                     DataFrame(
@@ -272,15 +270,104 @@ class GPSMap:
 
         if w is not None:
 
-            self.w_element_x_dimension = _make_element_x_dimension(
+            self.w_element_x_dimension = make_gps_map_element_x_dimension(
                 self.w, self.node_x_dimension, self.w_n_pull, self.w_pull_power
             )
 
         if h is not None:
 
-            self.h_element_x_dimension = _make_element_x_dimension(
+            self.h_element_x_dimension = make_gps_map_element_x_dimension(
                 self.h, self.node_x_dimension, self.h_n_pull, self.h_pull_power
             )
+
+    def plot(
+        self,
+        w_or_h,
+        grid_label_opacity=None,
+        annotation_x_element=None,
+        annotation_types=None,
+        annotation_std_maxs=None,
+        annotation_ranges=None,
+        annotation_colorscale=None,
+        elements_to_be_emphasized=None,
+        element_marker_size=element_marker_size,
+        layout_size=880,
+        title=None,
+        html_file_path=None,
+    ):
+
+        if w_or_h == "w":
+
+            elements = self.w_elements
+
+            element_name = self.w_element_name
+
+            element_x_dimension = self.w_element_x_dimension
+
+            element_labels = self.w_element_labels
+
+            grid_values = self.w_grid_values
+
+            grid_labels = self.w_grid_labels
+
+            label_colors = self.w_label_colors
+
+        elif w_or_h == "h":
+
+            elements = self.h_elements
+
+            element_name = self.h_element_name
+
+            element_x_dimension = self.h_element_x_dimension
+
+            element_labels = self.h_element_labels
+
+            grid_values = self.h_grid_values
+
+            grid_labels = self.h_grid_labels
+
+            label_colors = self.h_label_colors
+
+        if annotation_x_element is not None:
+
+            annotation_x_element = annotation_x_element.reindex(columns=elements)
+
+        if grid_label_opacity is None:
+
+            if annotation_x_element is None:
+
+                grid_label_opacity = grid_label_opacity_without_annotation
+
+            else:
+
+                grid_label_opacity = grid_label_opacity_with_annotation
+
+        if title is None:
+
+            title = w_or_h.title()
+
+        plot_gps_map(
+            self.nodes,
+            self.node_name,
+            self.node_x_dimension,
+            elements,
+            element_name,
+            element_x_dimension,
+            element_marker_size,
+            element_labels,
+            grid_values,
+            grid_labels,
+            label_colors,
+            grid_label_opacity,
+            annotation_x_element,
+            annotation_types,
+            annotation_std_maxs,
+            annotation_ranges,
+            annotation_colorscale,
+            layout_size,
+            title,
+            html_file_path,
+        )
 
     def set_element_labels(
         self,
@@ -292,15 +379,13 @@ class GPSMap:
         plot=True,
     ):
 
-        _check_w_or_h(w_or_h)
-
         if not issubdtype(element_labels, number):
 
-            raise ValueError("element_labels should be only number.")
+            raise ValueError("element_labels should be number.")
 
-        if (element_labels.value_counts() < 3).any():
+        if element_labels.value_counts().min() < 3:
 
-            raise ValueError("A label should not have less than 3 elements.")
+            raise ValueError("Each label should have 3 or more elements.")
 
         if w_or_h == "w":
 
@@ -312,24 +397,22 @@ class GPSMap:
 
         self.n_grid = n_grid
 
-        self.mask_grid = full((n_grid,) * 2, nan)
+        self.mask_grid = full((self.n_grid,) * 2, nan)
 
         x_grid_for_j = linspace(0, 1, self.n_grid)
 
         y_grid_for_i = linspace(1, 0, self.n_grid)
 
-        for i in range(n_grid):
+        for i in range(self.n_grid):
 
-            for j in range(n_grid):
+            for j in range(self.n_grid):
 
                 self.mask_grid[i, j] = (
                     self.triangulation.find_simplex((x_grid_for_j[j], y_grid_for_i[i]))
                     == -1
                 )
 
-        labels = sorted(element_labels.unique())
-
-        grid_values, grid_labels = _make_grid_values_and_categorical_labels(
+        grid_values, grid_labels = make_gps_map_grid_values_and_categorical_labels(
             element_x_dimension,
             element_labels,
             self.n_grid,
@@ -339,13 +422,11 @@ class GPSMap:
 
         if label_colors is None:
 
-            label_colors = COLOR_CATEGORICAL[: element_labels.unique().size]
+            label_colors = COLOR_CATEGORICAL[: element_labels.dropna().unique().size]
 
         if w_or_h == "w":
 
             self.w_element_labels = element_labels
-
-            self.w_labels = labels
 
             self.w_bandwidth_factor = bandwidth_factor
 
@@ -358,8 +439,6 @@ class GPSMap:
         elif w_or_h == "h":
 
             self.h_element_labels = element_labels
-
-            self.h_labels = labels
 
             self.h_bandwidth_factor = bandwidth_factor
 
@@ -398,103 +477,10 @@ class GPSMap:
                 yaxis_title=self.node_name,
             )
 
-    def plot_gps_map(
-        self,
-        w_or_h,
-        grid_label_opacity=None,
-        annotation_x_element=None,
-        annotation_types=None,
-        annotation_std_maxs=None,
-        annotation_ranges=None,
-        annotation_colorscale=None,
-        elements_to_be_emphasized=None,
-        element_marker_size=element_marker_size,
-        layout_size=880,
-        title=None,
-        html_file_path=None,
-        plotly_html_file_path=None,
-    ):
-
-        _check_w_or_h(w_or_h)
-
-        if w_or_h == "w":
-
-            elements = self.w_elements
-
-            element_name = self.w_element_name
-
-            element_x_dimension = self.w_element_x_dimension
-
-            element_labels = self.w_element_labels
-
-            grid_values = self.w_grid_values
-
-            grid_labels = self.w_grid_labels
-
-            label_colors = self.w_label_colors
-
-        elif w_or_h == "h":
-
-            elements = self.h_elements
-
-            element_name = self.h_element_name
-
-            element_x_dimension = self.h_element_x_dimension
-
-            element_labels = self.h_element_labels
-
-            grid_values = self.h_grid_values
-
-            grid_labels = self.h_grid_labels
-
-            label_colors = self.h_label_colors
-
-        if annotation_x_element is None:
-
-            if grid_label_opacity is None:
-
-                grid_label_opacity = grid_label_opacity_without_annotation
-
-        else:
-
-            annotation_x_element = annotation_x_element.reindex(columns=elements)
-
-            if grid_label_opacity is None:
-
-                grid_label_opacity = grid_label_opacity_with_annotation
-
-        if title is None:
-
-            title = w_or_h.title()
-
-        _plot_gps_map(
-            self.nodes,
-            self.node_name,
-            self.node_x_dimension,
-            elements,
-            element_name,
-            element_x_dimension,
-            element_marker_size,
-            element_labels,
-            grid_values,
-            grid_labels,
-            label_colors,
-            grid_label_opacity,
-            annotation_x_element,
-            annotation_types,
-            annotation_std_maxs,
-            annotation_ranges,
-            annotation_colorscale,
-            layout_size,
-            title,
-            html_file_path,
-            plotly_html_file_path,
-        )
-
     def predict(
         self,
         w_or_h,
-        w_or_h_df,
+        node_x_predicting_element,
         support_vector_parameter_c=1e3,
         n_pull=None,
         pull_power=None,
@@ -508,12 +494,11 @@ class GPSMap:
         layout_size=880,
         title=None,
         html_file_path=None,
-        plotly_html_file_path=None,
     ):
 
-        _check_w_or_h(w_or_h)
+        check_gps_map_node_x_element(node_x_predicting_element)
 
-        predicting_elements = w_or_h_df.columns
+        predicting_elements = node_x_predicting_element.columns
 
         if w_or_h == "w":
 
@@ -559,8 +544,8 @@ class GPSMap:
 
             label_colors = self.h_label_colors
 
-        predicting_element_x_dimension = _make_element_x_dimension(
-            w_or_h_df.values, self.node_x_dimension, n_pull, pull_power
+        predicting_element_x_dimension = make_gps_map_element_x_dimension(
+            node_x_predicting_element.values, self.node_x_dimension, n_pull, pull_power
         )
 
         if element_labels is not None:
@@ -569,11 +554,11 @@ class GPSMap:
                 train_and_classify(
                     node_x_element.T,
                     element_labels,
-                    w_or_h_df.T,
+                    node_x_predicting_element.T,
                     c=support_vector_parameter_c,
                     tol=1e-8,
                 ),
-                name="Predicted {} Element Label".format(element_name),
+                name="Predicted {} Label".format(element_name),
                 index=predicting_elements,
             )
 
@@ -581,19 +566,19 @@ class GPSMap:
 
             predicted_element_labels = None
 
-        if annotation_x_element is None:
-
-            if grid_label_opacity is None:
-
-                grid_label_opacity = grid_label_opacity_without_annotation
-
-        else:
+        if annotation_x_element is not None:
 
             annotation_x_element = annotation_x_element.reindex(
                 columns=predicting_elements
             )
 
-            if grid_label_opacity is None:
+        if grid_label_opacity is None:
+
+            if annotation_x_element is None:
+
+                grid_label_opacity = grid_label_opacity_without_annotation
+
+            else:
 
                 grid_label_opacity = grid_label_opacity_with_annotation
 
@@ -601,7 +586,7 @@ class GPSMap:
 
             title = "{} (predicted)".format(w_or_h.title())
 
-        _plot_gps_map(
+        plot_gps_map(
             self.nodes,
             self.node_name,
             self.node_x_dimension,
@@ -622,12 +607,11 @@ class GPSMap:
             layout_size,
             title,
             html_file_path,
-            plotly_html_file_path,
         )
 
         return predicted_element_labels
 
-    def anneal_node_and_element_positions(
+    def anneal(
         self,
         w_or_h,
         node_node_score_weight=0,
@@ -635,15 +619,13 @@ class GPSMap:
         node_element_score_weight=0.5,
         n_fraction_node_to_move=1,
         n_fraction_element_to_move=1,
-        random_seed=20121020,
+        random_seed=RANDOM_SEED,
         n_iteration=int(1e3),
         initial_temperature=1e-4,
         scale=1e-3,
         triangulate=True,
         print_acceptance=True,
     ):
-
-        _check_w_or_h(w_or_h)
 
         if w_or_h == "w":
 
@@ -713,7 +695,7 @@ class GPSMap:
 
             element_x_dimension = self.h_element_x_dimension
 
-        node_x_dimension, element_x_dimension = _anneal_node_and_element_positions(
+        node_x_dimension, element_x_dimension = anneal_gps_map_node_and_element_positions(
             self.distance__node_x_node,
             distance__element_x_element,
             distance__node_x_element,
@@ -750,10 +732,12 @@ class GPSMap:
 
             bandwidth_factor = self.h_bandwidth_factor
 
-        self.set_element_labels(
-            w_or_h,
-            element_labels,
-            n_grid=self.n_grid,
-            bandwidth_factor=bandwidth_factor,
-            plot=False,
-        )
+        if element_labels is not None:
+
+            self.set_element_labels(
+                w_or_h,
+                element_labels,
+                n_grid=self.n_grid,
+                bandwidth_factor=bandwidth_factor,
+                plot=False,
+            )

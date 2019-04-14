@@ -38,7 +38,7 @@ def log_nd_array(
                     - min_
                 )
 
-        if log_base in (2, "2"):
+        if str(log_base) == "2":
 
             log = log2
 
@@ -46,10 +46,12 @@ def log_nd_array(
 
             log = loge
 
-        elif log_base in (10, "10"):
+        elif str(log_base) == "10":
 
             log = log10
 
         nd_array_logged[is_good] = log(nd_array_good)
 
-    return nd_array_logged
+    else:
+
+        return nd_array_logged

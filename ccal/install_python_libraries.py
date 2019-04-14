@@ -10,7 +10,7 @@ def install_python_libraries(libraries):
 
         if library not in libraries_installed:
 
-            run_command("pip install {}".format(library), print_command=True)
+            run_command("pip install {}".format(library))
 
         else:
 

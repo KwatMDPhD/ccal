@@ -1,10 +1,11 @@
 from numpy.random import seed, shuffle
 
 from .check_nd_array_for_bad import check_nd_array_for_bad
+from .RANDOM_SEED import RANDOM_SEED
 
 
 def shuffle_each_2d_array_slice(
-    _2d_array, axis, random_seed=20121020, raise_for_bad=True
+    _2d_array, axis, random_seed=RANDOM_SEED, raise_for_bad=True
 ):
 
     check_nd_array_for_bad(_2d_array, raise_for_bad=raise_for_bad)

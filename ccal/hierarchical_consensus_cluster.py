@@ -1,16 +1,19 @@
+from os.path import join
+
 from numpy import full, nan
 from numpy.random import randint, seed
 from pandas import DataFrame, Index, Series
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import pdist, squareform
 
-from ._cluster_clustering_x_element_and_compute_ccc import (
-    _cluster_clustering_x_element_and_compute_ccc,
+from .cluster_clustering_x_element_and_compute_ccc import (
+    cluster_clustering_x_element_and_compute_ccc,
 )
-from .make_membership_df_from_categorical_series import (
-    make_membership_df_from_categorical_series,
+from .make_binary_df_from_categorical_series import (
+    make_binary_df_from_categorical_series,
 )
 from .plot_heat_map import plot_heat_map
+from .RANDOM_SEED import RANDOM_SEED
 
 
 def hierarchical_consensus_cluster(
@@ -19,7 +22,7 @@ def hierarchical_consensus_cluster(
     distance__column_x_column=None,
     distance_function="euclidean",
     n_clustering=10,
-    random_seed=20121020,
+    random_seed=RANDOM_SEED,
     linkage_method="ward",
     plot_df=True,
     directory_path=None,
@@ -68,30 +71,28 @@ def hierarchical_consensus_cluster(
             criterion="maxclust",
         )
 
-    column_cluster, column_cluster__ccc = _cluster_clustering_x_element_and_compute_ccc(
+    column_cluster, column_cluster__ccc = cluster_clustering_x_element_and_compute_ccc(
         clustering_x_column, k, linkage_method
     )
 
     if directory_path is not None:
 
-        cluster_x_column = make_membership_df_from_categorical_series(
+        cluster_x_column = make_binary_df_from_categorical_series(
             Series(column_cluster, index=df.columns)
         )
 
         cluster_x_column.index = Index(
-            ("C{}".format(cluster) for cluster in cluster_x_column.index),
+            ("Cluster{}".format(cluster) for cluster in cluster_x_column.index),
             name="Cluster",
         )
 
-        cluster_x_column.to_csv(
-            "{}/cluster_x_column.tsv".format(directory_path), sep="\t"
-        )
+        cluster_x_column.to_csv(join(directory_path, "cluster_x_column.tsv"), sep="\t")
 
     if plot_df:
 
         print("Plotting df ...")
 
-        file_name = "cluster.html"
+        file_name = "df.html"
 
         if directory_path is None:
 
@@ -99,7 +100,7 @@ def hierarchical_consensus_cluster(
 
         else:
 
-            html_file_path = "{}/{}".format(directory_path, file_name)
+            html_file_path = join(directory_path, file_name)
 
         plot_heat_map(
             df,

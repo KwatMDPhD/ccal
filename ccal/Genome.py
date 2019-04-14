@@ -17,33 +17,31 @@ class Genome:
         reset=False,
     ):
 
-        self._reference_fasta_gz_file_path = reference_fasta_gz_file_path
+        self.reference_fasta_gz_file_path = reference_fasta_gz_file_path
 
-        self._chromosome_size = get_chromosome_size_from_fasta_gz(
-            self._reference_fasta_gz_file_path
+        self.chromosome_size = get_chromosome_size_from_fasta_gz(
+            self.reference_fasta_gz_file_path
         )
 
-        self._reference_gff3_gz_file_path = reference_gff3_gz_file_path
+        self.reference_gff3_gz_file_path = reference_gff3_gz_file_path
 
-        self._reference_gene_hdf5 = FeatureHDF5(
-            self._reference_gff3_gz_file_path, reset=reset
+        self.reference_gene_hdf5 = FeatureHDF5(
+            self.reference_gff3_gz_file_path, reset=reset
         )
 
-        self._vcf_gz_file_path = vcf_gz_file_path
+        self.vcf_gz_file_path = vcf_gz_file_path
 
-        self._variant_hdf5 = VariantHDF5(self._vcf_gz_file_path, reset=reset)
+        self.variant_hdf5 = VariantHDF5(self.vcf_gz_file_path, reset=reset)
 
     def explore_genome_by_variant(self, variant_id):
 
         try:
 
-            variant_dicts = [self._variant_hdf5.get_variant_by_id(variant_id)]
+            variant_dicts = [self.variant_hdf5.get_variant_by_id(variant_id)]
 
         except KeyError as exception:
 
-            warn(
-                "(self._variant_hdf5.get_variant_by_id) KeyError: {}.".format(exception)
-            )
+            warn("KeyError: {}.".format(exception))
 
             variant_dicts = []
 
@@ -53,53 +51,41 @@ class Genome:
 
         try:
 
-            gene_dicts = self._reference_gene_hdf5.get_features_by_name(gene)
+            gene_dicts = self.reference_gene_hdf5.get_features_by_name(gene)
 
         except KeyError as exception:
 
-            warn(
-                "(self._reference_gene_hdf5.get_features_by_name) KeyError: {}.".format(
-                    exception
-                )
-            )
+            warn("KeyError: {}.".format(exception))
 
             gene_dicts = []
 
         if 1 < len(gene_dicts):
 
-            warn(
-                "(self._reference_gene_hdf5.get_features_by_name) {} matches multiple genes, but using only the 1st one.".format(
-                    gene
-                )
-            )
+            warn("{} matches multiple genes, but using only the 1st one.".format(gene))
 
             gene_dicts = gene_dicts[:1]
 
         try:
 
-            variant_dicts = self._variant_hdf5.get_variants_by_gene(gene)
+            variant_dicts = self.variant_hdf5.get_variants_by_gene(gene)
 
             looked_for_variants = True
 
         except KeyError as exception:
 
-            warn(
-                "(self._variant_hdf5.get_variants_by_gene) KeyError: {}.".format(
-                    exception
-                )
-            )
+            warn("KeyError: {}.".format(exception))
 
             if len(gene_dicts) == 1:
 
                 warn(
-                    "VariantHDF5 does not have gene {} information, so getting gene variants using region from FeatureHDF5 ...".format(
+                    "VariantHDF5 does not have gene {}, so using gene region (from FeatureHDF5) to get variants ...".format(
                         gene
                     )
                 )
 
                 try:
 
-                    variant_dicts = self._variant_hdf5.get_variants_by_region(
+                    variant_dicts = self.variant_hdf5.get_variants_by_region(
                         gene_dicts[0]["seqid"],
                         int(gene_dicts[0]["start"]),
                         int(gene_dicts[0]["end"]),
@@ -109,11 +95,7 @@ class Genome:
 
                 except NoSuchNodeError as exception:
 
-                    warn(
-                        "(self._variant_hdf5.get_variants_by_region) NoSuchNodeError: {}.".format(
-                            exception
-                        )
-                    )
+                    warn("NoSuchNodeError: {}.".format(exception))
 
                     variant_dicts = []
 
@@ -145,23 +127,19 @@ class Genome:
 
         try:
 
-            gene_dicts = self._reference_gene_hdf5.get_features_by_region(
+            gene_dicts = self.reference_gene_hdf5.get_features_by_region(
                 chromosome, start_position, end_position
             )
 
         except NoSuchNodeError as exception:
 
-            warn(
-                "(self._reference_gene_hdf5.get_features_by_region) NoSuchNodeError: {}.".format(
-                    exception
-                )
-            )
+            warn("NoSuchNodeError: {}.".format(exception))
 
             gene_dicts = []
 
         try:
 
-            variant_dicts = self._variant_hdf5.get_variants_by_region(
+            variant_dicts = self.variant_hdf5.get_variants_by_region(
                 chromosome, start_position, end_position
             )
 
@@ -169,11 +147,7 @@ class Genome:
 
         except NoSuchNodeError as exception:
 
-            warn(
-                "(self._variant_hdf5.get_variants_by_region) NoSuchNodeError: {}.".format(
-                    exception
-                )
-            )
+            warn("NoSuchNodeError: {}.".format(exception))
 
             variant_dicts = []
 

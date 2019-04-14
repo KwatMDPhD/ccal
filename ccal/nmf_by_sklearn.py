@@ -1,8 +1,10 @@
 from sklearn.decomposition import NMF
 
+from .RANDOM_SEED import RANDOM_SEED
+
 
 def nmf_by_sklearn(
-    V, k, solver="cd", tol=1e-8, n_iteration=int(1e3), random_seed=20121020
+    V, k, solver="cd", tol=1e-8, n_iteration=int(1e3), random_seed=RANDOM_SEED
 ):
 
     model = NMF(
