@@ -1,5 +1,6 @@
 from datetime import datetime
 from logging import FileHandler, Formatter, StreamHandler, getLogger
+from os.path import join
 
 
 def initialize_logger(name):
@@ -8,18 +9,22 @@ def initialize_logger(name):
 
     logger.setLevel(10)
 
-    fh = FileHandler("/tmp/{}.{:%Y:%m:%d:%H:%M:%S}.log".format(name, datetime.now()))
+    file_handler = FileHandler(
+        join("/", "tmp", "{}.{:%Y:%m:%d:%H:%M:%S}.log".format(name, datetime.now()))
+    )
 
-    fh.setFormatter(Formatter("%(asctime)s|%(levelname)s: %(message)s\n", "%H%M%S"))
+    file_handler.setFormatter(
+        Formatter("%(asctime)s|%(levelname)s: %(message)s\n", "%H%M%S")
+    )
 
-    logger.addHandler(fh)
+    logger.addHandler(file_handler)
 
-    sh = StreamHandler()
+    stream_handler = StreamHandler()
 
-    sh.setFormatter(Formatter("%(levelname)s: %(message)s\n"))
+    stream_handler.setFormatter(Formatter("%(levelname)s: %(message)s\n"))
 
-    logger.addHandler(sh)
+    logger.addHandler(stream_handler)
 
-    logger.info("Initialized {} logger.".format(name))
+    logger.info("Initialized logger {}.".format(name))
 
     return logger

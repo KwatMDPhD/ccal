@@ -1,6 +1,6 @@
 from numpy import apply_along_axis, rot90
 
-from .plot_heat_map import plot_heat_map
+from .plot_and_save import plot_and_save
 
 
 def compute_posterior_probability(probability, plot=True, names=None):
@@ -17,11 +17,16 @@ def compute_posterior_probability(probability, plot=True, names=None):
 
             names = tuple("variables[{}]".format(i) for i in range(n_dimension))
 
-        plot_heat_map(
-            rot90(p_tv__ntvs),
-            title="P({} | {})".format(names[1], names[0]),
-            xaxis_title=names[0],
-            yaxis_title=names[1],
+        plot_and_save(
+            {
+                "layout": {
+                    "title": {"text": "P({}, {})".format(names[1], names[0])},
+                    "xaxis": {"title": names[0]},
+                    "yaxis": {"title": names[1]},
+                },
+                "data": [{"type": "heatmap", "z": rot90(p_tv__ntvs)[::-1]}],
+            },
+            None,
         )
 
     return p_tv__ntvs

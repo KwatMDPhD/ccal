@@ -1,12 +1,12 @@
 from os import mkdir
 from os.path import isdir, split
 
-from .clean_path import clean_path
+from .get_absolute_path import get_absolute_path
 
 
-def establish_path(path, path_type, print_=True):
+def establish_path(path, path_type):
 
-    path = clean_path(path)
+    path = get_absolute_path(path)
 
     if path_type == "file":
 
@@ -19,10 +19,6 @@ def establish_path(path, path_type, print_=True):
         if not path.endswith("/"):
 
             path += "/"
-
-    else:
-
-        raise ValueError("Unknown path_type: {}.".format(path_type))
 
     directory_path, file_name = split(path)
 
@@ -38,6 +34,4 @@ def establish_path(path, path_type, print_=True):
 
         mkdir(directory_path)
 
-        if print_:
-
-            print("Created directory {}.".format(directory_path))
+        print("Created directory {}.".format(directory_path))

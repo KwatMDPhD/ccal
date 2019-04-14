@@ -1,7 +1,7 @@
 from numpy import rot90
 
 from .estimate_kernel_density import estimate_kernel_density
-from .plot_heat_map import plot_heat_map
+from .plot_and_save import plot_and_save
 
 
 def compute_joint_probability(
@@ -37,20 +37,30 @@ def compute_joint_probability(
 
         if plot_kernel_density:
 
-            plot_heat_map(
-                rot90(kernel_density),
-                title="KDE({}, {})".format(names[0], names[1]),
-                xaxis_title=names[0],
-                yaxis_title=names[1],
+            plot_and_save(
+                {
+                    "layout": {
+                        "title": {"text": "KDE({}, {})".format(names[0], names[1])},
+                        "xaxis": {"title": names[0]},
+                        "yaxis": {"title": names[1]},
+                    },
+                    "data": [{"type": "heatmap", "z": rot90(kernel_density)[::-1]}],
+                },
+                None,
             )
 
         if plot_probability:
 
-            plot_heat_map(
-                rot90(probability),
-                title="P({}, {})".format(names[0], names[1]),
-                xaxis_title=names[0],
-                yaxis_title=names[1],
+            plot_and_save(
+                {
+                    "layout": {
+                        "title": {"text": "P({}, {})".format(names[0], names[1])},
+                        "xaxis": {"title": names[0]},
+                        "yaxis": {"title": names[1]},
+                    },
+                    "data": [{"type": "heatmap", "z": rot90(probability)[::-1]}],
+                },
+                None,
             )
 
     return probability

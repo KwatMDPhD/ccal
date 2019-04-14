@@ -1,5 +1,7 @@
 from sklearn.svm import SVC
 
+from .RANDOM_SEED import RANDOM_SEED
+
 
 def train_and_classify(
     training_sample_x_feature,
@@ -18,7 +20,7 @@ def train_and_classify(
     verbose=False,
     max_iter=-1,
     decision_function_shape="ovr",
-    random_seed=20121020,
+    random_seed=RANDOM_SEED,
 ):
 
     model = SVC(

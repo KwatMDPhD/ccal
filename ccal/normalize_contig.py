@@ -6,16 +6,12 @@ def normalize_contig(contig, format):
 
         if not contig.startswith("chr"):
 
-            contig = "chr" + contig
-
-            contig = contig.replace("MT", "M")
+            contig = "chr{}".format(contig).replace("MT", "M")
 
     elif format == "":
 
         if contig.startswith("chr"):
 
-            contig = contig[3:]
-
-            contig = contig.replace("M", "MT")
+            contig = contig[3:].replace("M", "MT")
 
     return contig

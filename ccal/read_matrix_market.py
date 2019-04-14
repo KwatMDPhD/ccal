@@ -18,7 +18,7 @@ def read_matrix_market(
 
     if df.index.has_duplicates:
 
-        print("Index duplicated. Merging duplicates ...")
+        print("Index duplicated. Merging duplicates with max ...")
 
         df = df.groupby(level=0).max()
 
@@ -28,7 +28,7 @@ def read_matrix_market(
 
     if df.columns.has_duplicates:
 
-        print("Column duplicated. Merging duplicates ...")
+        print("Column duplicated. Merging duplicates with max ...")
 
         df = df.T.groupby(level=0).max().T
 

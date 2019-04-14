@@ -23,7 +23,6 @@ def gsea(
     annotation_text_width=88,
     annotation_text_yshift=64,
     html_file_path=None,
-    plotly_html_file_path=None,
 ):
 
     print("Computing gene scores ...")
@@ -33,7 +32,7 @@ def gsea(
         index=gene_x_sample.index,
     )
 
-    print("Computing gene set {} enrichment ...".format(genes.name))
+    print("Computing gene set enrichment for {} ...".format(genes.name))
 
     score = single_sample_gsea(
         gene_score,
@@ -46,7 +45,6 @@ def gsea(
         annotation_text_width=annotation_text_width,
         annotation_text_yshift=annotation_text_yshift,
         html_file_path=html_file_path,
-        plotly_html_file_path=plotly_html_file_path,
     )
 
     if n_permutation is None:
@@ -88,8 +86,8 @@ def gsea(
             )
 
         p_value = min(
-            compute_empirical_p_value(score, permutation_scores, "less"),
-            compute_empirical_p_value(score, permutation_scores, "great"),
+            compute_empirical_p_value(score, permutation_scores, "<"),
+            compute_empirical_p_value(score, permutation_scores, ">"),
         )
 
     return score, p_value

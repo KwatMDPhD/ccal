@@ -5,37 +5,40 @@ from warnings import warn
 
 from tables import Filters, HDF5ExtError, Int32Col, IsDescription, StringCol, open_file
 
-from .read_where_and_map_column_names import read_where_and_map_column_names
+from .read_where_and_map_column_name_on_hdf5_table import (
+    read_where_and_map_column_name_on_hdf5_table,
+)
+
+
+class _FeatureDescription(IsDescription):
+
+    seqid = StringCol(256)
+
+    start = Int32Col()
+
+    end = Int32Col()
+
+    Name = StringCol(256)
+
+    biotype = StringCol(256)
 
 
 class FeatureHDF5:
     def __init__(self, gff3_gz_file_path, types=("gene",), reset=False):
 
-        self._gff3_gz_file_path = gff3_gz_file_path
+        self.gff3_gz_file_path = gff3_gz_file_path
 
-        self._feature_hdf5_file_path = "{}.hdf5".format(self._gff3_gz_file_path)
+        self.feature_hdf5_file_path = "{}.hdf5".format(self.gff3_gz_file_path)
 
-        self._name_seqid_pickle_gz_file_path = "{}.name_seqid.pickle.gz".format(
-            self._gff3_gz_file_path
+        self.name_seqid_pickle_gz_file_path = "{}.name_seqid.pickle.gz".format(
+            self.gff3_gz_file_path
         )
 
-        self._types = types
+        self.types = types
 
-        self._feature_hdf5 = None
+        self.feature_hdf5 = None
 
-        self._name_seqid = {}
-
-        self._initialize(reset=reset)
-
-    def __del__(self):
-
-        if self._feature_hdf5:
-
-            self._feature_hdf5.close()
-
-            print("Destructor closed {}.".format(self._feature_hdf5_file_path))
-
-    def _initialize(self, reset=False):
+        self.name_seqid = {}
 
         if not reset:
 
@@ -43,21 +46,21 @@ class FeatureHDF5:
 
                 print("Initializing FeatureHDF5 ...")
 
-                print("\tReading {} ...".format(self._feature_hdf5_file_path))
+                print("\tReading {} ...".format(self.feature_hdf5_file_path))
 
-                self._feature_hdf5 = open_file(self._feature_hdf5_file_path)
+                self.feature_hdf5 = open_file(self.feature_hdf5_file_path)
 
-                print("\tReading {} ...".format(self._name_seqid_pickle_gz_file_path))
+                print("\tReading {} ...".format(self.name_seqid_pickle_gz_file_path))
 
                 with gzip_open(
-                    self._name_seqid_pickle_gz_file_path
+                    self.name_seqid_pickle_gz_file_path
                 ) as name_seqid_pickle_gz_file:
 
-                    self._name_seqid = load(name_seqid_pickle_gz_file)
+                    self.name_seqid = load(name_seqid_pickle_gz_file)
 
             except (OSError, FileNotFoundError, HDF5ExtError) as exception:
 
-                warn("\tFailed: {}.".format(exception))
+                warn("Failed: {}.".format(exception))
 
                 reset = True
 
@@ -65,190 +68,180 @@ class FeatureHDF5:
 
             print("Resetting ...")
 
-            if self._feature_hdf5:
+            if self.feature_hdf5:
 
-                self._feature_hdf5.close()
+                self.feature_hdf5.close()
 
-                print("\tClosed {} ...".format(self._feature_hdf5_file_path))
+                print("\tClosed {}.".format(self.feature_hdf5_file_path))
 
-            print("\tMaking {} ...".format(self._feature_hdf5_file_path))
+            print("\tMaking {} ...".format(self.feature_hdf5_file_path))
 
-            self._make_feature_hdf5()
+            with gzip_open(self.gff3_gz_file_path) as gff3_gz_file:
 
-            print("\tReading {} ...".format(self._feature_hdf5_file_path))
+                print("Getting data-start position ...")
 
-            self._feature_hdf5 = open_file(self._feature_hdf5_file_path)
-
-    def _make_feature_hdf5(self):
-
-        with gzip_open(self._gff3_gz_file_path) as gff3_gz_file:
-
-            print("Getting data-start position ...")
-
-            data_start_position = None
-
-            line = gff3_gz_file.readline().decode()
-
-            while line.startswith("#"):
-
-                data_start_position = gff3_gz_file.tell()
+                data_start_position = None
 
                 line = gff3_gz_file.readline().decode()
 
-            print("Counting features per seqid ...")
+                while line.startswith("#"):
 
-            seqid_n_row = defaultdict(lambda: 0)
+                    data_start_position = gff3_gz_file.tell()
 
-            n = 0
+                    line = gff3_gz_file.readline().decode()
 
-            seqid = None
+                print("Counting features per seqid ...")
 
-            while line:
+                seqid_n_row = defaultdict(lambda: 0)
 
-                n += 1
+                n = 0
 
-                if not line.startswith("#"):
+                seqid = None
 
-                    seqid_ = line.split(sep="\t")[0]
+                while line:
 
-                    if seqid_ != seqid:
+                    n += 1
 
-                        print("\t{} ...".format(seqid_))
+                    if not line.startswith("#"):
 
-                        seqid = seqid_
+                        seqid_ = line.split(sep="\t")[0]
 
-                    seqid_n_row[seqid_] += 1
+                        if seqid != seqid_:
 
-                line = gff3_gz_file.readline().decode()
+                            print("\t{} ...".format(seqid_))
 
-            print("Making {} ...".format(self._feature_hdf5_file_path))
+                            seqid = seqid_
 
-            with open_file(
-                self._feature_hdf5_file_path,
-                mode="w",
-                filters=Filters(complevel=1, complib="blosc"),
-            ) as feature_hdf5:
+                        seqid_n_row[seqid_] += 1
 
-                seqid_table_row = {}
+                    line = gff3_gz_file.readline().decode()
 
-                n_per_print = max(1, n // 10)
+                print("Making {} ...".format(self.feature_hdf5_file_path))
 
-                gff3_gz_file.seek(data_start_position)
+                with open_file(
+                    self.feature_hdf5_file_path,
+                    mode="w",
+                    filters=Filters(complevel=1, complib="blosc"),
+                ) as feature_hdf5:
 
-                for i, line in enumerate(gff3_gz_file):
+                    seqid_table_row = {}
 
-                    if i % n_per_print == 0:
+                    n_per_print = max(1, n // 10)
 
-                        print("\t{:,}/{:,} ...".format(i, n))
+                    gff3_gz_file.seek(data_start_position)
 
-                    line = line.decode(errors="replace")
+                    for i, line in enumerate(gff3_gz_file):
 
-                    if line.startswith("#"):
+                        if i % n_per_print == 0:
 
-                        continue
+                            print("\t{:,}/{:,} ...".format(i + 1, n))
 
-                    seqid, source, type_, start, end, score, strand, phase, attributes = line.split(
-                        "\t"
-                    )
+                        line = line.decode(errors="replace")
 
-                    if type_ not in self._types:
+                        if line.startswith("#"):
 
-                        continue
+                            continue
 
-                    if seqid not in seqid_table_row:
-
-                        print("\t\tMaking {} table ...".format(seqid))
-
-                        seqid_table = feature_hdf5.create_table(
-                            "/",
-                            "seqid_{}_features".format(seqid),
-                            description=self._FeatureDescription,
-                            expectedrows=seqid_n_row[seqid],
+                        seqid, source, type, start, end, score, strand, phase, attributes = line.split(
+                            sep="\t"
                         )
 
-                        seqid_table_row[seqid] = seqid_table.row
+                        if type not in self.types:
 
-                    cursor = seqid_table_row[seqid]
+                            continue
 
-                    cursor["seqid"] = seqid
+                        if seqid not in seqid_table_row:
 
-                    cursor["start"] = start
+                            print("\t\tMaking {} table ...".format(seqid))
 
-                    cursor["end"] = end
+                            seqid_table = feature_hdf5.create_table(
+                                "/",
+                                "seqid_{}_features".format(seqid),
+                                description=_FeatureDescription,
+                                expectedrows=seqid_n_row[seqid],
+                            )
 
-                    name = None
+                            seqid_table_row[seqid] = seqid_table.row
 
-                    biotype = None
+                        cursor = seqid_table_row[seqid]
 
-                    for attribute in attributes.split(sep=";"):
+                        cursor["seqid"] = seqid
 
-                        field, value = attribute.split(sep="=")
+                        cursor["start"] = start
 
-                        if field == "Name":
+                        cursor["end"] = end
 
-                            name = value
+                        name = None
 
-                        elif field == "biotype":
+                        biotype = None
 
-                            biotype = value
+                        for attribute in attributes.split(sep=";"):
 
-                    cursor["Name"] = name
+                            field, value = attribute.split(sep="=")
 
-                    cursor["biotype"] = biotype
+                            if field == "Name":
 
-                    cursor.append()
+                                name = value
 
-                    self._name_seqid[name] = seqid
+                            elif field == "biotype":
 
-                print("\tFlushing tables and making column indices ...")
+                                biotype = value
 
-                for seqid in seqid_table_row:
+                        cursor["Name"] = name
 
-                    print("\t\t{} table ...".format(seqid))
+                        cursor["biotype"] = biotype
 
-                    seqid_table = feature_hdf5.get_node(
-                        "/", "seqid_{}_features".format(seqid)
-                    )
+                        cursor.append()
 
-                    seqid_table.flush()
+                        self.name_seqid[name] = seqid
 
-                    for column in ("seqid", "start", "end", "Name", "biotype"):
+                    print("\tFlushing tables and making column indices ...")
 
-                        seqid_table.cols._f_col(column).create_csindex()
+                    for seqid in seqid_table_row:
 
-                self._feature_hdf5 = feature_hdf5
+                        print("\t\t{} table ...".format(seqid))
 
-                print(self._feature_hdf5)
+                        seqid_table = feature_hdf5.get_node(
+                            "/", "seqid_{}_features".format(seqid)
+                        )
 
-                print("Writing {} ...".format(self._name_seqid_pickle_gz_file_path))
+                        seqid_table.flush()
 
-                with gzip_open(
-                    self._name_seqid_pickle_gz_file_path, mode="wb"
-                ) as name_seqid_pickle_gz_file:
+                        for column in ("seqid", "start", "end", "Name", "biotype"):
 
-                    dump(self._name_seqid, name_seqid_pickle_gz_file)
+                            seqid_table.cols._f_col(column).create_csindex()
 
-    class _FeatureDescription(IsDescription):
+                    self.feature_hdf5 = feature_hdf5
 
-        seqid = StringCol(256)
+                    print(self.feature_hdf5)
 
-        start = Int32Col()
+                    print("Writing {} ...".format(self.name_seqid_pickle_gz_file_path))
 
-        end = Int32Col()
+                    with gzip_open(
+                        self.name_seqid_pickle_gz_file_path, mode="wb"
+                    ) as name_seqid_pickle_gz_file:
 
-        Name = StringCol(256)
+                        dump(self.name_seqid, name_seqid_pickle_gz_file)
 
-        biotype = StringCol(256)
+            print("\tReading {} ...".format(self.feature_hdf5_file_path))
+
+            self.feature_hdf5 = open_file(self.feature_hdf5_file_path)
+
+    def __del__(self):
+
+        if self.feature_hdf5:
+
+            self.feature_hdf5.close()
+
+            print("Destructor closed {}.".format(self.feature_hdf5_file_path))
 
     def get_features_by_name(self, name):
 
-        seqid = self._name_seqid[name]
+        seqid = self.name_seqid[name]
 
-        seqid_table = self._feature_hdf5.get_node(
-            "/", "seqid_{}_features".format(seqid)
-        )
+        seqid_table = self.feature_hdf5.get_node("/", "seqid_{}_features".format(seqid))
 
-        feature_dicts = read_where_and_map_column_names(
+        feature_dicts = read_where_and_map_column_name_on_hdf5_table(
             seqid_table, "Name == b'{}'".format(name)
         )
 
@@ -256,11 +249,9 @@ class FeatureHDF5:
 
     def get_features_by_region(self, seqid, start_position, end_position):
 
-        seqid_table = self._feature_hdf5.get_node(
-            "/", "seqid_{}_features".format(seqid)
-        )
+        seqid_table = self.feature_hdf5.get_node("/", "seqid_{}_features".format(seqid))
 
-        feature_dicts = read_where_and_map_column_names(
+        feature_dicts = read_where_and_map_column_name_on_hdf5_table(
             seqid_table,
             "({} <= start) & (end <= {})".format(start_position, end_position),
         )
