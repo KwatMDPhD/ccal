@@ -2,7 +2,7 @@ from numpy import full, nan
 from pandas import DataFrame, concat
 
 from .call_function_with_multiprocess import call_function_with_multiprocess
-from .compute_context_indices_from_pdf import compute_context_indices_from_pdf
+from .compute_1d_array_context import compute_1d_array_context
 from .split_df import split_df
 
 
@@ -40,7 +40,7 @@ def _make_context_matrix(
                 index, ["N Data", "Location", "Scale", "Degree of Freedom", "Shape"]
             ]
 
-        context_matrix[i] = compute_context_indices_from_pdf(
+        context_matrix[i] = compute_1d_array_context(
             series.values,
             n_data=n_data,
             location=location,
@@ -54,7 +54,7 @@ def _make_context_matrix(
             global_scale=global_scale,
             global_degree_of_freedom=global_degree_of_freedom,
             global_shape=global_shape,
-        )["context_indices_like_array"]
+        )["context_like_array"]
 
     return DataFrame(context_matrix, index=df.index, columns=df.columns)
 
@@ -94,6 +94,8 @@ def make_context_matrix(
         )
     )
 
-    context_matrix.to_csv(output_file_path, sep="\t")
+    if output_file_path is not None:
+
+        context_matrix.to_csv(output_file_path, sep="\t")
 
     return context_matrix

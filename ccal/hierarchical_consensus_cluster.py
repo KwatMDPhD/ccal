@@ -19,7 +19,7 @@ from .RANDOM_SEED import RANDOM_SEED
 def hierarchical_consensus_cluster(
     df,
     k,
-    axis=0,
+    axis,
     distance__element_x_element=None,
     distance_function="euclidean",
     n_clustering=10,
