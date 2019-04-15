@@ -15,7 +15,7 @@ from .RANDOM_SEED import RANDOM_SEED
 def hierarchical_consensus_cluster_with_ks(
     df,
     ks,
-    axis=0,
+    axis,
     n_job=1,
     distance__element_x_element=None,
     distance_function="euclidean",

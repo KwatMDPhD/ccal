@@ -2,9 +2,50 @@ from numpy import absolute, asarray, full, linspace, minimum, nan
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
 from .check_nd_array_for_bad import check_nd_array_for_bad
-from .compute_context_indices_from_pdf import compute_context_indices_from_pdf
 from .fit_skew_t_pdf_on_1d_array import fit_skew_t_pdf_on_1d_array
 from .make_coordinates_for_reflection import make_coordinates_for_reflection
+
+
+from numpy import concatenate, cumsum, inf
+
+from .compute_kullback_leibler_divergence_between_2_pdfs import (
+    compute_kullback_leibler_divergence_between_2_pdfs,
+)
+
+
+def _compute_pdf_context(
+    grid, pdf, pdf_reference, multiply_distance_from_reference_argmax
+):
+
+    center = pdf_reference.argmax()
+
+    left_kl = compute_kullback_leibler_divergence_between_2_pdfs(
+        pdf[:center], pdf_reference[:center]
+    )
+
+    right_kl = compute_kullback_leibler_divergence_between_2_pdfs(
+        pdf[center:], pdf_reference[center:]
+    )
+
+    left_kl[left_kl == inf] = 0
+
+    right_kl[right_kl == inf] = 0
+
+    left_context = -cumsum((left_kl / left_kl.sum())[::-1])[::-1]
+
+    right_context = cumsum(right_kl / right_kl.sum())
+
+    left_context *= left_kl.sum() / left_kl.size
+
+    right_context *= right_kl.sum() / right_kl.size
+
+    context = concatenate((left_context, right_context))
+
+    if multiply_distance_from_reference_argmax:
+
+        context *= absolute(grid - grid[center])
+
+    return context
 
 
 def compute_1d_array_context(
@@ -57,7 +98,7 @@ def compute_1d_array_context(
         ),
     )
 
-    shape_context_indices = compute_context_indices_from_pdf(
+    shape_context = _compute_pdf_context(
         grid, pdf, shape_pdf_reference, multiply_distance_from_reference_argmax
     )
 
@@ -73,9 +114,9 @@ def compute_1d_array_context(
 
         location_pdf_reference = None
 
-        location_context_indices = None
+        location_context = None
 
-        context_indices = shape_context_indices
+        context = shape_context
 
     else:
 
@@ -90,15 +131,15 @@ def compute_1d_array_context(
             ),
         )
 
-        location_context_indices = compute_context_indices_from_pdf(
+        location_context = _compute_pdf_context(
             grid, pdf, location_pdf_reference, multiply_distance_from_reference_argmax
         )
 
-        context_indices = shape_context_indices + location_context_indices
+        context = shape_context + location_context
 
-    context_indices_like_array = full(_1d_array.size, nan)
+    context_like_array = full(_1d_array.size, nan)
 
-    context_indices_like_array[~is_bad] = context_indices[
+    context_like_array[~is_bad] = context[
         [absolute(grid - value).argmin() for value in _1d_array_good]
     ]
 
@@ -107,9 +148,9 @@ def compute_1d_array_context(
         "grid": grid,
         "pdf": pdf,
         "shape_pdf_reference": shape_pdf_reference,
-        "shape_context_indices": shape_context_indices,
+        "shape_context": shape_context,
         "location_pdf_reference": location_pdf_reference,
-        "location_context_indices": location_context_indices,
-        "context_indices": context_indices,
-        "context_indices_like_array": context_indices_like_array,
+        "location_context": location_context,
+        "context": context,
+        "context_like_array": context_like_array,
     }

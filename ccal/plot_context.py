@@ -72,25 +72,25 @@ def plot_context(
 
     pdf_max = context_dict["pdf"].max()
 
-    context_indices = context_dict["context_indices"]
+    context = context_dict["context"]
 
-    absolute_context_indices = absolute(context_indices)
+    absolute_context = absolute(context)
 
-    absolute_context_indices_max = nanmax(absolute_context_indices)
+    absolute_context_max = nanmax(absolute_context)
 
     if y_max_is_pdf_max:
 
         y_max = pdf_max
 
-        if y_max < absolute_context_indices_max:
+        if y_max < absolute_context_max:
 
-            absolute_context_indices = (
-                absolute_context_indices / absolute_context_indices_max * y_max
+            absolute_context = (
+                absolute_context / absolute_context_max * y_max
             )
 
     else:
 
-        y_max = max(pdf_max, absolute_context_indices_max)
+        y_max = max(pdf_max, absolute_context_max)
 
     if plot_rug:
 
@@ -240,9 +240,9 @@ def plot_context(
             }
         )
 
-    is_negative = context_dict["context_indices"] < 0
+    is_negative = context_dict["context"] < 0
 
-    is_positive = 0 < context_dict["context_indices"]
+    is_positive = 0 < context_dict["context"]
 
     for name, indices, color in (
         ("- Context", is_negative, "#0088ff"),
@@ -255,7 +255,7 @@ def plot_context(
                 "type": "scatter",
                 "name": name,
                 "x": grid[indices],
-                "y": absolute_context_indices[indices],
+                "y": absolute_context[indices],
                 "line": {"width": line_width, "color": color},
                 "fill": "tozeroy",
             }
