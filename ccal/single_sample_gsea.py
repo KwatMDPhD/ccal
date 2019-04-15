@@ -1,5 +1,3 @@
-from warnings import warn
-
 from numpy import absolute, in1d
 
 from .plot_gsea_mountain import plot_gsea_mountain
@@ -27,7 +25,7 @@ def single_sample_gsea(
 
     if in_sum == 0:
 
-        warn("Gene scores did not have any of the gene-set genes.")
+        print("Gene scores did not have any of the gene-set genes.")
 
         return
 

@@ -8,17 +8,19 @@ from .anneal_gps_map_node_and_element_positions import (
 )
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
 from .check_gps_map_node_x_element import check_gps_map_node_x_element
-from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
-from .compute_information_distance import compute_information_distance
+from .COLORS import COLORS
+from .compute_information_distance_between_2_1d_arrays import (
+    compute_information_distance_between_2_1d_arrays,
+)
 from .make_gps_map_element_x_dimension import make_gps_map_element_x_dimension
 from .make_gps_map_grid_values_and_categorical_labels import (
     make_gps_map_grid_values_and_categorical_labels,
 )
-from .mds import mds
 from .normalize_nd_array import normalize_nd_array
 from .plot_gps_map import plot_gps_map
 from .plot_heat_map import plot_heat_map
 from .RANDOM_SEED import RANDOM_SEED
+from .reduce_point_x_dimension_dimension import reduce_point_x_dimension_dimension
 from .train_and_classify import train_and_classify
 
 element_marker_size = 16
@@ -154,7 +156,7 @@ class GPSMap:
             self.w_element_name = w.columns.name
 
             self.w_distance__node_x_node = squareform(
-                pdist(self.w, metric=compute_information_distance)
+                pdist(self.w, metric=compute_information_distance_between_2_1d_arrays)
             )
 
             if plot:
@@ -190,7 +192,7 @@ class GPSMap:
             self.h_element_name = h.columns.name
 
             self.h_distance__node_x_node = squareform(
-                pdist(self.h, metric=compute_information_distance)
+                pdist(self.h, metric=compute_information_distance_between_2_1d_arrays)
             )
 
             if plot:
@@ -257,7 +259,7 @@ class GPSMap:
         if self.node_x_dimension is None:
 
             self.node_x_dimension = normalize_nd_array(
-                mds(
+                reduce_point_x_dimension_dimension(
                     2,
                     distance__point_x_point=self.distance__node_x_node,
                     random_seed=mds_random_seed,
@@ -288,7 +290,7 @@ class GPSMap:
         annotation_types=None,
         annotation_std_maxs=None,
         annotation_ranges=None,
-        annotation_colorscale=None,
+        annotation_colors=None,
         elements_to_be_emphasized=None,
         element_marker_size=element_marker_size,
         layout_size=880,
@@ -363,7 +365,7 @@ class GPSMap:
             annotation_types,
             annotation_std_maxs,
             annotation_ranges,
-            annotation_colorscale,
+            annotation_colors,
             layout_size,
             title,
             html_file_path,
@@ -422,7 +424,7 @@ class GPSMap:
 
         if label_colors is None:
 
-            label_colors = COLOR_CATEGORICAL[: element_labels.dropna().unique().size]
+            label_colors = COLORS["curated"][: element_labels.dropna().unique().size]
 
         if w_or_h == "w":
 
@@ -489,7 +491,7 @@ class GPSMap:
         annotation_types=None,
         annotation_std_maxs=None,
         annotation_ranges=None,
-        annotation_colorscale=None,
+        annotation_colors=None,
         element_marker_size=element_marker_size,
         layout_size=880,
         title=None,
@@ -632,7 +634,10 @@ class GPSMap:
             if self.w_distance__element_x_element is None:
 
                 self.w_distance__element_x_element = squareform(
-                    pdist(self.w.T, metric=compute_information_distance)
+                    pdist(
+                        self.w.T,
+                        metric=compute_information_distance_between_2_1d_arrays,
+                    )
                 )
 
             distance__element_x_element = self.w_distance__element_x_element
@@ -642,14 +647,14 @@ class GPSMap:
                 distance__w_ielement_x_node = apply_function_on_2_2d_arrays_slices(
                     self.w,
                     diag((1,) * len(self.nodes)),
-                    compute_information_distance,
+                    compute_information_distance_between_2_1d_arrays,
                     0,
                 )
 
                 distance__node_x_w_ielement = apply_function_on_2_2d_arrays_slices(
                     self.w,
                     diag((1,) * len(self.w_elements)),
-                    compute_information_distance,
+                    compute_information_distance_between_2_1d_arrays,
                     1,
                 )
 
@@ -666,7 +671,10 @@ class GPSMap:
             if self.h_distance__element_x_element is None:
 
                 self.h_distance__element_x_element = squareform(
-                    pdist(self.h.T, metric=compute_information_distance)
+                    pdist(
+                        self.h.T,
+                        metric=compute_information_distance_between_2_1d_arrays,
+                    )
                 )
 
             distance__element_x_element = self.h_distance__element_x_element
@@ -676,14 +684,14 @@ class GPSMap:
                 distance__h_ielement_x_node = apply_function_on_2_2d_arrays_slices(
                     self.h,
                     diag((1,) * len(self.nodes)),
-                    compute_information_distance,
+                    compute_information_distance_between_2_1d_arrays,
                     0,
                 )
 
                 distance__node_x_h_ielement = apply_function_on_2_2d_arrays_slices(
                     self.h,
                     diag((1,) * len(self.h_elements)),
-                    compute_information_distance,
+                    compute_information_distance_between_2_1d_arrays,
                     1,
                 )
 

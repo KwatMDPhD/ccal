@@ -1,16 +1,18 @@
-from warnings import warn
+from pandas import DataFrame, Series
 
-from .cluster_2d_array_slices import cluster_2d_array_slices
-from .compute_information_coefficient import compute_information_coefficient
+from .cluster_2d_array import cluster_2d_array
+from .compute_information_coefficient_between_2_1d_arrays import (
+    compute_information_coefficient_between_2_1d_arrays,
+)
+from .is_sorted_nd_array import is_sorted_nd_array
+from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
+from .match_colors_to_data import match_colors_to_data
 from .match_target_and_data_and_compute_statistics import (
     match_target_and_data_and_compute_statistics,
 )
-from .nd_array_is_sorted import nd_array_is_sorted
+from .normalize_nd_array import normalize_nd_array
 from .plot_and_save import plot_and_save
-from .process_match_panel_target_or_data_for_plotting import (
-    process_match_panel_target_or_data_for_plotting,
-)
 from .RANDOM_SEED import RANDOM_SEED
 from .select_series_indices import select_series_indices
 
@@ -21,7 +23,7 @@ def make_match_panel(
     target_ascending=True,
     score_moe_p_value_fdr=None,
     n_job=1,
-    match_function=compute_information_coefficient,
+    match_function=compute_information_coefficient_between_2_1d_arrays,
     n_required_for_match_function=2,
     raise_for_n_less_than_required=False,
     n_extreme=8,
@@ -90,7 +92,7 @@ def make_match_panel(
 
     if score_moe_p_value_fdr.isna().values.all():
 
-        warn("score_moe_p_value_fdr has only na.")
+        print("score_moe_p_value_fdr has only na.")
 
         return score_moe_p_value_fdr
 
@@ -169,21 +171,33 @@ def make_match_panel(
 
     annotations = make_match_panel_annotations(scores_to_plot)
 
-    target_to_plot, target_plot_min, target_plot_max, target_colorscale = process_match_panel_target_or_data_for_plotting(
-        target, target_type, plot_std
+    if target_type == "continuous":
+
+        target_to_plot = Series(
+            normalize_nd_array(target.values, None, "-0-", raise_for_bad=False),
+            name=target.name,
+            index=target.index,
+        ).clip(lower=-plot_std, upper=plot_std)
+
+    else:
+
+        target_to_plot = target
+
+    target_colorscale = make_colorscale_from_colors(
+        match_colors_to_data(target_to_plot.values, target_type)
     )
 
     if (
         cluster_within_category
         and target_type in ("binary", "categorical")
         and 1 < target_to_plot.value_counts().min()
-        and nd_array_is_sorted(target_to_plot.values)
+        and is_sorted_nd_array(target_to_plot.values)
         and not data_to_plot.isna().all().any()
     ):
 
         print("Clustering within category ...")
 
-        clustered_indices = cluster_2d_array_slices(
+        clustered_indices = cluster_2d_array(
             data_to_plot.values, 1, groups=target_to_plot.values, raise_for_bad=False
         )
 
@@ -191,8 +205,20 @@ def make_match_panel(
 
         data_to_plot = data_to_plot.iloc[:, clustered_indices]
 
-    data_to_plot, data_plot_min, data_plot_max, data_colorscale = process_match_panel_target_or_data_for_plotting(
-        data_to_plot, data_type, plot_std
+    if data_type == "continuous":
+
+        data_to_plot = DataFrame(
+            normalize_nd_array(data.values, 1, "-0-", raise_for_bad=False),
+            index=data.index,
+            columns=data.columns,
+        ).clip(lower=-plot_std, upper=plot_std)
+
+    else:
+
+        data_to_plot = data
+
+    data_colorscale = make_colorscale_from_colors(
+        match_colors_to_data(data.values, data_type)
     )
 
     target_row_fraction = max(0.01, 1 / (data_to_plot.shape[0] + 2))
@@ -231,8 +257,6 @@ def make_match_panel(
             "x": target_to_plot.index,
             "y": (target_to_plot.name,),
             "text": (target_to_plot.index,),
-            "zmin": target_plot_min,
-            "zmax": target_plot_max,
             "colorscale": target_colorscale,
             "showscale": False,
         },
@@ -242,8 +266,6 @@ def make_match_panel(
             "z": data_to_plot.values[::-1],
             "x": data_to_plot.columns,
             "y": data_to_plot.index[::-1],
-            "zmin": data_plot_min,
-            "zmax": data_plot_max,
             "colorscale": data_colorscale,
             "showscale": False,
         },
@@ -274,13 +296,13 @@ def make_match_panel(
 
         y = data_yaxis_domain[1] - (data_row_fraction / 2)
 
-        for str in strs:
+        for str_ in strs:
 
             layout["annotations"].append(
                 {
                     "x": x,
                     "y": y,
-                    "text": "<b>{}</b>".format(str),
+                    "text": "<b>{}</b>".format(str_),
                     **layout_annotation_template,
                 }
             )

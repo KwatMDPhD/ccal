@@ -1,5 +1,3 @@
-from warnings import warn
-
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
 from .ALMOST_ZERO import ALMOST_ZERO
@@ -32,7 +30,7 @@ def fit_skew_t_pdf_on_1d_array(
 
     if 24 < abs(shape):
 
-        warn("Refitting with fixed scale ...")
+        print("Refitting with fixed scale ...")
 
         keyword_arguments["fscale"] = keyword_arguments["scale"]
 
@@ -42,7 +40,7 @@ def fit_skew_t_pdf_on_1d_array(
 
         if 24 < abs(shape):
 
-            warn("Refitting with fixed location ...")
+            print("Refitting with fixed location ...")
 
             keyword_arguments["floc"] = keyword_arguments["loc"]
 

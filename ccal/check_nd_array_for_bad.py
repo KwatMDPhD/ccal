@@ -1,5 +1,3 @@
-from warnings import warn
-
 from numpy import isinf, isnan
 
 
@@ -21,21 +19,17 @@ def check_nd_array_for_bad(nd_array, raise_for_bad=True):
 
     is_bad = is_nan | is_inf
 
-    n_bad = is_bad.sum()
+    if raise_for_bad:
 
-    if 0 < n_bad:
+        n_bad = is_bad.sum()
 
-        message = "{} good & {} bad ({}).".format(
-            nd_array.size - n_bad, n_bad, "|".join(bads)
-        )
+        if n_bad:
 
-        if raise_for_bad:
-
-            raise ValueError(message)
-
-        else:
-
-            warn(message)
+            raise ValueError(
+                "{} good & {} bad ({}).".format(
+                    nd_array.size - n_bad, n_bad, "|".join(bads)
+                )
+            )
 
     else:
 

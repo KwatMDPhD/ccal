@@ -1,7 +1,7 @@
 from numpy import absolute, nanmax
 from pandas import Series
 
-from .compute_context import compute_context
+from .compute_1d_array_context import compute_1d_array_context
 from .plot_and_save import plot_and_save
 
 
@@ -52,7 +52,7 @@ def plot_context(
 
         _1d_array = _1d_array_or_series
 
-    context_dict = compute_context(
+    context_dict = compute_1d_array_context(
         _1d_array,
         n_data=n_data,
         location=location,

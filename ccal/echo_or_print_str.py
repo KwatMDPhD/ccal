@@ -5,7 +5,7 @@ from click import secho
 
 
 def echo_or_print_str(
-    str,
+    str_,
     fg=None,
     bg=None,
     bold=None,
@@ -25,7 +25,7 @@ def echo_or_print_str(
     try:
 
         secho(
-            str,
+            str_,
             fg=fg,
             bg=bg,
             bold=bold,
@@ -38,4 +38,4 @@ def echo_or_print_str(
 
     except UnsupportedOperation:
 
-        print(str)
+        print(str_)

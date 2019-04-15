@@ -1,6 +1,5 @@
 from pandas import Series
 
-from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .plot_and_save import plot_and_save
 
 
@@ -41,8 +40,6 @@ def plot_histogram(
 
             name = names[i]
 
-        color = COLOR_CATEGORICAL[i]
-
         data.append(
             {
                 "yaxis": "y2",
@@ -50,7 +47,6 @@ def plot_histogram(
                 "name": name,
                 "legendgroup": i,
                 "x": x,
-                "marker": {"color": color},
                 "histnorm": histnorm,
                 "opacity": 0.8,
             }

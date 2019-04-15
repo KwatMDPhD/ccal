@@ -12,6 +12,5 @@ setup(
     author_email="kwatme8@gmail.com",
     packages=find_packages(),
     python_requires=">=3.6",
-    # install_requires=,
     package_data={"ccal": ["data"]},
 )

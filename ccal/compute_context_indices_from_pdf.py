@@ -1,6 +1,8 @@
 from numpy import absolute, concatenate, cumsum, inf
 
-from .compute_kullback_leibler_divergence import compute_kullback_leibler_divergence
+from .compute_kullback_leibler_divergence_between_2_pdfs import (
+    compute_kullback_leibler_divergence_between_2_pdfs,
+)
 
 
 def compute_context_indices_from_pdf(
@@ -9,9 +11,13 @@ def compute_context_indices_from_pdf(
 
     center = pdf_reference.argmax()
 
-    left_kl = compute_kullback_leibler_divergence(pdf[:center], pdf_reference[:center])
+    left_kl = compute_kullback_leibler_divergence_between_2_pdfs(
+        pdf[:center], pdf_reference[:center]
+    )
 
-    right_kl = compute_kullback_leibler_divergence(pdf[center:], pdf_reference[center:])
+    right_kl = compute_kullback_leibler_divergence_between_2_pdfs(
+        pdf[center:], pdf_reference[center:]
+    )
 
     left_kl[left_kl == inf] = 0
 

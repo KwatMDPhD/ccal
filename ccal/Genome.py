@@ -1,10 +1,8 @@
-from warnings import warn
-
+from pandas import read_csv
 from tables import NoSuchNodeError
 
 from .count_gene_impacts_from_variant_dicts import count_gene_impacts_from_variant_dicts
 from .FeatureHDF5 import FeatureHDF5
-from .get_chromosome_size_from_fasta_gz import get_chromosome_size_from_fasta_gz
 from .VariantHDF5 import VariantHDF5
 
 
@@ -19,9 +17,14 @@ class Genome:
 
         self.reference_fasta_gz_file_path = reference_fasta_gz_file_path
 
-        self.chromosome_size = get_chromosome_size_from_fasta_gz(
-            self.reference_fasta_gz_file_path
-        )
+        self.chromosome_size = read_csv(
+            "{}.fai".format(self.reference_fasta_gz_file_path),
+            sep="\t",
+            header=None,
+            usecols=(0, 1),
+            index_col=0,
+            squeeze=True,
+        ).to_dict()
 
         self.reference_gff3_gz_file_path = reference_gff3_gz_file_path
 
@@ -41,7 +44,7 @@ class Genome:
 
         except KeyError as exception:
 
-            warn("KeyError: {}.".format(exception))
+            print("KeyError: {}.".format(exception))
 
             variant_dicts = []
 
@@ -55,13 +58,13 @@ class Genome:
 
         except KeyError as exception:
 
-            warn("KeyError: {}.".format(exception))
+            print("KeyError: {}.".format(exception))
 
             gene_dicts = []
 
         if 1 < len(gene_dicts):
 
-            warn("{} matches multiple genes, but using only the 1st one.".format(gene))
+            print("{} matches multiple genes, but using only the 1st one.".format(gene))
 
             gene_dicts = gene_dicts[:1]
 
@@ -73,11 +76,11 @@ class Genome:
 
         except KeyError as exception:
 
-            warn("KeyError: {}.".format(exception))
+            print("KeyError: {}.".format(exception))
 
             if len(gene_dicts) == 1:
 
-                warn(
+                print(
                     "VariantHDF5 does not have gene {}, so using gene region (from FeatureHDF5) to get variants ...".format(
                         gene
                     )
@@ -95,7 +98,7 @@ class Genome:
 
                 except NoSuchNodeError as exception:
 
-                    warn("NoSuchNodeError: {}.".format(exception))
+                    print("NoSuchNodeError: {}.".format(exception))
 
                     variant_dicts = []
 
@@ -133,7 +136,7 @@ class Genome:
 
         except NoSuchNodeError as exception:
 
-            warn("NoSuchNodeError: {}.".format(exception))
+            print("NoSuchNodeError: {}.".format(exception))
 
             gene_dicts = []
 
@@ -147,7 +150,7 @@ class Genome:
 
         except NoSuchNodeError as exception:
 
-            warn("NoSuchNodeError: {}.".format(exception))
+            print("NoSuchNodeError: {}.".format(exception))
 
             variant_dicts = []
 

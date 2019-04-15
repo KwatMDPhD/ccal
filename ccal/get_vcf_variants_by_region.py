@@ -1,6 +1,6 @@
 from tabix import open as tabix_open
 
-from .parse_vcf_row_and_make_variant_dict import parse_vcf_row_and_make_variant_dict
+from .make_variant_dict_from_vcf_row import make_variant_dict_from_vcf_row
 from .update_variant_dict import update_variant_dict
 
 
@@ -26,9 +26,7 @@ def get_vcf_variants_by_region(
 
     variants = pytabix_handle.query(chromosome, start_position, end_position)
 
-    varinat_dicts = [
-        parse_vcf_row_and_make_variant_dict(variant) for variant in variants
-    ]
+    varinat_dicts = [make_variant_dict_from_vcf_row(variant) for variant in variants]
 
     for variant_dict in varinat_dicts:
 

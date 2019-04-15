@@ -1,11 +1,10 @@
 from numpy import asarray
-
-from .get_unique_iterable_objects_in_order import get_unique_iterable_objects_in_order
+from pandas import unique
 
 
 def group_and_apply_function_on_each_group_in_iterable(iterable, groups, function):
 
-    unique_groups_in_order = get_unique_iterable_objects_in_order(groups)
+    unique_groups_in_order = unique(groups)
 
     applied_by_group = []
 

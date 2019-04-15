@@ -50,6 +50,14 @@ def plot_gsea_mountain(
 
     positive_color = "#ff1968"
 
+    if score < 0:
+
+        color = negative_color
+
+    else:
+
+        color = positive_color
+
     data.append(
         {
             "yaxis": "y2",
@@ -58,10 +66,7 @@ def plot_gsea_mountain(
             "x": (grid[cumulative_sums_argmax],),
             "y": (cumulative_sums[cumulative_sums_argmax],),
             "mode": "markers",
-            "marker": {
-                "size": 12,
-                "color": (negative_color, positive_color)[0 <= score],
-            },
+            "marker": {"size": 12, "color": color},
         }
     )
 

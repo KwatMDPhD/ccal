@@ -2,9 +2,9 @@ from os.path import join
 from urllib.parse import urljoin
 
 from .add_conda_to_path import add_conda_to_path
-from .conda_is_installed import conda_is_installed
-from .download import download
+from .download_url import download_url
 from .get_machine import get_machine
+from .is_valid_conda_directory_path import is_valid_conda_directory_path
 from .run_command import run_command
 
 
@@ -12,7 +12,7 @@ def install_and_activate_conda(
     conda_directory_path, pip_installs=None, conda_installs=None
 ):
 
-    if not conda_is_installed(conda_directory_path):
+    if not is_valid_conda_directory_path(conda_directory_path):
 
         conda_script_file_name_template = "Miniconda3-latest-{}-x86_64.sh"
 
@@ -20,17 +20,17 @@ def install_and_activate_conda(
 
         if "Darwin" in machine:
 
-            str = "MacOSX"
+            str_ = "MacOSX"
 
         elif "Linux" in machine:
 
-            str = "Linux"
+            str_ = "Linux"
 
-        conda_script_file_name = conda_script_file_name_template.format(str)
+        conda_script_file_name = conda_script_file_name_template.format(str_)
 
         tmp_directory_path = join("/", "tmp")
 
-        download(
+        download_url(
             urljoin("https://repo.continuum.io/miniconda/", conda_script_file_name),
             tmp_directory_path,
         )

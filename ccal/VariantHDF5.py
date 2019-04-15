@@ -1,7 +1,6 @@
 from collections import defaultdict
 from gzip import open as gzip_open
 from pickle import dump, load
-from warnings import warn
 
 from tables import (
     Filters,
@@ -107,7 +106,7 @@ class VariantHDF5:
 
             except (OSError, FileNotFoundError, HDF5ExtError) as exception:
 
-                warn("Failed: {}.".format(exception))
+                print("Failed: {}.".format(exception))
 
                 reset = True
 
@@ -179,7 +178,7 @@ class VariantHDF5:
 
                     for i, line in enumerate(vcf_gz_file):
 
-                        if i % n_per_print == 0:
+                        if not i % n_per_print:
 
                             print("\t{:,}/{:,} ...".format(i + 1, n))
 
@@ -189,13 +188,13 @@ class VariantHDF5:
 
                             continue
 
-                        chrom, pos, id, ref, alt, qual, filter_, info, format, sample = line.split(
+                        chrom, pos, id_, ref, alt, qual, filter_, info, format_, sample = line.split(
                             sep="\t"
                         )
 
                         if qual == ".":
 
-                            warn("Skipped row {} because QUAL==.:\n{}".format(i, line))
+                            print("Skipped row {} because QUAL==.:\n{}".format(i, line))
 
                             continue
 
@@ -214,17 +213,17 @@ class VariantHDF5:
 
                         cursor = chrom_table_row[chrom]
 
-                        for id_ in id.split(sep=";"):
+                        for id__ in id_.split(sep=";"):
 
                             cursor["CHROM"] = chrom
 
                             cursor["POS"] = pos
 
-                            if id_ != ".":
+                            if id__ != ".":
 
-                                cursor["ID"] = id_
+                                cursor["ID"] = id__
 
-                                self.id_chrom[id_] = chrom
+                                self.id_chrom[id__] = chrom
 
                             cursor["REF"] = ref
 
@@ -263,7 +262,7 @@ class VariantHDF5:
 
                                         self.gene_chrom[info_ann_field_value_0] = chrom
 
-                            cursor["GT"] = get_vcf_sample_format(format, sample, "GT")
+                            cursor["GT"] = get_vcf_sample_format(format_, sample, "GT")
 
                             cursor.append()
 

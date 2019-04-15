@@ -1,8 +1,8 @@
 from numpy import concatenate, where
+from pandas import unique
 from scipy.cluster.hierarchy import dendrogram, linkage
 
 from .check_nd_array_for_bad import check_nd_array_for_bad
-from .get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
 from .ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import (
     ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays,
 )
@@ -54,7 +54,7 @@ def cluster_2d_array(
 
         indices = []
 
-        for group in get_1d_array_unique_objects_in_order(groups):
+        for group in unique(groups):
 
             group_indices = where(groups == group)[0]
 

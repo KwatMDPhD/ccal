@@ -1,7 +1,7 @@
 from numpy import full, nan
 from pandas import DataFrame, concat
 
-from .multiprocess import multiprocess
+from .call_function_with_multiprocess import call_function_with_multiprocess
 from .single_sample_gsea import single_sample_gsea
 from .split_df import split_df
 
@@ -34,7 +34,7 @@ def single_sample_gseas(
 ):
 
     score__gene_set_x_sample = concat(
-        multiprocess(
+        call_function_with_multiprocess(
             _single_sample_gseas,
             (
                 (gene_x_sample, gene_sets_, statistic)

@@ -3,7 +3,6 @@ from numpy.random import seed, shuffle
 from pandas import isna
 from sklearn.linear_model import LinearRegression
 
-from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
 from .compute_empirical_p_value import compute_empirical_p_value
 from .plot_and_save import plot_and_save
 from .RANDOM_SEED import RANDOM_SEED
@@ -87,14 +86,14 @@ def correlate_2_1d_arrays(
                         "y": _1d_array_1,
                         "name": "Data",
                         "mode": "markers",
-                        "marker": {"size": marker_size, "color": COLOR_CATEGORICAL[0]},
+                        "marker": {"size": marker_size, "color": "#9017e6"},
                     },
                     {
                         "type": "scatter",
                         "x": _1d_array_0,
                         "y": model.coef_ * _1d_array_0 + model.intercept_,
                         "name": "Fit",
-                        "marker": {"color": COLOR_CATEGORICAL[1]},
+                        "marker": {"color": "#20d9ba"},
                     },
                 ],
             },

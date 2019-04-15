@@ -1,7 +1,6 @@
 from collections import defaultdict
 from gzip import open as gzip_open
 from pickle import dump, load
-from warnings import warn
 
 from tables import Filters, HDF5ExtError, Int32Col, IsDescription, StringCol, open_file
 
@@ -60,7 +59,7 @@ class FeatureHDF5:
 
             except (OSError, FileNotFoundError, HDF5ExtError) as exception:
 
-                warn("Failed: {}.".format(exception))
+                print("Failed: {}.".format(exception))
 
                 reset = True
 
@@ -132,7 +131,7 @@ class FeatureHDF5:
 
                     for i, line in enumerate(gff3_gz_file):
 
-                        if i % n_per_print == 0:
+                        if not i % n_per_print:
 
                             print("\t{:,}/{:,} ...".format(i + 1, n))
 
@@ -142,11 +141,11 @@ class FeatureHDF5:
 
                             continue
 
-                        seqid, source, type, start, end, score, strand, phase, attributes = line.split(
+                        seqid, source, type_, start, end, score, strand, phase, attributes = line.split(
                             sep="\t"
                         )
 
-                        if type not in self.types:
+                        if type_ not in self.types:
 
                             continue
 

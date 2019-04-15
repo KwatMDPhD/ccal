@@ -1,9 +1,11 @@
+from pandas import DataFrame, Series
+
 from .ALMOST_ZERO import ALMOST_ZERO
+from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
+from .match_colors_to_data import match_colors_to_data
+from .normalize_nd_array import normalize_nd_array
 from .plot_and_save import plot_and_save
-from .process_match_panel_target_or_data_for_plotting import (
-    process_match_panel_target_or_data_for_plotting,
-)
 
 
 def make_summary_match_panel(
@@ -34,8 +36,20 @@ def make_summary_match_panel(
 
         target.sort_values(ascending=target_ascending, inplace=True)
 
-    target, target_plot_min, target_plot_max, target_colorscale = process_match_panel_target_or_data_for_plotting(
-        target, target_type, plot_std
+    if target_type == "continuous":
+
+        target_to_plot = Series(
+            normalize_nd_array(target.values, None, "-0-", raise_for_bad=False),
+            name=target.name,
+            index=target.index,
+        ).clip(lower=-plot_std, upper=plot_std)
+
+    else:
+
+        target_to_plot = target
+
+    target_colorscale = make_colorscale_from_colors(
+        match_colors_to_data(target_to_plot.values, target_type)
     )
 
     n_row = 1 + len(data_dicts)
@@ -78,12 +92,10 @@ def make_summary_match_panel(
         {
             "yaxis": yaxis_name.replace("axis", ""),
             "type": "heatmap",
-            "z": target.to_frame().T.values,
-            "x": target.index,
-            "y": (target.name,),
-            "text": (target.index,),
-            "zmin": target_plot_min,
-            "zmax": target_plot_max,
+            "z": target_to_plot.to_frame().T.values,
+            "x": target_to_plot.index,
+            "y": (target_to_plot.name,),
+            "text": (target_to_plot.index,),
             "colorscale": target_colorscale,
             "showscale": False,
         }
@@ -95,7 +107,7 @@ def make_summary_match_panel(
 
         df = data_dict["df"]
 
-        data_to_plot = df.reindex(columns=target.index)
+        data_to_plot = df.reindex(columns=target_to_plot.index)
 
         score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr_dicts[data_name].loc[
             data_to_plot.index
@@ -109,8 +121,22 @@ def make_summary_match_panel(
 
         annotations = make_match_panel_annotations(score_moe_p_value_fdr_to_plot)
 
-        data_to_plot, data_plot_min, data_plot_max, data_colorscale = process_match_panel_target_or_data_for_plotting(
-            data_to_plot, data_dict["type"], plot_std
+        data_type = data_dict["type"]
+
+        if data_type == "continuous":
+
+            data_to_plot = DataFrame(
+                normalize_nd_array(data.values, 1, "-0-", raise_for_bad=False),
+                index=data.index,
+                columns=data.columns,
+            ).clip(lower=-plot_std, upper=plot_std)
+
+        else:
+
+            data_to_plot = data
+
+        data_colorscale = make_colorscale_from_colors(
+            match_colors_to_data(data.values, data_type)
         )
 
         yaxis_name = "yaxis{}".format(len(data_dicts) - data_name_index)
@@ -140,8 +166,6 @@ def make_summary_match_panel(
                 "z": data_to_plot.values[::-1],
                 "x": data_to_plot.columns,
                 "y": data_to_plot.index[::-1],
-                "zmin": data_plot_min,
-                "zmax": data_plot_max,
                 "colorscale": data_colorscale,
                 "showscale": False,
             }
@@ -187,13 +211,13 @@ def make_summary_match_panel(
 
             y = domain_end - (row_fraction / 2)
 
-            for str in annotation_column_strs:
+            for str_ in annotation_column_strs:
 
                 layout["annotations"].append(
                     {
                         "x": x,
                         "y": y,
-                        "text": "<b>{}</b>".format(str),
+                        "text": "<b>{}</b>".format(str_),
                         **layout_annotation_template,
                     }
                 )
