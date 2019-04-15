@@ -1,8 +1,8 @@
 from numpy import linspace, meshgrid
 
 from .make_colorscale_from_colors import make_colorscale_from_colors
-from .match_colors_to_data import match_colors_to_data
 from .normalize_nd_array import normalize_nd_array
+from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 
 
@@ -61,7 +61,7 @@ def plot_bubble_map(
                         * marker_size_max,
                         "color": df_color.values.ravel(),
                         "colorscale": make_colorscale_from_colors(
-                            match_colors_to_data(df_color.values, data_type)
+                            pick_nd_array_colors(df_color.values, data_type)
                         ),
                         "showscale": True,
                         "colorbar": {

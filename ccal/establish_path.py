@@ -1,12 +1,12 @@
 from os import mkdir
 from os.path import isdir, split
 
-from .get_absolute_path import get_absolute_path
+from .normalize_path import normalize_path
 
 
 def establish_path(path, path_type):
 
-    path = get_absolute_path(path)
+    path = normalize_path(path)
 
     if path_type == "file":
 

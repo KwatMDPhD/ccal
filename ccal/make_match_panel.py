@@ -7,11 +7,11 @@ from .compute_information_coefficient_between_2_1d_arrays import (
 from .is_sorted_nd_array import is_sorted_nd_array
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
-from .match_colors_to_data import match_colors_to_data
 from .match_target_and_data_and_compute_statistics import (
     match_target_and_data_and_compute_statistics,
 )
 from .normalize_nd_array import normalize_nd_array
+from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 from .RANDOM_SEED import RANDOM_SEED
 from .select_series_indices import select_series_indices
@@ -184,7 +184,7 @@ def make_match_panel(
         target_to_plot = target
 
     target_colorscale = make_colorscale_from_colors(
-        match_colors_to_data(target_to_plot.values, target_type)
+        pick_nd_array_colors(target_to_plot.values, target_type)
     )
 
     if (
@@ -218,7 +218,7 @@ def make_match_panel(
         data_to_plot = data
 
     data_colorscale = make_colorscale_from_colors(
-        match_colors_to_data(data.values, data_type)
+        pick_nd_array_colors(data.values, data_type)
     )
 
     target_row_fraction = max(0.01, 1 / (data_to_plot.shape[0] + 2))

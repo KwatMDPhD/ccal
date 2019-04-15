@@ -3,8 +3,8 @@ from pandas import DataFrame, Series
 from .ALMOST_ZERO import ALMOST_ZERO
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
-from .match_colors_to_data import match_colors_to_data
 from .normalize_nd_array import normalize_nd_array
+from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 
 
@@ -49,7 +49,7 @@ def make_summary_match_panel(
         target_to_plot = target
 
     target_colorscale = make_colorscale_from_colors(
-        match_colors_to_data(target_to_plot.values, target_type)
+        pick_nd_array_colors(target_to_plot.values, target_type)
     )
 
     n_row = 1 + len(data_dicts)
@@ -136,7 +136,7 @@ def make_summary_match_panel(
             data_to_plot = data
 
         data_colorscale = make_colorscale_from_colors(
-            match_colors_to_data(data.values, data_type)
+            pick_nd_array_colors(data.values, data_type)
         )
 
         yaxis_name = "yaxis{}".format(len(data_dicts) - data_name_index)

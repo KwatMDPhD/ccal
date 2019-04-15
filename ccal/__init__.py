@@ -14,13 +14,11 @@ from .VCF_ANN_FIELDS import VCF_ANN_FIELDS
 from .VCF_COLUMNS import VCF_COLUMNS
 from .VariantHDF5 import VariantHDF5
 from .add_conda_to_path import add_conda_to_path
-from .anneal_gps_map_node_and_element_positions import anneal_gps_map_node_and_element_positions
 from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
 from .apply_function_on_2_dfs_slices import apply_function_on_2_dfs_slices
 from .call_function_with_multiprocess import call_function_with_multiprocess
 from .cast_str_to_builtin import cast_str_to_builtin
-from .check_gps_map_node_x_element import check_gps_map_node_x_element
 from .check_nd_array_for_bad import check_nd_array_for_bad
 from .clean_and_write_df_to_tsv import clean_and_write_df_to_tsv
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
@@ -54,7 +52,6 @@ from .exit_ import exit_
 from .fit_skew_t_pdf_on_1d_array import fit_skew_t_pdf_on_1d_array
 from .fit_skew_t_pdf_on_each_df_row import fit_skew_t_pdf_on_each_df_row
 from .flatten_nested_iterable import flatten_nested_iterable
-from .get_absolute_path import get_absolute_path
 from .get_colormap_colors import get_colormap_colors
 from .get_conda_environments import get_conda_environments
 from .get_conda_prefix import get_conda_prefix
@@ -108,7 +105,6 @@ from .make_summary_match_panel import make_summary_match_panel
 from .make_variant_dict_consistent import make_variant_dict_consistent
 from .make_variant_dict_from_vcf_row import make_variant_dict_from_vcf_row
 from .map_iterable_objects_to_ints import map_iterable_objects_to_ints
-from .match_colors_to_data import match_colors_to_data
 from .match_randomly_sampled_target_and_data_to_compute_margin_of_errors import match_randomly_sampled_target_and_data_to_compute_margin_of_errors
 from .match_target_and_data import match_target_and_data
 from .match_target_and_data_and_compute_statistics import match_target_and_data_and_compute_statistics
@@ -123,13 +119,13 @@ from .normalize_contig import normalize_contig
 from .normalize_file_name import normalize_file_name
 from .normalize_git_url import normalize_git_url
 from .normalize_nd_array import normalize_nd_array
+from .normalize_path import normalize_path
 from .permute_target_and_match_target_and_data import permute_target_and_match_target_and_data
+from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 from .plot_bayesian_nomogram import plot_bayesian_nomogram
 from .plot_bubble_map import plot_bubble_map
 from .plot_context import plot_context
-from .plot_gps_map import plot_gps_map
-from .plot_gsea_mountain import plot_gsea_mountain
 from .plot_heat_map import plot_heat_map
 from .plot_histogram import plot_histogram
 from .plot_scatter_and_annotate import plot_scatter_and_annotate
