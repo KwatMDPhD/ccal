@@ -84,9 +84,7 @@ def plot_context(
 
         if y_max < absolute_context_max:
 
-            absolute_context = (
-                absolute_context / absolute_context_max * y_max
-            )
+            absolute_context = absolute_context / absolute_context_max * y_max
 
     else:
 

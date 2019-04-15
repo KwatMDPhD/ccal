@@ -1,7 +1,7 @@
 from numpy import asarray, nonzero, unique
 
 from .make_colorscale_from_colors import make_colorscale_from_colors
-from .match_colors_to_data import match_colors_to_data
+from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 
 
@@ -15,9 +15,11 @@ def plot_heat_map(
     heat_map_axis_domain=(0, 0.9),
     annotation_axis_domain=(0.92, 1),
     row_annotation=None,
+    row_annotation_colors=None,
     row_annotation_str=None,
     row_annotation_keyword_arguments=None,
     column_annotation=None,
+    column_annotation_colors=None,
     column_annotation_str=None,
     column_annotation_keyword_arguments=None,
     title=None,
@@ -69,7 +71,7 @@ def plot_heat_map(
             "x": df.columns,
             "y": df.index[::-1],
             "colorscale": make_colorscale_from_colors(
-                match_colors_to_data(df.values, data_type)
+                pick_nd_array_colors(df.values, data_type)
             ),
             "showscale": showscale,
             "colorbar": {"x": colorbar_x, **colorbar_template},
@@ -86,14 +88,18 @@ def plot_heat_map(
 
             row_annotation = row_annotation[::-1]
 
+            if row_annotation_colors is None:
+
+                row_annotation_colors = pick_nd_array_colors(
+                    asarray(row_annotation), "categorical"
+                )
+
             data.append(
                 {
                     "xaxis": "x2",
                     "type": "heatmap",
                     "z": tuple((i,) for i in row_annotation),
-                    "colorscale": make_colorscale_from_colors(
-                        match_colors_to_data(asarray(row_annotation), "categorical")
-                    ),
+                    "colorscale": make_colorscale_from_colors(row_annotation_colors),
                     "showscale": False,
                     "hoverinfo": "y+z",
                 }
@@ -124,15 +130,19 @@ def plot_heat_map(
 
         if column_annotation is not None:
 
+            if column_annotation_colors is None:
+
+                column_annotation_colors = pick_nd_array_colors(
+                    asarray(column_annotation), "categorical"
+                )
+
             data.append(
                 {
                     "yaxis": "y2",
                     "type": "heatmap",
                     "z": tuple((i,) for i in column_annotation),
                     "transpose": True,
-                    "colorscale": make_colorscale_from_colors(
-                        match_colors_to_data(asarray(column_annotation), "categorical")
-                    ),
+                    "colorscale": make_colorscale_from_colors(column_annotation_colors),
                     "showscale": False,
                     "hoverinfo": "x+z",
                 }
