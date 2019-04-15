@@ -1,7 +1,4 @@
-from numpy import absolute, in1d
-
-
-from numpy import asarray
+from numpy import absolute, asarray, in1d
 
 from .plot_and_save import plot_and_save
 
