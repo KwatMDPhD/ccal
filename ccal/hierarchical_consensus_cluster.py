@@ -19,7 +19,8 @@ from .RANDOM_SEED import RANDOM_SEED
 def hierarchical_consensus_cluster(
     df,
     k,
-    distance__column_x_column=None,
+    axis=0,
+    distance__element_x_element=None,
     distance_function="euclidean",
     n_clustering=10,
     random_seed=RANDOM_SEED,
@@ -28,19 +29,33 @@ def hierarchical_consensus_cluster(
     directory_path=None,
 ):
 
-    if distance__column_x_column is None:
+    if axis == 1:
 
-        print("Computing distance with {} ...".format(distance_function))
+        df = df.T
 
-        distance__column_x_column = DataFrame(
-            squareform(pdist(df.values.T, distance_function)),
-            index=df.columns,
-            columns=df.columns,
+    if distance__element_x_element is None:
+
+        print(
+            "Computing distance__element_x_element distance with {} ...".format(
+                distance_function
+            )
         )
 
-    print("HCC with K={} ...".format(k))
+        distance__element_x_element = DataFrame(
+            squareform(pdist(df.values, distance_function)),
+            index=df.index,
+            columns=df.index,
+        )
 
-    clustering_x_column = full((n_clustering, distance__column_x_column.shape[1]), nan)
+        if directory_path is not None:
+
+            distance__element_x_element.to_csv(
+                join(directory_path, "distance.element_x_element.tsv"), sep="\t"
+            )
+
+    print("HCC K={} ...".format(k))
+
+    clustering_x_element = full((n_clustering, df.index.size), nan)
 
     n_per_print = max(1, n_clustering // 10)
 
@@ -48,21 +63,17 @@ def hierarchical_consensus_cluster(
 
     for clustering in range(n_clustering):
 
-        if clustering % n_per_print == 0:
+        if not clustering % n_per_print:
 
             print("\t(K={}) {}/{} ...".format(k, clustering + 1, n_clustering))
 
-        random_columns_with_repeat = randint(
-            0,
-            high=distance__column_x_column.shape[0],
-            size=distance__column_x_column.shape[0],
-        )
+        random_elements_with_repeat = randint(0, high=df.index.size, size=df.index.size)
 
-        clustering_x_column[clustering, random_columns_with_repeat] = fcluster(
+        clustering_x_element[clustering, random_elements_with_repeat] = fcluster(
             linkage(
                 squareform(
-                    distance__column_x_column.iloc[
-                        random_columns_with_repeat, random_columns_with_repeat
+                    distance__element_x_element.iloc[
+                        random_elements_with_repeat, random_elements_with_repeat
                     ]
                 ),
                 method=linkage_method,
@@ -71,28 +82,34 @@ def hierarchical_consensus_cluster(
             criterion="maxclust",
         )
 
-    column_cluster, column_cluster__ccc = cluster_clustering_x_element_and_compute_ccc(
-        clustering_x_column, k, linkage_method
+    element_cluster, element_cluster__ccc = cluster_clustering_x_element_and_compute_ccc(
+        clustering_x_element, k, linkage_method
+    )
+
+    element_cluster = Series(element_cluster, name="Cluster", index=df.index)
+
+    cluster_x_element = make_binary_df_from_categorical_series(element_cluster)
+
+    cluster_x_element.index = Index(
+        ("Cluster{}".format(i) for i in cluster_x_element.index),
+        name=cluster_x_element.index.name,
     )
 
     if directory_path is not None:
 
-        cluster_x_column = make_binary_df_from_categorical_series(
-            Series(column_cluster, index=df.columns)
+        cluster_x_element.to_csv(
+            join(directory_path, "cluster_x_element.tsv"), sep="\t"
         )
 
-        cluster_x_column.index = Index(
-            ("Cluster{}".format(cluster) for cluster in cluster_x_column.index),
-            name="Cluster",
-        )
+    if axis == 1:
 
-        cluster_x_column.to_csv(join(directory_path, "cluster_x_column.tsv"), sep="\t")
+        df = df.T
 
     if plot_df:
 
-        print("Plotting df ...")
+        print("Plotting df.clustered ...")
 
-        file_name = "df.html"
+        file_name = "df.cluster.html"
 
         if directory_path is None:
 
@@ -102,15 +119,27 @@ def hierarchical_consensus_cluster(
 
             html_file_path = join(directory_path, file_name)
 
+            element_cluster_sorted = element_cluster.sort_values()
+
+            if axis == 0:
+
+                df = df.loc[element_cluster_sorted.index]
+
+                keyword_arguments = {"row_annotation": element_cluster_sorted}
+
+            elif axis == 1:
+
+                df = df[element_cluster_sorted.index]
+
+                keyword_arguments = {"column_annotation": element_cluster_sorted}
+
         plot_heat_map(
             df,
-            normalization_axis=0,
-            normalization_method="-0-",
-            column_annotation=column_cluster,
-            title="HCC K={} Column Cluster".format(k),
+            title="HCC K={}".format(k),
             xaxis_title=df.columns.name,
             yaxis_title=df.index.name,
             html_file_path=html_file_path,
+            **keyword_arguments,
         )
 
-    return column_cluster, column_cluster__ccc
+    return element_cluster, element_cluster__ccc

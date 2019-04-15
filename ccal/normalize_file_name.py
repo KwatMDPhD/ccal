@@ -1,6 +1,6 @@
 from re import sub
 
 
-def normalize_file_name(str):
+def normalize_file_name(file_name):
 
-    return sub(r"(?u)[^-\w.]", "_", str.strip().replace(" ", "_"))
+    return sub(r"(?u)[^-\w.]", "_", file_name.strip().replace(" ", "_"))

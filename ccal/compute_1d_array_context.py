@@ -2,8 +2,8 @@ from numpy import absolute, asarray, full, linspace, minimum, nan
 from statsmodels.sandbox.distributions.extras import ACSkewT_gen
 
 from .check_nd_array_for_bad import check_nd_array_for_bad
-from .compute_context_indices import compute_context_indices
-from .fit_skew_t_pdf import fit_skew_t_pdf
+from .compute_context_indices_from_pdf import compute_context_indices_from_pdf
+from .fit_skew_t_pdf_on_1d_array import fit_skew_t_pdf_on_1d_array
 from .make_coordinates_for_reflection import make_coordinates_for_reflection
 
 
@@ -34,7 +34,7 @@ def compute_1d_array_context(
         for parameter in (n_data, location, scale, degree_of_freedom, shape)
     ):
 
-        n_data, location, scale, degree_of_freedom, shape = fit_skew_t_pdf(
+        n_data, location, scale, degree_of_freedom, shape = fit_skew_t_pdf_on_1d_array(
             _1d_array_good,
             fit_initial_location=fit_initial_location,
             fit_initial_scale=fit_initial_scale,
@@ -57,7 +57,7 @@ def compute_1d_array_context(
         ),
     )
 
-    shape_context_indices = compute_context_indices(
+    shape_context_indices = compute_context_indices_from_pdf(
         grid, pdf, shape_pdf_reference, multiply_distance_from_reference_argmax
     )
 
@@ -90,7 +90,7 @@ def compute_1d_array_context(
             ),
         )
 
-        location_context_indices = compute_context_indices(
+        location_context_indices = compute_context_indices_from_pdf(
             grid, pdf, location_pdf_reference, multiply_distance_from_reference_argmax
         )
 

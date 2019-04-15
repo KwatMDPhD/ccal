@@ -5,7 +5,7 @@ from scipy.spatial.distance import euclidean, pdist, squareform
 from scipy.stats import pearsonr
 
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
-from .plot_points import plot_points
+from .plot_and_save import plot_and_save
 
 
 def anneal_gps_map_node_and_element_positions(
@@ -70,7 +70,7 @@ def anneal_gps_map_node_and_element_positions(
 
     for i in range(n_iteration):
 
-        if i % n_per_print == 0:
+        if not i % n_per_print:
 
             print("\t{}/{} ...".format(i + 1, n_iteration))
 
@@ -149,16 +149,61 @@ def anneal_gps_map_node_and_element_positions(
             fitness,
         )
 
-    plot_points(
-        tuple(tuple(range(n_iteration)) for i in range(scores.shape[1])),
-        tuple(scores[:, i] for i in range(scores.shape[1])),
-        names=(
-            "Temperature",
-            "Node-Node",
-            "Element-Element",
-            "Node-Element",
-            "Fitness",
-        ),
+    x = tuple(range(n_iteration))
+
+    if n_iteration < 1e3:
+
+        mode = "markers"
+
+    else:
+
+        mode = "lines"
+
+    plot_and_save(
+        {
+            "layout": {
+                "title": {"text": "Annealing Summary"},
+                "xaxis": {"title": "Iteration"},
+            },
+            "data": [
+                {
+                    "type": "scatter",
+                    "name": "Temperature",
+                    "x": x,
+                    "y": scores[:, 0],
+                    "mode": mode,
+                },
+                {
+                    "type": "scatter",
+                    "name": "Node-Node",
+                    "x": x,
+                    "y": scores[:, 1],
+                    "mode": mode,
+                },
+                {
+                    "type": "scatter",
+                    "name": "Element-Element",
+                    "x": x,
+                    "y": scores[:, 2],
+                    "mode": mode,
+                },
+                {
+                    "type": "scatter",
+                    "name": "Node-Element",
+                    "x": x,
+                    "y": scores[:, 3],
+                    "mode": mode,
+                },
+                {
+                    "type": "scatter",
+                    "name": "Fitness",
+                    "x": x,
+                    "y": scores[:, 4],
+                    "mode": mode,
+                },
+            ],
+        },
+        None,
     )
 
     return node_x_dimension, element_x_dimension

@@ -1,12 +1,12 @@
 from numpy import array_split, concatenate
 from pandas import DataFrame
 
+from .call_function_with_multiprocess import call_function_with_multiprocess
 from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
 from .match_randomly_sampled_target_and_data_to_compute_margin_of_errors import (
     match_randomly_sampled_target_and_data_to_compute_margin_of_errors,
 )
 from .match_target_and_data import match_target_and_data
-from .multiprocess import multiprocess
 from .permute_target_and_match_target_and_data import (
     permute_target_and_match_target_and_data,
 )
@@ -40,7 +40,7 @@ def match_target_and_data_and_compute_statistics(
     data_split = array_split(data, n_job)
 
     score_moe_p_value_fdr["Score"] = concatenate(
-        multiprocess(
+        call_function_with_multiprocess(
             match_target_and_data,
             (
                 (
@@ -79,7 +79,7 @@ def match_target_and_data_and_compute_statistics(
     p_values, fdrs = compute_empirical_p_values_and_fdrs(
         score_moe_p_value_fdr["Score"],
         concatenate(
-            multiprocess(
+            call_function_with_multiprocess(
                 permute_target_and_match_target_and_data,
                 (
                     (

@@ -1,5 +1,3 @@
-from warnings import warn
-
 from numpy import full, nan
 from numpy.random import seed, shuffle
 
@@ -37,15 +35,13 @@ def apply_function_on_2_1d_arrays(
 
             if is_good.sum() < n_required:
 
-                message = "{} requires {} <= n.".format(function.__name__, n_required)
-
                 if raise_for_n_less_than_required:
 
-                    raise ValueError(message)
+                    raise ValueError(
+                        "{} requires {} <= n.".format(function.__name__, n_required)
+                    )
 
                 else:
-
-                    warn(message)
 
                     return nan
 
@@ -61,7 +57,7 @@ def apply_function_on_2_1d_arrays(
 
     value = function(_1d_array_good_0, _1d_array_good_1)
 
-    if 0 < n_permutation:
+    if n_permutation:
 
         random_values = full(n_permutation, nan)
 

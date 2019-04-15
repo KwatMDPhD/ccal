@@ -3,8 +3,8 @@ from os.path import isfile, join
 from pandas import read_csv
 
 from .establish_path import establish_path
-from .make_file_name_from_str import make_file_name_from_str
 from .make_match_panel import make_match_panel
+from .normalize_file_name import normalize_file_name
 
 
 def make_match_panels(
@@ -25,7 +25,7 @@ def make_match_panels(
         for data_name, data_dict in data_dicts.items():
 
             suffix = join(
-                make_file_name_from_str(target_name), make_file_name_from_str(data_name)
+                normalize_file_name(target_name), normalize_file_name(data_name)
             )
 
             print("Making match panel for {} ...".format(suffix))

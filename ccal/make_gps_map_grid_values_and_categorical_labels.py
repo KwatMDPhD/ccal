@@ -1,6 +1,6 @@
 from numpy import full, nan, rot90, unique
 
-from .compute_bandwidths import compute_bandwidths
+from .compute_1d_arrays_bandwidths import compute_1d_arrays_bandwidths
 from .estimate_kernel_density import estimate_kernel_density
 
 
@@ -12,7 +12,7 @@ def make_gps_map_grid_values_and_categorical_labels(
 
     variable_types = "c" * n_dimension
 
-    global_bandwidths = compute_bandwidths(
+    global_bandwidths = compute_1d_arrays_bandwidths(
         tuple(
             element_x_dimension[:, dimension_index]
             for dimension_index in range(n_dimension)

@@ -7,7 +7,13 @@ def plot_and_save(figure, html_file_path, plotly_html_file_path=None):
 
     if "layout" in figure:
 
-        figure["layout"].update({"automargin": True, "hovermode": "closest"})
+        figure["layout"].update({"hovermode": "closest"})
+
+        for axis in ("xaxis", "yaxis"):
+
+            if axis in figure["layout"]:
+
+                figure["layout"][axis].update({"automargin": True})
 
     if html_file_path is not None:
 

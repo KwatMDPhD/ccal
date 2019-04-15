@@ -1,11 +1,11 @@
 from os.path import join
 
-from numpy import asarray
+from numpy import asarray, sort
 from pandas import DataFrame, Index
 
+from .call_function_with_multiprocess import call_function_with_multiprocess
 from .establish_path import establish_path
 from .mf_consensus_cluster import mf_consensus_cluster
-from .multiprocess import multiprocess
 from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
 from .RANDOM_SEED import RANDOM_SEED
@@ -32,7 +32,7 @@ def mf_consensus_cluster_with_ks(
 
     else:
 
-        k_directory_paths = tuple(join(directory_path, k) for k in ks)
+        k_directory_paths = tuple(join(directory_path, str(k)) for k in ks)
 
         for k_directory_path in k_directory_paths:
 
@@ -53,7 +53,7 @@ def mf_consensus_cluster_with_ks(
         ),
     ) in zip(
         ks,
-        multiprocess(
+        call_function_with_multiprocess(
             mf_consensus_cluster,
             (
                 (
@@ -110,6 +110,7 @@ def mf_consensus_cluster_with_ks(
                     "x": ks,
                     "y": tuple(k_return[key]["e"] for key in keys),
                     "mode": "lines+markers",
+                    "marker": {"color": "#ff1968"},
                 }
             ],
         },
@@ -124,7 +125,7 @@ def mf_consensus_cluster_with_ks(
         tuple(k_return[key]["h_element_cluster.ccc"] for key in keys)
     )
 
-    file_name = "mfcc.w_h_element_cluster.ccc.html"
+    file_name = "ccc.html"
 
     if directory_path is None:
 
@@ -137,7 +138,7 @@ def mf_consensus_cluster_with_ks(
     plot_and_save(
         {
             "layout": {
-                "title": {"text": "MFCC W H Element Cluster CCC"},
+                "title": {"text": "MFCC Cophenetic Correlation Coefficient"},
                 "xaxis": {"title": "K"},
                 "yaxis": {"title": "CCC"},
             },
@@ -148,13 +149,15 @@ def mf_consensus_cluster_with_ks(
                     "x": ks,
                     "y": w_element_cluster__ccc,
                     "mode": "lines+markers",
+                    "marker": {"color": "#9017e6"},
                 },
                 {
                     "type": "scatter",
-                    "name": "W Element Cluster CCC",
+                    "name": "H Element Cluster CCC",
                     "x": ks,
                     "y": h_element_cluster__ccc,
                     "mode": "lines+markers",
+                    "marker": {"color": "#4e40d8"},
                 },
                 {
                     "type": "scatter",
@@ -162,6 +165,7 @@ def mf_consensus_cluster_with_ks(
                     "x": ks,
                     "y": (w_element_cluster__ccc + h_element_cluster__ccc) / 2,
                     "mode": "lines+markers",
+                    "marker": {"color": "#20d9ba"},
                 },
             ],
         },
@@ -190,12 +194,12 @@ def mf_consensus_cluster_with_ks(
         if directory_path is not None:
 
             k_x_element.to_csv(
-                join(directory_path, "mfcc.k_x_{}_element.tsv".format(w_or_h)), sep="\t"
+                join(directory_path, "k_x_{}_element.tsv".format(w_or_h)), sep="\t"
             )
 
         if plot_df:
 
-            file_name = "mfcc.k_x_{}_element.distribution.html".format(w_or_h)
+            file_name = "k_x_{}_element.cluster_distribution.html".format(w_or_h)
 
             if directory_path is None:
 
@@ -206,11 +210,10 @@ def mf_consensus_cluster_with_ks(
                 html_file_path = join(directory_path, file_name)
 
             plot_heat_map(
-                k_x_element,
-                sort_axis=1,
-                colorscale="COLOR_CATEGORICAL",
-                title="MFCC {} Element Cluster Distribution".format(w_or_h.upper()),
-                xaxis_title=k_x_element.columns.name,
+                DataFrame(sort(k_x_element.values, axis=1), index=keys),
+                data_type="categorical",
+                title="MFCC {} Cluster Distribution".format(w_or_h.title()),
+                xaxis_title="{} Element".format(w_or_h.title()),
                 yaxis_title=k_x_element.index.name,
                 html_file_path=html_file_path,
             )

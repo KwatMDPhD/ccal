@@ -1,15 +1,14 @@
-from matplotlib.cm import bwr
-from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_hex
+from matplotlib.colors import LinearSegmentedColormap, to_hex
 from numpy import asarray, cos, isnan, linspace, nan, pi, sin, unique, where
 from pandas import Series, isna
 
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
-from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
-from .COLOR_WHITE_BROWN import COLOR_WHITE_BROWN
+from .get_colormap_colors import get_colormap_colors
 from .get_triangulation_edges_from_point_x_dimension import (
     get_triangulation_edges_from_point_x_dimension,
 )
-from .make_colorscale import make_colorscale
+from .make_colorscale_from_colors import make_colorscale_from_colors
+from .match_colors_to_data import match_colors_to_data
 from .normalize_nd_array import normalize_nd_array
 from .plot_and_save import plot_and_save
 
@@ -31,7 +30,7 @@ def plot_gps_map(
     annotation_types,
     annotation_std_maxs,
     annotation_ranges,
-    annotation_colorscale,
+    annotation_colors,
     layout_size,
     title,
     html_file_path,
@@ -131,11 +130,12 @@ def plot_gps_map(
                     "z": z[::-1],
                     "x": x,
                     "y": y,
-                    "colorscale": make_colorscale(
-                        colormap=LinearSegmentedColormap.from_list(
-                            None, ("#ffffff", label_colors[label])
-                        ),
-                        plot=False,
+                    "colorscale": make_colorscale_from_colors(
+                        get_colormap_colors(
+                            LinearSegmentedColormap.from_list(
+                                None, ("#ffffff", label_colors[label])
+                            )
+                        )
                     ),
                     "showscale": False,
                     "opacity": grid_label_opacity,
@@ -216,21 +216,9 @@ def plot_gps_map(
 
                 element_x_dimension = element_x_dimension[sorted_indices]
 
-            if annotation_colorscale is None:
-
-                if annotation_type == "continuous":
-
-                    colormap = bwr
-
-                elif annotation_type == "categorical":
-
-                    colormap = ListedColormap(COLOR_CATEGORICAL[: max_ + 1])
-
-                elif annotation_type == "binary":
-
-                    colormap = ListedColormap(COLOR_WHITE_BROWN)
-
-                annotation_colorscale = make_colorscale(colormap=colormap, plot=False)
+            colorscale = make_colorscale_from_colors(
+                match_colors_to_data(annotation_series.values, annotation_type)
+            )
 
             if 1 == annotation_x_element.shape[0]:
 
@@ -252,7 +240,7 @@ def plot_gps_map(
                             "color": annotation_series.values,
                             "cmin": min_,
                             "cmax": max_,
-                            "colorscale": annotation_colorscale,
+                            "colorscale": colorscale,
                             "showscale": annotation_type == "continuous",
                             "colorbar": {"len": 0.64, "thickness": layout_size / 80},
                             "line": element_marker_line,
@@ -272,7 +260,11 @@ def plot_gps_map(
 
                         continue
 
-                    color = to_hex(colormap((value - min_) / (max_ - min_)))
+                    color = to_hex(
+                        colorscale[
+                            int(len(colorscale) * (value - min_) / (max_ - min_))
+                        ][1]
+                    )
 
                     sector_radian = pi * 2 / annotation_x_element.shape[0]
 

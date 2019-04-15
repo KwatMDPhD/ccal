@@ -1,14 +1,16 @@
 from pandas import DataFrame
 
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
-from .compute_information_coefficient import compute_information_coefficient
+from .compute_information_coefficient_between_2_1d_arrays import (
+    compute_information_coefficient_between_2_1d_arrays,
+)
 from .plot_heat_map import plot_heat_map
 
 
 def apply_function_on_2_dfs_slices(
     df_0,
     df_1,
-    function=compute_information_coefficient,
+    function=compute_information_coefficient_between_2_1d_arrays,
     axis=0,
     title=None,
     name_0=None,

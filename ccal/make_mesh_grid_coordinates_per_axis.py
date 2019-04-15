@@ -12,7 +12,8 @@ def make_mesh_grid_coordinates_per_axis(
     check_nd_array_for_bad(min_max_grid_size, raise_for_bad=raise_for_bad)
 
     coordinates_by_axis = (
-        linspace(min, max, num=grid_size) for min, max, grid_size in min_max_grid_size
+        linspace(min_, max_, num=grid_size)
+        for min_, max_, grid_size in min_max_grid_size
     )
 
     return asarray(

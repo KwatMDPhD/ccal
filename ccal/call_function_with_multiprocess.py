@@ -5,7 +5,7 @@ from numpy.random import seed
 from .RANDOM_SEED import RANDOM_SEED
 
 
-def call_function_with_multiporcess(
+def call_function_with_multiprocess(
     function, arguments, n_job, random_seed=RANDOM_SEED
 ):
 

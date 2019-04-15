@@ -1,8 +1,8 @@
 from numpy import full, nan
 from pandas import DataFrame, concat
 
-from .compute_context import compute_context
-from .multiprocess import multiprocess
+from .call_function_with_multiprocess import call_function_with_multiprocess
+from .compute_context_indices_from_pdf import compute_context_indices_from_pdf
 from .split_df import split_df
 
 
@@ -26,7 +26,7 @@ def _make_context_matrix(
 
     for i, (index, series) in enumerate(df.iterrows()):
 
-        if i % n_per_print == 0:
+        if not i % n_per_print:
 
             print("({}/{}) {} ...".format(i + 1, n, index))
 
@@ -40,7 +40,7 @@ def _make_context_matrix(
                 index, ["N Data", "Location", "Scale", "Degree of Freedom", "Shape"]
             ]
 
-        context_matrix[i] = compute_context(
+        context_matrix[i] = compute_context_indices_from_pdf(
             series.values,
             n_data=n_data,
             location=location,
@@ -74,7 +74,7 @@ def make_context_matrix(
 ):
 
     context_matrix = concat(
-        multiprocess(
+        call_function_with_multiprocess(
             _make_context_matrix,
             (
                 (
