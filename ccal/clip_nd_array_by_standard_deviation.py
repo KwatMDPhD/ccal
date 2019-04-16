@@ -24,6 +24,4 @@ def clip_nd_array_by_standard_deviation(
             max=nd_array_good_mean + nd_array_good_interval,
         )
 
-    else:
-
-        return nd_array_clipped
+    return nd_array_clipped

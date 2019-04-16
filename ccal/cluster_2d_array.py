@@ -47,7 +47,7 @@ def cluster_2d_array(
         if len(groups) != _2d_array.shape[0]:
 
             raise ValueError(
-                "len(groups) {} != len(axis-{} slices) {}".format(
+                "len(groups) ({}) != len(axis-{} slices) ({})".format(
                     len(groups), axis, _2d_array.shape[0]
                 )
             )
