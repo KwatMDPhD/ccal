@@ -7,7 +7,7 @@ def plot_bayesian_nomogram(
     target,
     target_hit,
     target_miss,
-    grid_size,
+    n_grid,
     conditional_probabilities,
     names,
     html_file_path=None,
@@ -17,15 +17,15 @@ def plot_bayesian_nomogram(
 
     target_miss_probability = (target == target_miss).sum() / target.size
 
-    target_grid = linspace(target.min(), target.max(), grid_size)
+    target_grid = linspace(target.min(), target.max(), n_grid)
 
     target_grid_hit_index = absolute(target_grid - target_hit).argmin()
 
     target_grid_miss_index = absolute(target_grid - target_miss).argmin()
 
-    target = sort(target)[:: target.size // grid_size]
+    target = sort(target)[:: target.size // n_grid]
 
-    grid_shape = (grid_size, grid_size)
+    grid_shape = (n_grid, n_grid)
 
     for conditional_probability in conditional_probabilities:
 
@@ -67,7 +67,7 @@ def plot_bayesian_nomogram(
             / (target_hit_probability / target_miss_probability)
         )
 
-        x = tuple(range(grid_size))
+        x = tuple(range(n_grid))
 
         plot_and_save(
             {

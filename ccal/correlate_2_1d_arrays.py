@@ -86,7 +86,11 @@ def correlate_2_1d_arrays(
                         "y": _1d_array_1,
                         "name": "Data",
                         "mode": "markers",
-                        "marker": {"size": marker_size, "color": "#9017e6"},
+                        "marker": {
+                            "size": marker_size,
+                            "color": "#9017e6",
+                            "opacity": 0.64,
+                        },
                     },
                     {
                         "type": "scatter",

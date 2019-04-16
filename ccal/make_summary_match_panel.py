@@ -62,7 +62,7 @@ def make_summary_match_panel(
         "width": layout_width,
         "height": row_height / 2 * max(10, n_row),
         "margin": {"l": layout_side_margin, "r": layout_side_margin},
-        "title": title,
+        "title": {"text": title},
         "xaxis": {"anchor": "y"},
         "annotations": [],
     }

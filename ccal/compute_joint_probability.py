@@ -1,66 +1,29 @@
 from numpy import rot90
+from pandas import DataFrame
 
 from .estimate_kernel_density import estimate_kernel_density
-from .plot_and_save import plot_and_save
+from .plot_heat_map import plot_heat_map
 
 
-def compute_joint_probability(
-    variables,
-    variable_types=None,
-    bandwidths="normal_reference",
-    grid_size=64,
-    plot_kernel_density=True,
-    plot_probability=True,
-    names=None,
-):
+def compute_joint_probability(variables, n_grid=64, plot=True, names=None):
 
-    n_dimension = len(variables)
-
-    if variable_types is None:
-
-        variable_types = "c" * n_dimension
-
-    kernel_density = estimate_kernel_density(
-        variables,
-        variable_types,
-        bandwidths=bandwidths,
-        grid_sizes=(grid_size,) * n_dimension,
-    )
+    kernel_density = estimate_kernel_density(variables, n_grid=n_grid)
 
     probability = kernel_density / kernel_density.sum()
 
-    if n_dimension == 2:
+    n_dimension = len(variables)
+
+    if plot and n_dimension == 2:
 
         if names is None:
 
-            names = tuple("variables[{}]".format(i) for i in range(n_dimension))
+            names = tuple("Variable {}".format(i) for i in range(n_dimension))
 
-        if plot_kernel_density:
-
-            plot_and_save(
-                {
-                    "layout": {
-                        "title": {"text": "KDE({}, {})".format(names[0], names[1])},
-                        "xaxis": {"title": names[0]},
-                        "yaxis": {"title": names[1]},
-                    },
-                    "data": [{"type": "heatmap", "z": rot90(kernel_density)[::-1]}],
-                },
-                None,
-            )
-
-        if plot_probability:
-
-            plot_and_save(
-                {
-                    "layout": {
-                        "title": {"text": "P({}, {})".format(names[0], names[1])},
-                        "xaxis": {"title": names[0]},
-                        "yaxis": {"title": names[1]},
-                    },
-                    "data": [{"type": "heatmap", "z": rot90(probability)[::-1]}],
-                },
-                None,
-            )
+        plot_heat_map(
+            DataFrame(rot90(probability)),
+            title="P({}, {})".format(names[0], names[1]),
+            xaxis_title=names[0],
+            yaxis_title=names[1],
+        )
 
     return probability

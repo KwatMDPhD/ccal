@@ -105,7 +105,7 @@ def plot_context(
     layout = {
         "width": layout_width,
         "height": layout_height,
-        "title": title,
+        "title": {"text": title},
         "xaxis": {"anchor": "y", "title": xaxis_title},
         "yaxis": {
             "domain": (0, yaxis_max),

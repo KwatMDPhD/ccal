@@ -245,7 +245,7 @@ def make_match_panel(
             "domain": target_yaxis_domain,
             "tickfont": {"size": annotation_font_size},
         },
-        "title": title,
+        "title": {"text": title},
         "annotations": [],
     }
 
