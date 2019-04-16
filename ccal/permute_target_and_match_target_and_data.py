@@ -20,16 +20,16 @@ def permute_target_and_match_target_and_data(
 
     index_x_permutation = full((data.shape[0], n_permutation), nan)
 
-    permuted_target = target.copy()
+    target_shuffled = target.copy()
 
     for i in range(n_permutation):
 
-        shuffle(permuted_target)
+        shuffle(target_shuffled)
 
         random_state = get_state()
 
         index_x_permutation[:, i] = match_target_and_data(
-            permuted_target,
+            target_shuffled,
             data,
             match_function,
             n_required_for_match_function,

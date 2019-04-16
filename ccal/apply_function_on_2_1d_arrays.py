@@ -33,43 +33,36 @@ def apply_function_on_2_1d_arrays(
 
                 n_required *= is_good.size
 
-            if is_good.sum() < n_required:
+            n_good = is_good.sum()
+            if n_good < n_required:
 
                 if raise_for_n_less_than_required:
 
-                    raise ValueError(
-                        "{} requires {} <= n.".format(function.__name__, n_required)
-                    )
+                    raise ValueError("{} <= n_required ({})".format(n_good, n_required))
 
                 else:
 
                     return nan
 
-        _1d_array_good_0 = _1d_array_0[is_good]
+        _1d_array_0 = _1d_array_0[is_good]
 
-        _1d_array_good_1 = _1d_array_1[is_good]
+        _1d_array_1 = _1d_array_1[is_good]
 
-    else:
-
-        _1d_array_good_0 = _1d_array_0[is_good_0]
-
-        _1d_array_good_1 = _1d_array_1[is_good_1]
-
-    value = function(_1d_array_good_0, _1d_array_good_1)
+    value = function(_1d_array_0, _1d_array_1)
 
     if n_permutation:
 
         random_values = full(n_permutation, nan)
 
-        _1d_array_good_0_shuffled = _1d_array_good_0.copy()
+        _1d_array_0_shuffled = _1d_array_0.copy()
 
         seed(random_seed)
 
         for i in range(n_permutation):
 
-            shuffle(_1d_array_good_0_shuffled)
+            shuffle(_1d_array_0_shuffled)
 
-            random_values[i] = function(_1d_array_good_0_shuffled, _1d_array_good_1)
+            random_values[i] = function(_1d_array_0_shuffled, _1d_array_1)
 
         return (
             value,

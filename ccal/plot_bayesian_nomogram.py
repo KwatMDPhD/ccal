@@ -13,84 +13,69 @@ def plot_bayesian_nomogram(
     html_file_path=None,
 ):
 
-    target_hit_probability = (target == target_hit).sum() / target.size
+    p_th = (target == target_hit).sum() / target.size
 
-    target_miss_probability = (target == target_miss).sum() / target.size
+    p_tm = (target == target_miss).sum() / target.size
 
-    target_grid = linspace(target.min(), target.max(), n_grid)
+    grid_t = linspace(target.min(), target.max(), n_grid)
 
-    target_grid_hit_index = absolute(target_grid - target_hit).argmin()
+    grid_t_ih = absolute(grid_t - target_hit).argmin()
 
-    target_grid_miss_index = absolute(target_grid - target_miss).argmin()
-
-    target = sort(target)[:: target.size // n_grid]
-
-    grid_shape = (n_grid, n_grid)
-
-    for conditional_probability in conditional_probabilities:
-
-        if conditional_probability.shape != grid_shape:
-
-            raise ValueError(
-                "conditional_probabilities[i].shape should be {}.".format(grid_shape)
-            )
+    grid_t_im = absolute(grid_t - target_miss).argmin()
 
     layout = {
-        "height": 80 * max(8, len(conditional_probabilities)),
+        "height": 64 * max(8, len(conditional_probabilities)),
         "title": {"text": "Bayesian Nomogram"},
         "xaxis": {"title": "Log Odds Ratio"},
         "yaxis": {
-            "zeroline": False,
+            "title": "Evidence",
             "ticks": "",
             "showticklabels": False,
-            "title": "Evidence",
-            "dtick": 1,
+            "zeroline": False,
         },
     }
 
     data = []
 
-    for i, (conditional_probability, name) in enumerate(
-        zip(conditional_probabilities, names)
-    ):
+    for i, (p_t__, name) in enumerate(zip(conditional_probabilities, names)):
 
-        target_hit_conditional_probability = conditional_probability[
-            :, target_grid_hit_index
-        ]
+        p_th__ = p_t__[:, grid_t_ih]
 
-        target_miss_conditional_probability = conditional_probability[
-            :, target_grid_miss_index
-        ]
+        p_tm__ = p_t__[:, grid_t_im]
 
-        log_odds_ratios = log2(
-            (target_hit_conditional_probability / target_miss_conditional_probability)
-            / (target_hit_probability / target_miss_probability)
-        )
+        log_odds_ratios = log2((p_th__ / p_tm__) / (p_th / p_tm))
 
         x = tuple(range(n_grid))
 
         plot_and_save(
             {
-                "layout": {"title": {"text": name}, "legend": {"orientation": "v"}},
+                "layout": {"title": {"text": name}},
                 "data": [
-                    {"type": "scatter", "name": name, "x": x, "y": target},
                     {
                         "type": "scatter",
-                        "name": "P(hit | {})".format(name),
+                        "name": name,
                         "x": x,
-                        "y": target_hit_conditional_probability,
+                        "y": sort(target)[:: target.size // n_grid],
+                        "marker": {"color": "#9017e6"},
                     },
                     {
                         "type": "scatter",
-                        "name": "P(miss | {})".format(name),
+                        "name": "P(hit = {} | {})".format(target_hit, name),
                         "x": x,
-                        "y": target_miss_conditional_probability,
+                        "y": p_th__,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "P(miss = {} | {})".format(target_miss, name),
+                        "x": x,
+                        "y": p_tm__,
                     },
                     {
                         "type": "scatter",
                         "name": "Log Odds Ratio",
                         "x": x,
                         "y": log_odds_ratios,
+                        "marker": {"color": "#20d9ba"},
                     },
                 ],
             },
@@ -100,7 +85,6 @@ def plot_bayesian_nomogram(
         data.append(
             {
                 "type": "scatter",
-                "legendgroup": name,
                 "name": name,
                 "x": (log_odds_ratios.min(), log_odds_ratios.max()),
                 "y": (i, i),

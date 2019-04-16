@@ -31,7 +31,7 @@ def correlate_2_1d_arrays(
 
     if n_permutation:
 
-        permuted_r2s = full(n_permutation, nan)
+        r2s_shuffled = full(n_permutation, nan)
 
         m_ = LinearRegression()
 
@@ -45,11 +45,11 @@ def correlate_2_1d_arrays(
 
             m_.fit(xs, y_)
 
-            permuted_r2s[i] = m_.score(xs, y_)
+            r2s_shuffled[i] = m_.score(xs, y_)
 
         p_value = min(
-            compute_empirical_p_value(r2, permuted_r2s, "<"),
-            compute_empirical_p_value(r2, permuted_r2s, ">"),
+            compute_empirical_p_value(r2, r2s_shuffled, "<"),
+            compute_empirical_p_value(r2, r2s_shuffled, ">"),
         )
 
     else:
