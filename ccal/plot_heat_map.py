@@ -1,5 +1,6 @@
 from numpy import asarray, nonzero, unique
 
+from .cast_object_to_builtin import cast_object_to_builtin
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
@@ -64,12 +65,28 @@ def plot_heat_map(
 
         colorbar_template["y"] = (heat_map_axis_domain[1] - heat_map_axis_domain[0]) / 2
 
+    if any(isinstance(cast_object_to_builtin(i), str) for i in df.columns):
+
+        x = df.columns
+
+    else:
+
+        x = None
+
+    if any(isinstance(cast_object_to_builtin(i), str) for i in df.index):
+
+        y = df.index[::-1]
+
+    else:
+
+        y = None
+
     data = [
         {
             "type": "heatmap",
             "z": df.values[::-1],
-            "x": df.columns,
-            "y": df.index[::-1],
+            "x": x,
+            "y": y,
             "colorscale": make_colorscale_from_colors(
                 pick_nd_array_colors(df.values, data_type)
             ),
@@ -86,8 +103,6 @@ def plot_heat_map(
 
         if row_annotation is not None:
 
-            row_annotation = row_annotation[::-1]
-
             if row_annotation_colors is None:
 
                 row_annotation_colors = pick_nd_array_colors(
@@ -98,7 +113,7 @@ def plot_heat_map(
                 {
                     "xaxis": "x2",
                     "type": "heatmap",
-                    "z": tuple((i,) for i in row_annotation),
+                    "z": tuple((i,) for i in row_annotation[::-1]),
                     "colorscale": make_colorscale_from_colors(row_annotation_colors),
                     "showscale": False,
                     "hoverinfo": "y+z",

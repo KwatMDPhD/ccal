@@ -12,7 +12,9 @@ from numpy import (
     nan,
     number,
     pi,
+    rot90,
     sin,
+    sort,
     unique,
     where,
 )
@@ -27,18 +29,16 @@ from .check_nd_array_for_bad import check_nd_array_for_bad
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
 from .cluster_2d_array import cluster_2d_array
 from .COLORS import COLORS
+from .compute_bandwidths import compute_bandwidths
 from .compute_information_distance_between_2_1d_arrays import (
     compute_information_distance_between_2_1d_arrays,
 )
+from .estimate_kernel_density import estimate_kernel_density
 from .get_colormap_colors import get_colormap_colors
 from .get_triangulation_edges_from_point_x_dimension import (
     get_triangulation_edges_from_point_x_dimension,
 )
 from .make_colorscale_from_colors import make_colorscale_from_colors
-from .make_gps_map_element_x_dimension import make_gps_map_element_x_dimension
-from .make_gps_map_grid_values_and_categorical_labels import (
-    make_gps_map_grid_values_and_categorical_labels,
-)
 from .normalize_nd_array import normalize_nd_array
 from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
@@ -77,6 +77,41 @@ def _check_node_x_element(node_x_element):
     check_nd_array_for_bad(node_x_element.values)
 
 
+def _make_gps_map_element_x_dimension(
+    node_x_element, node_x_dimension, n_pull, pull_power
+):
+
+    element_x_dimension = full(
+        (node_x_element.shape[1], node_x_dimension.shape[1]), nan
+    )
+
+    node_x_element = normalize_nd_array(node_x_element, None, "0-1")
+
+    for element_index in range(node_x_element.shape[1]):
+
+        pulls = node_x_element[:, element_index]
+
+        if 3 < pulls.size:
+
+            pulls = normalize_nd_array(pulls, None, "0-1")
+
+        if n_pull is not None:
+
+            pulls[pulls < sort(pulls)[-n_pull]] = 0
+
+        if pull_power is not None:
+
+            pulls = pulls ** pull_power
+
+        for dimension_index in range(node_x_dimension.shape[1]):
+
+            element_x_dimension[element_index, dimension_index] = (
+                pulls * node_x_dimension[:, dimension_index]
+            ).sum() / pulls.sum()
+
+    return element_x_dimension
+
+
 def _plot_gps_map(
     nodes,
     node_name,
@@ -109,7 +144,7 @@ def _plot_gps_map(
     layout = {
         "width": layout_size,
         "height": layout_size,
-        "title": title,
+        "title": {"text": title},
         "titlefont": {"size": 32, "color": "#4c221b"},
         "xaxis": axis_template,
         "yaxis": axis_template,
@@ -411,6 +446,67 @@ def _plot_gps_map(
         )
 
     plot_and_save({"layout": layout, "data": data}, html_file_path)
+
+
+def _make_gps_map_grid_values_and_categorical_labels(
+    element_x_dimension, element_labels, n_grid, bandwidth_factor, mask
+):
+
+    label_grid_probabilities = {}
+
+    global_bandwidths = compute_bandwidths(element_x_dimension.T) * bandwidth_factor
+
+    n_dimension = element_x_dimension.shape[1]
+
+    mins = (0,) * n_dimension
+
+    maxs = (1,) * n_dimension
+
+    for label in unique(element_labels):
+
+        kernel_density = rot90(
+            estimate_kernel_density(
+                element_x_dimension[element_labels == label].T,
+                bandwidths=global_bandwidths,
+                mins=mins,
+                maxs=maxs,
+                n_grid=n_grid,
+            )
+        )
+
+        label_grid_probabilities[label] = kernel_density / kernel_density.sum()
+
+    shape = (n_grid,) * n_dimension
+
+    grid_values = full(shape, nan)
+
+    grid_labels = full(shape, nan)
+
+    for i in range(n_grid):
+
+        for j in range(n_grid):
+
+            if not mask[i, j]:
+
+                max_probability = 0
+
+                max_label = nan
+
+                for label, grid_probabilities in label_grid_probabilities.items():
+
+                    probability = grid_probabilities[i, j]
+
+                    if max_probability < probability:
+
+                        max_probability = probability
+
+                        max_label = label
+
+                grid_values[i, j] = max_probability
+
+                grid_labels[i, j] = max_label
+
+    return grid_values, grid_labels
 
 
 def _anneal_node_and_element_positions(
@@ -860,13 +956,13 @@ class GPSMap:
 
         if w is not None:
 
-            self.w_element_x_dimension = make_gps_map_element_x_dimension(
+            self.w_element_x_dimension = _make_gps_map_element_x_dimension(
                 self.w, self.node_x_dimension, self.w_n_pull, self.w_pull_power
             )
 
         if h is not None:
 
-            self.h_element_x_dimension = make_gps_map_element_x_dimension(
+            self.h_element_x_dimension = _make_gps_map_element_x_dimension(
                 self.h, self.node_x_dimension, self.h_n_pull, self.h_pull_power
             )
 
@@ -1000,7 +1096,7 @@ class GPSMap:
                     == -1
                 )
 
-        grid_values, grid_labels = make_gps_map_grid_values_and_categorical_labels(
+        grid_values, grid_labels = _make_gps_map_grid_values_and_categorical_labels(
             element_x_dimension,
             element_labels,
             self.n_grid,
@@ -1133,7 +1229,7 @@ class GPSMap:
 
             label_colors = self.h_label_colors
 
-        predicting_element_x_dimension = make_gps_map_element_x_dimension(
+        predicting_element_x_dimension = _make_gps_map_element_x_dimension(
             node_x_predicting_element.values, self.node_x_dimension, n_pull, pull_power
         )
 

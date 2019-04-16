@@ -6,7 +6,7 @@ from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
 from .apply_function_on_2_dfs_slices import apply_function_on_2_dfs_slices
 from .call_function_with_multiprocess import call_function_with_multiprocess
-from .cast_str_to_builtin import cast_str_to_builtin
+from .cast_object_to_builtin import cast_object_to_builtin
 from .check_nd_array_for_bad import check_nd_array_for_bad
 from .clean_and_write_df_to_tsv import clean_and_write_df_to_tsv
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
@@ -18,7 +18,7 @@ from .CODON_AMINO_ACID import CODON_AMINO_ACID
 from .COLORS import COLORS
 from .compute_1d_array_context import compute_1d_array_context
 from .compute_1d_array_entropy import compute_1d_array_entropy
-from .compute_1d_arrays_bandwidths import compute_1d_arrays_bandwidths
+from .compute_bandwidths import compute_bandwidths
 from .compute_coclustering_fraction_from_clustering_x_element import (
     compute_coclustering_fraction_from_clustering_x_element,
 )
@@ -113,14 +113,10 @@ from .make_categorical_colors import make_categorical_colors
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_context_matrix import make_context_matrix
 from .make_coordinates_for_reflection import make_coordinates_for_reflection
-from .make_gps_map_element_x_dimension import make_gps_map_element_x_dimension
-from .make_gps_map_grid_values_and_categorical_labels import (
-    make_gps_map_grid_values_and_categorical_labels,
-)
 from .make_match_panel import make_match_panel
 from .make_match_panel_annotations import make_match_panel_annotations
 from .make_match_panels import make_match_panels
-from .make_mesh_grid_coordinates_per_axis import make_mesh_grid_coordinates_per_axis
+from .make_mesh_grid_and_ravel import make_mesh_grid_and_ravel
 from .make_summary_match_panel import make_summary_match_panel
 from .make_variant_dict_consistent import make_variant_dict_consistent
 from .make_variant_dict_from_vcf_row import make_variant_dict_from_vcf_row

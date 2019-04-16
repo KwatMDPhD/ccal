@@ -1,16 +1,10 @@
-from pandas import Series
-
 from .plot_and_save import plot_and_save
 
 
 def plot_histogram(
-    xs,
-    names=None,
-    texts=None,
+    serieses,
     histnorm="",
     plot_rug=True,
-    layout_width=None,
-    layout_height=None,
     title=None,
     xaxis_title=None,
     html_file_path=None,
@@ -30,23 +24,15 @@ def plot_histogram(
 
     data = []
 
-    for i, x in enumerate(xs):
-
-        if names is None:
-
-            name = None
-
-        else:
-
-            name = names[i]
+    for i, series in enumerate(serieses):
 
         data.append(
             {
                 "yaxis": "y2",
                 "type": "histogram",
-                "name": name,
-                "legendgroup": i,
-                "x": x,
+                "name": series.name,
+                "legendgroup": series.name,
+                "x": series,
                 "histnorm": histnorm,
                 "opacity": 0.8,
             }
@@ -54,38 +40,22 @@ def plot_histogram(
 
         if plot_rug:
 
-            if texts is None:
-
-                if isinstance(x, Series):
-
-                    text = x.index
-
-                else:
-
-                    text = None
-
-            else:
-
-                text = texts[i]
-
             data.append(
                 {
                     "type": "scatter",
-                    "legendgroup": i,
+                    "legendgroup": series.name,
                     "showlegend": False,
-                    "x": x,
-                    "y": (i,) * len(x),
-                    "text": text,
+                    "x": series,
+                    "y": (i,) * series.size,
+                    "text": series.index,
                     "mode": "markers",
-                    "marker": {"symbol": "line-ns-open", "color": color},
+                    "marker": {"symbol": "line-ns-open"},
                 }
             )
 
     plot_and_save(
         {
             "layout": {
-                "width": layout_width,
-                "height": layout_height,
                 "title": {"text": title},
                 "xaxis": {"anchor": "y", "title": xaxis_title},
                 "yaxis": {
