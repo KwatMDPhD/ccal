@@ -2,6 +2,7 @@ from numpy import array_split, concatenate
 from pandas import DataFrame
 
 from .call_function_with_multiprocess import call_function_with_multiprocess
+from .check_nd_array_for_bad import check_nd_array_for_bad
 from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_fdrs
 from .match_randomly_sampled_target_and_data_to_compute_margin_of_errors import (
     match_randomly_sampled_target_and_data_to_compute_margin_of_errors,
@@ -27,7 +28,9 @@ def match_target_and_data_and_compute_statistics(
     n_permutation,
 ):
 
-    score_moe_p_value_fdr = DataFrame(columns=("Score", "0.95 MoE", "P-Value", "FDR"))
+    score_moe_p_value_fdr = DataFrame(
+        index=range(data.shape[0]), columns=("Score", "0.95 MoE", "P-Value", "FDR")
+    )
 
     n_job = min(data.shape[0], n_job)
 
@@ -39,7 +42,7 @@ def match_target_and_data_and_compute_statistics(
 
     data_split = array_split(data, n_job)
 
-    score_moe_p_value_fdr["Score"] = concatenate(
+    scores = concatenate(
         call_function_with_multiprocess(
             match_target_and_data,
             (
@@ -55,6 +58,12 @@ def match_target_and_data_and_compute_statistics(
             n_job,
         )
     )
+
+    if check_nd_array_for_bad(scores, raise_for_bad=False).all():
+
+        return score_moe_p_value_fdr
+
+    score_moe_p_value_fdr["Score"] = scores
 
     indices = select_series_indices(
         score_moe_p_value_fdr["Score"],

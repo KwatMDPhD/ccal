@@ -42,7 +42,11 @@ def make_summary_match_panel(
             normalize_nd_array(target.values, None, "-0-", raise_for_bad=False),
             name=target.name,
             index=target.index,
-        ).clip(lower=-plot_std, upper=plot_std)
+        )
+
+        if plot_std is not None:
+
+            target_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
 
     else:
 
@@ -85,16 +89,17 @@ def make_summary_match_panel(
 
     layout[yaxis_name] = {
         "domain": (domain_start, domain_end),
+        "tickmode": "array",
+        "tickvals": (0,),
+        "ticktext": (target.name,),
         "tickfont": {"size": annotation_font_size},
     }
 
-    data = [
+    figure_data = [
         {
             "yaxis": yaxis_name.replace("axis", ""),
             "type": "heatmap",
             "z": target_to_plot.to_frame().T.values,
-            "x": target_to_plot.index,
-            "y": (target_to_plot.name,),
             "text": (target_to_plot.index,),
             "colorscale": target_colorscale,
             "showscale": False,
@@ -126,17 +131,17 @@ def make_summary_match_panel(
         if data_type == "continuous":
 
             data_to_plot = DataFrame(
-                normalize_nd_array(data.values, 1, "-0-", raise_for_bad=False),
-                index=data.index,
-                columns=data.columns,
-            ).clip(lower=-plot_std, upper=plot_std)
+                normalize_nd_array(data_to_plot.values, 1, "-0-", raise_for_bad=False),
+                index=data_to_plot.index,
+                columns=data_to_plot.columns,
+            )
 
-        else:
+            if plot_std is not None:
 
-            data_to_plot = data
+                data_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
 
         data_colorscale = make_colorscale_from_colors(
-            pick_nd_array_colors(data.values, data_type)
+            pick_nd_array_colors(data_to_plot.values, data_type)
         )
 
         yaxis_name = "yaxis{}".format(len(data_dicts) - data_name_index)
@@ -159,7 +164,7 @@ def make_summary_match_panel(
             "tickfont": {"size": annotation_font_size},
         }
 
-        data.append(
+        figure_data.append(
             {
                 "yaxis": yaxis_name.replace("axis", ""),
                 "type": "heatmap",
@@ -224,4 +229,4 @@ def make_summary_match_panel(
 
                 y -= row_fraction
 
-    plot_and_save({"layout": layout, "data": data}, html_file_path)
+    plot_and_save({"layout": layout, "data": figure_data}, html_file_path)

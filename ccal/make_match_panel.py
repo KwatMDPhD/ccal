@@ -84,17 +84,17 @@ def make_match_panel(
 
         score_moe_p_value_fdr = score_moe_p_value_fdr.reindex(index=data.index)
 
-    score_moe_p_value_fdr.sort_values("Score", ascending=score_ascending, inplace=True)
-
-    if file_path_prefix is not None:
-
-        score_moe_p_value_fdr.to_csv("{}.tsv".format(file_path_prefix), sep="\t")
-
     if score_moe_p_value_fdr.isna().values.all():
 
         print("score_moe_p_value_fdr has only na.")
 
         return score_moe_p_value_fdr
+
+    score_moe_p_value_fdr.sort_values("Score", ascending=score_ascending, inplace=True)
+
+    if file_path_prefix is not None:
+
+        score_moe_p_value_fdr.to_csv("{}.tsv".format(file_path_prefix), sep="\t")
 
     if not plot:
 
@@ -108,32 +108,38 @@ def make_match_panel(
 
         html_file_path = "{}.rank_score.html".format(file_path_prefix)
 
-    score_without_na = score_moe_p_value_fdr["Score"].dropna()
+    n = score_moe_p_value_fdr.shape[0]
 
-    if score_without_na.size < 1e3:
+    if n < 1e3:
 
-        mode = "markers"
+        mode = "lines+markers"
 
     else:
 
         mode = "lines"
 
+    x = score_moe_p_value_fdr.index
+
     plot_and_save(
         {
             "layout": {
-                "title": {"text": "Score"},
+                "title": {"text": "Statistics"},
                 "xaxis": {"title": "Rank"},
-                "yaxis": {"title": "Score ({})".format(match_function.__name__)},
+                "yaxis": {"title": "Score<br>{}".format(match_function.__name__)},
             },
             "data": [
                 {
                     "type": "scatter",
-                    "x": tuple(range(score_without_na.size)),
-                    "y": score_without_na,
-                    "text": score_without_na.index,
+                    "name": name,
+                    "x": x,
+                    "y": score_moe_p_value_fdr[name].values,
                     "mode": mode,
-                    "marker": {"color": "#20d9ba"},
+                    "marker": {"color": color},
                 }
+                for name, color in zip(
+                    score_moe_p_value_fdr.columns,
+                    ("#20d9ba", "#ff1968", "#4e40d8", "#9017e6"),
+                )
             ],
         },
         html_file_path,
@@ -177,7 +183,11 @@ def make_match_panel(
             normalize_nd_array(target.values, None, "-0-", raise_for_bad=False),
             name=target.name,
             index=target.index,
-        ).clip(lower=-plot_std, upper=plot_std)
+        )
+
+        if plot_std is not None:
+
+            target_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
 
     else:
 
@@ -211,7 +221,11 @@ def make_match_panel(
             normalize_nd_array(data.values, 1, "-0-", raise_for_bad=False),
             index=data.index,
             columns=data.columns,
-        ).clip(lower=-plot_std, upper=plot_std)
+        )
+
+        if plot_std is not None:
+
+            data_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
 
     else:
 
@@ -243,6 +257,9 @@ def make_match_panel(
         },
         "yaxis2": {
             "domain": target_yaxis_domain,
+            "tickmode": "array",
+            "tickvals": (0,),
+            "ticktext": (target.name,),
             "tickfont": {"size": annotation_font_size},
         },
         "title": {"text": title},
@@ -254,8 +271,6 @@ def make_match_panel(
             "yaxis": "y2",
             "type": "heatmap",
             "z": target_to_plot.to_frame().T.values,
-            "x": target_to_plot.index,
-            "y": (target_to_plot.name,),
             "text": (target_to_plot.index,),
             "colorscale": target_colorscale,
             "showscale": False,
