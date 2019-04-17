@@ -67,7 +67,6 @@ from .get_intersections_between_2_1d_arrays import get_intersections_between_2_1
 from .get_machine import get_machine
 from .get_name_within_function import get_name_within_function
 from .get_shell_environment import get_shell_environment
-from .get_target_grid_indices import get_target_grid_indices
 from .get_triangulation_edges_from_point_x_dimension import (
     get_triangulation_edges_from_point_x_dimension,
 )
@@ -121,13 +120,6 @@ from .make_summary_match_panel import make_summary_match_panel
 from .make_variant_dict_consistent import make_variant_dict_consistent
 from .make_variant_dict_from_vcf_row import make_variant_dict_from_vcf_row
 from .map_iterable_objects_to_ints import map_iterable_objects_to_ints
-from .match_randomly_sampled_target_and_data_to_compute_margin_of_errors import (
-    match_randomly_sampled_target_and_data_to_compute_margin_of_errors,
-)
-from .match_target_and_data import match_target_and_data
-from .match_target_and_data_and_compute_statistics import (
-    match_target_and_data_and_compute_statistics,
-)
 from .merge_dicts_with_function import merge_dicts_with_function
 from .mf_by_multiple_V_and_H import mf_by_multiple_V_and_H
 from .mf_by_multiplicative_update import mf_by_multiplicative_update
@@ -141,9 +133,6 @@ from .normalize_file_name import normalize_file_name
 from .normalize_git_url import normalize_git_url
 from .normalize_nd_array import normalize_nd_array
 from .normalize_path import normalize_path
-from .permute_target_and_match_target_and_data import (
-    permute_target_and_match_target_and_data,
-)
 from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 from .plot_bayesian_nomogram import plot_bayesian_nomogram
