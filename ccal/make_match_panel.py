@@ -40,7 +40,6 @@ def make_match_panel(
     plot_std=None,
     title=None,
     layout_width=880,
-    row_height=64,
     layout_side_margin=196,
     annotation_font_size=8.8,
     file_path_prefix=None,
@@ -153,7 +152,7 @@ def make_match_panel(
                 fraction=fraction_extreme,
                 plot=False,
             )
-        ]
+        ].sort_values("Score", ascending=score_ascending)
 
     if plot_only_sign is not None:
 
@@ -190,7 +189,6 @@ def make_match_panel(
         and target_type in ("binary", "categorical")
         and is_sorted_nd_array(target_to_plot.values)
         and (1 < target_to_plot.value_counts()).all()
-        and not data_to_plot.isna().values.all()
     ):
 
         print("Clustering within category ...")
@@ -227,7 +225,7 @@ def make_match_panel(
 
     target_yaxis_domain = (1 - target_row_fraction, 1)
 
-    data_yaxis_domain = (0, 1 - target_row_fraction * 2)
+    data_yaxis_domain = (0, 1 - 2 * target_row_fraction)
 
     data_row_fraction = (
         data_yaxis_domain[1] - data_yaxis_domain[0]
@@ -237,10 +235,10 @@ def make_match_panel(
 
     layout = {
         "width": layout_width,
-        "height": row_height * max(8, (data_to_plot.shape[0] + 2) ** 0.8),
+        "height": max(640, 32 * (data_to_plot.shape[0] + 2)),
         "margin": {"l": layout_side_margin, "r": layout_side_margin},
         "title": {"text": title},
-        "xaxis": {"anchor": "y", "tickfont": {"size": annotation_font_size}},
+        "xaxis": {"anchor": "y", "tickfont": annotation_font},
         "yaxis": {"domain": data_yaxis_domain, "dtick": 1, "tickfont": annotation_font},
         "yaxis2": {
             "domain": target_yaxis_domain,
@@ -256,14 +254,15 @@ def make_match_panel(
         {
             "yaxis": "y2",
             "type": "heatmap",
-            "z": target_to_plot.to_frame().T.values,
+            "z": target_to_plot.to_frame().T,
             "colorscale": target_colorscale,
             "showscale": False,
         },
         {
             "yaxis": "y",
             "type": "heatmap",
-            "z": data_to_plot.values[::-1],
+            # TODO: [::-1] only for valid index
+            "z": data_to_plot.iloc[::-1],
             "x": data_to_plot.columns,
             "y": data_to_plot.index[::-1],
             "colorscale": data_colorscale,
