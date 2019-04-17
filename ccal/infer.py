@@ -1,11 +1,24 @@
-from numpy import absolute, argmax, linspace, rot90
+from numpy import absolute, apply_along_axis, argmax, linspace, meshgrid, rot90
 from pandas import DataFrame
 
 from .compute_joint_probability import compute_joint_probability
 from .compute_posterior_probability import compute_posterior_probability
-from .get_target_grid_indices import get_target_grid_indices
 from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
+
+
+def _get_target_grid_indices(nd_array, function):
+
+    return tuple(
+        meshgrid_.astype(int).ravel()
+        for meshgrid_ in meshgrid(
+            *(
+                linspace(0, nd_array.shape[i] - 1, nd_array.shape[i])
+                for i in range(nd_array.ndim - 1)
+            ),
+            indexing="ij",
+        )
+    ) + (apply_along_axis(function, nd_array.ndim - 1, nd_array).ravel(),)
 
 
 def infer(variables, n_grid=64, target="max", plot=True, names=None):
@@ -18,7 +31,7 @@ def infer(variables, n_grid=64, target="max", plot=True, names=None):
 
     if target is "max":
 
-        t_grid_coordinates = get_target_grid_indices(p_tv__ntvs, argmax)
+        t_grid_coordinates = _get_target_grid_indices(p_tv__ntvs, argmax)
 
     else:
 
@@ -26,7 +39,7 @@ def infer(variables, n_grid=64, target="max", plot=True, names=None):
 
         t_i = absolute(t_grid - target).argmin()
 
-        t_grid_coordinates = get_target_grid_indices(p_tv__ntvs, lambda _: t_i)
+        t_grid_coordinates = _get_target_grid_indices(p_tv__ntvs, lambda _: t_i)
 
     p_tvt__ntvs = p_tv__ntvs[t_grid_coordinates].reshape((n_grid,) * (n_dimension - 1))
 

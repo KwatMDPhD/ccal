@@ -19,7 +19,6 @@ def make_summary_match_panel(
     plot_std=None,
     title=None,
     layout_width=880,
-    row_height=64,
     layout_side_margin=196,
     annotation_font_size=8.8,
     xaxis_kwargs=None,
@@ -36,21 +35,19 @@ def make_summary_match_panel(
 
         target.sort_values(ascending=target_ascending, inplace=True)
 
+    target_to_plot = target.copy()
+
     if target_type == "continuous":
 
         target_to_plot = Series(
-            normalize_nd_array(target.values, None, "-0-", raise_for_bad=False),
-            name=target.name,
-            index=target.index,
+            normalize_nd_array(target_to_plot.values, None, "-0-", raise_for_bad=False),
+            name=target_to_plot.name,
+            index=target_to_plot.index,
         )
 
         if plot_std is not None:
 
             target_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
-
-    else:
-
-        target_to_plot = target
 
     target_colorscale = make_colorscale_from_colors(
         pick_nd_array_colors(target_to_plot.values, target_type)
@@ -64,16 +61,12 @@ def make_summary_match_panel(
 
     layout = {
         "width": layout_width,
-        "height": row_height / 2 * max(10, n_row),
+        "height": max(640, 32 * n_row),
         "margin": {"l": layout_side_margin, "r": layout_side_margin},
         "title": {"text": title},
         "xaxis": {"anchor": "y"},
         "annotations": [],
     }
-
-    if xaxis_kwargs is not None:
-
-        layout["xaxis"].update(xaxis_kwargs)
 
     row_fraction = 1 / n_row
 
@@ -87,32 +80,31 @@ def make_summary_match_panel(
 
         domain_start = 0
 
+    annotation_font = {"size": annotation_font_size}
+
     layout[yaxis_name] = {
         "domain": (domain_start, domain_end),
         "tickmode": "array",
         "tickvals": (0,),
-        "ticktext": (target.name,),
-        "tickfont": {"size": annotation_font_size},
+        "ticktext": (target_to_plot.name,),
+        "tickfont": annotation_font,
     }
 
     figure_data = [
         {
             "yaxis": yaxis_name.replace("axis", ""),
             "type": "heatmap",
-            "z": target_to_plot.to_frame().T.values,
-            "text": (target_to_plot.index,),
+            "z": target_to_plot.to_frame().T,
             "colorscale": target_colorscale,
             "showscale": False,
         }
     ]
 
-    for data_name_index, (data_name, data_dict) in enumerate(data_dicts.items()):
+    for data_index, (data_name, data_dict) in enumerate(data_dicts.items()):
 
         print("Making match panel for {} ...".format(data_name))
 
-        df = data_dict["df"]
-
-        data_to_plot = df.reindex(columns=target_to_plot.index)
+        data_to_plot = data_dict["df"].reindex(columns=target_to_plot.index)
 
         score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr_dicts[data_name].loc[
             data_to_plot.index
@@ -124,11 +116,7 @@ def make_summary_match_panel(
 
         data_to_plot = data_to_plot.loc[score_moe_p_value_fdr_to_plot.index]
 
-        annotations = make_match_panel_annotations(score_moe_p_value_fdr_to_plot)
-
-        data_type = data_dict["type"]
-
-        if data_type == "continuous":
+        if data_dict["type"] == "continuous":
 
             data_to_plot = DataFrame(
                 normalize_nd_array(data_to_plot.values, 1, "-0-", raise_for_bad=False),
@@ -141,10 +129,10 @@ def make_summary_match_panel(
                 data_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
 
         data_colorscale = make_colorscale_from_colors(
-            pick_nd_array_colors(data_to_plot.values, data_type)
+            pick_nd_array_colors(data_to_plot.values, data_dict["type"])
         )
 
-        yaxis_name = "yaxis{}".format(len(data_dicts) - data_name_index)
+        yaxis_name = "yaxis{}".format(len(data_dicts) - data_index)
 
         domain_end = domain_start - row_fraction
 
@@ -152,7 +140,7 @@ def make_summary_match_panel(
 
             domain_end = 0
 
-        domain_start = domain_end - data_dict["df"].shape[0] * row_fraction
+        domain_start = domain_end - data_to_plot.shape[0] * row_fraction
 
         if abs(domain_start) <= ALMOST_ZERO:
 
@@ -161,7 +149,7 @@ def make_summary_match_panel(
         layout[yaxis_name] = {
             "domain": (domain_start, domain_end),
             "dtick": 1,
-            "tickfont": {"size": annotation_font_size},
+            "tickfont": annotation_font,
         }
 
         figure_data.append(
@@ -180,7 +168,7 @@ def make_summary_match_panel(
             "xref": "paper",
             "yref": "paper",
             "yanchor": "middle",
-            "font": {"size": annotation_font_size},
+            "font": annotation_font,
             "showarrow": False,
         }
 
@@ -196,27 +184,26 @@ def make_summary_match_panel(
 
         layout_annotation_template.update({"xanchor": "left", "width": 64})
 
-        for (
-            annotation_index,
-            (annotation_column_name, annotation_column_strs),
-        ) in enumerate(annotations.items()):
+        for i, (annotation, strs) in enumerate(
+            make_match_panel_annotations(score_moe_p_value_fdr_to_plot).items()
+        ):
 
-            x = 1.0016 + annotation_index / 10
+            x = 1.0016 + i / 10
 
-            if data_name_index == 0:
+            if data_index == 0:
 
                 layout["annotations"].append(
                     {
                         "x": x,
                         "y": 1 - (row_fraction / 2),
-                        "text": "<b>{}</b>".format(annotation_column_name),
+                        "text": "<b>{}</b>".format(annotation),
                         **layout_annotation_template,
                     }
                 )
 
             y = domain_end - (row_fraction / 2)
 
-            for str_ in annotation_column_strs:
+            for str_ in strs:
 
                 layout["annotations"].append(
                     {
