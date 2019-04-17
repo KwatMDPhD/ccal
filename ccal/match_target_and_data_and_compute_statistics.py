@@ -65,19 +65,25 @@ def match_target_and_data_and_compute_statistics(
 
     score_moe_p_value_fdr["Score"] = scores
 
-    indices = select_series_indices(
-        score_moe_p_value_fdr["Score"],
-        "<>",
-        n=n_extreme,
-        fraction=fraction_extreme,
-        plot=False,
-    )
+    if n_extreme is not None or fraction_extreme is not None:
+
+        moe_indices = select_series_indices(
+            score_moe_p_value_fdr["Score"],
+            "<>",
+            n=n_extreme,
+            fraction=fraction_extreme,
+            plot=False,
+        )
+
+    else:
+
+        moe_indices = score_moe_p_value_fdr.index
 
     score_moe_p_value_fdr.loc[
-        indices, "0.95 MoE"
+        moe_indices, "0.95 MoE"
     ] = match_randomly_sampled_target_and_data_to_compute_margin_of_errors(
         target,
-        data[indices],
+        data[moe_indices],
         random_seed,
         n_sampling,
         match_function,
