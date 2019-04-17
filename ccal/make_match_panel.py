@@ -106,19 +106,15 @@ def make_match_panel(
 
     else:
 
-        html_file_path = "{}.rank_score.html".format(file_path_prefix)
+        html_file_path = "{}.statistics.html".format(file_path_prefix)
 
-    n = score_moe_p_value_fdr.shape[0]
-
-    if n < 1e3:
+    if score_moe_p_value_fdr.shape[0] < 1e3:
 
         mode = "lines+markers"
 
     else:
 
         mode = "lines"
-
-    x = score_moe_p_value_fdr.index
 
     plot_and_save(
         {
@@ -131,7 +127,7 @@ def make_match_panel(
                 {
                     "type": "scatter",
                     "name": name,
-                    "x": x,
+                    "x": score_moe_p_value_fdr.index,
                     "y": score_moe_p_value_fdr[name].values,
                     "mode": mode,
                     "marker": {"color": color},
@@ -163,35 +159,27 @@ def make_match_panel(
 
         if plot_only_sign == "-":
 
-            indices = scores_to_plot["Score"] < 0
+            scores_to_plot = scores_to_plot.loc[scores_to_plot["Score"] < 0]
 
         elif plot_only_sign == "+":
 
-            indices = 0 < scores_to_plot["Score"]
-
-        scores_to_plot = scores_to_plot.loc[indices]
-
-    scores_to_plot.sort_values("Score", ascending=score_ascending, inplace=True)
+            scores_to_plot = scores_to_plot.loc[0 < scores_to_plot["Score"]]
 
     data_to_plot = data.loc[scores_to_plot.index]
 
-    annotations = make_match_panel_annotations(scores_to_plot)
+    target_to_plot = target.copy()
 
     if target_type == "continuous":
 
         target_to_plot = Series(
-            normalize_nd_array(target.values, None, "-0-", raise_for_bad=False),
-            name=target.name,
-            index=target.index,
+            normalize_nd_array(target_to_plot.values, None, "-0-", raise_for_bad=False),
+            name=target_to_plot.name,
+            index=target_to_plot.index,
         )
 
         if plot_std is not None:
 
             target_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
-
-    else:
-
-        target_to_plot = target
 
     target_colorscale = make_colorscale_from_colors(
         pick_nd_array_colors(target_to_plot.values, target_type)
@@ -200,39 +188,39 @@ def make_match_panel(
     if (
         cluster_within_category
         and target_type in ("binary", "categorical")
-        and 1 < target_to_plot.value_counts().min()
         and is_sorted_nd_array(target_to_plot.values)
-        and not data_to_plot.isna().all().any()
+        and (1 < target_to_plot.value_counts()).all()
+        and not data_to_plot.isna().values.all()
     ):
 
         print("Clustering within category ...")
 
-        clustered_indices = cluster_2d_array(
-            data_to_plot.values, 1, groups=target_to_plot.values, raise_for_bad=False
-        )
+        data_to_plot = data_to_plot.iloc[
+            :,
+            cluster_2d_array(
+                data_to_plot.values,
+                1,
+                groups=target_to_plot.values,
+                raise_for_bad=False,
+            ),
+        ]
 
-        target_to_plot = target_to_plot.iloc[clustered_indices]
-
-        data_to_plot = data_to_plot.iloc[:, clustered_indices]
+        target_to_plot = target_to_plot[data_to_plot.columns]
 
     if data_type == "continuous":
 
         data_to_plot = DataFrame(
-            normalize_nd_array(data.values, 1, "-0-", raise_for_bad=False),
-            index=data.index,
-            columns=data.columns,
+            normalize_nd_array(data_to_plot.values, 1, "-0-", raise_for_bad=False),
+            index=data_to_plot.index,
+            columns=data_to_plot.columns,
         )
 
         if plot_std is not None:
 
             data_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
 
-    else:
-
-        data_to_plot = data
-
     data_colorscale = make_colorscale_from_colors(
-        pick_nd_array_colors(data.values, data_type)
+        pick_nd_array_colors(data_to_plot.values, data_type)
     )
 
     target_row_fraction = max(0.01, 1 / (data_to_plot.shape[0] + 2))
@@ -245,33 +233,30 @@ def make_match_panel(
         data_yaxis_domain[1] - data_yaxis_domain[0]
     ) / data_to_plot.shape[0]
 
+    annotation_font = {"size": annotation_font_size}
+
     layout = {
         "width": layout_width,
         "height": row_height * max(8, (data_to_plot.shape[0] + 2) ** 0.8),
         "margin": {"l": layout_side_margin, "r": layout_side_margin},
+        "title": {"text": title},
         "xaxis": {"anchor": "y", "tickfont": {"size": annotation_font_size}},
-        "yaxis": {
-            "domain": data_yaxis_domain,
-            "dtick": 1,
-            "tickfont": {"size": annotation_font_size},
-        },
+        "yaxis": {"domain": data_yaxis_domain, "dtick": 1, "tickfont": annotation_font},
         "yaxis2": {
             "domain": target_yaxis_domain,
             "tickmode": "array",
             "tickvals": (0,),
             "ticktext": (target.name,),
-            "tickfont": {"size": annotation_font_size},
+            "tickfont": annotation_font,
         },
-        "title": {"text": title},
         "annotations": [],
     }
 
-    data = [
+    figure_data = [
         {
             "yaxis": "y2",
             "type": "heatmap",
             "z": target_to_plot.to_frame().T.values,
-            "text": (target_to_plot.index,),
             "colorscale": target_colorscale,
             "showscale": False,
         },
@@ -291,14 +276,16 @@ def make_match_panel(
         "yref": "paper",
         "xanchor": "left",
         "yanchor": "middle",
-        "font": {"size": annotation_font_size},
+        "font": annotation_font,
         "width": 64,
         "showarrow": False,
     }
 
-    for annotation_index, (annotation, strs) in enumerate(annotations.items()):
+    for i, (annotation, strs) in enumerate(
+        make_match_panel_annotations(scores_to_plot).items()
+    ):
 
-        x = 1.0016 + annotation_index / 10
+        x = 1.0016 + i / 10
 
         layout["annotations"].append(
             {
@@ -332,6 +319,6 @@ def make_match_panel(
 
         html_file_path = "{}.html".format(file_path_prefix)
 
-    plot_and_save({"layout": layout, "data": data}, html_file_path)
+    plot_and_save({"layout": layout, "data": figure_data}, html_file_path)
 
     return score_moe_p_value_fdr
