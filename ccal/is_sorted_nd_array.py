@@ -9,4 +9,4 @@ def is_sorted_nd_array(nd_array, raise_for_bad=True):
 
     diff_ = diff(nd_array)
 
-    return (diff_ < 0).all() or (diff_ == 0).all() or (0 < diff_).all()
+    return (diff_ <= 0).all() or (0 <= diff_).all()
