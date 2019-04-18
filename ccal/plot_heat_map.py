@@ -59,7 +59,7 @@ def plot_heat_map(
         "yaxis2": {"domain": annotation_axis_domain, **annotation_axis_template},
     }
 
-    colorbar_template = {"len": 0.64, "thickness": 128}
+    colorbar_template = {"len": 0.64, "thickness": 16}
 
     if row_annotation is not None or column_annotation is not None:
 
