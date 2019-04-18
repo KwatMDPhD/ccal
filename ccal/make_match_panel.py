@@ -229,7 +229,6 @@ def make_match_panel(
     data_type="continuous",
     plot_std=None,
     title=None,
-    layout_width=880,
     layout_side_margin=196,
     annotation_font_size=8.8,
     file_path_prefix=None,
@@ -414,7 +413,6 @@ def make_match_panel(
     annotation_font = {"size": annotation_font_size}
 
     layout = {
-        "width": layout_width,
         "height": max(640, 32 * (data_to_plot.shape[0] + 2)),
         "margin": {"l": layout_side_margin, "r": layout_side_margin},
         "title": {"text": title},

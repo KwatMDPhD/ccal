@@ -18,7 +18,6 @@ def make_summary_match_panel(
     score_ascending=False,
     plot_std=None,
     title=None,
-    layout_width=880,
     layout_side_margin=196,
     annotation_font_size=8.8,
     xaxis_kwargs=None,
@@ -60,7 +59,6 @@ def make_summary_match_panel(
         n_row += data_dict["df"].shape[0]
 
     layout = {
-        "width": layout_width,
         "height": max(640, 32 * n_row),
         "margin": {"l": layout_side_margin, "r": layout_side_margin},
         "title": {"text": title},

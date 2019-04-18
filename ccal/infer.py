@@ -7,7 +7,7 @@ from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
 
 
-def _get_target_grid_indices(nd_array, function):
+def _get_target_index_grid(nd_array, function):
 
     return tuple(
         meshgrid_.astype(int).ravel()
@@ -31,7 +31,7 @@ def infer(variables, n_grid=64, target="max", plot=True, names=None):
 
     if target is "max":
 
-        t_grid_coordinates = _get_target_grid_indices(p_tv__ntvs, argmax)
+        t_index_grid = _get_target_index_grid(p_tv__ntvs, argmax)
 
     else:
 
@@ -39,9 +39,9 @@ def infer(variables, n_grid=64, target="max", plot=True, names=None):
 
         t_i = absolute(t_grid - target).argmin()
 
-        t_grid_coordinates = _get_target_grid_indices(p_tv__ntvs, lambda _: t_i)
+        t_index_grid = _get_target_index_grid(p_tv__ntvs, lambda _: t_i)
 
-    p_tvt__ntvs = p_tv__ntvs[t_grid_coordinates].reshape((n_grid,) * (n_dimension - 1))
+    p_tvt__ntvs = p_tv__ntvs[t_index_grid].reshape((n_grid,) * (n_dimension - 1))
 
     if plot:
 

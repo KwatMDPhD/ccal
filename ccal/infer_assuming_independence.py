@@ -76,18 +76,18 @@ def infer_assuming_independence(
 
     p_tvt__ntvs = full((n_grid,) * n_ntv, nan)
 
-    mesh_grid_raveled = make_mesh_grid_and_ravel(
+    mesh_index_grid_raveled = make_mesh_grid_and_ravel(
         (0,) * n_ntv, (n_grid - 1,) * n_ntv, (n_grid,) * n_ntv
     )
 
     for i in range(n_grid ** n_ntv):
 
-        coordinate = tuple(
-            [mesh_grid_raveled[ntv_i][i].astype(int)] for ntv_i in range(n_ntv)
+        indices = tuple(
+            [mesh_index_grid_raveled[ntv_i][i].astype(int)] for ntv_i in range(n_ntv)
         )
 
-        p_tvt__ntvs[coordinate] = product(
-            [p_tvt__1ntvs[j][coordinate[j]] for j in range(n_ntv)]
+        p_tvt__ntvs[indices] = product(
+            [p_tvt__1ntvs[j][indices[j]] for j in range(n_ntv)]
         ) / p_tvt ** (n_ntv - 1)
 
     if plot and n_dimension == 3:

@@ -25,8 +25,6 @@ def plot_context(
     y_max_is_pdf_max=False,
     n_bin=None,
     plot_rug=True,
-    layout_width=None,
-    layout_height=None,
     title=None,
     xaxis_title=None,
     html_file_path=None,
@@ -103,8 +101,6 @@ def plot_context(
         yaxis2_min = 0
 
     layout = {
-        "width": layout_width,
-        "height": layout_height,
         "title": {"text": title},
         "xaxis": {"anchor": "y", "title": xaxis_title},
         "yaxis": {

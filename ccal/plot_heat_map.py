@@ -11,8 +11,8 @@ def plot_heat_map(
     data_type="continuous",
     showscale=None,
     colorbar_x=None,
-    layout_width=800,
-    layout_height=800,
+    layout_width=880,
+    layout_height=880,
     heat_map_axis_domain=(0, 0.9),
     annotation_axis_domain=(0.92, 1),
     row_annotation=None,
@@ -59,7 +59,7 @@ def plot_heat_map(
         "yaxis2": {"domain": annotation_axis_domain, **annotation_axis_template},
     }
 
-    colorbar_template = {"len": 0.64, "thickness": layout_width / 64}
+    colorbar_template = {"len": 0.64, "thickness": 128}
 
     if row_annotation is not None or column_annotation is not None:
 
