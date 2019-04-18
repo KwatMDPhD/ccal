@@ -12,7 +12,7 @@ def shuffle_each_2d_array_slice(
 
     _2d_array = _2d_array.copy()
 
-    seed(random_seed)
+    seed(seed=random_seed)
 
     if axis == 0:
 

@@ -9,7 +9,7 @@ def call_function_with_multiprocess(
     function, arguments, n_job, random_seed=RANDOM_SEED
 ):
 
-    seed(random_seed)
+    seed(seed=random_seed)
 
     with Pool(n_job) as process:
 

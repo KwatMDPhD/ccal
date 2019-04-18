@@ -11,7 +11,7 @@ from .RANDOM_SEED import RANDOM_SEED
 def correlate_2_1d_arrays(
     _1d_array_0,
     _1d_array_1,
-    n_permutation=0,
+    n_permutation=10,
     random_seed=RANDOM_SEED,
     plot=True,
     marker_size=16,
@@ -29,7 +29,11 @@ def correlate_2_1d_arrays(
 
     r2 = model.score(xs, _1d_array_1)
 
-    if n_permutation:
+    if n_permutation == 0:
+
+        p_value = nan
+
+    else:
 
         r2s_shuffled = full(n_permutation, nan)
 
@@ -37,7 +41,7 @@ def correlate_2_1d_arrays(
 
         y_ = _1d_array_1.copy()
 
-        seed(random_seed)
+        seed(seed=random_seed)
 
         for i in range(n_permutation):
 
@@ -51,10 +55,6 @@ def correlate_2_1d_arrays(
             compute_empirical_p_value(r2, r2s_shuffled, "<"),
             compute_empirical_p_value(r2, r2s_shuffled, ">"),
         )
-
-    else:
-
-        p_value = nan
 
     if plot:
 

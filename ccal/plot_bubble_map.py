@@ -26,8 +26,8 @@ def plot_bubble_map(
     axis_template = {"zeroline": False}
 
     x, y = meshgrid(
-        linspace(0, df_size.shape[1] - 1, df_size.shape[1]),
-        linspace(0, df_size.shape[0] - 1, df_size.shape[0]),
+        linspace(0, df_size.shape[1] - 1, num=df_size.shape[1]),
+        linspace(0, df_size.shape[0] - 1, num=df_size.shape[0]),
     )
 
     plot_and_save(

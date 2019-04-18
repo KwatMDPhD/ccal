@@ -1,8 +1,8 @@
 from numpy import absolute, apply_along_axis, argmax, linspace, meshgrid, rot90
 from pandas import DataFrame
 
-from .compute_joint_probability import compute_joint_probability
-from .compute_posterior_probability import compute_posterior_probability
+from .compute_joint_probabilities import compute_joint_probabilities
+from .compute_posterior_probabilities import compute_posterior_probabilities
 from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
 
@@ -13,7 +13,7 @@ def _get_target_grid_indices(nd_array, function):
         meshgrid_.astype(int).ravel()
         for meshgrid_ in meshgrid(
             *(
-                linspace(0, nd_array.shape[i] - 1, nd_array.shape[i])
+                linspace(0, nd_array.shape[i] - 1, num=nd_array.shape[i])
                 for i in range(nd_array.ndim - 1)
             ),
             indexing="ij",
@@ -25,9 +25,9 @@ def infer(variables, n_grid=64, target="max", plot=True, names=None):
 
     n_dimension = len(variables)
 
-    p_vs = compute_joint_probability(variables, n_grid=n_grid, plot=plot, names=names)
+    p_vs = compute_joint_probabilities(variables, n_grid=n_grid, plot=plot, names=names)
 
-    p_tv__ntvs = compute_posterior_probability(p_vs, plot=plot, names=names)
+    p_tv__ntvs = compute_posterior_probabilities(p_vs, plot=plot, names=names)
 
     if target is "max":
 
@@ -35,7 +35,7 @@ def infer(variables, n_grid=64, target="max", plot=True, names=None):
 
     else:
 
-        t_grid = linspace(variables[-1].min(), variables[-1].max(), n_grid)
+        t_grid = linspace(variables[-1].min(), variables[-1].max(), num=n_grid)
 
         t_i = absolute(t_grid - target).argmin()
 

@@ -1,4 +1,4 @@
-def map_iterable_objects_to_ints(iterable):
+def map_objects_to_ints(iterable):
 
     object_int = {}
 

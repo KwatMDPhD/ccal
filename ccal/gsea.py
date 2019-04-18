@@ -14,7 +14,7 @@ def gsea(
     genes,
     function,
     statistic="ks",
-    n_permutation=None,
+    n_permutation=10,
     permuting="gene",
     plot=True,
     title="GSEA Mountain Plot",
@@ -47,7 +47,7 @@ def gsea(
         html_file_path=html_file_path,
     )
 
-    if n_permutation is None:
+    if n_permutation == 0:
 
         p_value = nan
 

@@ -4,7 +4,7 @@ from scipy.stats import norm
 from .check_nd_array_for_bad import check_nd_array_for_bad
 
 
-def compute_nd_array_margin_of_error(nd_array, confidence=0.95, raise_for_bad=True):
+def compute_normal_pdf_margin_of_error(nd_array, confidence=0.95, raise_for_bad=True):
 
     is_good = ~check_nd_array_for_bad(nd_array, raise_for_bad=raise_for_bad)
 

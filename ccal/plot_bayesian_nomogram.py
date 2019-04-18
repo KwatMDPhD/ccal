@@ -17,7 +17,7 @@ def plot_bayesian_nomogram(
 
     p_tm = (target == target_miss).sum() / target.size
 
-    grid_t = linspace(target.min(), target.max(), n_grid)
+    grid_t = linspace(target.min(), target.max(), num=n_grid)
 
     grid_t_ih = absolute(grid_t - target_hit).argmin()
 

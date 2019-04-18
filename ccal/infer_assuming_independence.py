@@ -20,7 +20,7 @@ def infer_assuming_independence(
 
     p_tv = kd_tv / kd_tv.sum()
 
-    grid_tv = linspace(variables[-1].min(), variables[-1].max(), n_grid)
+    grid_tv = linspace(variables[-1].min(), variables[-1].max(), num=n_grid)
 
     if target == "max":
 

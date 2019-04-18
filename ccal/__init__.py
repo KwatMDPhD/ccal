@@ -19,9 +19,6 @@ from .COLORS import COLORS
 from .compute_1d_array_context import compute_1d_array_context
 from .compute_1d_array_entropy import compute_1d_array_entropy
 from .compute_bandwidths import compute_bandwidths
-from .compute_coclustering_fraction_from_clustering_x_element import (
-    compute_coclustering_fraction_from_clustering_x_element,
-)
 from .compute_correlation_distance_between_2_1d_arrays import (
     compute_correlation_distance_between_2_1d_arrays,
 )
@@ -33,16 +30,15 @@ from .compute_information_coefficient_between_2_1d_arrays import (
 from .compute_information_distance_between_2_1d_arrays import (
     compute_information_distance_between_2_1d_arrays,
 )
-from .compute_joint_probability import compute_joint_probability
+from .compute_joint_probabilities import compute_joint_probabilities
 from .compute_kullback_leibler_divergence_between_2_pdfs import (
     compute_kullback_leibler_divergence_between_2_pdfs,
 )
 from .compute_matrix_norm import compute_matrix_norm
-from .compute_nd_array_margin_of_error import compute_nd_array_margin_of_error
-from .compute_posterior_probability import compute_posterior_probability
+from .compute_normal_pdf_margin_of_error import compute_normal_pdf_margin_of_error
+from .compute_posterior_probabilities import compute_posterior_probabilities
 from .correlate_2_1d_arrays import correlate_2_1d_arrays
 from .count_gene_impacts_from_variant_dicts import count_gene_impacts_from_variant_dicts
-from .create_gitkeep import create_gitkeep
 from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
 from .download_and_parse_geo import download_and_parse_geo
 from .download_url import download_url
@@ -62,7 +58,6 @@ from .get_conda_environments import get_conda_environments
 from .get_conda_prefix import get_conda_prefix
 from .get_gff3_attribute import get_gff3_attribute
 from .get_git_versions import get_git_versions
-from .get_installed_pip_libraries import get_installed_pip_libraries
 from .get_intersections_between_2_1d_arrays import get_intersections_between_2_1d_arrays
 from .get_machine import get_machine
 from .get_name_within_function import get_name_within_function
@@ -89,10 +84,6 @@ from .hierarchical_consensus_cluster import hierarchical_consensus_cluster
 from .hierarchical_consensus_cluster_with_ks import (
     hierarchical_consensus_cluster_with_ks,
 )
-from .ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import (
-    ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays,
-)
-from .index_gff3_df_by_name import index_gff3_df_by_name
 from .infer import infer
 from .infer_assuming_independence import infer_assuming_independence
 from .initialize_logger import initialize_logger
@@ -111,7 +102,8 @@ from .make_binary_df_from_categorical_series import (
 from .make_categorical_colors import make_categorical_colors
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_context_matrix import make_context_matrix
-from .make_coordinates_for_reflection import make_coordinates_for_reflection
+from .make_coordinates_for_reflecting import make_coordinates_for_reflecting
+from .make_gitkeep import make_gitkeep
 from .make_match_panel import make_match_panel
 from .make_match_panel_annotations import make_match_panel_annotations
 from .make_match_panels import make_match_panels
@@ -119,8 +111,8 @@ from .make_mesh_grid_and_ravel import make_mesh_grid_and_ravel
 from .make_summary_match_panel import make_summary_match_panel
 from .make_variant_dict_consistent import make_variant_dict_consistent
 from .make_variant_dict_from_vcf_row import make_variant_dict_from_vcf_row
-from .map_iterable_objects_to_ints import map_iterable_objects_to_ints
-from .merge_dicts_with_function import merge_dicts_with_function
+from .map_objects_to_ints import map_objects_to_ints
+from .merge_2_dicts_with_function import merge_2_dicts_with_function
 from .mf_by_multiple_V_and_H import mf_by_multiple_V_and_H
 from .mf_by_multiplicative_update import mf_by_multiplicative_update
 from .mf_consensus_cluster import mf_consensus_cluster
@@ -156,7 +148,6 @@ from .read_matrix_market import read_matrix_market
 from .read_where_and_map_column_name_on_hdf5_table import (
     read_where_and_map_column_name_on_hdf5_table,
 )
-from .reduce_point_x_dimension_dimension import reduce_point_x_dimension_dimension
 from .rescale_x_y_coordiantes_in_polar_coordiante import (
     rescale_x_y_coordiantes_in_polar_coordiante,
 )
@@ -164,6 +155,7 @@ from .reverse_complement_dna_sequence import reverse_complement_dna_sequence
 from .reverse_transcribe_rna_sequence import reverse_transcribe_rna_sequence
 from .run_command import run_command
 from .sample_from_each_series_value import sample_from_each_series_value
+from .scale_point_x_dimension_dimension import scale_point_x_dimension_dimension
 from .select_and_group_feature_x_tcga_sample_by_sample_type import (
     select_and_group_feature_x_tcga_sample_by_sample_type,
 )

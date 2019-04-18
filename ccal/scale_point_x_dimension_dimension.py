@@ -4,7 +4,7 @@ from sklearn.manifold import MDS
 from .RANDOM_SEED import RANDOM_SEED
 
 
-def reduce_point_x_dimension_dimension(
+def scale_point_x_dimension_dimension(
     n_target_dimension,
     point_x_dimension=None,
     distance__point_x_point=None,

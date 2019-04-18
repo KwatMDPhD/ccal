@@ -4,12 +4,12 @@ from pandas import DataFrame
 from .plot_heat_map import plot_heat_map
 
 
-def compute_posterior_probability(probability, plot=True, names=None):
+def compute_posterior_probabilities(probabilities, plot=True, names=None):
 
-    n_dimension = probability.ndim
+    n_dimension = probabilities.ndim
 
     p_tv__ntvs = apply_along_axis(
-        lambda nd_array: nd_array / nd_array.sum(), n_dimension - 1, probability
+        lambda nd_array: nd_array / nd_array.sum(), n_dimension - 1, probabilities
     )
 
     if plot and n_dimension == 2:
