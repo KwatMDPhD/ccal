@@ -3,24 +3,72 @@ from numpy import absolute, asarray, in1d
 from .plot_and_save import plot_and_save
 
 
-def _plot_gsea_mountain(
-    cumulative_sums,
-    hits,
+def single_sample_gsea(
     gene_score,
-    score,
-    layout_width,
-    layout_height,
-    title,
-    gene_score_name,
-    annotation_text_font_size,
-    annotation_text_width,
-    annotation_text_yshift,
-    html_file_path,
+    gene_set_genes,
+    statistic="ks",
+    plot=True,
+    title="GSEA Mountain Plot",
+    gene_score_name="Gene Score",
+    annotation_text_font_size=16,
+    annotation_text_width=88,
+    annotation_text_yshift=64,
+    html_file_path=None,
 ):
 
+    gene_score_no_na_sorted = gene_score.dropna().sort_values(ascending=False)
+
+    in_ = in1d(
+        gene_score_no_na_sorted.index, gene_set_genes.dropna(), assume_unique=True
+    )
+
+    in_sum = in_.sum()
+
+    if in_sum == 0:
+
+        print("Gene scores did not have any of the gene-set genes.")
+
+        return
+
+    gene_score_sorted_values = gene_score_no_na_sorted.values
+
+    gene_score_sorted_values_absolute = absolute(gene_score_sorted_values)
+
+    in_int = in_.astype(int)
+
+    hit = (
+        gene_score_sorted_values_absolute * in_int
+    ) / gene_score_sorted_values_absolute[in_].sum()
+
+    miss = (1 - in_int) / (in_.size - in_sum)
+
+    y = hit - miss
+
+    cumulative_sums = y.cumsum()
+
+    if statistic == "ks":
+
+        max_ = cumulative_sums.max()
+
+        min_ = cumulative_sums.min()
+
+        if absolute(min_) < absolute(max_):
+
+            score = max_
+
+        else:
+
+            score = min_
+
+    elif statistic == "auc":
+
+        score = cumulative_sums.sum()
+
+    if not plot:
+
+        return score
+
     layout = {
-        "width": layout_width,
-        "height": layout_height,
         "title": {"text": title},
         "xaxis": {"anchor": "y", "title": "Rank"},
         "yaxis": {"domain": (0, 0.16), "title": gene_score_name},
@@ -71,9 +119,11 @@ def _plot_gsea_mountain(
         }
     )
 
-    gene_xs = tuple(i for i in grid if hits[i])
+    gene_xs = tuple(i for i in grid if in_[i])
 
-    gene_texts = tuple("<b>{}</b>".format(text) for text in gene_score[hits].index)
+    gene_texts = tuple(
+        "<b>{}</b>".format(text) for text in gene_score_no_na_sorted[in_].index
+    )
 
     data.append(
         {
@@ -94,7 +144,7 @@ def _plot_gsea_mountain(
         }
     )
 
-    is_negative = gene_score < 0
+    is_negative = gene_score_no_na_sorted < 0
 
     for indices, name, color in (
         (is_negative, "- Gene Score", negative_color),
@@ -106,7 +156,7 @@ def _plot_gsea_mountain(
                 "type": "scatter",
                 "name": name,
                 "x": grid[indices],
-                "y": gene_score[indices],
+                "y": gene_score_no_na_sorted[indices],
                 "line": {"width": line_width, "color": color},
                 "fill": "tozeroy",
             }
@@ -130,84 +180,5 @@ def _plot_gsea_mountain(
     ]
 
     plot_and_save({"layout": layout, "data": data}, html_file_path)
-
-
-def single_sample_gsea(
-    gene_score,
-    gene_set_genes,
-    statistic="ks",
-    plot=True,
-    title="GSEA Mountain Plot",
-    gene_score_name="Gene Score",
-    annotation_text_font_size=16,
-    annotation_text_width=88,
-    annotation_text_yshift=64,
-    html_file_path=None,
-):
-
-    gene_score = gene_score.dropna()
-
-    gene_score_sorted = gene_score.sort_values(ascending=False)
-
-    in_ = in1d(gene_score_sorted.index, gene_set_genes.dropna(), assume_unique=True)
-
-    in_sum = in_.sum()
-
-    if in_sum == 0:
-
-        print("Gene scores did not have any of the gene-set genes.")
-
-        return
-
-    gene_score_sorted_values = gene_score_sorted.values
-
-    gene_score_sorted_values_absolute = absolute(gene_score_sorted_values)
-
-    in_int = in_.astype(int)
-
-    hit = (
-        gene_score_sorted_values_absolute * in_int
-    ) / gene_score_sorted_values_absolute[in_].sum()
-
-    miss = (1 - in_int) / (in_.size - in_sum)
-
-    y = hit - miss
-
-    cumulative_sums = y.cumsum()
-
-    if statistic == "ks":
-
-        max_ = cumulative_sums.max()
-
-        min_ = cumulative_sums.min()
-
-        if absolute(min_) < absolute(max_):
-
-            score = max_
-
-        else:
-
-            score = min_
-
-    elif statistic == "auc":
-
-        score = cumulative_sums.sum()
-
-    if plot:
-
-        _plot_gsea_mountain(
-            cumulative_sums,
-            in_,
-            gene_score_sorted,
-            score,
-            None,
-            None,
-            title,
-            gene_score_name,
-            annotation_text_font_size,
-            annotation_text_width,
-            annotation_text_yshift,
-            html_file_path,
-        )
 
     return score

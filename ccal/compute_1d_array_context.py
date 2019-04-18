@@ -16,7 +16,7 @@ from .compute_kullback_leibler_divergence_between_2_pdfs import (
     compute_kullback_leibler_divergence_between_2_pdfs,
 )
 from .fit_skew_t_pdf_on_1d_array import fit_skew_t_pdf_on_1d_array
-from .make_coordinates_for_reflecting import make_coordinates_for_reflecting
+from .make_reflecting_grid import make_reflecting_grid
 
 
 def _compute_pdf_context(
@@ -96,7 +96,7 @@ def compute_1d_array_context(
     shape_pdf_reference = minimum(
         pdf,
         skew_t_model.pdf(
-            make_coordinates_for_reflecting(grid, grid[pdf.argmax()]),
+            make_reflecting_grid(grid, grid[pdf.argmax()]),
             degree_of_freedom_for_tail_reduction,
             shape,
             loc=location,
