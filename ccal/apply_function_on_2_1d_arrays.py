@@ -1,9 +1,6 @@
-from numpy import full, nan
-from numpy.random import seed, shuffle
+from numpy import nan
 
 from .check_nd_array_for_bad import check_nd_array_for_bad
-from .compute_empirical_p_value import compute_empirical_p_value
-from .RANDOM_SEED import RANDOM_SEED
 
 
 def apply_function_on_2_1d_arrays(
@@ -12,9 +9,6 @@ def apply_function_on_2_1d_arrays(
     function,
     n_required=None,
     raise_for_n_less_than_required=True,
-    n_permutation=0,
-    random_seed=RANDOM_SEED,
-    p_value_direction=None,
     raise_for_bad=True,
     use_only_good=True,
 ):
@@ -48,29 +42,4 @@ def apply_function_on_2_1d_arrays(
 
         _1d_array_1 = _1d_array_1[is_good]
 
-    value = function(_1d_array_0, _1d_array_1)
-
-    if n_permutation:
-
-        random_values = full(n_permutation, nan)
-
-        _1d_array_0_shuffled = _1d_array_0.copy()
-
-        seed(random_seed)
-
-        for i in range(n_permutation):
-
-            shuffle(_1d_array_0_shuffled)
-
-            random_values[i] = function(_1d_array_0_shuffled, _1d_array_1)
-
-        return (
-            value,
-            compute_empirical_p_value(
-                value, random_values, p_value_direction, raise_for_bad=raise_for_bad
-            ),
-        )
-
-    else:
-
-        return value
+    return function(_1d_array_0, _1d_array_1)

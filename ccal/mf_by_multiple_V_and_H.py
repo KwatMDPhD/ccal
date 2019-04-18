@@ -12,7 +12,7 @@ def mf_by_multiple_V_and_H(
 
     R_norms = full((len(Vs), n_iteration + 1), nan)
 
-    seed(random_seed)
+    seed(seed=random_seed)
 
     W = random_sample(size=(Vs[0].shape[0], k))
 

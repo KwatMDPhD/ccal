@@ -12,7 +12,7 @@ from .compute_empirical_p_values_and_fdrs import compute_empirical_p_values_and_
 from .compute_information_coefficient_between_2_1d_arrays import (
     compute_information_coefficient_between_2_1d_arrays,
 )
-from .compute_nd_array_margin_of_error import compute_nd_array_margin_of_error
+from .compute_normal_pdf_margin_of_error import compute_normal_pdf_margin_of_error
 from .is_sorted_nd_array import is_sorted_nd_array
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
@@ -55,7 +55,7 @@ def _permute_target_and_match_target_and_data(
 
     print("Computing p-value and FDR with {} permutation ...".format(n_permutation))
 
-    seed(random_seed)
+    seed(seed=random_seed)
 
     index_x_permutation = full((data.shape[0], n_permutation), nan)
 
@@ -147,7 +147,7 @@ def _match_target_and_data_and_compute_statistics(
 
     print("Computing MoE with {} sampling ...".format(n_sampling))
 
-    seed(random_seed)
+    seed(seed=random_seed)
 
     index_x_sampling = full((moe_indices.size, n_sampling), nan)
 
@@ -159,7 +159,7 @@ def _match_target_and_data_and_compute_statistics(
 
         sampled_target = target[random_indices]
 
-        sampled_data = data[moe_indices, random_indices]
+        sampled_data = data[moe_indices][:, random_indices]
 
         random_state = get_state()
 
@@ -174,7 +174,7 @@ def _match_target_and_data_and_compute_statistics(
         set_state(random_state)
 
     score_moe_p_value_fdr.loc[moe_indices, "0.95 MoE"] = apply_along_axis(
-        compute_nd_array_margin_of_error, 1, index_x_sampling, raise_for_bad=False
+        compute_normal_pdf_margin_of_error, 1, index_x_sampling, raise_for_bad=False
     )
 
     p_values, fdrs = compute_empirical_p_values_and_fdrs(
@@ -220,8 +220,8 @@ def make_match_panel(
     n_extreme=8,
     fraction_extreme=None,
     random_seed=RANDOM_SEED,
-    n_sampling=0,
-    n_permutation=0,
+    n_sampling=10,
+    n_permutation=10,
     score_ascending=False,
     plot=True,
     target_type="continuous",

@@ -1,4 +1,4 @@
-def merge_dicts_with_function(dict_0, dict_1, function):
+def merge_2_dicts_with_function(dict_0, dict_1, function):
 
     dict_ = {}
 

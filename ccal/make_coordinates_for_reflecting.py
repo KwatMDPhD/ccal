@@ -1,7 +1,7 @@
 from .check_nd_array_for_bad import check_nd_array_for_bad
 
 
-def make_coordinates_for_reflection(
+def make_coordinates_for_reflecting(
     coordinates, reflection_coordinate, raise_for_bad=True
 ):
 

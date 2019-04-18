@@ -59,7 +59,7 @@ def hierarchical_consensus_cluster(
 
     n_per_print = max(1, n_clustering // 10)
 
-    seed(random_seed)
+    seed(seed=random_seed)
 
     for clustering in range(n_clustering):
 

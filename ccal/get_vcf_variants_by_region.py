@@ -5,24 +5,16 @@ from .update_variant_dict import update_variant_dict
 
 
 def get_vcf_variants_by_region(
-    chromosome,
-    start_position,
-    end_position,
-    pytabix_handle=None,
-    vcf_or_vcf_gz_file_path=None,
+    vcf_or_vcf_gz_file_path_or_pytabix_handle, chromosome, start_position, end_position
 ):
 
-    if pytabix_handle is None:
+    if isinstance(vcf_or_vcf_gz_file_path_or_pytabix_handle, str):
 
-        if vcf_or_vcf_gz_file_path is None:
+        pytabix_handle = tabix_open(vcf_or_vcf_gz_file_path_or_pytabix_handle)
 
-            raise ValueError(
-                "Provide either pytabix_handle or vcf_or_vcf_gz_file_path."
-            )
+    else:
 
-        else:
-
-            pytabix_handle = tabix_open(vcf_or_vcf_gz_file_path)
+        pytabix_handle = vcf_or_vcf_gz_file_path_or_pytabix_handle
 
     variants = pytabix_handle.query(chromosome, start_position, end_position)
 

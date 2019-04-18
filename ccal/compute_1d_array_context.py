@@ -16,7 +16,7 @@ from .compute_kullback_leibler_divergence_between_2_pdfs import (
     compute_kullback_leibler_divergence_between_2_pdfs,
 )
 from .fit_skew_t_pdf_on_1d_array import fit_skew_t_pdf_on_1d_array
-from .make_coordinates_for_reflection import make_coordinates_for_reflection
+from .make_coordinates_for_reflecting import make_coordinates_for_reflecting
 
 
 def _compute_pdf_context(
@@ -87,7 +87,7 @@ def compute_1d_array_context(
             fit_initial_scale=fit_initial_scale,
         )
 
-    grid = linspace(_1d_array_good.min(), _1d_array_good.max(), n_grid)
+    grid = linspace(_1d_array_good.min(), _1d_array_good.max(), num=n_grid)
 
     skew_t_model = ACSkewT_gen()
 
@@ -96,7 +96,7 @@ def compute_1d_array_context(
     shape_pdf_reference = minimum(
         pdf,
         skew_t_model.pdf(
-            make_coordinates_for_reflection(grid, grid[pdf.argmax()]),
+            make_coordinates_for_reflecting(grid, grid[pdf.argmax()]),
             degree_of_freedom_for_tail_reduction,
             shape,
             loc=location,

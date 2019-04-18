@@ -44,7 +44,7 @@ from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
 from .RANDOM_SEED import RANDOM_SEED
-from .reduce_point_x_dimension_dimension import reduce_point_x_dimension_dimension
+from .scale_point_x_dimension_dimension import scale_point_x_dimension_dimension
 from .train_and_classify import train_and_classify
 
 element_marker_size = 16
@@ -77,9 +77,7 @@ def _check_node_x_element(node_x_element):
     check_nd_array_for_bad(node_x_element.values)
 
 
-def _make_gps_map_element_x_dimension(
-    node_x_element, node_x_dimension, n_pull, pull_power
-):
+def _make_element_x_dimension(node_x_element, node_x_dimension, n_pull, pull_power):
 
     element_x_dimension = full(
         (node_x_element.shape[1], node_x_dimension.shape[1]), nan
@@ -112,7 +110,7 @@ def _make_gps_map_element_x_dimension(
     return element_x_dimension
 
 
-def _plot_gps_map(
+def _plot(
     nodes,
     node_name,
     node_x_dimension,
@@ -194,9 +192,9 @@ def _plot_gps_map(
 
     if element_labels is not None:
 
-        x = linspace(0, 1, grid_values.shape[1])
+        x = linspace(0, 1, num=grid_values.shape[1])
 
-        y = linspace(0, 1, grid_values.shape[0])
+        y = linspace(0, 1, num=grid_values.shape[0])
 
         data.append(
             {
@@ -369,7 +367,7 @@ def _plot_gps_map(
                     sector_radians = linspace(
                         sector_radian * annotation_index,
                         sector_radian * (annotation_index + 1),
-                        16,
+                        num=16,
                     )
 
                     path = "M {} {}".format(x, y)
@@ -446,268 +444,6 @@ def _plot_gps_map(
         )
 
     plot_and_save({"layout": layout, "data": data}, html_file_path)
-
-
-def _make_gps_map_grid_values_and_categorical_labels(
-    element_x_dimension, element_labels, n_grid, bandwidth_factor, mask
-):
-
-    label_grid_probabilities = {}
-
-    global_bandwidths = compute_bandwidths(element_x_dimension.T) * bandwidth_factor
-
-    n_dimension = element_x_dimension.shape[1]
-
-    mins = (0,) * n_dimension
-
-    maxs = (1,) * n_dimension
-
-    for label in unique(element_labels):
-
-        kernel_density = rot90(
-            estimate_kernel_density(
-                element_x_dimension[element_labels == label].T,
-                bandwidths=global_bandwidths,
-                mins=mins,
-                maxs=maxs,
-                n_grid=n_grid,
-            )
-        )
-
-        label_grid_probabilities[label] = kernel_density / kernel_density.sum()
-
-    shape = (n_grid,) * n_dimension
-
-    grid_values = full(shape, nan)
-
-    grid_labels = full(shape, nan)
-
-    for i in range(n_grid):
-
-        for j in range(n_grid):
-
-            if not mask[i, j]:
-
-                max_probability = 0
-
-                max_label = nan
-
-                for label, grid_probabilities in label_grid_probabilities.items():
-
-                    probability = grid_probabilities[i, j]
-
-                    if max_probability < probability:
-
-                        max_probability = probability
-
-                        max_label = label
-
-                grid_values[i, j] = max_probability
-
-                grid_labels[i, j] = max_label
-
-    return grid_values, grid_labels
-
-
-def _anneal_node_and_element_positions(
-    distance__node_x_node,
-    distance__element_x_element,
-    distance__node_x_element,
-    node_x_dimension,
-    element_x_dimension,
-    node_node_score_weight,
-    element_element_score_weight,
-    node_element_score_weight,
-    n_fraction_node_to_move,
-    n_fraction_element_to_move,
-    random_seed,
-    n_iteration,
-    initial_temperature,
-    scale,
-    triangulate,
-    print_acceptance,
-):
-
-    target_distance__node_x_node = squareform(distance__node_x_node)
-
-    target_distance__element_x_element = squareform(distance__element_x_element)
-
-    target_distance__node_x_element = distance__node_x_element.ravel()
-
-    scores = full((n_iteration, 5), nan)
-
-    node_x_node_score = pearsonr(pdist(node_x_dimension), target_distance__node_x_node)[
-        0
-    ]
-
-    element_x_element_score = pearsonr(
-        pdist(element_x_dimension), target_distance__element_x_element
-    )[0]
-
-    node_x_element_score = pearsonr(
-        apply_function_on_2_2d_arrays_slices(
-            node_x_dimension, element_x_dimension, 0, euclidean
-        ).ravel(),
-        target_distance__node_x_element,
-    )[0]
-
-    fitness = (
-        node_x_node_score * node_node_score_weight
-        + element_x_element_score * element_element_score_weight
-        + node_x_element_score * node_element_score_weight
-    )
-
-    n_node = distance__node_x_node.shape[0]
-
-    n_node_to_move = int(n_node * n_fraction_node_to_move)
-
-    n_element = distance__element_x_element.shape[0]
-
-    n_element_to_move = int(n_element * n_fraction_element_to_move)
-
-    n_per_print = max(1, n_iteration // 10)
-
-    seed(random_seed)
-
-    for i in range(n_iteration):
-
-        if not i % n_per_print:
-
-            print("\t{}/{} ...".format(i + 1, n_iteration))
-
-        r__node_x_dimension = node_x_dimension.copy()
-
-        indices = choice(range(n_node), size=n_node_to_move, replace=True)
-
-        r__node_x_dimension[indices] = normal(r__node_x_dimension[indices], scale=scale)
-
-        if triangulate:
-
-            n_triangulation = Delaunay(r__node_x_dimension)
-
-        r__element_x_dimension = element_x_dimension.copy()
-
-        for index in choice(range(n_element), size=n_element_to_move, replace=True):
-
-            element_x_y = r__element_x_dimension[index]
-
-            r__element_x_y = normal(element_x_y, scale=scale)
-
-            if triangulate:
-
-                while n_triangulation.find_simplex(r__element_x_y) == -1:
-
-                    r__element_x_y = normal(element_x_y, scale=scale)
-
-            r__element_x_dimension[index] = r__element_x_y
-
-        r__node_x_node_score = pearsonr(
-            pdist(r__node_x_dimension), target_distance__node_x_node
-        )[0]
-
-        r__element_x_element_score = pearsonr(
-            pdist(r__element_x_dimension), target_distance__element_x_element
-        )[0]
-
-        r__node_x_element_score = pearsonr(
-            apply_function_on_2_2d_arrays_slices(
-                r__node_x_dimension, r__element_x_dimension, 0, euclidean
-            ).ravel(),
-            target_distance__node_x_element,
-        )[0]
-
-        r__fitness = (
-            r__node_x_node_score * node_node_score_weight
-            + r__element_x_element_score * element_element_score_weight
-            + r__node_x_element_score * node_element_score_weight
-        )
-
-        temperature = initial_temperature * (1 - i / (n_iteration + 1))
-
-        if random_sample() < exp((r__fitness - fitness) / temperature):
-
-            if print_acceptance:
-
-                print("\t\t{:.3e} =(accept)=> {:.3e} ...".format(fitness, r__fitness))
-
-            node_x_dimension = r__node_x_dimension
-
-            element_x_dimension = r__element_x_dimension
-
-            node_x_node_score = r__node_x_node_score
-
-            element_x_element_score = r__element_x_element_score
-
-            node_x_element_score = r__node_x_element_score
-
-            fitness = r__fitness
-
-        scores[i, :] = (
-            temperature,
-            node_x_node_score,
-            element_x_element_score,
-            node_x_element_score,
-            fitness,
-        )
-
-    x = tuple(range(n_iteration))
-
-    if n_iteration < 1e3:
-
-        mode = "markers"
-
-    else:
-
-        mode = "lines"
-
-    plot_and_save(
-        {
-            "layout": {
-                "title": {"text": "Annealing Summary"},
-                "xaxis": {"title": "Iteration"},
-            },
-            "data": [
-                {
-                    "type": "scatter",
-                    "name": "Temperature",
-                    "x": x,
-                    "y": scores[:, 0],
-                    "mode": mode,
-                },
-                {
-                    "type": "scatter",
-                    "name": "Node-Node",
-                    "x": x,
-                    "y": scores[:, 1],
-                    "mode": mode,
-                },
-                {
-                    "type": "scatter",
-                    "name": "Element-Element",
-                    "x": x,
-                    "y": scores[:, 2],
-                    "mode": mode,
-                },
-                {
-                    "type": "scatter",
-                    "name": "Node-Element",
-                    "x": x,
-                    "y": scores[:, 3],
-                    "mode": mode,
-                },
-                {
-                    "type": "scatter",
-                    "name": "Fitness",
-                    "x": x,
-                    "y": scores[:, 4],
-                    "mode": mode,
-                },
-            ],
-        },
-        None,
-    )
-
-    return node_x_dimension, element_x_dimension
 
 
 class GPSMap:
@@ -943,7 +679,7 @@ class GPSMap:
         if self.node_x_dimension is None:
 
             self.node_x_dimension = normalize_nd_array(
-                reduce_point_x_dimension_dimension(
+                scale_point_x_dimension_dimension(
                     2,
                     distance__point_x_point=self.distance__node_x_node,
                     random_seed=mds_random_seed,
@@ -956,13 +692,13 @@ class GPSMap:
 
         if w is not None:
 
-            self.w_element_x_dimension = _make_gps_map_element_x_dimension(
+            self.w_element_x_dimension = _make_element_x_dimension(
                 self.w, self.node_x_dimension, self.w_n_pull, self.w_pull_power
             )
 
         if h is not None:
 
-            self.h_element_x_dimension = _make_gps_map_element_x_dimension(
+            self.h_element_x_dimension = _make_element_x_dimension(
                 self.h, self.node_x_dimension, self.h_n_pull, self.h_pull_power
             )
 
@@ -1031,7 +767,7 @@ class GPSMap:
 
             title = w_or_h.title()
 
-        _plot_gps_map(
+        _plot(
             self.nodes,
             self.node_name,
             self.node_x_dimension,
@@ -1083,9 +819,9 @@ class GPSMap:
 
         self.mask_grid = full((self.n_grid,) * 2, nan)
 
-        x_grid_for_j = linspace(0, 1, self.n_grid)
+        x_grid_for_j = linspace(0, 1, num=self.n_grid)
 
-        y_grid_for_i = linspace(1, 0, self.n_grid)
+        y_grid_for_i = linspace(1, 0, num=self.n_grid)
 
         for i in range(self.n_grid):
 
@@ -1096,13 +832,59 @@ class GPSMap:
                     == -1
                 )
 
-        grid_values, grid_labels = _make_gps_map_grid_values_and_categorical_labels(
-            element_x_dimension,
-            element_labels,
-            self.n_grid,
-            bandwidth_factor,
-            self.mask_grid,
-        )
+        label_grid_probabilities = {}
+
+        global_bandwidths = compute_bandwidths(element_x_dimension.T) * bandwidth_factor
+
+        n_dimension = element_x_dimension.shape[1]
+
+        mins = (0,) * n_dimension
+
+        maxs = (1,) * n_dimension
+
+        for label in unique(element_labels):
+
+            kernel_density = rot90(
+                estimate_kernel_density(
+                    element_x_dimension[element_labels == label].T,
+                    bandwidths=global_bandwidths,
+                    mins=mins,
+                    maxs=maxs,
+                    n_grid=self.n_grid,
+                )
+            )
+
+            label_grid_probabilities[label] = kernel_density / kernel_density.sum()
+
+        shape = (self.n_grid,) * n_dimension
+
+        grid_values = full(shape, nan)
+
+        grid_labels = full(shape, nan)
+
+        for i in range(self.n_grid):
+
+            for j in range(self.n_grid):
+
+                if not self.mask_grid[i, j]:
+
+                    max_probability = 0
+
+                    max_label = nan
+
+                    for label, grid_probabilities in label_grid_probabilities.items():
+
+                        probability = grid_probabilities[i, j]
+
+                        if max_probability < probability:
+
+                            max_probability = probability
+
+                            max_label = label
+
+                    grid_values[i, j] = max_probability
+
+                    grid_labels[i, j] = max_label
 
         if label_colors is None:
 
@@ -1229,7 +1011,7 @@ class GPSMap:
 
             label_colors = self.h_label_colors
 
-        predicting_element_x_dimension = _make_gps_map_element_x_dimension(
+        predicting_element_x_dimension = _make_element_x_dimension(
             node_x_predicting_element.values, self.node_x_dimension, n_pull, pull_power
         )
 
@@ -1271,7 +1053,7 @@ class GPSMap:
 
             title = "{} (predicted)".format(w_or_h.title())
 
-        _plot_gps_map(
+        _plot(
             self.nodes,
             self.node_name,
             self.node_x_dimension,
@@ -1385,26 +1167,188 @@ class GPSMap:
 
             element_x_dimension = self.h_element_x_dimension
 
-        node_x_dimension, element_x_dimension = _anneal_node_and_element_positions(
-            self.distance__node_x_node,
-            distance__element_x_element,
-            distance__node_x_element,
-            self.node_x_dimension,
-            element_x_dimension,
-            node_node_score_weight,
-            element_element_score_weight,
-            node_element_score_weight,
-            n_fraction_node_to_move,
-            n_fraction_element_to_move,
-            random_seed,
-            n_iteration,
-            initial_temperature,
-            scale,
-            triangulate,
-            print_acceptance,
+        target_distance__node_x_node = squareform(self.distance__node_x_node)
+
+        target_distance__element_x_element = squareform(distance__element_x_element)
+
+        target_distance__node_x_element = distance__node_x_element.ravel()
+
+        scores = full((n_iteration, 5), nan)
+
+        node_x_node_score = pearsonr(
+            pdist(self.node_x_dimension), target_distance__node_x_node
+        )[0]
+
+        element_x_element_score = pearsonr(
+            pdist(element_x_dimension), target_distance__element_x_element
+        )[0]
+
+        node_x_element_score = pearsonr(
+            apply_function_on_2_2d_arrays_slices(
+                self.node_x_dimension, element_x_dimension, 0, euclidean
+            ).ravel(),
+            target_distance__node_x_element,
+        )[0]
+
+        fitness = (
+            node_x_node_score * node_node_score_weight
+            + element_x_element_score * element_element_score_weight
+            + node_x_element_score * node_element_score_weight
         )
 
-        self.node_x_dimension = normalize_nd_array(node_x_dimension, 0, "0-1")
+        n_node = self.distance__node_x_node.shape[0]
+
+        n_node_to_move = int(n_node * n_fraction_node_to_move)
+
+        n_element = distance__element_x_element.shape[0]
+
+        n_element_to_move = int(n_element * n_fraction_element_to_move)
+
+        n_per_print = max(1, n_iteration // 10)
+
+        seed(seed=random_seed)
+
+        for i in range(n_iteration):
+
+            if not i % n_per_print:
+
+                print("\t{}/{} ...".format(i + 1, n_iteration))
+
+            r__node_x_dimension = self.node_x_dimension.copy()
+
+            indices = choice(range(n_node), size=n_node_to_move, replace=True)
+
+            r__node_x_dimension[indices] = normal(
+                r__node_x_dimension[indices], scale=scale
+            )
+
+            if triangulate:
+
+                n_triangulation = Delaunay(r__node_x_dimension)
+
+            r__element_x_dimension = element_x_dimension.copy()
+
+            for index in choice(range(n_element), size=n_element_to_move, replace=True):
+
+                element_x_y = r__element_x_dimension[index]
+
+                r__element_x_y = normal(element_x_y, scale=scale)
+
+                if triangulate:
+
+                    while n_triangulation.find_simplex(r__element_x_y) == -1:
+
+                        r__element_x_y = normal(element_x_y, scale=scale)
+
+                r__element_x_dimension[index] = r__element_x_y
+
+            r__node_x_node_score = pearsonr(
+                pdist(r__node_x_dimension), target_distance__node_x_node
+            )[0]
+
+            r__element_x_element_score = pearsonr(
+                pdist(r__element_x_dimension), target_distance__element_x_element
+            )[0]
+
+            r__node_x_element_score = pearsonr(
+                apply_function_on_2_2d_arrays_slices(
+                    r__node_x_dimension, r__element_x_dimension, 0, euclidean
+                ).ravel(),
+                target_distance__node_x_element,
+            )[0]
+
+            r__fitness = (
+                r__node_x_node_score * node_node_score_weight
+                + r__element_x_element_score * element_element_score_weight
+                + r__node_x_element_score * node_element_score_weight
+            )
+
+            temperature = initial_temperature * (1 - i / (n_iteration + 1))
+
+            if random_sample() < exp((r__fitness - fitness) / temperature):
+
+                if print_acceptance:
+
+                    print(
+                        "\t\t{:.3e} =(accept)=> {:.3e} ...".format(fitness, r__fitness)
+                    )
+
+                self.node_x_dimension = r__node_x_dimension
+
+                element_x_dimension = r__element_x_dimension
+
+                node_x_node_score = r__node_x_node_score
+
+                element_x_element_score = r__element_x_element_score
+
+                node_x_element_score = r__node_x_element_score
+
+                fitness = r__fitness
+
+            scores[i, :] = (
+                temperature,
+                node_x_node_score,
+                element_x_element_score,
+                node_x_element_score,
+                fitness,
+            )
+
+        x = tuple(range(n_iteration))
+
+        if n_iteration < 1e3:
+
+            mode = "markers"
+
+        else:
+
+            mode = "lines"
+
+        plot_and_save(
+            {
+                "layout": {
+                    "title": {"text": "Annealing Summary"},
+                    "xaxis": {"title": "Iteration"},
+                },
+                "data": [
+                    {
+                        "type": "scatter",
+                        "name": "Temperature",
+                        "x": x,
+                        "y": scores[:, 0],
+                        "mode": mode,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Node-Node",
+                        "x": x,
+                        "y": scores[:, 1],
+                        "mode": mode,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Element-Element",
+                        "x": x,
+                        "y": scores[:, 2],
+                        "mode": mode,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Node-Element",
+                        "x": x,
+                        "y": scores[:, 3],
+                        "mode": mode,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Fitness",
+                        "x": x,
+                        "y": scores[:, 4],
+                        "mode": mode,
+                    },
+                ],
+            },
+            None,
+        )
 
         if w_or_h == "w":
 
