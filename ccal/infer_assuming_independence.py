@@ -1,46 +1,26 @@
-from numpy import absolute, full, linspace, meshgrid, nan, product, rot90
+from numpy import absolute, full, linspace, nan, product, rot90
+from pandas import DataFrame
 
 from .estimate_kernel_density import estimate_kernel_density
 from .infer import infer
+from .make_mesh_grid_and_ravel import make_mesh_grid_and_ravel
 from .plot_and_save import plot_and_save
+from .plot_heat_map import plot_heat_map
 
 
 def infer_assuming_independence(
-    variables,
-    variable_types=None,
-    bandwidths="normal_reference",
-    grid_size=64,
-    target="max",
-    plot=True,
-    names=None,
+    variables, n_grid=64, target="max", plot=True, names=None
 ):
 
     n_dimension = len(variables)
 
-    if variable_types is None:
+    n_ntv = n_dimension - 1
 
-        variable_types = "c" * n_dimension
-
-    n_ntvs = n_dimension - 1
-
-    if isinstance(bandwidths, str):
-
-        target_bandwidth = bandwidths
-
-    else:
-
-        target_bandwidth = bandwidths[-1]
-
-    kd_tv = estimate_kernel_density(
-        (variables[-1],),
-        variable_types[-1],
-        bandwidths=target_bandwidth,
-        grid_sizes=(grid_size,),
-    )
+    kd_tv = estimate_kernel_density((variables[-1],), n_grid=n_grid)
 
     p_tv = kd_tv / kd_tv.sum()
 
-    grid_tv = linspace(variables[-1].min(), variables[-1].max(), grid_size)
+    grid_tv = linspace(variables[-1].min(), variables[-1].max(), num=n_grid)
 
     if target == "max":
 
@@ -54,85 +34,71 @@ def infer_assuming_independence(
 
     p_tvt = p_tv[t_i]
 
-    if plot:
+    if names is None:
 
-        if names is None:
-
-            names = tuple("variables[{}]".format(i) for i in range(n_dimension))
+        names = tuple("Variable {}".format(i) for i in range(n_dimension))
 
     if plot:
-
-        name = "P({} = {:.2f}) = {:.2f}".format(names[-1], t, p_tvt)
-
-        plot_and_save(
-            {
-                "layout": {
-                    "title": {"text": name},
-                    "xaxis": {"title": names[-1]},
-                    "yaxis": {"title": "Probability"},
-                },
-                "data": [{"type": "scatter", "name": name, "x": grid_tv, "y": p_tv}],
-            },
-            None,
-        )
-
-    p_tvt__1ntvs = []
-
-    for ntv_i in range(n_ntvs):
-
-        if isinstance(bandwidths, str):
-
-            bandwidths_ = bandwidths
-
-        else:
-
-            bandwidths_ = (bandwidths[ntv_i], bandwidths[-1])
-
-        p_tvt__1ntv = infer(
-            (variables[ntv_i], variables[-1]),
-            variable_types=variable_types[ntv_i] + variable_types[-1],
-            bandwidths=bandwidths_,
-            grid_size=grid_size,
-            target=target,
-            plot=False,
-            names=(names[ntv_i], names[-1]),
-        )[1]
-
-        p_tvt__1ntvs.append(p_tvt__1ntv)
-
-    p_tvt__ntvs = full((grid_size,) * n_ntvs, nan)
-
-    ntvs_igrid_meshgrid_ravel = tuple(
-        meshgrid_.astype(int).ravel()
-        for meshgrid_ in meshgrid(
-            *(linspace(0, grid_size - 1, grid_size),) * n_ntvs, indexing="ij"
-        )
-    )
-
-    for i in range(grid_size ** n_ntvs):
-
-        coordinate = [[ntvs_igrid_meshgrid_ravel[ntv_i][i]] for ntv_i in range(n_ntvs)]
-
-        p_tvt__ntvs[coordinate] = product(
-            [p_tvt__1ntvs[j][coordinate[j]] for j in range(n_ntvs)]
-        ) / p_tvt ** (n_ntvs - 1)
-
-    if plot and n_dimension == 3:
 
         plot_and_save(
             {
                 "layout": {
                     "title": {
-                        "text": "P({} = {} | {}, {})".format(
-                            names[-1], target, names[0], names[1]
+                        "text": "P({} = {} = {}) = {}".format(
+                            names[-1], target, t, p_tvt
                         )
                     },
-                    "xaxis": {"title": names[0]},
-                    "yaxis": {"title": names[1]},
+                    "xaxis": {"title": names[-1]},
+                    "yaxis": {"title": "Probability"},
                 },
-                "data": [{"type": "heatmap", "z": rot90(p_tvt__ntvs)[::-1]}],
+                "data": [
+                    {
+                        "type": "scatter",
+                        "x": grid_tv,
+                        "y": p_tv,
+                        "marker": {"color": "#20d9ba"},
+                    }
+                ],
             },
             None,
+        )
+
+    p_tvt__1ntvs = tuple(
+        infer(
+            (variables[ntv_i], variables[-1]),
+            n_grid=n_grid,
+            target=t,
+            plot=False,
+            names=(names[ntv_i], names[-1]),
+        )[1]
+        for ntv_i in range(n_ntv)
+    )
+
+    p_tvt__ntvs = full((n_grid,) * n_ntv, nan)
+
+    mesh_index_grid_raveled = make_mesh_grid_and_ravel(
+        (0,) * n_ntv, (n_grid - 1,) * n_ntv, (n_grid,) * n_ntv
+    )
+
+    for i in range(n_grid ** n_ntv):
+
+        indices = tuple(
+            [mesh_index_grid_raveled[ntv_i][i].astype(int)] for ntv_i in range(n_ntv)
+        )
+
+        p_tvt__ntvs[indices] = product(
+            [p_tvt__1ntvs[j][indices[j]] for j in range(n_ntv)]
+        ) / p_tvt ** (n_ntv - 1)
+
+    if plot and n_dimension == 3:
+
+        plot_heat_map(
+            DataFrame(rot90(p_tvt__ntvs)),
+            title="P({} = {} = {} | {}, {})".format(
+                names[-1], target, t, names[0], names[1]
+            ),
+            xaxis_title=names[0],
+            yaxis_title=names[1],
         )
 
     return None, p_tvt__ntvs

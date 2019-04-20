@@ -1,7 +1,8 @@
 from numpy import linspace, meshgrid
 
-from .get_colorscale_for_data import get_colorscale_for_data
+from .make_colorscale_from_colors import make_colorscale_from_colors
 from .normalize_nd_array import normalize_nd_array
+from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 
 
@@ -10,7 +11,6 @@ def plot_bubble_map(
     df_color=None,
     marker_size_max=32,
     data_type="continuous",
-    colorscale=None,
     showscale=None,
     colorbar_x=None,
     title=None,
@@ -26,8 +26,8 @@ def plot_bubble_map(
     axis_template = {"zeroline": False}
 
     x, y = meshgrid(
-        linspace(0, df_size.shape[1] - 1, df_size.shape[1]),
-        linspace(0, df_size.shape[0] - 1, df_size.shape[0]),
+        linspace(0, df_size.shape[1] - 1, num=df_size.shape[1]),
+        linspace(0, df_size.shape[0] - 1, num=df_size.shape[0]),
     )
 
     plot_and_save(
@@ -60,8 +60,8 @@ def plot_bubble_map(
                         "size": normalize_nd_array(df_size.values, None, "0-1").ravel()
                         * marker_size_max,
                         "color": df_color.values.ravel(),
-                        "colorscale": get_colorscale_for_data(
-                            df_color.values, data_type
+                        "colorscale": make_colorscale_from_colors(
+                            pick_nd_array_colors(df_color.values, data_type)
                         ),
                         "showscale": True,
                         "colorbar": {

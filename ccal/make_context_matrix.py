@@ -1,8 +1,8 @@
 from numpy import full, nan
 from pandas import DataFrame, concat
 
-from .compute_context import compute_context
-from .multiprocess import multiprocess
+from .call_function_with_multiprocess import call_function_with_multiprocess
+from .compute_1d_array_context import compute_1d_array_context
 from .split_df import split_df
 
 
@@ -26,7 +26,7 @@ def _make_context_matrix(
 
     for i, (index, series) in enumerate(df.iterrows()):
 
-        if i % n_per_print == 0:
+        if not i % n_per_print:
 
             print("({}/{}) {} ...".format(i + 1, n, index))
 
@@ -40,7 +40,7 @@ def _make_context_matrix(
                 index, ["N Data", "Location", "Scale", "Degree of Freedom", "Shape"]
             ]
 
-        context_matrix[i] = compute_context(
+        context_matrix[i] = compute_1d_array_context(
             series.values,
             n_data=n_data,
             location=location,
@@ -54,7 +54,7 @@ def _make_context_matrix(
             global_scale=global_scale,
             global_degree_of_freedom=global_degree_of_freedom,
             global_shape=global_shape,
-        )["context_indices_like_array"]
+        )["context_like_array"]
 
     return DataFrame(context_matrix, index=df.index, columns=df.columns)
 
@@ -74,7 +74,7 @@ def make_context_matrix(
 ):
 
     context_matrix = concat(
-        multiprocess(
+        call_function_with_multiprocess(
             _make_context_matrix,
             (
                 (
@@ -94,6 +94,8 @@ def make_context_matrix(
         )
     )
 
-    context_matrix.to_csv(output_file_path, sep="\t")
+    if output_file_path is not None:
+
+        context_matrix.to_csv(output_file_path, sep="\t")
 
     return context_matrix

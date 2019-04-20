@@ -11,7 +11,7 @@ def mf_by_multiplicative_update(V, k, n_iteration=int(1e3), random_seed=RANDOM_S
 
     R_norms = full(n_iteration + 1, nan)
 
-    seed(random_seed)
+    seed(seed=random_seed)
 
     W = random_sample(size=(V.shape[0], k))
 

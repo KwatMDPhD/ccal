@@ -1,30 +1,27 @@
 from .ALMOST_ZERO import ALMOST_ZERO
+from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
+from .normalize_s_or_df import normalize_s_or_df
+from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
-from .process_match_panel_target_or_data_for_plotting import (
-    process_match_panel_target_or_data_for_plotting,
-)
 
 
 def make_summary_match_panel(
     target,
     data_dicts,
     score_moe_p_value_fdr_dicts,
-    plot_only_columns_shared_by_target_and_all_data=False,
+    plot_only_shared_by_target_and_all_data=False,
     target_ascending=True,
     target_type="continuous",
     score_ascending=False,
     plot_std=None,
     title=None,
-    layout_width=880,
-    row_height=64,
     layout_side_margin=196,
     annotation_font_size=8.8,
-    xaxis_kwargs=None,
     html_file_path=None,
 ):
 
-    if plot_only_columns_shared_by_target_and_all_data:
+    if plot_only_shared_by_target_and_all_data:
 
         for data_dict in data_dicts.values():
 
@@ -34,8 +31,18 @@ def make_summary_match_panel(
 
         target.sort_values(ascending=target_ascending, inplace=True)
 
-    target, target_plot_min, target_plot_max, target_colorscale = process_match_panel_target_or_data_for_plotting(
-        target, target_type, plot_std
+    target_to_plot = target.copy()
+
+    if target_type == "continuous":
+
+        target_to_plot = normalize_s_or_df(target_to_plot, None, "-0-")
+
+        if plot_std is not None:
+
+            target_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
+
+    target_colorscale = make_colorscale_from_colors(
+        pick_nd_array_colors(target_to_plot.values, target_type)
     )
 
     n_row = 1 + len(data_dicts)
@@ -45,17 +52,12 @@ def make_summary_match_panel(
         n_row += data_dict["df"].shape[0]
 
     layout = {
-        "width": layout_width,
-        "height": row_height / 2 * max(10, n_row),
+        "height": max(640, 32 * n_row),
         "margin": {"l": layout_side_margin, "r": layout_side_margin},
-        "title": title,
+        "title": {"text": title},
         "xaxis": {"anchor": "y"},
         "annotations": [],
     }
-
-    if xaxis_kwargs is not None:
-
-        layout["xaxis"].update(xaxis_kwargs)
 
     row_fraction = 1 / n_row
 
@@ -69,33 +71,31 @@ def make_summary_match_panel(
 
         domain_start = 0
 
+    annotation_font = {"size": annotation_font_size}
+
     layout[yaxis_name] = {
         "domain": (domain_start, domain_end),
-        "tickfont": {"size": annotation_font_size},
+        "tickmode": "array",
+        "tickvals": (0,),
+        "ticktext": (target_to_plot.name,),
+        "tickfont": annotation_font,
     }
 
-    data = [
+    figure_data = [
         {
             "yaxis": yaxis_name.replace("axis", ""),
             "type": "heatmap",
-            "z": target.to_frame().T.values,
-            "x": target.index,
-            "y": (target.name,),
-            "text": (target.index,),
-            "zmin": target_plot_min,
-            "zmax": target_plot_max,
+            "z": target_to_plot.to_frame().T,
             "colorscale": target_colorscale,
             "showscale": False,
         }
     ]
 
-    for data_name_index, (data_name, data_dict) in enumerate(data_dicts.items()):
+    for data_index, (data_name, data_dict) in enumerate(data_dicts.items()):
 
         print("Making match panel for {} ...".format(data_name))
 
-        df = data_dict["df"]
-
-        data_to_plot = df.reindex(columns=target.index)
+        data_to_plot = data_dict["df"].reindex(columns=target_to_plot.index)
 
         score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr_dicts[data_name].loc[
             data_to_plot.index
@@ -107,13 +107,19 @@ def make_summary_match_panel(
 
         data_to_plot = data_to_plot.loc[score_moe_p_value_fdr_to_plot.index]
 
-        annotations = make_match_panel_annotations(score_moe_p_value_fdr_to_plot)
+        if data_dict["type"] == "continuous":
 
-        data_to_plot, data_plot_min, data_plot_max, data_colorscale = process_match_panel_target_or_data_for_plotting(
-            data_to_plot, data_dict["type"], plot_std
+            data_to_plot = normalize_s_or_df(data_to_plot, 1, "-0-")
+
+            if plot_std is not None:
+
+                data_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
+
+        data_colorscale = make_colorscale_from_colors(
+            pick_nd_array_colors(data_to_plot.values, data_dict["type"])
         )
 
-        yaxis_name = "yaxis{}".format(len(data_dicts) - data_name_index)
+        yaxis_name = "yaxis{}".format(len(data_dicts) - data_index)
 
         domain_end = domain_start - row_fraction
 
@@ -121,7 +127,7 @@ def make_summary_match_panel(
 
             domain_end = 0
 
-        domain_start = domain_end - data_dict["df"].shape[0] * row_fraction
+        domain_start = domain_end - data_to_plot.shape[0] * row_fraction
 
         if abs(domain_start) <= ALMOST_ZERO:
 
@@ -130,18 +136,16 @@ def make_summary_match_panel(
         layout[yaxis_name] = {
             "domain": (domain_start, domain_end),
             "dtick": 1,
-            "tickfont": {"size": annotation_font_size},
+            "tickfont": annotation_font,
         }
 
-        data.append(
+        figure_data.append(
             {
                 "yaxis": yaxis_name.replace("axis", ""),
                 "type": "heatmap",
                 "z": data_to_plot.values[::-1],
                 "x": data_to_plot.columns,
                 "y": data_to_plot.index[::-1],
-                "zmin": data_plot_min,
-                "zmax": data_plot_max,
                 "colorscale": data_colorscale,
                 "showscale": False,
             }
@@ -151,7 +155,7 @@ def make_summary_match_panel(
             "xref": "paper",
             "yref": "paper",
             "yanchor": "middle",
-            "font": {"size": annotation_font_size},
+            "font": annotation_font,
             "showarrow": False,
         }
 
@@ -167,37 +171,36 @@ def make_summary_match_panel(
 
         layout_annotation_template.update({"xanchor": "left", "width": 64})
 
-        for (
-            annotation_index,
-            (annotation_column_name, annotation_column_strs),
-        ) in enumerate(annotations.items()):
+        for i, (annotation, strs) in enumerate(
+            make_match_panel_annotations(score_moe_p_value_fdr_to_plot).items()
+        ):
 
-            x = 1.0016 + annotation_index / 10
+            x = 1.0016 + i / 10
 
-            if data_name_index == 0:
+            if data_index == 0:
 
                 layout["annotations"].append(
                     {
                         "x": x,
                         "y": 1 - (row_fraction / 2),
-                        "text": "<b>{}</b>".format(annotation_column_name),
+                        "text": "<b>{}</b>".format(annotation),
                         **layout_annotation_template,
                     }
                 )
 
             y = domain_end - (row_fraction / 2)
 
-            for str in annotation_column_strs:
+            for str_ in strs:
 
                 layout["annotations"].append(
                     {
                         "x": x,
                         "y": y,
-                        "text": "<b>{}</b>".format(str),
+                        "text": "<b>{}</b>".format(str_),
                         **layout_annotation_template,
                     }
                 )
 
                 y -= row_fraction
 
-    plot_and_save({"layout": layout, "data": data}, html_file_path)
+    plot_and_save({"layout": layout, "data": figure_data}, html_file_path)

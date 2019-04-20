@@ -1,7 +1,7 @@
 from numpy import absolute, nanmax
 from pandas import Series
 
-from .compute_context import compute_context
+from .compute_1d_array_context import compute_1d_array_context
 from .plot_and_save import plot_and_save
 
 
@@ -25,8 +25,6 @@ def plot_context(
     y_max_is_pdf_max=False,
     n_bin=None,
     plot_rug=True,
-    layout_width=None,
-    layout_height=None,
     title=None,
     xaxis_title=None,
     html_file_path=None,
@@ -52,7 +50,7 @@ def plot_context(
 
         _1d_array = _1d_array_or_series
 
-    context_dict = compute_context(
+    context_dict = compute_1d_array_context(
         _1d_array,
         n_data=n_data,
         location=location,
@@ -72,25 +70,23 @@ def plot_context(
 
     pdf_max = context_dict["pdf"].max()
 
-    context_indices = context_dict["context_indices"]
+    context = context_dict["context"]
 
-    absolute_context_indices = absolute(context_indices)
+    absolute_context = absolute(context)
 
-    absolute_context_indices_max = nanmax(absolute_context_indices)
+    absolute_context_max = nanmax(absolute_context)
 
     if y_max_is_pdf_max:
 
         y_max = pdf_max
 
-        if y_max < absolute_context_indices_max:
+        if y_max < absolute_context_max:
 
-            absolute_context_indices = (
-                absolute_context_indices / absolute_context_indices_max * y_max
-            )
+            absolute_context = absolute_context / absolute_context_max * y_max
 
     else:
 
-        y_max = max(pdf_max, absolute_context_indices_max)
+        y_max = max(pdf_max, absolute_context_max)
 
     if plot_rug:
 
@@ -105,9 +101,7 @@ def plot_context(
         yaxis2_min = 0
 
     layout = {
-        "width": layout_width,
-        "height": layout_height,
-        "title": title,
+        "title": {"text": title},
         "xaxis": {"anchor": "y", "title": xaxis_title},
         "yaxis": {
             "domain": (0, yaxis_max),
@@ -240,9 +234,9 @@ def plot_context(
             }
         )
 
-    is_negative = context_dict["context_indices"] < 0
+    is_negative = context_dict["context"] < 0
 
-    is_positive = 0 < context_dict["context_indices"]
+    is_positive = 0 < context_dict["context"]
 
     for name, indices, color in (
         ("- Context", is_negative, "#0088ff"),
@@ -255,7 +249,7 @@ def plot_context(
                 "type": "scatter",
                 "name": name,
                 "x": grid[indices],
-                "y": absolute_context_indices[indices],
+                "y": absolute_context[indices],
                 "line": {"width": line_width, "color": color},
                 "fill": "tozeroy",
             }

@@ -40,18 +40,16 @@ def log_nd_array(
 
         if str(log_base) == "2":
 
-            log = log2
+            log_ = log2
 
         elif log_base == "e":
 
-            log = loge
+            log_ = loge
 
         elif str(log_base) == "10":
 
-            log = log10
+            log_ = log10
 
-        nd_array_logged[is_good] = log(nd_array_good)
+        nd_array_logged[is_good] = log_(nd_array_good)
 
-    else:
-
-        return nd_array_logged
+    return nd_array_logged

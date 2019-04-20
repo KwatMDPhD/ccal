@@ -7,8 +7,8 @@ from .check_nd_array_for_bad import check_nd_array_for_bad
 def apply_function_on_2_2d_arrays_slices(
     _2d_array_0,
     _2d_array_1,
-    function,
     axis,
+    function,
     n_required=None,
     raise_for_n_less_than_required=True,
     raise_for_bad=True,
@@ -19,7 +19,7 @@ def apply_function_on_2_2d_arrays_slices(
 
     check_nd_array_for_bad(_2d_array_1, raise_for_bad=raise_for_bad)
 
-    if axis == 0:
+    if axis == 1:
 
         _2d_array_0 = _2d_array_0.T
 

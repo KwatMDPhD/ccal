@@ -1,24 +1,47 @@
-from numpy import diag, full, issubdtype, linspace, mean, nan, number
-from pandas import DataFrame, Series
+from matplotlib.colors import LinearSegmentedColormap, to_hex
+from numpy import (
+    asarray,
+    cos,
+    diag,
+    exp,
+    full,
+    isnan,
+    linspace,
+    mean,
+    nan,
+    pi,
+    rot90,
+    sin,
+    sort,
+    unique,
+)
+from numpy.random import choice, normal, random_sample, seed
+from pandas import DataFrame, Series, isna
 from scipy.spatial import Delaunay
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import euclidean, pdist, squareform
+from scipy.stats import pearsonr
 
-from .anneal_gps_map_node_and_element_positions import (
-    anneal_gps_map_node_and_element_positions,
-)
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
-from .check_gps_map_node_x_element import check_gps_map_node_x_element
-from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
-from .compute_information_distance import compute_information_distance
-from .make_gps_map_element_x_dimension import make_gps_map_element_x_dimension
-from .make_gps_map_grid_values_and_categorical_labels import (
-    make_gps_map_grid_values_and_categorical_labels,
+from .check_nd_array_for_bad import check_nd_array_for_bad
+from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
+from .cluster_2d_array import cluster_2d_array
+from .COLORS import COLORS
+from .compute_bandwidths import compute_bandwidths
+from .compute_information_distance_between_2_1d_arrays import (
+    compute_information_distance_between_2_1d_arrays,
 )
-from .mds import mds
+from .estimate_kernel_density import estimate_kernel_density
+from .get_colormap_colors import get_colormap_colors
+from .get_triangulation_edges_from_point_x_dimension import (
+    get_triangulation_edges_from_point_x_dimension,
+)
+from .make_colorscale_from_colors import make_colorscale_from_colors
 from .normalize_nd_array import normalize_nd_array
-from .plot_gps_map import plot_gps_map
+from .pick_nd_array_colors import pick_nd_array_colors
+from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
 from .RANDOM_SEED import RANDOM_SEED
+from .scale_point_x_dimension_dimension import scale_point_x_dimension_dimension
 from .train_and_classify import train_and_classify
 
 element_marker_size = 16
@@ -26,6 +49,395 @@ element_marker_size = 16
 grid_label_opacity_without_annotation = 0.64
 
 grid_label_opacity_with_annotation = 0.32
+
+
+def _check_node_x_element(node_x_element):
+
+    if node_x_element.index.has_duplicates:
+
+        raise ValueError("node_x_element should not have duplicated node.")
+
+    if node_x_element.columns.has_duplicates:
+
+        raise ValueError("node_x_element should not have duplicated element.")
+
+    if not node_x_element.applymap(
+        lambda value: isinstance(value, (int, float))
+    ).values.all():
+
+        raise ValueError("node_x_element should be only int or float.")
+
+    check_nd_array_for_bad(node_x_element.values)
+
+
+def _make_element_x_dimension(node_x_element, node_x_dimension, n_pull, pull_power):
+
+    element_x_dimension = full(
+        (node_x_element.shape[1], node_x_dimension.shape[1]), nan
+    )
+
+    node_x_element = normalize_nd_array(node_x_element, None, "0-1")
+
+    for element_index in range(node_x_element.shape[1]):
+
+        pulls = node_x_element[:, element_index]
+
+        if 3 < pulls.size:
+
+            pulls = normalize_nd_array(pulls, None, "0-1")
+
+        if n_pull is not None:
+
+            pulls[pulls < sort(pulls)[-n_pull]] = 0
+
+        if pull_power is not None:
+
+            pulls = pulls ** pull_power
+
+        for dimension_index in range(node_x_dimension.shape[1]):
+
+            element_x_dimension[element_index, dimension_index] = (
+                pulls * node_x_dimension[:, dimension_index]
+            ).sum() / pulls.sum()
+
+    return element_x_dimension
+
+
+def _plot(
+    nodes,
+    node_name,
+    node_x_dimension,
+    elements,
+    element_name,
+    element_x_dimension,
+    element_marker_size,
+    element_label,
+    grid_values,
+    grid_labels,
+    label_colors,
+    grid_label_opacity,
+    annotation_x_element,
+    annotation_types,
+    annotation_std_maxs,
+    annotation_ranges,
+    layout_size,
+    title,
+    html_file_path,
+):
+
+    axis_template = {
+        "showgrid": False,
+        "zeroline": False,
+        "ticks": "",
+        "showticklabels": False,
+    }
+
+    layout = {
+        "width": layout_size,
+        "height": layout_size,
+        "title": {"text": title},
+        "titlefont": {"size": 32, "color": "#4c221b"},
+        "xaxis": axis_template,
+        "yaxis": axis_template,
+    }
+
+    data = []
+
+    node_opacity = 0.88
+
+    edge_xs, edge_ys = get_triangulation_edges_from_point_x_dimension(node_x_dimension)
+
+    data.append(
+        {
+            "type": "scatter",
+            "name": "Simplex",
+            "legendgroup": node_name,
+            "showlegend": False,
+            "x": edge_xs,
+            "y": edge_ys,
+            "mode": "lines",
+            "line": {"color": "#23191e"},
+            "opacity": node_opacity,
+            "hoverinfo": None,
+        }
+    )
+
+    data.append(
+        {
+            "type": "scatter",
+            "name": node_name,
+            "legendgroup": node_name,
+            "x": node_x_dimension[:, 0],
+            "y": node_x_dimension[:, 1],
+            "text": nodes,
+            "mode": "markers+text",
+            "marker": {
+                "size": 32,
+                "color": "#2e211b",
+                "line": {"width": 2.4, "color": "#ffffff"},
+            },
+            "textposition": "middle center",
+            "textfont": {"size": 12, "color": "#ebf6f7"},
+            "opacity": node_opacity,
+            "hoverinfo": "text",
+        }
+    )
+
+    if element_label is not None:
+
+        x = linspace(0, 1, num=grid_values.shape[1])
+
+        y = linspace(0, 1, num=grid_values.shape[0])
+
+        data.append(
+            {
+                "type": "contour",
+                "name": "Contour",
+                "showlegend": False,
+                "z": grid_values[::-1],
+                "x": x,
+                "y": y,
+                "autocontour": False,
+                "ncontours": 24,
+                "contours": {"coloring": "none"},
+                "showscale": False,
+                "opacity": node_opacity,
+            }
+        )
+
+        grid_labels_unique = unique(grid_labels[~isnan(grid_labels)]).astype(int)
+
+        for label in grid_labels_unique:
+
+            z = grid_values.copy()
+
+            z[grid_labels != label] = nan
+
+            data.append(
+                {
+                    "type": "heatmap",
+                    "z": z[::-1],
+                    "x": x,
+                    "y": y,
+                    "colorscale": make_colorscale_from_colors(
+                        get_colormap_colors(
+                            LinearSegmentedColormap.from_list(
+                                None, ("#ffffff", label_colors[label])
+                            )
+                        )
+                    ),
+                    "showscale": False,
+                    "opacity": grid_label_opacity,
+                }
+            )
+
+    element_marker_line = {"width": 1, "color": "#000000"}
+
+    element_opacity = 0.88
+
+    if annotation_x_element is not None:
+
+        if 1 < annotation_x_element.shape[0]:
+
+            shapes = []
+
+            marker_size_factor = element_marker_size / layout_size
+
+        for annotation_index, (annotation_name, annotation_series) in enumerate(
+            annotation_x_element.iterrows()
+        ):
+
+            if annotation_types is None:
+
+                annotation_type = "continuous"
+
+            else:
+
+                annotation_type = annotation_types[annotation_index]
+
+            if annotation_type == "continuous":
+
+                if annotation_std_maxs is not None:
+
+                    std_max = annotation_std_maxs[annotation_index]
+
+                    annotation_series = Series(
+                        clip_nd_array_by_standard_deviation(
+                            normalize_nd_array(
+                                annotation_series.values,
+                                None,
+                                "-0-",
+                                raise_for_bad=False,
+                            ),
+                            std_max,
+                            raise_for_bad=False,
+                        ),
+                        name=annotation_series.name,
+                        index=annotation_series.index,
+                    )
+
+                if annotation_ranges is not None:
+
+                    min_, max_ = annotation_ranges[annotation_index]
+
+                else:
+
+                    min_ = annotation_series.min()
+
+                    max_ = annotation_series.max()
+
+            elif annotation_type == "categorical":
+
+                min_ = 0
+
+                max_ = annotation_series.dropna().unique().size - 1
+
+            elif annotation_type == "binary":
+
+                min_ = 0
+
+                max_ = 1
+
+            if annotation_x_element.shape[0] == 1:
+
+                sorted_indices = annotation_series.abs().argsort()
+
+                annotation_series = annotation_series[sorted_indices]
+
+                element_x_dimension = element_x_dimension[sorted_indices]
+
+            colorscale = make_colorscale_from_colors(
+                pick_nd_array_colors(annotation_series.values, annotation_type)
+            )
+
+            if 1 == annotation_x_element.shape[0]:
+
+                is_na = annotation_series.isna()
+
+                annotation_series = annotation_series[~is_na]
+
+                data.append(
+                    {
+                        "type": "scatter",
+                        "name": element_name,
+                        "showlegend": False,
+                        "x": element_x_dimension[~is_na, 0],
+                        "y": element_x_dimension[~is_na, 1],
+                        "text": annotation_series.index,
+                        "mode": "markers",
+                        "marker": {
+                            "size": element_marker_size,
+                            "color": annotation_series.values,
+                            "cmin": min_,
+                            "cmax": max_,
+                            "colorscale": colorscale,
+                            "showscale": annotation_type == "continuous",
+                            "colorbar": {"len": 0.64, "thickness": layout_size / 64},
+                            "line": element_marker_line,
+                        },
+                        "opacity": element_opacity,
+                        "hoverinfo": "text",
+                    }
+                )
+
+            else:
+
+                for element_name, value in annotation_series.items():
+
+                    x, y = element_x_dimension[elements.index(element_name)]
+
+                    if isna(value):
+
+                        continue
+
+                    color = to_hex(
+                        colorscale[
+                            int((len(colorscale) - 1) * (value - min_) / (max_ - min_))
+                        ][1]
+                    )
+
+                    sector_radian = pi * 2 / annotation_x_element.shape[0]
+
+                    sector_radians = linspace(
+                        sector_radian * annotation_index,
+                        sector_radian * (annotation_index + 1),
+                        num=16,
+                    )
+
+                    path = "M {} {}".format(x, y)
+
+                    for x_, y_ in zip(cos(sector_radians), sin(sector_radians)):
+
+                        path += " L {} {}".format(
+                            x + x_ * marker_size_factor, y + y_ * marker_size_factor
+                        )
+
+                    path += " Z"
+
+                    shapes.append(
+                        {
+                            "type": "path",
+                            "x0": x,
+                            "y0": y,
+                            "path": path,
+                            "fillcolor": color,
+                            "line": element_marker_line,
+                            "opacity": element_opacity,
+                        }
+                    )
+
+        if 1 < annotation_x_element.shape[0]:
+
+            layout["shapes"] = shapes
+
+    elif element_label is not None:
+
+        for label in grid_labels_unique:
+
+            element_indices = element_label == label
+
+            label_str = str(label)
+
+            data.append(
+                {
+                    "type": "scatter",
+                    "name": label_str,
+                    "legendgroup": label_str,
+                    "x": element_x_dimension[element_indices, 0],
+                    "y": element_x_dimension[element_indices, 1],
+                    "text": asarray(elements)[element_indices],
+                    "mode": "markers",
+                    "marker": {
+                        "size": element_marker_size,
+                        "color": label_colors[label],
+                        "line": element_marker_line,
+                    },
+                    "opacity": element_opacity,
+                    "hoverinfo": "text",
+                }
+            )
+
+    else:
+
+        data.append(
+            {
+                "type": "scatter",
+                "name": element_name,
+                "x": element_x_dimension[:, 0],
+                "y": element_x_dimension[:, 1],
+                "text": elements,
+                "mode": "markers",
+                "marker": {
+                    "size": element_marker_size,
+                    "color": "#20d9ba",
+                    "line": element_marker_line,
+                },
+                "opacity": element_opacity,
+                "hoverinfo": "text",
+            }
+        )
+
+    plot_and_save({"layout": layout, "data": data}, html_file_path)
 
 
 class GPSMap:
@@ -85,7 +497,7 @@ class GPSMap:
 
         self.mask_grid = None
 
-        self.w_element_labels = None
+        self.w_element_label = None
 
         self.w_bandwidth_factor = None
 
@@ -95,7 +507,7 @@ class GPSMap:
 
         self.w_label_colors = None
 
-        self.h_element_labels = None
+        self.h_element_label = None
 
         self.h_bandwidth_factor = None
 
@@ -115,11 +527,11 @@ class GPSMap:
 
         if w is not None:
 
-            check_gps_map_node_x_element(w)
+            _check_node_x_element(w)
 
         if h is not None:
 
-            check_gps_map_node_x_element(h)
+            _check_node_x_element(h)
 
         if w is not None and h is not None:
 
@@ -154,16 +566,15 @@ class GPSMap:
             self.w_element_name = w.columns.name
 
             self.w_distance__node_x_node = squareform(
-                pdist(self.w, metric=compute_information_distance)
+                pdist(self.w, metric=compute_information_distance_between_2_1d_arrays)
             )
 
             if plot:
 
                 plot_heat_map(
-                    DataFrame(self.w, index=self.nodes, columns=self.w_elements),
-                    normalization_axis=0,
-                    normalization_method="-0-",
-                    cluster_axis=1,
+                    DataFrame(self.w, index=self.nodes, columns=self.w_elements).iloc[
+                        :, cluster_2d_array(self.w, 1)
+                    ],
                     title="W",
                     xaxis_title=self.w_element_name,
                     yaxis_title=self.node_name,
@@ -174,8 +585,10 @@ class GPSMap:
                         self.w_distance__node_x_node,
                         index=self.nodes,
                         columns=self.nodes,
-                    ),
-                    cluster_axis="01",
+                    ).iloc[
+                        cluster_2d_array(self.w_distance__node_x_node, 0),
+                        cluster_2d_array(self.w_distance__node_x_node, 1),
+                    ],
                     title="{0}-{0} Distance in W".format(self.node_name),
                     xaxis_title=self.node_name,
                     yaxis_title=self.node_name,
@@ -190,16 +603,15 @@ class GPSMap:
             self.h_element_name = h.columns.name
 
             self.h_distance__node_x_node = squareform(
-                pdist(self.h, metric=compute_information_distance)
+                pdist(self.h, metric=compute_information_distance_between_2_1d_arrays)
             )
 
             if plot:
 
                 plot_heat_map(
-                    DataFrame(self.h, index=self.nodes, columns=self.h_elements),
-                    normalization_axis=0,
-                    normalization_method="-0-",
-                    cluster_axis=1,
+                    DataFrame(self.h, index=self.nodes, columns=self.h_elements).iloc[
+                        :, cluster_2d_array(self.h, 1)
+                    ],
                     title="H",
                     xaxis_title=self.h_element_name,
                     yaxis_title=self.node_name,
@@ -210,8 +622,10 @@ class GPSMap:
                         self.h_distance__node_x_node,
                         index=self.nodes,
                         columns=self.nodes,
-                    ),
-                    cluster_axis="01",
+                    ).iloc[
+                        cluster_2d_array(self.h_distance__node_x_node, 0),
+                        cluster_2d_array(self.h_distance__node_x_node, 1),
+                    ],
                     title="{0}-{0} Distance in H".format(self.node_name),
                     xaxis_title=self.node_name,
                     yaxis_title=self.node_name,
@@ -239,8 +653,10 @@ class GPSMap:
                 plot_heat_map(
                     DataFrame(
                         self.distance__node_x_node, index=self.nodes, columns=self.nodes
-                    ),
-                    cluster_axis="01",
+                    ).iloc[
+                        cluster_2d_array(self.distance__node_x_node, 0),
+                        cluster_2d_array(self.distance__node_x_node, 1),
+                    ],
                     title="{0}-{0} Distance in W and H".format(self.node_name),
                     xaxis_title=self.node_name,
                     yaxis_title=self.node_name,
@@ -257,7 +673,7 @@ class GPSMap:
         if self.node_x_dimension is None:
 
             self.node_x_dimension = normalize_nd_array(
-                mds(
+                scale_point_x_dimension_dimension(
                     2,
                     distance__point_x_point=self.distance__node_x_node,
                     random_seed=mds_random_seed,
@@ -270,13 +686,13 @@ class GPSMap:
 
         if w is not None:
 
-            self.w_element_x_dimension = make_gps_map_element_x_dimension(
+            self.w_element_x_dimension = _make_element_x_dimension(
                 self.w, self.node_x_dimension, self.w_n_pull, self.w_pull_power
             )
 
         if h is not None:
 
-            self.h_element_x_dimension = make_gps_map_element_x_dimension(
+            self.h_element_x_dimension = _make_element_x_dimension(
                 self.h, self.node_x_dimension, self.h_n_pull, self.h_pull_power
             )
 
@@ -288,7 +704,6 @@ class GPSMap:
         annotation_types=None,
         annotation_std_maxs=None,
         annotation_ranges=None,
-        annotation_colorscale=None,
         elements_to_be_emphasized=None,
         element_marker_size=element_marker_size,
         layout_size=880,
@@ -304,7 +719,7 @@ class GPSMap:
 
             element_x_dimension = self.w_element_x_dimension
 
-            element_labels = self.w_element_labels
+            element_label = self.w_element_label
 
             grid_values = self.w_grid_values
 
@@ -320,7 +735,7 @@ class GPSMap:
 
             element_x_dimension = self.h_element_x_dimension
 
-            element_labels = self.h_element_labels
+            element_label = self.h_element_label
 
             grid_values = self.h_grid_values
 
@@ -346,7 +761,7 @@ class GPSMap:
 
             title = w_or_h.title()
 
-        plot_gps_map(
+        _plot(
             self.nodes,
             self.node_name,
             self.node_x_dimension,
@@ -354,7 +769,7 @@ class GPSMap:
             element_name,
             element_x_dimension,
             element_marker_size,
-            element_labels,
+            element_label,
             grid_values,
             grid_labels,
             label_colors,
@@ -363,29 +778,28 @@ class GPSMap:
             annotation_types,
             annotation_std_maxs,
             annotation_ranges,
-            annotation_colorscale,
             layout_size,
             title,
             html_file_path,
         )
 
-    def set_element_labels(
+    def set_element_label(
         self,
         w_or_h,
-        element_labels,
+        element_label,
         n_grid=128,
         bandwidth_factor=1,
         label_colors=None,
         plot=True,
     ):
 
-        if not issubdtype(element_labels, number):
+        if not element_label.map(lambda label: isinstance(label, int)).all():
 
-            raise ValueError("element_labels should be number.")
+            raise ValueError("element_label should be int.")
 
-        if element_labels.value_counts().min() < 3:
+        if (element_label.value_counts() < 3).any():
 
-            raise ValueError("Each label should have 3 or more elements.")
+            raise ValueError("Each label should have at least 3 elements.")
 
         if w_or_h == "w":
 
@@ -399,9 +813,9 @@ class GPSMap:
 
         self.mask_grid = full((self.n_grid,) * 2, nan)
 
-        x_grid_for_j = linspace(0, 1, self.n_grid)
+        x_grid_for_j = linspace(0, 1, num=self.n_grid)
 
-        y_grid_for_i = linspace(1, 0, self.n_grid)
+        y_grid_for_i = linspace(1, 0, num=self.n_grid)
 
         for i in range(self.n_grid):
 
@@ -412,21 +826,67 @@ class GPSMap:
                     == -1
                 )
 
-        grid_values, grid_labels = make_gps_map_grid_values_and_categorical_labels(
-            element_x_dimension,
-            element_labels,
-            self.n_grid,
-            bandwidth_factor,
-            self.mask_grid,
-        )
+        label_grid_probabilities = {}
+
+        global_bandwidths = compute_bandwidths(element_x_dimension.T) * bandwidth_factor
+
+        n_dimension = element_x_dimension.shape[1]
+
+        mins = (0,) * n_dimension
+
+        maxs = (1,) * n_dimension
+
+        for label in element_label.sort_values().unique():
+
+            kernel_density = rot90(
+                estimate_kernel_density(
+                    element_x_dimension[element_label == label].T,
+                    bandwidths=global_bandwidths,
+                    mins=mins,
+                    maxs=maxs,
+                    n_grid=self.n_grid,
+                )
+            )
+
+            label_grid_probabilities[label] = kernel_density / kernel_density.sum()
+
+        shape = (self.n_grid,) * n_dimension
+
+        grid_values = full(shape, nan)
+
+        grid_labels = full(shape, nan)
+
+        for i in range(self.n_grid):
+
+            for j in range(self.n_grid):
+
+                if not self.mask_grid[i, j]:
+
+                    max_probability = 0
+
+                    max_label = nan
+
+                    for label, grid_probabilities in label_grid_probabilities.items():
+
+                        probability = grid_probabilities[i, j]
+
+                        if max_probability < probability:
+
+                            max_probability = probability
+
+                            max_label = label
+
+                    grid_values[i, j] = max_probability
+
+                    grid_labels[i, j] = max_label
 
         if label_colors is None:
 
-            label_colors = COLOR_CATEGORICAL[: element_labels.dropna().unique().size]
+            label_colors = COLORS["curated"][: element_label.dropna().unique().size]
 
         if w_or_h == "w":
 
-            self.w_element_labels = element_labels
+            self.w_element_label = element_label
 
             self.w_bandwidth_factor = bandwidth_factor
 
@@ -438,7 +898,7 @@ class GPSMap:
 
         elif w_or_h == "h":
 
-            self.h_element_labels = element_labels
+            self.h_element_label = element_label
 
             self.h_bandwidth_factor = bandwidth_factor
 
@@ -452,24 +912,26 @@ class GPSMap:
 
             if w_or_h == "w":
 
-                z = DataFrame(self.w, index=self.nodes, columns=self.w_elements)
+                column_annotation = self.w_element_label.sort_values()
 
-                column_annotation = self.w_element_labels
+                z = DataFrame(self.w, index=self.nodes, columns=self.w_elements)[
+                    column_annotation.index
+                ]
 
                 element_name = self.w_element_name
 
             elif w_or_h == "h":
 
-                z = DataFrame(self.h, index=self.nodes, columns=self.h_elements)
+                column_annotation = self.h_element_label.sort_values()
 
-                column_annotation = self.h_element_labels
+                z = DataFrame(self.h, index=self.nodes, columns=self.h_elements)[
+                    column_annotation.index
+                ]
 
                 element_name = self.h_element_name
 
             plot_heat_map(
                 z,
-                normalization_axis=0,
-                normalization_method="-0-",
                 column_annotation=column_annotation,
                 column_annotation_colors=label_colors,
                 title=w_or_h.title(),
@@ -489,14 +951,13 @@ class GPSMap:
         annotation_types=None,
         annotation_std_maxs=None,
         annotation_ranges=None,
-        annotation_colorscale=None,
         element_marker_size=element_marker_size,
         layout_size=880,
         title=None,
         html_file_path=None,
     ):
 
-        check_gps_map_node_x_element(node_x_predicting_element)
+        _check_node_x_element(node_x_predicting_element)
 
         predicting_elements = node_x_predicting_element.columns
 
@@ -514,7 +975,7 @@ class GPSMap:
 
                 pull_power = self.w_pull_power
 
-            element_labels = self.w_element_labels
+            element_label = self.w_element_label
 
             grid_values = self.w_grid_values
 
@@ -536,7 +997,7 @@ class GPSMap:
 
                 pull_power = self.h_pull_power
 
-            element_labels = self.h_element_labels
+            element_label = self.h_element_label
 
             grid_values = self.h_grid_values
 
@@ -544,16 +1005,16 @@ class GPSMap:
 
             label_colors = self.h_label_colors
 
-        predicting_element_x_dimension = make_gps_map_element_x_dimension(
+        predicting_element_x_dimension = _make_element_x_dimension(
             node_x_predicting_element.values, self.node_x_dimension, n_pull, pull_power
         )
 
-        if element_labels is not None:
+        if element_label is not None:
 
-            predicted_element_labels = Series(
+            element_predicted_label = Series(
                 train_and_classify(
                     node_x_element.T,
-                    element_labels,
+                    element_label,
                     node_x_predicting_element.T,
                     c=support_vector_parameter_c,
                     tol=1e-8,
@@ -564,7 +1025,7 @@ class GPSMap:
 
         else:
 
-            predicted_element_labels = None
+            element_predicted_label = None
 
         if annotation_x_element is not None:
 
@@ -586,7 +1047,7 @@ class GPSMap:
 
             title = "{} (predicted)".format(w_or_h.title())
 
-        plot_gps_map(
+        _plot(
             self.nodes,
             self.node_name,
             self.node_x_dimension,
@@ -594,7 +1055,7 @@ class GPSMap:
             element_name,
             predicting_element_x_dimension,
             element_marker_size,
-            predicted_element_labels,
+            element_predicted_label,
             grid_values,
             grid_labels,
             label_colors,
@@ -603,13 +1064,12 @@ class GPSMap:
             annotation_types,
             annotation_std_maxs,
             annotation_ranges,
-            annotation_colorscale,
             layout_size,
             title,
             html_file_path,
         )
 
-        return predicted_element_labels
+        return element_predicted_label
 
     def anneal(
         self,
@@ -632,29 +1092,32 @@ class GPSMap:
             if self.w_distance__element_x_element is None:
 
                 self.w_distance__element_x_element = squareform(
-                    pdist(self.w.T, metric=compute_information_distance)
+                    pdist(
+                        self.w.T,
+                        metric=compute_information_distance_between_2_1d_arrays,
+                    )
                 )
 
             distance__element_x_element = self.w_distance__element_x_element
 
             if self.w_distance__node_x_element is None:
 
-                distance__w_ielement_x_node = apply_function_on_2_2d_arrays_slices(
-                    self.w,
-                    diag((1,) * len(self.nodes)),
-                    compute_information_distance,
-                    0,
-                )
-
-                distance__node_x_w_ielement = apply_function_on_2_2d_arrays_slices(
+                distance__node_x_w_element_ = apply_function_on_2_2d_arrays_slices(
                     self.w,
                     diag((1,) * len(self.w_elements)),
-                    compute_information_distance,
+                    0,
+                    compute_information_distance_between_2_1d_arrays,
+                )
+
+                distance__w_element_x_node_ = apply_function_on_2_2d_arrays_slices(
+                    self.w,
+                    diag((1,) * len(self.nodes)),
                     1,
+                    compute_information_distance_between_2_1d_arrays,
                 )
 
                 self.w_distance__node_x_element = (
-                    distance__w_ielement_x_node.T + distance__node_x_w_ielement
+                    distance__node_x_w_element_ + distance__w_element_x_node_.T
                 ) / 2
 
             distance__node_x_element = self.w_distance__node_x_element
@@ -666,61 +1129,226 @@ class GPSMap:
             if self.h_distance__element_x_element is None:
 
                 self.h_distance__element_x_element = squareform(
-                    pdist(self.h.T, metric=compute_information_distance)
+                    pdist(
+                        self.h.T,
+                        metric=compute_information_distance_between_2_1d_arrays,
+                    )
                 )
 
             distance__element_x_element = self.h_distance__element_x_element
 
             if self.h_distance__node_x_element is None:
 
-                distance__h_ielement_x_node = apply_function_on_2_2d_arrays_slices(
-                    self.h,
-                    diag((1,) * len(self.nodes)),
-                    compute_information_distance,
-                    0,
-                )
-
-                distance__node_x_h_ielement = apply_function_on_2_2d_arrays_slices(
+                distance__node_x_h_element_ = apply_function_on_2_2d_arrays_slices(
                     self.h,
                     diag((1,) * len(self.h_elements)),
-                    compute_information_distance,
+                    0,
+                    compute_information_distance_between_2_1d_arrays,
+                )
+
+                distance__h_element_x_node_ = apply_function_on_2_2d_arrays_slices(
+                    self.h,
+                    diag((1,) * len(self.nodes)),
                     1,
+                    compute_information_distance_between_2_1d_arrays,
                 )
 
                 self.h_distance__node_x_element = (
-                    distance__h_ielement_x_node.T + distance__node_x_h_ielement
+                    distance__node_x_h_element_ + distance__h_element_x_node_.T
                 ) / 2
 
             distance__node_x_element = self.h_distance__node_x_element
 
             element_x_dimension = self.h_element_x_dimension
 
-        node_x_dimension, element_x_dimension = anneal_gps_map_node_and_element_positions(
-            self.distance__node_x_node,
-            distance__element_x_element,
-            distance__node_x_element,
-            self.node_x_dimension,
-            element_x_dimension,
-            node_node_score_weight,
-            element_element_score_weight,
-            node_element_score_weight,
-            n_fraction_node_to_move,
-            n_fraction_element_to_move,
-            random_seed,
-            n_iteration,
-            initial_temperature,
-            scale,
-            triangulate,
-            print_acceptance,
+        target_distance__node_x_node = squareform(self.distance__node_x_node)
+
+        target_distance__element_x_element = squareform(distance__element_x_element)
+
+        target_distance__node_x_element = distance__node_x_element.ravel()
+
+        scores = full((n_iteration, 5), nan)
+
+        node_x_node_score = pearsonr(
+            pdist(self.node_x_dimension), target_distance__node_x_node
+        )[0]
+
+        element_x_element_score = pearsonr(
+            pdist(element_x_dimension), target_distance__element_x_element
+        )[0]
+
+        node_x_element_score = pearsonr(
+            apply_function_on_2_2d_arrays_slices(
+                self.node_x_dimension, element_x_dimension, 0, euclidean
+            ).ravel(),
+            target_distance__node_x_element,
+        )[0]
+
+        fitness = (
+            node_x_node_score * node_node_score_weight
+            + element_x_element_score * element_element_score_weight
+            + node_x_element_score * node_element_score_weight
         )
 
-        self.node_x_dimension = normalize_nd_array(node_x_dimension, 0, "0-1")
+        n_node = self.distance__node_x_node.shape[0]
+
+        n_node_to_move = int(n_node * n_fraction_node_to_move)
+
+        n_element = distance__element_x_element.shape[0]
+
+        n_element_to_move = int(n_element * n_fraction_element_to_move)
+
+        n_per_print = max(1, n_iteration // 10)
+
+        seed(seed=random_seed)
+
+        for i in range(n_iteration):
+
+            if not i % n_per_print:
+
+                print("\t{}/{} ...".format(i + 1, n_iteration))
+
+            r__node_x_dimension = self.node_x_dimension.copy()
+
+            indices = choice(range(n_node), size=n_node_to_move, replace=True)
+
+            r__node_x_dimension[indices] = normal(
+                r__node_x_dimension[indices], scale=scale
+            )
+
+            if triangulate:
+
+                n_triangulation = Delaunay(r__node_x_dimension)
+
+            r__element_x_dimension = element_x_dimension.copy()
+
+            for index in choice(range(n_element), size=n_element_to_move, replace=True):
+
+                element_x_y = r__element_x_dimension[index]
+
+                r__element_x_y = normal(element_x_y, scale=scale)
+
+                if triangulate:
+
+                    while n_triangulation.find_simplex(r__element_x_y) == -1:
+
+                        r__element_x_y = normal(element_x_y, scale=scale)
+
+                r__element_x_dimension[index] = r__element_x_y
+
+            r__node_x_node_score = pearsonr(
+                pdist(r__node_x_dimension), target_distance__node_x_node
+            )[0]
+
+            r__element_x_element_score = pearsonr(
+                pdist(r__element_x_dimension), target_distance__element_x_element
+            )[0]
+
+            r__node_x_element_score = pearsonr(
+                apply_function_on_2_2d_arrays_slices(
+                    r__node_x_dimension, r__element_x_dimension, 0, euclidean
+                ).ravel(),
+                target_distance__node_x_element,
+            )[0]
+
+            r__fitness = (
+                r__node_x_node_score * node_node_score_weight
+                + r__element_x_element_score * element_element_score_weight
+                + r__node_x_element_score * node_element_score_weight
+            )
+
+            temperature = initial_temperature * (1 - i / (n_iteration + 1))
+
+            if random_sample() < exp((r__fitness - fitness) / temperature):
+
+                if print_acceptance:
+
+                    print(
+                        "\t\t{:.3e} =(accept)=> {:.3e} ...".format(fitness, r__fitness)
+                    )
+
+                self.node_x_dimension = r__node_x_dimension
+
+                element_x_dimension = r__element_x_dimension
+
+                node_x_node_score = r__node_x_node_score
+
+                element_x_element_score = r__element_x_element_score
+
+                node_x_element_score = r__node_x_element_score
+
+                fitness = r__fitness
+
+            scores[i, :] = (
+                temperature,
+                node_x_node_score,
+                element_x_element_score,
+                node_x_element_score,
+                fitness,
+            )
+
+        x = tuple(range(n_iteration))
+
+        if n_iteration < 1e3:
+
+            mode = "markers"
+
+        else:
+
+            mode = "lines"
+
+        plot_and_save(
+            {
+                "layout": {
+                    "title": {"text": "Annealing Summary"},
+                    "xaxis": {"title": "Iteration"},
+                },
+                "data": [
+                    {
+                        "type": "scatter",
+                        "name": "Temperature",
+                        "x": x,
+                        "y": scores[:, 0],
+                        "mode": mode,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Node-Node",
+                        "x": x,
+                        "y": scores[:, 1],
+                        "mode": mode,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Element-Element",
+                        "x": x,
+                        "y": scores[:, 2],
+                        "mode": mode,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Node-Element",
+                        "x": x,
+                        "y": scores[:, 3],
+                        "mode": mode,
+                    },
+                    {
+                        "type": "scatter",
+                        "name": "Fitness",
+                        "x": x,
+                        "y": scores[:, 4],
+                        "mode": mode,
+                    },
+                ],
+            },
+            None,
+        )
 
         if w_or_h == "w":
 
             self.w_element_x_dimension = element_x_dimension
 
-            element_labels = self.w_element_labels
+            element_label = self.w_element_label
 
             bandwidth_factor = self.w_bandwidth_factor
 
@@ -728,15 +1356,15 @@ class GPSMap:
 
             self.h_element_x_dimension = element_x_dimension
 
-            element_labels = self.h_element_labels
+            element_label = self.h_element_label
 
             bandwidth_factor = self.h_bandwidth_factor
 
-        if element_labels is not None:
+        if element_label is not None:
 
-            self.set_element_labels(
+            self.set_element_label(
                 w_or_h,
-                element_labels,
+                element_label,
                 n_grid=self.n_grid,
                 bandwidth_factor=bandwidth_factor,
                 plot=False,
