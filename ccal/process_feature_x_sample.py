@@ -4,7 +4,7 @@ from pandas import DataFrame
 from .drop_df_slice import drop_df_slice
 from .drop_df_slice_greedily import drop_df_slice_greedily
 from .log_nd_array import log_nd_array
-from .normalize_nd_array import normalize_nd_array
+from .normalize_s_or_df import normalize_s_or_df
 from .summarize_feature_x_sample import summarize_feature_x_sample
 
 
@@ -22,10 +22,12 @@ def process_feature_x_sample(
     normalization_method=None,
     clip_min=None,
     clip_max=None,
-    **summarize_feature_x_sample_kwargs,
+    **summarize_feature_x_sample_keyword_arguments,
 ):
 
-    summarize_feature_x_sample(feature_x_sample, **summarize_feature_x_sample_kwargs)
+    summarize_feature_x_sample(
+        feature_x_sample, **summarize_feature_x_sample_keyword_arguments
+    )
 
     if feature_x_sample.index.has_duplicates:
 
@@ -66,7 +68,7 @@ def process_feature_x_sample(
     if feature_x_sample.shape != shape_before_drop:
 
         summarize_feature_x_sample(
-            feature_x_sample, **summarize_feature_x_sample_kwargs
+            feature_x_sample, **summarize_feature_x_sample_keyword_arguments
         )
 
     if nanize is not None:
@@ -76,7 +78,7 @@ def process_feature_x_sample(
         feature_x_sample[feature_x_sample <= nanize] = nan
 
         summarize_feature_x_sample(
-            feature_x_sample, **summarize_feature_x_sample_kwargs
+            feature_x_sample, **summarize_feature_x_sample_keyword_arguments
         )
 
     if max_na is not None or min_n_not_na_unique_value is not None:
@@ -119,7 +121,7 @@ def process_feature_x_sample(
         if feature_x_sample.shape != shape_before_drop:
 
             summarize_feature_x_sample(
-                feature_x_sample, **summarize_feature_x_sample_kwargs
+                feature_x_sample, **summarize_feature_x_sample_keyword_arguments
             )
 
     if log_base is not None:
@@ -142,7 +144,7 @@ def process_feature_x_sample(
         )
 
         summarize_feature_x_sample(
-            feature_x_sample, **summarize_feature_x_sample_kwargs
+            feature_x_sample, **summarize_feature_x_sample_keyword_arguments
         )
 
     if normalization_method is not None:
@@ -153,19 +155,12 @@ def process_feature_x_sample(
             )
         )
 
-        feature_x_sample = DataFrame(
-            normalize_nd_array(
-                feature_x_sample.values,
-                normalization_axis,
-                normalization_method,
-                raise_for_bad=False,
-            ),
-            index=feature_x_sample.index,
-            columns=feature_x_sample.columns,
+        feature_x_sample = normalize_s_or_df(
+            feature_x_sample, normalization_axis, normalization_method
         )
 
         summarize_feature_x_sample(
-            feature_x_sample, **summarize_feature_x_sample_kwargs
+            feature_x_sample, **summarize_feature_x_sample_keyword_arguments
         )
 
     if clip_min is not None:
@@ -183,7 +178,7 @@ def process_feature_x_sample(
     if clip_min is not None or clip_max is not None:
 
         summarize_feature_x_sample(
-            feature_x_sample, **summarize_feature_x_sample_kwargs
+            feature_x_sample, **summarize_feature_x_sample_keyword_arguments
         )
 
     return feature_x_sample

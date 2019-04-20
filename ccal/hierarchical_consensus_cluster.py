@@ -37,7 +37,7 @@ def hierarchical_consensus_cluster(
 
         print(
             "Computing distance__element_x_element distance with {} ...".format(
-                distance_function.__name__
+                distance_function
             )
         )
 
