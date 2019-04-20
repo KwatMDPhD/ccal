@@ -1,11 +1,20 @@
 from numpy import concatenate, where
+from pandas import unique
 from scipy.cluster.hierarchy import dendrogram, linkage
 
+from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .check_nd_array_for_bad import check_nd_array_for_bad
-from .get_1d_array_unique_objects_in_order import get_1d_array_unique_objects_in_order
-from .ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays import (
-    ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays,
-)
+
+
+def _compute_euclidean_distance(_1d_array_0, _1d_array_1):
+
+    return apply_function_on_2_1d_arrays(
+        _1d_array_0,
+        _1d_array_1,
+        lambda _1d_array_0, _1d_array_1: ((_1d_array_0 - _1d_array_1) ** 2).sum()
+        ** 0.5,
+        raise_for_bad=False,
+    )
 
 
 def cluster_2d_array(
@@ -26,9 +35,7 @@ def cluster_2d_array(
 
     if distance_function is None:
 
-        distance_function = (
-            ignore_bad_and_compute_euclidean_distance_between_2_1d_arrays
-        )
+        distance_function = _compute_euclidean_distance
 
     if groups is None:
 
@@ -47,14 +54,14 @@ def cluster_2d_array(
         if len(groups) != _2d_array.shape[0]:
 
             raise ValueError(
-                "len(groups) {} != len(axis-{} slices) {}".format(
+                "len(groups) ({}) != len(axis-{} slices) ({})".format(
                     len(groups), axis, _2d_array.shape[0]
                 )
             )
 
         indices = []
 
-        for group in get_1d_array_unique_objects_in_order(groups):
+        for group in unique(groups):
 
             group_indices = where(groups == group)[0]
 

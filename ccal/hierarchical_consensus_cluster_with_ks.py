@@ -1,11 +1,12 @@
 from os.path import join
 
-from pandas import DataFrame, Index
+from numpy import sort
+from pandas import DataFrame, Index, concat
 from scipy.spatial.distance import pdist, squareform
 
+from .call_function_with_multiprocess import call_function_with_multiprocess
 from .establish_path import establish_path
 from .hierarchical_consensus_cluster import hierarchical_consensus_cluster
-from .multiprocess import multiprocess
 from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
 from .RANDOM_SEED import RANDOM_SEED
@@ -14,8 +15,9 @@ from .RANDOM_SEED import RANDOM_SEED
 def hierarchical_consensus_cluster_with_ks(
     df,
     ks,
+    axis,
     n_job=1,
-    distance__column_x_column=None,
+    distance__element_x_element=None,
     distance_function="euclidean",
     n_clustering=10,
     random_seed=RANDOM_SEED,
@@ -30,7 +32,7 @@ def hierarchical_consensus_cluster_with_ks(
 
     else:
 
-        k_directory_paths = tuple(join(directory_path, k) for k in ks)
+        k_directory_paths = tuple(join(directory_path, str(k)) for k in ks)
 
         for k_directory_path in k_directory_paths:
 
@@ -38,31 +40,44 @@ def hierarchical_consensus_cluster_with_ks(
 
     k_return = {}
 
-    if distance__column_x_column is None:
+    if axis == 1:
 
-        print("Computing distance with {} ...".format(distance_function))
+        df = df.T
 
-        distance__column_x_column = DataFrame(
-            squareform(pdist(df.values.T, distance_function)),
-            index=df.columns,
-            columns=df.columns,
+    if distance__element_x_element is None:
+
+        print(
+            "Computing distance__element_x_element distance with {} ...".format(
+                distance_function
+            )
         )
 
-    if directory_path is not None:
-
-        distance__column_x_column.to_csv(
-            join(directory_path, "distance.column_x_column.tsv"), sep="\t"
+        distance__element_x_element = DataFrame(
+            squareform(pdist(df.values, distance_function)),
+            index=df.index,
+            columns=df.index,
         )
 
-    for k, (column_cluster, column_cluster__ccc) in zip(
+        if directory_path is not None:
+
+            distance__element_x_element.to_csv(
+                join(directory_path, "distance.element_x_element.tsv"), sep="\t"
+            )
+
+    if axis == 1:
+
+        df = df.T
+
+    for (k, (element_cluster, element_cluster__ccc)) in zip(
         ks,
-        multiprocess(
+        call_function_with_multiprocess(
             hierarchical_consensus_cluster,
             (
                 (
                     df,
                     k,
-                    distance__column_x_column,
+                    axis,
+                    distance__element_x_element,
                     None,
                     n_clustering,
                     random_seed,
@@ -77,13 +92,13 @@ def hierarchical_consensus_cluster_with_ks(
     ):
 
         k_return["K{}".format(k)] = {
-            "column_cluster": column_cluster,
-            "column_cluster.ccc": column_cluster__ccc,
+            "element_cluster": element_cluster,
+            "element_cluster.ccc": element_cluster__ccc,
         }
 
     keys = Index(("K{}".format(k) for k in ks), name="K")
 
-    file_name = "hcc.column_cluster.ccc.html"
+    file_name = "ccc.html"
 
     if directory_path is None:
 
@@ -96,36 +111,34 @@ def hierarchical_consensus_cluster_with_ks(
     plot_and_save(
         {
             "layout": {
-                "title": {"text": "HCC Column Cluster CCC"},
+                "title": {"text": "HCC Cophenetic Correlation Coefficient"},
                 "xaxis": {"title": "K"},
                 "yaxis": {"title": "CCC"},
             },
             "data": [
                 {
                     "type": "scatter",
-                    "name": "Column Cluster CCC",
                     "x": ks,
-                    "y": tuple(k_return[key]["column_cluster.ccc"] for key in keys),
+                    "y": tuple(k_return[key]["element_cluster.ccc"] for key in keys),
                     "mode": "lines+markers",
+                    "marker": {"color": "#20d9ba"},
                 }
             ],
         },
         html_file_path,
     )
 
-    k_x_column = DataFrame(
-        [k_return[key]["column_cluster"] for key in keys],
-        index=keys,
-        columns=df.columns,
-    )
+    k_x_element = concat([k_return[key]["element_cluster"] for key in keys], axis=1).T
+
+    k_x_element.index = keys
 
     if directory_path is not None:
 
-        k_x_column.to_csv(join(directory_path, "hcc.k_x_column.tsv"), sep="\t")
+        k_x_element.to_csv(join(directory_path, "k_x_element.tsv"), sep="\t")
 
     if plot_df:
 
-        file_name = "hcc.k_x_column.distribution.html"
+        file_name = "k_x_element.cluster_distribution.html"
 
         if directory_path is None:
 
@@ -136,12 +149,11 @@ def hierarchical_consensus_cluster_with_ks(
             html_file_path = join(directory_path, file_name)
 
         plot_heat_map(
-            k_x_column,
-            sort_axis=1,
-            colorscale="COLOR_CATEGORICAL",
-            title="HCC Column Cluster Distribution",
-            xaxis_title=k_x_column.columns.name,
-            yaxis_title=k_x_column.index.name,
+            DataFrame(sort(k_x_element.values, axis=1), index=keys),
+            data_type="categorical",
+            title="HCC Cluster Distribution",
+            xaxis_title="Element",
+            yaxis_title=k_x_element.index.name,
             html_file_path=html_file_path,
         )
 

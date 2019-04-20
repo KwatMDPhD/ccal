@@ -1,34 +1,28 @@
 from numpy import asarray, nonzero, unique
 
-from .get_colorscale_for_data import get_colorscale_for_data
+from .cast_object_to_builtin import cast_object_to_builtin
+from .make_colorscale_from_colors import make_colorscale_from_colors
+from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
-from .process_df_for_plotting import process_df_for_plotting
 
 
 def plot_heat_map(
     df,
-    normalization_axis=None,
-    normalization_method=None,
-    row_annotation=None,
-    column_annotation=None,
-    cluster_axis=None,
-    cluster_distance_function="euclidean",
-    cluster_linkage_method="ward",
-    sort_axis=None,
     data_type="continuous",
-    colorscale=None,
     showscale=None,
     colorbar_x=None,
-    layout_width=800,
-    layout_height=800,
+    layout_width=880,
+    layout_height=880,
     heat_map_axis_domain=(0, 0.9),
     annotation_axis_domain=(0.92, 1),
-    column_annotation_str=None,
-    column_annotation_colorscale=None,
-    column_annotation_keyword_arguments=None,
+    row_annotation=None,
+    row_annotation_colors=None,
     row_annotation_str=None,
-    row_annotation_colorscale=None,
     row_annotation_keyword_arguments=None,
+    column_annotation=None,
+    column_annotation_colors=None,
+    column_annotation_str=None,
+    column_annotation_keyword_arguments=None,
     title=None,
     xaxis_title=None,
     yaxis_title=None,
@@ -65,94 +59,53 @@ def plot_heat_map(
         "yaxis2": {"domain": annotation_axis_domain, **annotation_axis_template},
     }
 
-    if colorscale is None:
+    colorbar_template = {"len": 0.64, "thickness": 16}
 
-        colorscale = get_colorscale_for_data(df.values, data_type)
-
-    colorbar_template = {"len": 0.64, "thickness": layout_width / 64}
-
-    if column_annotation is not None or row_annotation is not None:
+    if row_annotation is not None or column_annotation is not None:
 
         colorbar_template["y"] = (heat_map_axis_domain[1] - heat_map_axis_domain[0]) / 2
 
-    df = process_df_for_plotting(
-        df,
-        normalization_axis=normalization_axis,
-        normalization_method=normalization_method,
-        row_annotation=row_annotation,
-        column_annotation=column_annotation,
-        cluster_axis=cluster_axis,
-        cluster_distance_function=cluster_axis,
-        cluster_linkage_method=cluster_linkage_method,
-        sort_axis=sort_axis,
-    )
+    if any(isinstance(cast_object_to_builtin(i), str) for i in df.columns):
+
+        x = df.columns
+
+    else:
+
+        x = None
+
+    if any(isinstance(cast_object_to_builtin(i), str) for i in df.index):
+
+        y = df.index[::-1]
+
+    else:
+
+        y = None
 
     data = [
         {
             "type": "heatmap",
             "z": df.values[::-1],
-            "x": df.columns,
-            "y": df.index[::-1],
-            "colorscale": colorscale,
+            "x": x,
+            "y": y,
+            "colorscale": make_colorscale_from_colors(
+                pick_nd_array_colors(df.values, data_type)
+            ),
             "showscale": showscale,
             "colorbar": {"x": colorbar_x, **colorbar_template},
         }
     ]
 
-    if column_annotation is not None or row_annotation is not None:
+    if row_annotation is not None or column_annotation is not None:
 
         layout["annotations"] = []
 
         annotation_keyword_arguments = {"showarrow": False, "borderpad": 0}
 
-        if column_annotation is not None:
-
-            if column_annotation_colorscale is None:
-
-                column_annotation_colorscale = get_colorscale_for_data(
-                    asarray(column_annotation), "categorical"
-                )
-
-            data.append(
-                {
-                    "yaxis": "y2",
-                    "type": "heatmap",
-                    "z": tuple((i,) for i in column_annotation),
-                    "transpose": True,
-                    "colorscale": column_annotation_colorscale,
-                    "showscale": False,
-                    "hoverinfo": "x+z",
-                }
-            )
-
-            if column_annotation_str is not None:
-
-                if column_annotation_keyword_arguments is None:
-
-                    column_annotation_keyword_arguments = {"textangle": -90}
-
-                for a in unique(column_annotation):
-
-                    indices = nonzero(column_annotation == a)[0]
-
-                    index_0 = indices[0]
-
-                    layout["annotations"].append(
-                        {
-                            "yref": "y2",
-                            "x": index_0 + (indices[-1] - index_0) / 2,
-                            "y": 0,
-                            "text": "<b>{}</b>".format(column_annotation_str[a]),
-                            **annotation_keyword_arguments,
-                            **column_annotation_keyword_arguments,
-                        }
-                    )
-
         if row_annotation is not None:
 
-            if row_annotation_colorscale is None:
+            if row_annotation_colors is None:
 
-                row_annotation_colorscale = get_colorscale_for_data(
+                row_annotation_colors = pick_nd_array_colors(
                     asarray(row_annotation), "categorical"
                 )
 
@@ -160,8 +113,8 @@ def plot_heat_map(
                 {
                     "xaxis": "x2",
                     "type": "heatmap",
-                    "z": tuple((i,) for i in row_annotation),
-                    "colorscale": row_annotation_colorscale,
+                    "z": tuple((i,) for i in row_annotation[::-1]),
+                    "colorscale": make_colorscale_from_colors(row_annotation_colors),
                     "showscale": False,
                     "hoverinfo": "y+z",
                 }
@@ -187,6 +140,49 @@ def plot_heat_map(
                             "text": "<b>{}</b>".format(row_annotation_str[a]),
                             **annotation_keyword_arguments,
                             **row_annotation_keyword_arguments,
+                        }
+                    )
+
+        if column_annotation is not None:
+
+            if column_annotation_colors is None:
+
+                column_annotation_colors = pick_nd_array_colors(
+                    asarray(column_annotation), "categorical"
+                )
+
+            data.append(
+                {
+                    "yaxis": "y2",
+                    "type": "heatmap",
+                    "z": tuple((i,) for i in column_annotation),
+                    "transpose": True,
+                    "colorscale": make_colorscale_from_colors(column_annotation_colors),
+                    "showscale": False,
+                    "hoverinfo": "x+z",
+                }
+            )
+
+            if column_annotation_str is not None:
+
+                if column_annotation_keyword_arguments is None:
+
+                    column_annotation_keyword_arguments = {"textangle": -90}
+
+                for a in unique(column_annotation):
+
+                    indices = nonzero(column_annotation == a)[0]
+
+                    index_0 = indices[0]
+
+                    layout["annotations"].append(
+                        {
+                            "yref": "y2",
+                            "x": index_0 + (indices[-1] - index_0) / 2,
+                            "y": 0,
+                            "text": "<b>{}</b>".format(column_annotation_str[a]),
+                            **annotation_keyword_arguments,
+                            **column_annotation_keyword_arguments,
                         }
                     )
 

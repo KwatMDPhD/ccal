@@ -1,8 +1,9 @@
 from os.path import join
 
 from numpy import full, nan
-from pandas import DataFrame, Index
+from pandas import DataFrame, Index, Series
 
+from .cluster_2d_array import cluster_2d_array
 from .cluster_clustering_x_element_and_compute_ccc import (
     cluster_clustering_x_element_and_compute_ccc,
 )
@@ -26,7 +27,7 @@ def mf_consensus_cluster(
     directory_path=None,
 ):
 
-    print("MFCC with K={} ...".format(k))
+    print("MFCC K={} ...".format(k))
 
     clustering_x_w_element = full((n_clustering, df.shape[0]), nan)
 
@@ -44,7 +45,7 @@ def mf_consensus_cluster(
 
     for clustering in range(n_clustering):
 
-        if clustering % n_per_print == 0:
+        if not clustering % n_per_print:
 
             print("\t(K={}) {}/{} ...".format(k, clustering + 1, n_clustering))
 
@@ -87,10 +88,7 @@ def mf_consensus_cluster(
                     html_file_path = join(directory_path, file_name)
 
                 plot_heat_map(
-                    w_0,
-                    normalization_axis=1,
-                    normalization_method="-0-",
-                    cluster_axis=0,
+                    w_0.iloc[cluster_2d_array(w_0.values, 0)],
                     title="MF K={} W".format(k),
                     xaxis_title=w_0.columns.name,
                     yaxis_title=w_0.index.name,
@@ -112,10 +110,7 @@ def mf_consensus_cluster(
                     html_file_path = join(directory_path, file_name)
 
                 plot_heat_map(
-                    h_0,
-                    normalization_axis=0,
-                    normalization_method="-0-",
-                    cluster_axis=1,
+                    h_0.iloc[:, cluster_2d_array(h_0.values, 1)],
                     title="MF K={} H".format(k),
                     xaxis_title=h_0.columns.name,
                     yaxis_title=h_0.index.name,
@@ -130,15 +125,19 @@ def mf_consensus_cluster(
         clustering_x_w_element, k, linkage_method
     )
 
+    w_element_cluster = Series(w_element_cluster, name="Cluster", index=df.index)
+
     h_element_cluster, h_element_cluster__ccc = cluster_clustering_x_element_and_compute_ccc(
         clustering_x_h_element, k, linkage_method
     )
 
+    h_element_cluster = Series(h_element_cluster, name="Cluster", index=df.columns)
+
     if plot_df:
 
-        print("Plotting df ...")
+        print("Plotting df.clustered ...")
 
-        file_name = "df.html"
+        file_name = "df.cluster.html"
 
         if directory_path is None:
 
@@ -148,13 +147,17 @@ def mf_consensus_cluster(
 
             html_file_path = join(directory_path, file_name)
 
+        w_element_cluster_sorted = w_element_cluster.sort_values()
+
+        h_element_cluster_sorted = h_element_cluster.sort_values()
+
+        df = df.loc[w_element_cluster_sorted.index, h_element_cluster_sorted.index]
+
         plot_heat_map(
             df,
-            normalization_axis=0,
-            normalization_method="-0-",
-            row_annotation=w_element_cluster,
-            column_annotation=h_element_cluster,
-            title="MFCC K={} W H Element Cluster".format(k),
+            row_annotation=w_element_cluster_sorted,
+            column_annotation=h_element_cluster_sorted,
+            title="MFCC K={}".format(k),
             xaxis_title=df.columns.name,
             yaxis_title=df.index.name,
             html_file_path=html_file_path,

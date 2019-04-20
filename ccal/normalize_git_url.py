@@ -1,9 +1,9 @@
 def normalize_git_url(git_url):
 
-    for str in ("/", ".git"):
+    for str_ in ("/", ".git"):
 
-        if git_url.endswith(str):
+        if git_url.endswith(str_):
 
-            git_url = git_url[: -len(str)]
+            git_url = git_url[: -len(str_)]
 
     return git_url

@@ -1,17 +1,11 @@
-from pandas import Series
-
-from .COLOR_CATEGORICAL import COLOR_CATEGORICAL
+from .COLORS import COLORS
 from .plot_and_save import plot_and_save
 
 
 def plot_histogram(
-    xs,
-    names=None,
-    texts=None,
+    serieses,
     histnorm="",
     plot_rug=True,
-    layout_width=None,
-    layout_height=None,
     title=None,
     xaxis_title=None,
     html_file_path=None,
@@ -31,55 +25,32 @@ def plot_histogram(
 
     data = []
 
-    for i, x in enumerate(xs):
+    for i, series in enumerate(serieses):
 
-        if names is None:
-
-            name = None
-
-        else:
-
-            name = names[i]
-
-        color = COLOR_CATEGORICAL[i]
+        color = COLORS["curated"][i]
 
         data.append(
             {
                 "yaxis": "y2",
                 "type": "histogram",
-                "name": name,
-                "legendgroup": i,
-                "x": x,
-                "marker": {"color": color},
+                "name": series.name,
+                "legendgroup": series.name,
+                "x": series,
                 "histnorm": histnorm,
-                "opacity": 0.8,
+                "marker": {"color": color},
             }
         )
 
         if plot_rug:
 
-            if texts is None:
-
-                if isinstance(x, Series):
-
-                    text = x.index
-
-                else:
-
-                    text = None
-
-            else:
-
-                text = texts[i]
-
             data.append(
                 {
                     "type": "scatter",
-                    "legendgroup": i,
+                    "legendgroup": series.name,
                     "showlegend": False,
-                    "x": x,
-                    "y": (i,) * len(x),
-                    "text": text,
+                    "x": series,
+                    "y": (i,) * series.size,
+                    "text": series.index,
                     "mode": "markers",
                     "marker": {"symbol": "line-ns-open", "color": color},
                 }
@@ -88,8 +59,6 @@ def plot_histogram(
     plot_and_save(
         {
             "layout": {
-                "width": layout_width,
-                "height": layout_height,
                 "title": {"text": title},
                 "xaxis": {"anchor": "y", "title": xaxis_title},
                 "yaxis": {

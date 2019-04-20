@@ -13,7 +13,7 @@ def get_intersections_between_2_1d_arrays(_1d_array_0, _1d_array_1, raise_for_ba
 
     diff_sign_0_indices = (diff_sign == 0).nonzero()[0]
 
-    if 0 < diff_sign_0_indices.size:
+    if diff_sign_0_indices.size:
 
         diff_sign[diff_sign_0_indices] = diff_sign[diff_sign_0_indices + 1]
 

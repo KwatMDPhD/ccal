@@ -48,7 +48,7 @@ def select_gene_symbol(
     remove_by_gene_family_name = asarray(
         tuple(
             not isna(gene_family_name)
-            and any(str in gene_family_name for str in gene_family_name_to_remove)
+            and any(str_ in gene_family_name for str_ in gene_family_name_to_remove)
             for gene_family_name in hgnc["Gene Family Name"]
         )
     )
@@ -62,7 +62,7 @@ def select_gene_symbol(
     keep_by_locus_type = asarray(
         tuple(
             not isna(locus_type)
-            and any(str in locus_type for str in locus_type_to_keep)
+            and any(str_ in locus_type for str_ in locus_type_to_keep)
             for locus_type in hgnc["Locus Type"]
         )
     )

@@ -32,7 +32,7 @@ def normalize_cell_line_names(cell_line_names):
 
             cell_line_names_failed_to_map.append(cell_line_name)
 
-    if 0 < len(cell_line_names_failed_to_map):
+    if len(cell_line_names_failed_to_map):
 
         print(
             "Cell line names failed to map: {}.".format(

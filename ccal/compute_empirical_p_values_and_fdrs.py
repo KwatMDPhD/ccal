@@ -75,6 +75,4 @@ def compute_empirical_p_values_and_fdrs(
 
         fdrs[is_good] = good_fdrs
 
-    else:
-
-        return p_values, fdrs
+    return p_values, fdrs
