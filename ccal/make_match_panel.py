@@ -2,7 +2,7 @@ from math import ceil
 
 from numpy import apply_along_axis, array_split, concatenate, full, nan
 from numpy.random import choice, get_state, seed, set_state, shuffle
-from pandas import DataFrame, Series
+from pandas import DataFrame
 
 from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .call_function_with_multiprocess import call_function_with_multiprocess
@@ -16,7 +16,7 @@ from .compute_normal_pdf_margin_of_error import compute_normal_pdf_margin_of_err
 from .is_sorted_nd_array import is_sorted_nd_array
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
-from .normalize_nd_array import normalize_nd_array
+from .normalize_s_or_df import normalize_s_or_df
 from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 from .RANDOM_SEED import RANDOM_SEED
@@ -349,11 +349,7 @@ def make_match_panel(
 
     if target_type == "continuous":
 
-        target_to_plot = Series(
-            normalize_nd_array(target_to_plot.values, None, "-0-", raise_for_bad=False),
-            name=target_to_plot.name,
-            index=target_to_plot.index,
-        )
+        target_to_plot = normalize_s_or_df(target_to_plot, None, "-0-")
 
         if plot_std is not None:
 
@@ -386,11 +382,7 @@ def make_match_panel(
 
     if data_type == "continuous":
 
-        data_to_plot = DataFrame(
-            normalize_nd_array(data_to_plot.values, 1, "-0-", raise_for_bad=False),
-            index=data_to_plot.index,
-            columns=data_to_plot.columns,
-        )
+        data_to_plot = normalize_s_or_df(data_to_plot, 1, "-0-")
 
         if plot_std is not None:
 

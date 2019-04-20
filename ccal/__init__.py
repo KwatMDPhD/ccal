@@ -121,11 +121,11 @@ from .nmf_by_sklearn import nmf_by_sklearn
 from .NONE_STRS import NONE_STRS
 from .normalize_cell_line_names import normalize_cell_line_names
 from .normalize_contig import normalize_contig
-from .normalize_df import normalize_df
 from .normalize_file_name import normalize_file_name
 from .normalize_git_url import normalize_git_url
 from .normalize_nd_array import normalize_nd_array
 from .normalize_path import normalize_path
+from .normalize_s_or_df import normalize_s_or_df
 from .pick_nd_array_colors import pick_nd_array_colors
 from .plot_and_save import plot_and_save
 from .plot_bayesian_nomogram import plot_bayesian_nomogram
