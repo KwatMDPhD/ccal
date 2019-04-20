@@ -12,7 +12,7 @@ def make_summary_match_panel(
     target,
     data_dicts,
     score_moe_p_value_fdr_dicts,
-    plot_only_columns_shared_by_target_and_all_data=False,
+    plot_only_shared_by_target_and_all_data=False,
     target_ascending=True,
     target_type="continuous",
     score_ascending=False,
@@ -24,7 +24,7 @@ def make_summary_match_panel(
     html_file_path=None,
 ):
 
-    if plot_only_columns_shared_by_target_and_all_data:
+    if plot_only_shared_by_target_and_all_data:
 
         for data_dict in data_dicts.values():
 

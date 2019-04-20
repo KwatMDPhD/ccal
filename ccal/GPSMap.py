@@ -6,17 +6,14 @@ from numpy import (
     exp,
     full,
     isnan,
-    issubdtype,
     linspace,
     mean,
     nan,
-    number,
     pi,
     rot90,
     sin,
     sort,
     unique,
-    where,
 )
 from numpy.random import choice, normal, random_sample, seed
 from pandas import DataFrame, Series, isna
@@ -56,10 +53,6 @@ grid_label_opacity_with_annotation = 0.32
 
 def _check_node_x_element(node_x_element):
 
-    if not isinstance(node_x_element, DataFrame):
-
-        raise ValueError("node_x_element should be a DataFrame.")
-
     if node_x_element.index.has_duplicates:
 
         raise ValueError("node_x_element should not have duplicated node.")
@@ -68,11 +61,11 @@ def _check_node_x_element(node_x_element):
 
         raise ValueError("node_x_element should not have duplicated element.")
 
-    if not all(
-        issubdtype(series, number) for node, series in node_x_element.iterrows()
-    ):
+    if not node_x_element.applymap(
+        lambda value: isinstance(value, (int, float))
+    ).values.all():
 
-        raise ValueError("node_x_element should be only number.")
+        raise ValueError("node_x_element should be only int or float.")
 
     check_nd_array_for_bad(node_x_element.values)
 
@@ -118,7 +111,7 @@ def _plot(
     element_name,
     element_x_dimension,
     element_marker_size,
-    element_labels,
+    element_label,
     grid_values,
     grid_labels,
     label_colors,
@@ -190,7 +183,7 @@ def _plot(
         }
     )
 
-    if element_labels is not None:
+    if element_label is not None:
 
         x = linspace(0, 1, num=grid_values.shape[1])
 
@@ -295,18 +288,19 @@ def _plot(
 
             elif annotation_type == "categorical":
 
-                min_, max_ = 0, annotation_series.dropna().unique().size - 1
+                min_ = 0
+
+                max_ = annotation_series.dropna().unique().size - 1
 
             elif annotation_type == "binary":
 
-                min_, max_ = 0, 1
+                min_ = 0
+
+                max_ = 1
 
             if annotation_x_element.shape[0] == 1:
 
-                sorted_indices = [
-                    annotation_series.index.tolist().index(i)
-                    for i in annotation_series.abs().sort_values().index
-                ]
+                sorted_indices = annotation_series.abs().argsort()
 
                 annotation_series = annotation_series[sorted_indices]
 
@@ -338,7 +332,7 @@ def _plot(
                             "cmax": max_,
                             "colorscale": colorscale,
                             "showscale": annotation_type == "continuous",
-                            "colorbar": {"len": 0.64, "thickness": layout_size / 80},
+                            "colorbar": {"len": 0.64, "thickness": layout_size / 64},
                             "line": element_marker_line,
                         },
                         "opacity": element_opacity,
@@ -396,11 +390,11 @@ def _plot(
 
             layout["shapes"] = shapes
 
-    elif element_labels is not None:
+    elif element_label is not None:
 
         for label in grid_labels_unique:
 
-            element_indices = where(element_labels == label)
+            element_indices = element_label == label
 
             label_str = str(label)
 
@@ -409,8 +403,8 @@ def _plot(
                     "type": "scatter",
                     "name": label_str,
                     "legendgroup": label_str,
-                    "x": element_x_dimension[element_indices, 0][0],
-                    "y": element_x_dimension[element_indices, 1][0],
+                    "x": element_x_dimension[element_indices, 0],
+                    "y": element_x_dimension[element_indices, 1],
                     "text": asarray(elements)[element_indices],
                     "mode": "markers",
                     "marker": {
@@ -503,7 +497,7 @@ class GPSMap:
 
         self.mask_grid = None
 
-        self.w_element_labels = None
+        self.w_element_label = None
 
         self.w_bandwidth_factor = None
 
@@ -513,7 +507,7 @@ class GPSMap:
 
         self.w_label_colors = None
 
-        self.h_element_labels = None
+        self.h_element_label = None
 
         self.h_bandwidth_factor = None
 
@@ -725,7 +719,7 @@ class GPSMap:
 
             element_x_dimension = self.w_element_x_dimension
 
-            element_labels = self.w_element_labels
+            element_label = self.w_element_label
 
             grid_values = self.w_grid_values
 
@@ -741,7 +735,7 @@ class GPSMap:
 
             element_x_dimension = self.h_element_x_dimension
 
-            element_labels = self.h_element_labels
+            element_label = self.h_element_label
 
             grid_values = self.h_grid_values
 
@@ -775,7 +769,7 @@ class GPSMap:
             element_name,
             element_x_dimension,
             element_marker_size,
-            element_labels,
+            element_label,
             grid_values,
             grid_labels,
             label_colors,
@@ -789,23 +783,23 @@ class GPSMap:
             html_file_path,
         )
 
-    def set_element_labels(
+    def set_element_label(
         self,
         w_or_h,
-        element_labels,
+        element_label,
         n_grid=128,
         bandwidth_factor=1,
         label_colors=None,
         plot=True,
     ):
 
-        if not issubdtype(element_labels, number):
+        if not element_label.map(lambda label: isinstance(label, int)).all():
 
-            raise ValueError("element_labels should be number.")
+            raise ValueError("element_label should be int.")
 
-        if element_labels.value_counts().min() < 3:
+        if (element_label.value_counts() < 3).any():
 
-            raise ValueError("Each label should have 3 or more elements.")
+            raise ValueError("Each label should have at least 3 elements.")
 
         if w_or_h == "w":
 
@@ -842,11 +836,11 @@ class GPSMap:
 
         maxs = (1,) * n_dimension
 
-        for label in unique(element_labels):
+        for label in element_label.sort_values().unique():
 
             kernel_density = rot90(
                 estimate_kernel_density(
-                    element_x_dimension[element_labels == label].T,
+                    element_x_dimension[element_label == label].T,
                     bandwidths=global_bandwidths,
                     mins=mins,
                     maxs=maxs,
@@ -888,11 +882,11 @@ class GPSMap:
 
         if label_colors is None:
 
-            label_colors = COLORS["curated"][: element_labels.dropna().unique().size]
+            label_colors = COLORS["curated"][: element_label.dropna().unique().size]
 
         if w_or_h == "w":
 
-            self.w_element_labels = element_labels
+            self.w_element_label = element_label
 
             self.w_bandwidth_factor = bandwidth_factor
 
@@ -904,7 +898,7 @@ class GPSMap:
 
         elif w_or_h == "h":
 
-            self.h_element_labels = element_labels
+            self.h_element_label = element_label
 
             self.h_bandwidth_factor = bandwidth_factor
 
@@ -918,7 +912,7 @@ class GPSMap:
 
             if w_or_h == "w":
 
-                column_annotation = self.w_element_labels.sort_values()
+                column_annotation = self.w_element_label.sort_values()
 
                 z = DataFrame(self.w, index=self.nodes, columns=self.w_elements)[
                     column_annotation.index
@@ -928,7 +922,7 @@ class GPSMap:
 
             elif w_or_h == "h":
 
-                column_annotation = self.h_element_labels.sort_values()
+                column_annotation = self.h_element_label.sort_values()
 
                 z = DataFrame(self.h, index=self.nodes, columns=self.h_elements)[
                     column_annotation.index
@@ -981,7 +975,7 @@ class GPSMap:
 
                 pull_power = self.w_pull_power
 
-            element_labels = self.w_element_labels
+            element_label = self.w_element_label
 
             grid_values = self.w_grid_values
 
@@ -1003,7 +997,7 @@ class GPSMap:
 
                 pull_power = self.h_pull_power
 
-            element_labels = self.h_element_labels
+            element_label = self.h_element_label
 
             grid_values = self.h_grid_values
 
@@ -1015,12 +1009,12 @@ class GPSMap:
             node_x_predicting_element.values, self.node_x_dimension, n_pull, pull_power
         )
 
-        if element_labels is not None:
+        if element_label is not None:
 
-            predicted_element_labels = Series(
+            element_predicted_label = Series(
                 train_and_classify(
                     node_x_element.T,
-                    element_labels,
+                    element_label,
                     node_x_predicting_element.T,
                     c=support_vector_parameter_c,
                     tol=1e-8,
@@ -1031,7 +1025,7 @@ class GPSMap:
 
         else:
 
-            predicted_element_labels = None
+            element_predicted_label = None
 
         if annotation_x_element is not None:
 
@@ -1061,7 +1055,7 @@ class GPSMap:
             element_name,
             predicting_element_x_dimension,
             element_marker_size,
-            predicted_element_labels,
+            element_predicted_label,
             grid_values,
             grid_labels,
             label_colors,
@@ -1075,7 +1069,7 @@ class GPSMap:
             html_file_path,
         )
 
-        return predicted_element_labels
+        return element_predicted_label
 
     def anneal(
         self,
@@ -1354,7 +1348,7 @@ class GPSMap:
 
             self.w_element_x_dimension = element_x_dimension
 
-            element_labels = self.w_element_labels
+            element_label = self.w_element_label
 
             bandwidth_factor = self.w_bandwidth_factor
 
@@ -1362,15 +1356,15 @@ class GPSMap:
 
             self.h_element_x_dimension = element_x_dimension
 
-            element_labels = self.h_element_labels
+            element_label = self.h_element_label
 
             bandwidth_factor = self.h_bandwidth_factor
 
-        if element_labels is not None:
+        if element_label is not None:
 
-            self.set_element_labels(
+            self.set_element_label(
                 w_or_h,
-                element_labels,
+                element_label,
                 n_grid=self.n_grid,
                 bandwidth_factor=bandwidth_factor,
                 plot=False,

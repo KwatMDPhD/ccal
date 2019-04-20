@@ -1,4 +1,5 @@
 from numpy.random import choice
+from pandas import Series
 
 from .plot_heat_map import plot_heat_map
 from .plot_histogram import plot_histogram
@@ -80,7 +81,7 @@ def summarize_feature_x_sample(
         value_name = "Not-NA Value"
 
         plot_histogram(
-            (feature_x_sample_not_na_values,),
+            (Series(feature_x_sample_not_na_values),),
             plot_rug=feature_x_sample_not_na_values.size < plot_rug_max_size,
             title="{}<br>Histogram of {}".format(feature_x_sample_alias, value_name),
             xaxis_title=value_name,
@@ -98,7 +99,6 @@ def summarize_feature_x_sample(
 
         plot_histogram(
             (isna__feature_x_sample.sum(axis=1), isna__feature_x_sample.sum()),
-            names=(feature_x_sample.index.name, feature_x_sample.columns.name),
             plot_rug=max(isna__feature_x_sample.shape) < plot_rug_max_size,
             title="{}<br>Histogram of {} ".format(feature_x_sample_alias, value_name),
             xaxis_title=value_name,
