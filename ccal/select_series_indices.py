@@ -125,7 +125,7 @@ def select_series_indices(
 
         plot_and_save(
             {
-                "layout": {"title": {"text": title}, "xaxis": xaxis, "yaxis": yaxis},
+                "layout": {"title": title, "xaxis": xaxis, "yaxis": yaxis},
                 "data": [
                     {
                         "type": "scatter",
@@ -139,7 +139,7 @@ def select_series_indices(
                     {
                         "type": "scatter",
                         "name": "Selected",
-                        "x": is_selected.nonzero()[0],
+                        "x": is_selected.values.nonzero()[0],
                         "y": series_no_na_sorted[is_selected],
                         "text": series_no_na_sorted.index[is_selected],
                         "mode": "markers",

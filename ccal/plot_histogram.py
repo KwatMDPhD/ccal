@@ -1,3 +1,4 @@
+from .COLORS import COLORS
 from .plot_and_save import plot_and_save
 
 
@@ -26,6 +27,8 @@ def plot_histogram(
 
     for i, series in enumerate(serieses):
 
+        color = COLORS["curated"][i]
+
         data.append(
             {
                 "yaxis": "y2",
@@ -34,7 +37,7 @@ def plot_histogram(
                 "legendgroup": series.name,
                 "x": series,
                 "histnorm": histnorm,
-                "opacity": 0.8,
+                "marker": {"color": color},
             }
         )
 
@@ -49,7 +52,7 @@ def plot_histogram(
                     "y": (i,) * series.size,
                     "text": series.index,
                     "mode": "markers",
-                    "marker": {"symbol": "line-ns-open"},
+                    "marker": {"symbol": "line-ns-open", "color": color},
                 }
             )
 
