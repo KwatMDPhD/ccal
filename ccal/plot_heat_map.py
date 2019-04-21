@@ -1,14 +1,13 @@
-from numpy import asarray, nonzero, unique
+from numpy import nonzero, unique
 
 from .cast_object_to_builtin import cast_object_to_builtin
 from .make_colorscale_from_colors import make_colorscale_from_colors
-from .pick_nd_array_colors import pick_nd_array_colors
+from .pick_colors import pick_colors
 from .plot_and_save import plot_and_save
 
 
 def plot_heat_map(
-    df,
-    data_type="continuous",
+    dataframe,
     showscale=None,
     colorbar_x=None,
     layout_width=880,
@@ -44,14 +43,14 @@ def plot_heat_map(
         "height": layout_height,
         "title": {"text": title},
         "xaxis": {
-            "title": "{} ({})".format(xaxis_title, df.shape[1]),
+            "title": "{} ({})".format(xaxis_title, dataframe.shape[1]),
             "ticks": x_ticks,
             "showticklabels": x_ticks,
             **heat_map_axis_template,
         },
         "xaxis2": {"domain": annotation_axis_domain, **annotation_axis_template},
         "yaxis": {
-            "title": "{} ({})".format(yaxis_title, df.shape[0]),
+            "title": "{} ({})".format(yaxis_title, dataframe.shape[0]),
             "ticks": y_ticks,
             "showticklabels": y_ticks,
             **heat_map_axis_template,
@@ -65,17 +64,17 @@ def plot_heat_map(
 
         colorbar_template["y"] = (heat_map_axis_domain[1] - heat_map_axis_domain[0]) / 2
 
-    if any(isinstance(cast_object_to_builtin(i), str) for i in df.columns):
+    if any(isinstance(cast_object_to_builtin(i), str) for i in dataframe.columns):
 
-        x = df.columns
+        x = dataframe.columns
 
     else:
 
         x = None
 
-    if any(isinstance(cast_object_to_builtin(i), str) for i in df.index):
+    if any(isinstance(cast_object_to_builtin(i), str) for i in dataframe.index):
 
-        y = df.index[::-1]
+        y = dataframe.index[::-1]
 
     else:
 
@@ -84,12 +83,10 @@ def plot_heat_map(
     data = [
         {
             "type": "heatmap",
-            "z": df.values[::-1],
+            "z": dataframe.values[::-1],
             "x": x,
             "y": y,
-            "colorscale": make_colorscale_from_colors(
-                pick_nd_array_colors(df.values, data_type)
-            ),
+            "colorscale": make_colorscale_from_colors(pick_colors(dataframe)),
             "showscale": showscale,
             "colorbar": {"x": colorbar_x, **colorbar_template},
         }
@@ -105,9 +102,7 @@ def plot_heat_map(
 
             if row_annotation_colors is None:
 
-                row_annotation_colors = pick_nd_array_colors(
-                    asarray(row_annotation), "categorical"
-                )
+                row_annotation_colors = pick_colors(row_annotation)
 
             data.append(
                 {
@@ -147,9 +142,7 @@ def plot_heat_map(
 
             if column_annotation_colors is None:
 
-                column_annotation_colors = pick_nd_array_colors(
-                    asarray(column_annotation), "categorical"
-                )
+                column_annotation_colors = pick_colors(column_annotation)
 
             data.append(
                 {

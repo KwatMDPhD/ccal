@@ -12,7 +12,7 @@ from .RANDOM_SEED import RANDOM_SEED
 
 
 def mf_consensus_cluster_with_ks(
-    df,
+    dataframe,
     ks,
     mf_function="nmf_by_sklearn",
     n_job=1,
@@ -22,7 +22,7 @@ def mf_consensus_cluster_with_ks(
     linkage_method="ward",
     plot_w=True,
     plot_h=True,
-    plot_df=True,
+    plot_dataframe=True,
     directory_path=None,
 ):
 
@@ -57,7 +57,7 @@ def mf_consensus_cluster_with_ks(
             mf_consensus_cluster,
             (
                 (
-                    df,
+                    dataframe,
                     k,
                     mf_function,
                     n_clustering,
@@ -66,7 +66,7 @@ def mf_consensus_cluster_with_ks(
                     linkage_method,
                     plot_w,
                     plot_h,
-                    plot_df,
+                    plot_dataframe,
                     k_directory_path,
                 )
                 for k, k_directory_path in zip(ks, k_directory_paths)
@@ -197,7 +197,7 @@ def mf_consensus_cluster_with_ks(
                 join(directory_path, "k_x_{}_element.tsv".format(w_or_h)), sep="\t"
             )
 
-        if plot_df:
+        if plot_dataframe:
 
             file_name = "k_x_{}_element.cluster_distribution.html".format(w_or_h)
 
@@ -211,7 +211,6 @@ def mf_consensus_cluster_with_ks(
 
             plot_heat_map(
                 DataFrame(sort(k_x_element.values, axis=1), index=keys),
-                data_type="categorical",
                 title="MFCC {} Cluster Distribution".format(w_or_h.title()),
                 xaxis_title="{} Element".format(w_or_h.title()),
                 yaxis_title=k_x_element.index.name,

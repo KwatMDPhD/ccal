@@ -4,18 +4,17 @@ from .add_conda_to_path import add_conda_to_path
 from .ALMOST_ZERO import ALMOST_ZERO
 from .apply_function_on_2_1d_arrays import apply_function_on_2_1d_arrays
 from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_slices
-from .apply_function_on_2_dfs_slices import apply_function_on_2_dfs_slices
+from .apply_function_on_2_dataframes_slices import apply_function_on_2_dataframes_slices
 from .call_function_with_multiprocess import call_function_with_multiprocess
 from .cast_object_to_builtin import cast_object_to_builtin
 from .check_nd_array_for_bad import check_nd_array_for_bad
-from .clean_and_write_df_to_tsv import clean_and_write_df_to_tsv
+from .clean_and_write_dataframe_to_tsv import clean_and_write_dataframe_to_tsv
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
 from .cluster_2d_array import cluster_2d_array
 from .cluster_clustering_x_element_and_compute_ccc import (
     cluster_clustering_x_element_and_compute_ccc,
 )
 from .CODON_AMINO_ACID import CODON_AMINO_ACID
-from .COLORS import COLORS
 from .compute_1d_array_context import compute_1d_array_context
 from .compute_1d_array_entropy import compute_1d_array_entropy
 from .compute_bandwidths import compute_bandwidths
@@ -42,20 +41,21 @@ from .count_gene_impacts_from_variant_dicts import count_gene_impacts_from_varia
 from .DATA_DIRECTORY_PATH import DATA_DIRECTORY_PATH
 from .download_and_parse_geo import download_and_parse_geo
 from .download_url import download_url
-from .drop_df_slice import drop_df_slice
-from .drop_df_slice_greedily import drop_df_slice_greedily
+from .drop_dataframe_slice import drop_dataframe_slice
+from .drop_dataframe_slice_greedily import drop_dataframe_slice_greedily
 from .echo_or_print_str import echo_or_print_str
 from .establish_path import establish_path
 from .estimate_kernel_density import estimate_kernel_density
 from .exit_ import exit_
 from .FeatureHDF5 import FeatureHDF5
 from .fit_skew_t_pdf_on_1d_array import fit_skew_t_pdf_on_1d_array
-from .fit_skew_t_pdf_on_each_df_row import fit_skew_t_pdf_on_each_df_row
+from .fit_skew_t_pdf_on_each_dataframe_row import fit_skew_t_pdf_on_each_dataframe_row
 from .flatten_nested_iterable import flatten_nested_iterable
 from .Genome import Genome
 from .get_colormap_colors import get_colormap_colors
 from .get_conda_environments import get_conda_environments
 from .get_conda_prefix import get_conda_prefix
+from .get_data_type import get_data_type
 from .get_gff3_attribute import get_gff3_attribute
 from .get_git_versions import get_git_versions
 from .get_intersections_between_2_1d_arrays import get_intersections_between_2_1d_arrays
@@ -96,10 +96,9 @@ from .is_str_version import is_str_version
 from .is_valid_conda_directory_path import is_valid_conda_directory_path
 from .log_and_return_response import log_and_return_response
 from .log_nd_array import log_nd_array
-from .make_binary_df_from_categorical_series import (
-    make_binary_df_from_categorical_series,
+from .make_binary_dataframe_from_categorical_series import (
+    make_binary_dataframe_from_categorical_series,
 )
-from .make_categorical_colors import make_categorical_colors
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_context_matrix import make_context_matrix
 from .make_gitkeep import make_gitkeep
@@ -125,8 +124,8 @@ from .normalize_file_name import normalize_file_name
 from .normalize_git_url import normalize_git_url
 from .normalize_nd_array import normalize_nd_array
 from .normalize_path import normalize_path
-from .normalize_s_or_df import normalize_s_or_df
-from .pick_nd_array_colors import pick_nd_array_colors
+from .normalize_series_or_dataframe import normalize_series_or_dataframe
+from .pick_colors import pick_colors
 from .plot_and_save import plot_and_save
 from .plot_bayesian_nomogram import plot_bayesian_nomogram
 from .plot_bubble_map import plot_bubble_map
@@ -169,7 +168,7 @@ from .skip_quote_and_split_str import skip_quote_and_split_str
 from .solve_ax_equal_b import solve_ax_equal_b
 from .solve_for_H import solve_for_H
 from .split_codons import split_codons
-from .split_df import split_df
+from .split_dataframe import split_dataframe
 from .summarize_feature_x_sample import summarize_feature_x_sample
 from .title_str import title_str
 from .train_and_classify import train_and_classify

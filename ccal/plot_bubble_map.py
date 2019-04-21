@@ -1,16 +1,15 @@
-from numpy import linspace, meshgrid
+from numpy import arange, linspace, meshgrid
 
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .normalize_nd_array import normalize_nd_array
-from .pick_nd_array_colors import pick_nd_array_colors
+from .pick_colors import pick_colors
 from .plot_and_save import plot_and_save
 
 
 def plot_bubble_map(
-    df_size,
-    df_color=None,
+    dataframe_size,
+    dataframe_color=None,
     marker_size_max=32,
-    data_type="continuous",
     showscale=None,
     colorbar_x=None,
     title=None,
@@ -19,33 +18,33 @@ def plot_bubble_map(
     html_file_path=None,
 ):
 
-    if df_color is None:
+    if dataframe_color is None:
 
-        df_color = df_size
+        dataframe_color = dataframe_size
 
     axis_template = {"zeroline": False}
 
     x, y = meshgrid(
-        linspace(0, df_size.shape[1] - 1, num=df_size.shape[1]),
-        linspace(0, df_size.shape[0] - 1, num=df_size.shape[0]),
+        linspace(0, dataframe_size.shape[1] - 1, num=dataframe_size.shape[1]),
+        linspace(0, dataframe_size.shape[0] - 1, num=dataframe_size.shape[0]),
     )
 
     plot_and_save(
         {
             "layout": {
-                "width": max(640, marker_size_max * 2 * df_size.shape[1]),
-                "height": max(640, marker_size_max * 2 * df_size.shape[0]),
+                "width": max(640, marker_size_max * 2 * dataframe_size.shape[1]),
+                "height": max(640, marker_size_max * 2 * dataframe_size.shape[0]),
                 "title": {"text": title},
                 "xaxis": {
-                    "tickvals": tuple(range(df_size.shape[1])),
-                    "ticktext": df_size.columns,
-                    "title": "{} ({})".format(xaxis_title, df_size.shape[1]),
+                    "tickvals": arange(dataframe_size.shape[1]),
+                    "ticktext": dataframe_size.columns,
+                    "title": "{} ({})".format(xaxis_title, dataframe_size.shape[1]),
                     **axis_template,
                 },
                 "yaxis": {
-                    "tickvals": tuple(range(df_size.shape[0])),
-                    "ticktext": df_size.index[::-1],
-                    "title": "{} ({})".format(yaxis_title, df_size.shape[0]),
+                    "tickvals": arange(dataframe_size.shape[0]),
+                    "ticktext": dataframe_size.index[::-1],
+                    "title": "{} ({})".format(yaxis_title, dataframe_size.shape[0]),
                     **axis_template,
                 },
             },
@@ -54,14 +53,16 @@ def plot_bubble_map(
                     "type": "scatter",
                     "x": x.ravel(),
                     "y": y.ravel()[::-1],
-                    "text": df_size.values.ravel(),
+                    "text": dataframe_size.values.ravel(),
                     "mode": "markers",
                     "marker": {
-                        "size": normalize_nd_array(df_size.values, None, "0-1").ravel()
+                        "size": normalize_nd_array(
+                            dataframe_size.values, None, "0-1"
+                        ).ravel()
                         * marker_size_max,
-                        "color": df_color.values.ravel(),
+                        "color": dataframe_color.values.ravel(),
                         "colorscale": make_colorscale_from_colors(
-                            pick_nd_array_colors(df_color.values, data_type)
+                            pick_colors(dataframe_color)
                         ),
                         "showscale": True,
                         "colorbar": {

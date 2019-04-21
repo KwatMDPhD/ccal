@@ -8,9 +8,9 @@ from .compute_information_coefficient_between_2_1d_arrays import (
 from .plot_heat_map import plot_heat_map
 
 
-def apply_function_on_2_dfs_slices(
-    df_0,
-    df_1,
+def apply_function_on_2_dataframes_slices(
+    dataframe_0,
+    dataframe_1,
     axis,
     function=compute_information_coefficient_between_2_1d_arrays,
     title=None,
@@ -20,16 +20,20 @@ def apply_function_on_2_dfs_slices(
 ):
 
     comparison = apply_function_on_2_2d_arrays_slices(
-        df_0.values, df_1.values, axis, function
+        dataframe_0.values, dataframe_1.values, axis, function
     )
 
     if axis == 0:
 
-        comparison = DataFrame(comparison, index=df_0.index, columns=df_1.index)
+        comparison = DataFrame(
+            comparison, index=dataframe_0.index, columns=dataframe_1.index
+        )
 
     elif axis == 1:
 
-        comparison = DataFrame(comparison, index=df_0.columns, columns=df_1.columns)
+        comparison = DataFrame(
+            comparison, index=dataframe_0.columns, columns=dataframe_1.columns
+        )
 
     if file_path_prefix is None:
 

@@ -1,8 +1,9 @@
 from .ALMOST_ZERO import ALMOST_ZERO
+from .get_data_type import get_data_type
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
-from .normalize_s_or_df import normalize_s_or_df
-from .pick_nd_array_colors import pick_nd_array_colors
+from .normalize_series_or_dataframe import normalize_series_or_dataframe
+from .pick_colors import pick_colors
 from .plot_and_save import plot_and_save
 
 
@@ -12,7 +13,6 @@ def make_summary_match_panel(
     score_moe_p_value_fdr_dicts,
     plot_only_shared_by_target_and_all_data=False,
     target_ascending=True,
-    target_type="continuous",
     score_ascending=False,
     plot_std=None,
     title=None,
@@ -25,7 +25,7 @@ def make_summary_match_panel(
 
         for data_dict in data_dicts.values():
 
-            target = target.loc[target.index & data_dict["df"].columns]
+            target = target.loc[target.index & data_dict["dataframe"].columns]
 
     if target_ascending is not None:
 
@@ -33,23 +33,19 @@ def make_summary_match_panel(
 
     target_to_plot = target.copy()
 
-    if target_type == "continuous":
+    if get_data_type(target_to_plot) == "continuous":
 
-        target_to_plot = normalize_s_or_df(target_to_plot, None, "-0-")
+        target_to_plot = normalize_series_or_dataframe(target_to_plot, None, "-0-")
 
         if plot_std is not None:
 
             target_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
 
-    target_colorscale = make_colorscale_from_colors(
-        pick_nd_array_colors(target_to_plot.values, target_type)
-    )
-
     n_row = 1 + len(data_dicts)
 
     for data_dict in data_dicts.values():
 
-        n_row += data_dict["df"].shape[0]
+        n_row += data_dict["dataframe"].shape[0]
 
     layout = {
         "height": max(640, 32 * n_row),
@@ -86,7 +82,7 @@ def make_summary_match_panel(
             "yaxis": yaxis_name.replace("axis", ""),
             "type": "heatmap",
             "z": target_to_plot.to_frame().T,
-            "colorscale": target_colorscale,
+            "colorscale": make_colorscale_from_colors(pick_colors(target_to_plot)),
             "showscale": False,
         }
     ]
@@ -95,7 +91,7 @@ def make_summary_match_panel(
 
         print("Making match panel for {} ...".format(data_name))
 
-        data_to_plot = data_dict["df"].reindex(columns=target_to_plot.index)
+        data_to_plot = data_dict["dataframe"].reindex(columns=target_to_plot.index)
 
         score_moe_p_value_fdr_to_plot = score_moe_p_value_fdr_dicts[data_name].loc[
             data_to_plot.index
@@ -107,17 +103,13 @@ def make_summary_match_panel(
 
         data_to_plot = data_to_plot.loc[score_moe_p_value_fdr_to_plot.index]
 
-        if data_dict["type"] == "continuous":
+        if get_data_type(data_to_plot) == "continuous":
 
-            data_to_plot = normalize_s_or_df(data_to_plot, 1, "-0-")
+            data_to_plot = normalize_series_or_dataframe(data_to_plot, 1, "-0-")
 
             if plot_std is not None:
 
                 data_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
-
-        data_colorscale = make_colorscale_from_colors(
-            pick_nd_array_colors(data_to_plot.values, data_dict["type"])
-        )
 
         yaxis_name = "yaxis{}".format(len(data_dicts) - data_index)
 
@@ -146,7 +138,7 @@ def make_summary_match_panel(
                 "z": data_to_plot.values[::-1],
                 "x": data_to_plot.columns,
                 "y": data_to_plot.index[::-1],
-                "colorscale": data_colorscale,
+                "colorscale": make_colorscale_from_colors(pick_colors(data_to_plot)),
                 "showscale": False,
             }
         )

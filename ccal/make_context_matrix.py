@@ -3,11 +3,11 @@ from pandas import DataFrame, concat
 
 from .call_function_with_multiprocess import call_function_with_multiprocess
 from .compute_1d_array_context import compute_1d_array_context
-from .split_df import split_df
+from .split_dataframe import split_dataframe
 
 
 def _make_context_matrix(
-    df,
+    dataframe,
     skew_t_pdf_fit_parameter,
     n_grid,
     degree_of_freedom_for_tail_reduction,
@@ -18,13 +18,13 @@ def _make_context_matrix(
     global_shape,
 ):
 
-    context_matrix = full(df.shape, nan)
+    context_matrix = full(dataframe.shape, nan)
 
-    n = df.shape[0]
+    n = dataframe.shape[0]
 
     n_per_print = max(1, n // 10)
 
-    for i, (index, series) in enumerate(df.iterrows()):
+    for i, (index, series) in enumerate(dataframe.iterrows()):
 
         if not i % n_per_print:
 
@@ -56,11 +56,11 @@ def _make_context_matrix(
             global_shape=global_shape,
         )["context_like_array"]
 
-    return DataFrame(context_matrix, index=df.index, columns=df.columns)
+    return DataFrame(context_matrix, index=dataframe.index, columns=dataframe.columns)
 
 
 def make_context_matrix(
-    df,
+    dataframe,
     n_job=1,
     skew_t_pdf_fit_parameter=None,
     n_grid=1e3,
@@ -78,7 +78,7 @@ def make_context_matrix(
             _make_context_matrix,
             (
                 (
-                    df_,
+                    dataframe_,
                     skew_t_pdf_fit_parameter,
                     n_grid,
                     degree_of_freedom_for_tail_reduction,
@@ -88,7 +88,9 @@ def make_context_matrix(
                     global_degree_of_freedom,
                     global_shape,
                 )
-                for df_ in split_df(df, 0, min(df.shape[0], n_job))
+                for dataframe_ in split_dataframe(
+                    dataframe, 0, min(dataframe.shape[0], n_job)
+                )
             ),
             n_job,
         )

@@ -1,4 +1,4 @@
-from numpy import absolute, apply_along_axis, argmax, linspace, meshgrid, rot90
+from numpy import absolute, apply_along_axis, arange, argmax, linspace, meshgrid, rot90
 from pandas import DataFrame
 
 from .compute_joint_probabilities import compute_joint_probabilities
@@ -65,7 +65,7 @@ def infer(variables, n_grid=64, target="max", plot=True, names=None):
                     "data": [
                         {
                             "type": "scatter",
-                            "x": tuple(range(n_grid)),
+                            "x": arange(n_grid),
                             "y": p_tvt__ntvs,
                             "marker": {"color": "#20d9ba"},
                         }

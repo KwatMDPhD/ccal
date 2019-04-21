@@ -3,7 +3,7 @@ from pandas import DataFrame, concat
 
 from .call_function_with_multiprocess import call_function_with_multiprocess
 from .single_sample_gsea import single_sample_gsea
-from .split_df import split_df
+from .split_dataframe import split_dataframe
 
 
 def _single_sample_gseas(gene_x_sample, gene_sets, statistic):
@@ -38,7 +38,9 @@ def single_sample_gseas(
             _single_sample_gseas,
             (
                 (gene_x_sample, gene_sets_, statistic)
-                for gene_sets_ in split_df(gene_sets, 0, min(gene_sets.shape[0], n_job))
+                for gene_sets_ in split_dataframe(
+                    gene_sets, 0, min(gene_sets.shape[0], n_job)
+                )
             ),
             n_job,
         )

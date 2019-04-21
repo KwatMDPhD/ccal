@@ -13,11 +13,12 @@ from .compute_information_coefficient_between_2_1d_arrays import (
     compute_information_coefficient_between_2_1d_arrays,
 )
 from .compute_normal_pdf_margin_of_error import compute_normal_pdf_margin_of_error
+from .get_data_type import get_data_type
 from .is_sorted_nd_array import is_sorted_nd_array
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .make_match_panel_annotations import make_match_panel_annotations
-from .normalize_s_or_df import normalize_s_or_df
-from .pick_nd_array_colors import pick_nd_array_colors
+from .normalize_series_or_dataframe import normalize_series_or_dataframe
+from .pick_colors import pick_colors
 from .plot_and_save import plot_and_save
 from .RANDOM_SEED import RANDOM_SEED
 from .select_series_indices import select_series_indices
@@ -224,9 +225,7 @@ def make_match_panel(
     n_permutation=10,
     score_ascending=False,
     plot=True,
-    target_type="continuous",
     cluster_within_category=True,
-    data_type="continuous",
     plot_std=None,
     title=None,
     layout_side_margin=196,
@@ -347,21 +346,16 @@ def make_match_panel(
 
     target_to_plot = target.copy()
 
-    if target_type == "continuous":
+    if get_data_type(target_to_plot) == "continuous":
 
-        target_to_plot = normalize_s_or_df(target_to_plot, None, "-0-")
+        target_to_plot = normalize_series_or_dataframe(target_to_plot, None, "-0-")
 
         if plot_std is not None:
 
             target_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
 
-    target_colorscale = make_colorscale_from_colors(
-        pick_nd_array_colors(target_to_plot.values, target_type)
-    )
-
     if (
         cluster_within_category
-        and target_type in ("binary", "categorical")
         and is_sorted_nd_array(target_to_plot.values)
         and (1 < target_to_plot.value_counts()).all()
     ):
@@ -380,17 +374,13 @@ def make_match_panel(
 
         target_to_plot = target_to_plot[data_to_plot.columns]
 
-    if data_type == "continuous":
+    if get_data_type(data_to_plot) == "continuous":
 
-        data_to_plot = normalize_s_or_df(data_to_plot, 1, "-0-")
+        data_to_plot = normalize_series_or_dataframe(data_to_plot, 1, "-0-")
 
         if plot_std is not None:
 
             data_to_plot.clip(lower=-plot_std, upper=plot_std, inplace=True)
-
-    data_colorscale = make_colorscale_from_colors(
-        pick_nd_array_colors(data_to_plot.values, data_type)
-    )
 
     row_fraction = max(0.01, 1 / (data_to_plot.shape[0] + 2))
 
@@ -425,7 +415,7 @@ def make_match_panel(
             "yaxis": "y2",
             "type": "heatmap",
             "z": target_to_plot.to_frame().T,
-            "colorscale": target_colorscale,
+            "colorscale": make_colorscale_from_colors(pick_colors(target_to_plot)),
             "showscale": False,
         },
         {
@@ -434,7 +424,7 @@ def make_match_panel(
             "z": data_to_plot.iloc[::-1],
             "x": data_to_plot.columns,
             "y": data_to_plot.index[::-1],
-            "colorscale": data_colorscale,
+            "colorscale": make_colorscale_from_colors(pick_colors(data_to_plot)),
             "showscale": False,
         },
     ]

@@ -1,4 +1,4 @@
-from numpy import absolute, linspace, log2, sort
+from numpy import absolute, arange, linspace, log2, sort
 
 from .plot_and_save import plot_and_save
 
@@ -45,7 +45,7 @@ def plot_bayesian_nomogram(
 
         log_odds_ratios = log2((p_th__ / p_tm__) / (p_th / p_tm))
 
-        x = tuple(range(n_grid))
+        x = arange(n_grid)
 
         plot_and_save(
             {
