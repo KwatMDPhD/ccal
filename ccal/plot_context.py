@@ -24,7 +24,7 @@ def plot_context(
     global_shape=None,
     y_max_is_pdf_max=False,
     n_bin=None,
-    plot_rug=True,
+    plot_rug=None,
     title=None,
     xaxis_title=None,
     html_file_path=None,
@@ -87,6 +87,10 @@ def plot_context(
     else:
 
         y_max = max(pdf_max, absolute_context_max)
+
+    if plot_rug is None:
+
+        plot_rug = _1d_array_or_series.size < 1e3
 
     if plot_rug:
 

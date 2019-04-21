@@ -8,7 +8,7 @@ def plot_and_save(figure, html_file_path, plotly_html_file_path=None):
 
     if "layout" in figure:
 
-        figure["layout"].update({"hovermode": "closest"})
+        figure["layout"].update({"autosize": True, "hovermode": "closest"})
 
         for axis in ("xaxis", "yaxis"):
 

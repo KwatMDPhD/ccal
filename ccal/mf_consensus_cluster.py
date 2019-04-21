@@ -14,7 +14,7 @@ from .RANDOM_SEED import RANDOM_SEED
 
 
 def mf_consensus_cluster(
-    df,
+    dataframe,
     k,
     mf_function="nmf_by_sklearn",
     n_clustering=10,
@@ -23,15 +23,15 @@ def mf_consensus_cluster(
     linkage_method="ward",
     plot_w=True,
     plot_h=True,
-    plot_df=True,
+    plot_dataframe=True,
     directory_path=None,
 ):
 
     print("MFCC K={} ...".format(k))
 
-    clustering_x_w_element = full((n_clustering, df.shape[0]), nan)
+    clustering_x_w_element = full((n_clustering, dataframe.shape[0]), nan)
 
-    clustering_x_h_element = full((n_clustering, df.shape[1]), nan)
+    clustering_x_h_element = full((n_clustering, dataframe.shape[1]), nan)
 
     n_per_print = max(1, n_clustering // 10)
 
@@ -50,7 +50,10 @@ def mf_consensus_cluster(
             print("\t(K={}) {}/{} ...".format(k, clustering + 1, n_clustering))
 
         w, h, e = mf_function(
-            df.values, k, n_iteration=n_iteration, random_seed=random_seed + clustering
+            dataframe.values,
+            k,
+            n_iteration=n_iteration,
+            random_seed=random_seed + clustering,
         )
 
         if clustering == 0:
@@ -63,9 +66,9 @@ def mf_consensus_cluster(
 
             factors = Index(("Factor{}".format(i) for i in range(k)), name="Factor")
 
-            w_0 = DataFrame(w_0, index=df.index, columns=factors)
+            w_0 = DataFrame(w_0, index=dataframe.index, columns=factors)
 
-            h_0 = DataFrame(h_0, index=factors, columns=df.columns)
+            h_0 = DataFrame(h_0, index=factors, columns=dataframe.columns)
 
             if directory_path is not None:
 
@@ -125,19 +128,21 @@ def mf_consensus_cluster(
         clustering_x_w_element, k, linkage_method
     )
 
-    w_element_cluster = Series(w_element_cluster, name="Cluster", index=df.index)
+    w_element_cluster = Series(w_element_cluster, name="Cluster", index=dataframe.index)
 
     h_element_cluster, h_element_cluster__ccc = cluster_clustering_x_element_and_compute_ccc(
         clustering_x_h_element, k, linkage_method
     )
 
-    h_element_cluster = Series(h_element_cluster, name="Cluster", index=df.columns)
+    h_element_cluster = Series(
+        h_element_cluster, name="Cluster", index=dataframe.columns
+    )
 
-    if plot_df:
+    if plot_dataframe:
 
-        print("Plotting df.clustered ...")
+        print("Plotting dataframe.clustered ...")
 
-        file_name = "df.cluster.html"
+        file_name = "dataframe.cluster.html"
 
         if directory_path is None:
 
@@ -151,15 +156,17 @@ def mf_consensus_cluster(
 
         h_element_cluster_sorted = h_element_cluster.sort_values()
 
-        df = df.loc[w_element_cluster_sorted.index, h_element_cluster_sorted.index]
+        dataframe = dataframe.loc[
+            w_element_cluster_sorted.index, h_element_cluster_sorted.index
+        ]
 
         plot_heat_map(
-            df,
+            dataframe,
             row_annotation=w_element_cluster_sorted,
             column_annotation=h_element_cluster_sorted,
             title="MFCC K={}".format(k),
-            xaxis_title=df.columns.name,
-            yaxis_title=df.index.name,
+            xaxis_title=dataframe.columns.name,
+            yaxis_title=dataframe.index.name,
             html_file_path=html_file_path,
         )
 

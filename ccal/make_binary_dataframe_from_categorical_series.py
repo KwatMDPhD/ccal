@@ -1,7 +1,7 @@
 from pandas import DataFrame
 
 
-def make_binary_df_from_categorical_series(series):
+def make_binary_dataframe_from_categorical_series(series):
 
     object_x_index = DataFrame(
         index=series.dropna().sort_values().unique(), columns=series.index

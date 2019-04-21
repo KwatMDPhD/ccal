@@ -1,5 +1,6 @@
 from matplotlib.colors import LinearSegmentedColormap, to_hex
 from numpy import (
+    arange,
     asarray,
     cos,
     diag,
@@ -16,7 +17,7 @@ from numpy import (
     unique,
 )
 from numpy.random import choice, normal, random_sample, seed
-from pandas import DataFrame, Series, isna
+from pandas import DataFrame, Series
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import euclidean, pdist, squareform
 from scipy.stats import pearsonr
@@ -25,19 +26,19 @@ from .apply_function_on_2_2d_arrays_slices import apply_function_on_2_2d_arrays_
 from .check_nd_array_for_bad import check_nd_array_for_bad
 from .clip_nd_array_by_standard_deviation import clip_nd_array_by_standard_deviation
 from .cluster_2d_array import cluster_2d_array
-from .COLORS import COLORS
 from .compute_bandwidths import compute_bandwidths
 from .compute_information_distance_between_2_1d_arrays import (
     compute_information_distance_between_2_1d_arrays,
 )
 from .estimate_kernel_density import estimate_kernel_density
 from .get_colormap_colors import get_colormap_colors
+from .get_data_type import get_data_type
 from .get_triangulation_edges_from_point_x_dimension import (
     get_triangulation_edges_from_point_x_dimension,
 )
 from .make_colorscale_from_colors import make_colorscale_from_colors
 from .normalize_nd_array import normalize_nd_array
-from .pick_nd_array_colors import pick_nd_array_colors
+from .pick_colors import pick_colors
 from .plot_and_save import plot_and_save
 from .plot_heat_map import plot_heat_map
 from .RANDOM_SEED import RANDOM_SEED
@@ -55,11 +56,11 @@ def _check_node_x_element(node_x_element):
 
     if node_x_element.index.has_duplicates:
 
-        raise ValueError("node_x_element should not have duplicated node.")
+        raise ValueError("node_x_element should not have duplicated index.")
 
     if node_x_element.columns.has_duplicates:
 
-        raise ValueError("node_x_element should not have duplicated element.")
+        raise ValueError("node_x_element should not have duplicated column.")
 
     if not node_x_element.applymap(
         lambda value: isinstance(value, (int, float))
@@ -78,9 +79,9 @@ def _make_element_x_dimension(node_x_element, node_x_dimension, n_pull, pull_pow
 
     node_x_element = normalize_nd_array(node_x_element, None, "0-1")
 
-    for element_index in range(node_x_element.shape[1]):
+    for i in range(node_x_element.shape[1]):
 
-        pulls = node_x_element[:, element_index]
+        pulls = node_x_element[:, i]
 
         if 3 < pulls.size:
 
@@ -94,10 +95,10 @@ def _make_element_x_dimension(node_x_element, node_x_dimension, n_pull, pull_pow
 
             pulls = pulls ** pull_power
 
-        for dimension_index in range(node_x_dimension.shape[1]):
+        for j in range(node_x_dimension.shape[1]):
 
-            element_x_dimension[element_index, dimension_index] = (
-                pulls * node_x_dimension[:, dimension_index]
+            element_x_dimension[i, j] = (
+                pulls * node_x_dimension[:, j]
             ).sum() / pulls.sum()
 
     return element_x_dimension
@@ -117,9 +118,7 @@ def _plot(
     label_colors,
     grid_label_opacity,
     annotation_x_element,
-    annotation_types,
     annotation_std_maxs,
-    annotation_ranges,
     layout_size,
     title,
     html_file_path,
@@ -135,8 +134,7 @@ def _plot(
     layout = {
         "width": layout_size,
         "height": layout_size,
-        "title": {"text": title},
-        "titlefont": {"size": 32, "color": "#4c221b"},
+        "title": {"text": title, "font": {"size": 32, "color": "#4c221b"}},
         "xaxis": axis_template,
         "yaxis": axis_template,
     }
@@ -150,7 +148,6 @@ def _plot(
     data.append(
         {
             "type": "scatter",
-            "name": "Simplex",
             "legendgroup": node_name,
             "showlegend": False,
             "x": edge_xs,
@@ -192,7 +189,6 @@ def _plot(
         data.append(
             {
                 "type": "contour",
-                "name": "Contour",
                 "showlegend": False,
                 "z": grid_values[::-1],
                 "x": x,
@@ -243,96 +239,61 @@ def _plot(
 
             marker_size_factor = element_marker_size / layout_size
 
-        for annotation_index, (annotation_name, annotation_series) in enumerate(
-            annotation_x_element.iterrows()
-        ):
+        for i, (_, element_value) in enumerate(annotation_x_element.iterrows()):
 
-            if annotation_types is None:
+            element_value.dropna(inplace=True)
 
-                annotation_type = "continuous"
+            element_x_dimension_ = element_x_dimension[
+                [elements.index(element) for element in element_value.index]
+            ]
 
-            else:
+            data_type = get_data_type(element_value)
 
-                annotation_type = annotation_types[annotation_index]
+            if data_type in ("binary", "categorical"):
 
-            if annotation_type == "continuous":
+                element_value = element_value.rank(method="dense")
+
+            elif data_type == "continuous":
 
                 if annotation_std_maxs is not None:
 
-                    std_max = annotation_std_maxs[annotation_index]
-
-                    annotation_series = Series(
+                    element_value = Series(
                         clip_nd_array_by_standard_deviation(
-                            normalize_nd_array(
-                                annotation_series.values,
-                                None,
-                                "-0-",
-                                raise_for_bad=False,
-                            ),
-                            std_max,
+                            element_value.values,
+                            annotation_std_maxs[i],
                             raise_for_bad=False,
                         ),
-                        name=annotation_series.name,
-                        index=annotation_series.index,
+                        name=element_value.name,
+                        index=element_value.index,
                     )
-
-                if annotation_ranges is not None:
-
-                    min_, max_ = annotation_ranges[annotation_index]
-
-                else:
-
-                    min_ = annotation_series.min()
-
-                    max_ = annotation_series.max()
-
-            elif annotation_type == "categorical":
-
-                min_ = 0
-
-                max_ = annotation_series.dropna().unique().size - 1
-
-            elif annotation_type == "binary":
-
-                min_ = 0
-
-                max_ = 1
 
             if annotation_x_element.shape[0] == 1:
 
-                sorted_indices = annotation_series.abs().argsort()
+                sorted_indices = element_value.abs().argsort()
 
-                annotation_series = annotation_series[sorted_indices]
+                element_value = element_value[sorted_indices]
 
-                element_x_dimension = element_x_dimension[sorted_indices]
+                element_x_dimension_ = element_x_dimension_[sorted_indices]
 
-            colorscale = make_colorscale_from_colors(
-                pick_nd_array_colors(annotation_series.values, annotation_type)
-            )
+            colorscale = make_colorscale_from_colors(pick_colors(element_value))
 
             if 1 == annotation_x_element.shape[0]:
-
-                is_na = annotation_series.isna()
-
-                annotation_series = annotation_series[~is_na]
 
                 data.append(
                     {
                         "type": "scatter",
                         "name": element_name,
                         "showlegend": False,
-                        "x": element_x_dimension[~is_na, 0],
-                        "y": element_x_dimension[~is_na, 1],
-                        "text": annotation_series.index,
+                        "x": element_x_dimension_[:, 0],
+                        "y": element_x_dimension_[:, 1],
+                        "text": element_value.index,
                         "mode": "markers",
                         "marker": {
                             "size": element_marker_size,
-                            "color": annotation_series.values,
-                            "cmin": min_,
-                            "cmax": max_,
+                            "color": element_value,
                             "colorscale": colorscale,
-                            "showscale": annotation_type == "continuous",
-                            "colorbar": {"len": 0.64, "thickness": layout_size / 64},
+                            "showscale": data_type == "continuous",
+                            "colorbar": {"len": 0.64, "thickness": layout_size // 64},
                             "line": element_marker_line,
                         },
                         "opacity": element_opacity,
@@ -342,26 +303,22 @@ def _plot(
 
             else:
 
-                for element_name, value in annotation_series.items():
-
-                    x, y = element_x_dimension[elements.index(element_name)]
-
-                    if isna(value):
-
-                        continue
+                for value, (x, y) in zip(element_value.values, element_x_dimension_):
 
                     color = to_hex(
                         colorscale[
-                            int((len(colorscale) - 1) * (value - min_) / (max_ - min_))
+                            int(
+                                (len(colorscale) - 1)
+                                * (value - element_value.min())
+                                / (element_value.max() - element_value.min())
+                            )
                         ][1]
                     )
 
                     sector_radian = pi * 2 / annotation_x_element.shape[0]
 
                     sector_radians = linspace(
-                        sector_radian * annotation_index,
-                        sector_radian * (annotation_index + 1),
-                        num=16,
+                        sector_radian * i, sector_radian * (i + 1), num=16
                     )
 
                     path = "M {} {}".format(x, y)
@@ -701,9 +658,7 @@ class GPSMap:
         w_or_h,
         grid_label_opacity=None,
         annotation_x_element=None,
-        annotation_types=None,
         annotation_std_maxs=None,
-        annotation_ranges=None,
         elements_to_be_emphasized=None,
         element_marker_size=element_marker_size,
         layout_size=880,
@@ -775,9 +730,7 @@ class GPSMap:
             label_colors,
             grid_label_opacity,
             annotation_x_element,
-            annotation_types,
             annotation_std_maxs,
-            annotation_ranges,
             layout_size,
             title,
             html_file_path,
@@ -882,7 +835,7 @@ class GPSMap:
 
         if label_colors is None:
 
-            label_colors = COLORS["curated"][: element_label.dropna().unique().size]
+            label_colors = pick_colors(element_label)
 
         if w_or_h == "w":
 
@@ -948,9 +901,7 @@ class GPSMap:
         pull_power=None,
         grid_label_opacity=None,
         annotation_x_element=None,
-        annotation_types=None,
         annotation_std_maxs=None,
-        annotation_ranges=None,
         element_marker_size=element_marker_size,
         layout_size=880,
         title=None,
@@ -1061,9 +1012,7 @@ class GPSMap:
             label_colors,
             grid_label_opacity,
             annotation_x_element,
-            annotation_types,
             annotation_std_maxs,
-            annotation_ranges,
             layout_size,
             title,
             html_file_path,
@@ -1287,7 +1236,7 @@ class GPSMap:
                 fitness,
             )
 
-        x = tuple(range(n_iteration))
+        x = arange(n_iteration)
 
         if n_iteration < 1e3:
 

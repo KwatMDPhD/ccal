@@ -79,13 +79,13 @@ def select_gene_symbol(
 
     for column_name in ("Gene Family Name", "Locus Type"):
 
-        df = hgnc.loc[remove, column_name].value_counts().to_frame()
+        dataframe = hgnc.loc[remove, column_name].value_counts().to_frame()
 
-        df.index.name = column_name
+        dataframe.index.name = column_name
 
-        df.columns = ("N Removed",)
+        dataframe.columns = ("N Removed",)
 
-        print(df)
+        print(dataframe)
 
     gene_symbols = (
         hgnc.loc[~remove, ["Approved Symbol", "Previous Symbols"]]

@@ -13,7 +13,7 @@ from .RANDOM_SEED import RANDOM_SEED
 
 
 def hierarchical_consensus_cluster_with_ks(
-    df,
+    dataframe,
     ks,
     axis,
     n_job=1,
@@ -22,7 +22,7 @@ def hierarchical_consensus_cluster_with_ks(
     n_clustering=10,
     random_seed=RANDOM_SEED,
     linkage_method="ward",
-    plot_df=True,
+    plot_dataframe=True,
     directory_path=None,
 ):
 
@@ -42,7 +42,7 @@ def hierarchical_consensus_cluster_with_ks(
 
     if axis == 1:
 
-        df = df.T
+        dataframe = dataframe.T
 
     if distance__element_x_element is None:
 
@@ -53,9 +53,9 @@ def hierarchical_consensus_cluster_with_ks(
         )
 
         distance__element_x_element = DataFrame(
-            squareform(pdist(df.values, distance_function)),
-            index=df.index,
-            columns=df.index,
+            squareform(pdist(dataframe.values, distance_function)),
+            index=dataframe.index,
+            columns=dataframe.index,
         )
 
         if directory_path is not None:
@@ -66,7 +66,7 @@ def hierarchical_consensus_cluster_with_ks(
 
     if axis == 1:
 
-        df = df.T
+        dataframe = dataframe.T
 
     for (k, (element_cluster, element_cluster__ccc)) in zip(
         ks,
@@ -74,7 +74,7 @@ def hierarchical_consensus_cluster_with_ks(
             hierarchical_consensus_cluster,
             (
                 (
-                    df,
+                    dataframe,
                     k,
                     axis,
                     distance__element_x_element,
@@ -82,7 +82,7 @@ def hierarchical_consensus_cluster_with_ks(
                     n_clustering,
                     random_seed,
                     linkage_method,
-                    plot_df,
+                    plot_dataframe,
                     k_directory_path,
                 )
                 for k, k_directory_path in zip(ks, k_directory_paths)
@@ -136,7 +136,7 @@ def hierarchical_consensus_cluster_with_ks(
 
         k_x_element.to_csv(join(directory_path, "k_x_element.tsv"), sep="\t")
 
-    if plot_df:
+    if plot_dataframe:
 
         file_name = "k_x_element.cluster_distribution.html"
 
@@ -150,7 +150,6 @@ def hierarchical_consensus_cluster_with_ks(
 
         plot_heat_map(
             DataFrame(sort(k_x_element.values, axis=1), index=keys),
-            data_type="categorical",
             title="HCC Cluster Distribution",
             xaxis_title="Element",
             yaxis_title=k_x_element.index.name,

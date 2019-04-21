@@ -33,7 +33,7 @@ def read_firebrowse_mutsignozzlereport2cv(tar_gz_file_path, genes):
 
         gene_group = maf.groupby(by="Hugo_Symbol")
 
-        df = read_csv(
+        dataframe = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file for file in tar_gz_file if file.name.endswith("sig_genes.txt")
@@ -43,7 +43,7 @@ def read_firebrowse_mutsignozzlereport2cv(tar_gz_file_path, genes):
             index_col=1,
         )
 
-        gene_q_value = df["q"].reindex(index=genes).to_dict()
+        gene_q_value = dataframe["q"].reindex(index=genes).to_dict()
 
     gene_variant_classification = {}
 
@@ -55,16 +55,16 @@ def read_firebrowse_mutsignozzlereport2cv(tar_gz_file_path, genes):
 
         if gene in gene_group.groups:
 
-            df = gene_group.get_group(gene)
+            dataframe = gene_group.get_group(gene)
 
             gene_variant_classification[gene] = (
-                df["Variant_Classification"].value_counts().to_dict()
+                dataframe["Variant_Classification"].value_counts().to_dict()
             )
 
-            gene_variant_type[gene] = df["Variant_Type"].value_counts().to_dict()
+            gene_variant_type[gene] = dataframe["Variant_Type"].value_counts().to_dict()
 
             gene_variant_frequency[gene] = (
-                df["Tumor_Sample_Barcode"].dropna().unique().size / n
+                dataframe["Tumor_Sample_Barcode"].dropna().unique().size / n
             )
 
         else:
