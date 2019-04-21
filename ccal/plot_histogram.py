@@ -1,15 +1,21 @@
-from .COLORS import COLORS
+from numpy import arange
+
+from .pick_colors import pick_colors
 from .plot_and_save import plot_and_save
 
 
 def plot_histogram(
     serieses,
     histnorm="",
-    plot_rug=True,
+    plot_rug=None,
     title=None,
     xaxis_title=None,
     html_file_path=None,
 ):
+
+    if plot_rug is None:
+
+        plot_rug = all(series.size < 1e3 for series in serieses)
 
     if plot_rug:
 
@@ -25,9 +31,11 @@ def plot_histogram(
 
     data = []
 
+    colors = pick_colors(arange(len(serieses)))
+
     for i, series in enumerate(serieses):
 
-        color = COLORS["curated"][i]
+        color = colors[i]
 
         data.append(
             {

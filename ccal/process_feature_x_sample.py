@@ -1,10 +1,10 @@
 from numpy import nan
 from pandas import DataFrame
 
-from .drop_df_slice import drop_df_slice
-from .drop_df_slice_greedily import drop_df_slice_greedily
+from .drop_dataframe_slice import drop_dataframe_slice
+from .drop_dataframe_slice_greedily import drop_dataframe_slice_greedily
 from .log_nd_array import log_nd_array
-from .normalize_s_or_df import normalize_s_or_df
+from .normalize_series_or_dataframe import normalize_series_or_dataframe
 from .summarize_feature_x_sample import summarize_feature_x_sample
 
 
@@ -103,7 +103,7 @@ def process_feature_x_sample(
 
         if drop_axis is None:
 
-            feature_x_sample = drop_df_slice_greedily(
+            feature_x_sample = drop_dataframe_slice_greedily(
                 feature_x_sample,
                 max_na=max_na,
                 min_n_not_na_unique_value=min_n_not_na_unique_value,
@@ -111,7 +111,7 @@ def process_feature_x_sample(
 
         else:
 
-            feature_x_sample = drop_df_slice(
+            feature_x_sample = drop_dataframe_slice(
                 feature_x_sample,
                 drop_axis,
                 max_na=max_na,
@@ -155,7 +155,7 @@ def process_feature_x_sample(
             )
         )
 
-        feature_x_sample = normalize_s_or_df(
+        feature_x_sample = normalize_series_or_dataframe(
             feature_x_sample, normalization_axis, normalization_method
         )
 

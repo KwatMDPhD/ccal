@@ -20,6 +20,6 @@ def read_gmt(gmt_file_path):
 
             lines.append(sorted(split))
 
-    df = DataFrame(lines, index=Index(indices, name="Gene Set")).fillna(nan)
+    dataframe = DataFrame(lines, index=Index(indices, name="Gene Set")).fillna(nan)
 
-    return df
+    return dataframe

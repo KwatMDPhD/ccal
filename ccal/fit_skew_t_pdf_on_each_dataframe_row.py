@@ -3,18 +3,18 @@ from pandas import DataFrame, concat
 
 from .call_function_with_multiprocess import call_function_with_multiprocess
 from .fit_skew_t_pdf_on_1d_array import fit_skew_t_pdf_on_1d_array
-from .split_df import split_df
+from .split_dataframe import split_dataframe
 
 
-def _fit_skew_t_pdf_on_each_df_row(df):
+def _fit_skew_t_pdf_on_each_dataframe_row(dataframe):
 
-    skew_t_pdf_fit_parameter = full((df.shape[0], 5), nan)
+    skew_t_pdf_fit_parameter = full((dataframe.shape[0], 5), nan)
 
-    n = df.shape[0]
+    n = dataframe.shape[0]
 
     n_per_print = max(1, n // 10)
 
-    for i, (index, series) in enumerate(df.iterrows()):
+    for i, (index, series) in enumerate(dataframe.iterrows()):
 
         if not i % n_per_print:
 
@@ -26,17 +26,22 @@ def _fit_skew_t_pdf_on_each_df_row(df):
 
     return DataFrame(
         skew_t_pdf_fit_parameter,
-        index=df.index,
+        index=dataframe.index,
         columns=("N Data", "Location", "Scale", "Degree of Freedom", "Shape"),
     )
 
 
-def fit_skew_t_pdf_on_each_df_row(df, n_job=1, output_file_path=None):
+def fit_skew_t_pdf_on_each_dataframe_row(dataframe, n_job=1, output_file_path=None):
 
     skew_t_pdf_fit_parameter = concat(
         call_function_with_multiprocess(
-            _fit_skew_t_pdf_on_each_df_row,
-            ((df_,) for df_ in split_df(df, 0, min(df.shape[0], n_job))),
+            _fit_skew_t_pdf_on_each_dataframe_row,
+            (
+                (dataframe_,)
+                for dataframe_ in split_dataframe(
+                    dataframe, 0, min(dataframe.shape[0], n_job)
+                )
+            ),
             n_job,
         )
     )
