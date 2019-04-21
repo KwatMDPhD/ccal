@@ -1,3 +1,5 @@
+from numpy import arange
+
 from .plot_and_save import plot_and_save
 
 
@@ -130,7 +132,7 @@ def select_series_indices(
                     {
                         "type": "scatter",
                         "name": "All",
-                        "x": tuple(range(series_no_na_sorted.size)),
+                        "x": arange(series_no_na_sorted.size),
                         "y": series_no_na_sorted,
                         "text": series_no_na_sorted.index,
                         "mode": mode,

@@ -15,7 +15,7 @@ def read_firebrowse_correlate_copynumber_vs_mrnaseq(tar_gz_file_path, genes):
             index_col=0,
         ).loc["sample", "comm"]
 
-        df = read_csv(
+        dataframe = read_csv(
             tar_gz_file.extractfile(
                 tuple(file for file in tar_gz_file if file.name.endswith("cors.txt"))[0]
             ),
@@ -23,4 +23,4 @@ def read_firebrowse_correlate_copynumber_vs_mrnaseq(tar_gz_file_path, genes):
             index_col=1,
         )
 
-        return n, df["cor"].reindex(genes).to_dict()
+        return n, dataframe["cor"].reindex(genes).to_dict()

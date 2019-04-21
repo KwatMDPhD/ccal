@@ -18,7 +18,7 @@ def read_firebrowse_copynumber_gistic2(tar_gz_file_path, genes):
             sep="\t",
         ).shape[0]
 
-        df = read_csv(
+        dataframe = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file
@@ -30,13 +30,13 @@ def read_firebrowse_copynumber_gistic2(tar_gz_file_path, genes):
             index_col=0,
         ).dropna(how="all", axis=1)
 
-        cytoband_amp_q_value = df.iloc[0, :].to_dict()
+        cytoband_amp_q_value = dataframe.iloc[0, :].to_dict()
 
-        cytoband_amp_genes = df.apply(
+        cytoband_amp_genes = dataframe.apply(
             lambda column: set(column.iloc[3:].dropna())
         ).to_dict()
 
-        df = read_csv(
+        dataframe = read_csv(
             tar_gz_file.extractfile(
                 tuple(
                     file
@@ -48,9 +48,9 @@ def read_firebrowse_copynumber_gistic2(tar_gz_file_path, genes):
             index_col=0,
         ).dropna(how="all", axis=1)
 
-        cytoband_del_q_value = df.iloc[0, :].to_dict()
+        cytoband_del_q_value = dataframe.iloc[0, :].to_dict()
 
-        cytoband_del_genes = df.apply(
+        cytoband_del_genes = dataframe.apply(
             lambda column: set(column.iloc[3:].dropna())
         ).to_dict()
 
