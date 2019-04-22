@@ -8,6 +8,7 @@ from numpy import asarray, nan
 from pandas import Series
 
 from ccal.A_gsea_get_enrichment import A_gsea_get_enrichment
+from ccal.A_gsea_get_pval_fdr import A_gsea_get_pval_fdr
 
 def A_gsea(
     gene_x_sample,
@@ -32,6 +33,16 @@ def A_gsea(
     gene_score = gene_score.sort_values(ascending=False)
 
     escores, mtdata = A_gsea_get_enrichment(gene_score, gene_sets)
-    print(escores)
 
-    return None, None
+    results = A_gsea_get_pval_fdr(
+        escores,
+        gene_x_sample,
+        phenotypes,
+        gene_sets,
+        gene_score,
+        function,
+        n_permutation=n_permutation,
+        permutation_method=permuting
+    )
+
+    return results
