@@ -159,6 +159,10 @@ def _plot(
         }
     )
 
+    node_color = "#2e211b"
+
+    node_color_accent = "#ebf6f7"
+
     data.append(
         {
             "type": "scatter",
@@ -167,20 +171,32 @@ def _plot(
             "x": node_x_dimension[:, 0],
             "y": node_x_dimension[:, 1],
             "text": nodes,
-            "mode": "markers+text",
+            "mode": "markers",
             "marker": {
                 "size": 32,
-                "color": "#2e211b",
-                "line": {"width": 2.4, "color": "#ffffff"},
+                "color": node_color,
+                "line": {"width": 2.4, "color": node_color_accent},
             },
-            "textposition": "middle center",
-            "textfont": {"size": 12, "color": "#ebf6f7"},
             "opacity": node_opacity,
-            "hoverinfo": "text",
         }
     )
 
-    if element_label is not None:
+    layout["annotations"] = [
+        {
+            "x": x,
+            "y": y,
+            "text": node,
+            "font": {"size": 16, "color": node_color},
+            "bgcolor": node_color_accent,
+            "arrowhead": 2,
+            "arrowsize": 0.8,
+            "arrowcolor": node_color_accent,
+            "clicktoshow": "onoff",
+        }
+        for node, (x, y) in zip(nodes, node_x_dimension)
+    ]
+
+    if grid_values is not None:
 
         x = linspace(0, 1, num=grid_values.shape[1])
 
@@ -227,7 +243,7 @@ def _plot(
                 }
             )
 
-    element_marker_line = {"width": 1, "color": "#000000"}
+    element_marker_line = {"width": 1, "color": node_color}
 
     element_opacity = 0.88
 
@@ -977,6 +993,8 @@ class GPSMap:
         else:
 
             element_predicted_label = None
+
+        element_predicted_label = None
 
         if annotation_x_element is not None:
 

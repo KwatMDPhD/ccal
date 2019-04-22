@@ -111,6 +111,24 @@ def hierarchical_consensus_cluster(
 
         print("Plotting dataframe.clustered ...")
 
+        element_cluster_sorted = element_cluster.sort_values()
+
+        plot_heat_map_keyword_arguments = {}
+
+        if axis == 0:
+
+            dataframe = dataframe.loc[element_cluster_sorted.index]
+
+            plot_heat_map_keyword_arguments["row_annotation"] = element_cluster_sorted
+
+        elif axis == 1:
+
+            dataframe = dataframe[element_cluster_sorted.index]
+
+            plot_heat_map_keyword_arguments[
+                "column_annotation"
+            ] = element_cluster_sorted
+
         file_name = "dataframe.cluster.html"
 
         if directory_path is None:
@@ -121,27 +139,13 @@ def hierarchical_consensus_cluster(
 
             html_file_path = join(directory_path, file_name)
 
-            element_cluster_sorted = element_cluster.sort_values()
-
-            if axis == 0:
-
-                dataframe = dataframe.loc[element_cluster_sorted.index]
-
-                keyword_arguments = {"row_annotation": element_cluster_sorted}
-
-            elif axis == 1:
-
-                dataframe = dataframe[element_cluster_sorted.index]
-
-                keyword_arguments = {"column_annotation": element_cluster_sorted}
-
         plot_heat_map(
             dataframe,
             title="HCC K={}".format(k),
             xaxis_title=dataframe.columns.name,
             yaxis_title=dataframe.index.name,
             html_file_path=html_file_path,
-            **keyword_arguments,
+            **plot_heat_map_keyword_arguments,
         )
 
     return element_cluster, element_cluster__ccc
