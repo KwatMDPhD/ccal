@@ -4,6 +4,7 @@ from the desktop Java code
 """
 
 import numpy as np
+import pandas as pd
 
 def _get_gs_mapping(genes, gene_sets):
     members_map = {g: [] for g in genes}
@@ -107,8 +108,8 @@ def A_gsea_get_enrichment(ranking, gene_sets, power=1.0):
         gs_name: list(np.array(cum_ph[gs_name])-np.array(cum_pm[gs_name]))
         for gs_name in all_gs_names
     }
-    escores = {
+    escores = pd.Series({
         gs_name: _get_escore_from_mtdata(mtdata[gs_name])
         for gs_name in all_gs_names
-    }
+    })
     return escores, mtdata
